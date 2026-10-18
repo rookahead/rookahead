@@ -8,13 +8,12 @@ import { EMBED_SIZES, embedUrl, gameShareText, iframeSnippet, momentShareText, m
 import { GifTab, ImageTab } from './ShareMedia'
 import type { MoveNode, PgnHeaders } from '../lib/tree'
 
-export type ShareMode = 'game' | 'move'
+type ShareMode = 'game' | 'move'
 type Tab = 'pgn' | 'fen' | 'image' | 'gif' | 'embed'
 
 /** Mounted only while open, so every opening starts fresh. */
 interface Props {
   onClose: () => void
-  initialMode: ShareMode
   /** Main line, start position first. */
   line: MoveNode[]
   currentNode: MoveNode
@@ -65,9 +64,9 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
   )
 }
 
-export function ShareDialog({ onClose, initialMode, line, currentNode, headers, orientation, report, boardTheme, getToken }: Props) {
+export function ShareDialog({ onClose, line, currentNode, headers, orientation, report, boardTheme, getToken }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [mode, setMode] = useState<ShareMode>(initialMode)
+  const [mode, setMode] = useState<ShareMode>('game')
   const [tab, setTab] = useState<Tab>('pgn')
   const [token, setToken] = useState<string | null>(null)
   const [withReview, setWithReview] = useState(true)

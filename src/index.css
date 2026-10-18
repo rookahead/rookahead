@@ -2368,21 +2368,113 @@ svg {
 }
 
 /* ═══════════════ Sharing ═══════════════ */
-/* Game share sits at the foot of the info card, visible while the card scrolls. */
+/* The info card's foot (sponsor, Share game, site links) stays visible while the card scrolls. */
 .info-share {
   position: sticky;
   bottom: 0;
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   background: var(--surface);
+}
+
+.sponsor-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sponsor-card:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.sponsor-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-4);
+  color: var(--text-2);
+}
+
+.sponsor-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.sponsor-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sponsor-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sponsor-blurb {
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sponsor-label {
+  margin-top: 2px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sponsor-go {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.site-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.site-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-links a:hover {
+  color: var(--text);
 }
 
 .info-share-btn {
   width: 100%;
 }
 
-/* Move share: apart from the move actions, at the far right. */
-.coach-share {
-  margin-left: auto;
+/* A little more room between the game's own action and the sponsored card. */
+.info-share-btn + .sponsor-card {
+  margin-top: 4px;
 }
 
 .share-banner {

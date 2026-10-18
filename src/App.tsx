@@ -16,8 +16,9 @@ import { PlayerBar } from './components/PlayerBar'
 import { ReviewSummary } from './components/ReviewSummary'
 import { San } from './components/San'
 import { SettingsPanel } from './components/SettingsPanel'
+import { SponsorCard } from './components/SponsorCard'
 import { ShareBanner } from './components/ShareBanner'
-import { ShareDialog, ShareIcon, type ShareMode } from './components/ShareDialog'
+import { ShareDialog, ShareIcon } from './components/ShareDialog'
 import { TopNav } from './components/TopNav'
 import type { AnalysisResult } from './engine/Engine'
 import { terminalState, useGameReview, useLiveAnalysis, type PositionEval } from './hooks/useAnalysis'
@@ -139,7 +140,7 @@ export default function App() {
   const [sharedClasses, setSharedClasses] = useState<Record<string, MoveClass> | null>(() => restored?.classes ?? null)
   const [banner, setBanner] = useState<'shared' | ShareError | null>(null)
   const [shareLink] = useState(() => parseShareHash(location.pathname, location.hash))
-  const [shareMode, setShareMode] = useState<ShareMode | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
   // Layout effect, so the first paint already has the right colours.
@@ -188,7 +189,7 @@ export default function App() {
     multiPv: settings.lines,
     depth: settings.liveDepth,
     // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
-    paused: reviewing || loadOpen || shareMode !== null,
+    paused: reviewing || loadOpen || shareOpen,
   })
 
   // During a review, fall back to the review's verdict for positions it has reached.
@@ -489,10 +490,6 @@ export default function App() {
           Next move
           <Svg>{Icon.next}</Svg>
         </button>
-        <button className="btn ghost coach-share" onClick={() => setShareMode('move')}>
-          <ShareIcon />
-          Share move
-        </button>
       </CoachCard>
     )
   }
@@ -641,14 +638,20 @@ export default function App() {
                 <p>Review the game to find its key moments.</p>
               </section>
             ) : null}
-            {line.length > 1 && (
-              <section className="info-section info-share">
-                <button className="btn ghost info-share-btn" onClick={() => setShareMode('game')}>
+            <section className="info-section info-share">
+              {line.length > 1 && (
+                <button className="btn ghost info-share-btn" onClick={() => setShareOpen(true)}>
                   <ShareIcon />
                   Share game
                 </button>
-              </section>
-            )}
+              )}
+              <SponsorCard />
+              <nav className="site-links" aria-label="Site">
+                <a href="/about">About</a>
+                <span aria-hidden>·</span>
+                <a href="/privacy">Privacy</a>
+              </nav>
+            </section>
           </aside>
 
           <aside className="panel">
@@ -741,10 +744,9 @@ export default function App() {
         </div>
       </main>
 
-      {shareMode && (
+      {shareOpen && (
         <ShareDialog
-          onClose={() => setShareMode(null)}
-          initialMode={shareMode}
+          onClose={() => setShareOpen(false)}
           line={line}
           currentNode={node}
           headers={headers}
