@@ -27,18 +27,23 @@ export type MoveClass =
 /** Display order, best first (used for the summary table). */
 export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder']
 
+/**
+ * Rookahead's own names and colours. Internal ids (and the share-link codes) keep the old names;
+ * only these labels and colours are shown. Mid-tone colours: readable as text on light and dark,
+ * and dark enough for white marks on the badges.
+ */
 export const CLASS_INFO: Record<MoveClass, { label: string; color: string }> = {
-  brilliant: { label: 'Brilliant', color: '#22c3a6' },
-  great: { label: 'Great', color: '#5a8fd0' },
-  best: { label: 'Best', color: '#7fbf5f' },
-  excellent: { label: 'Excellent', color: '#93c06a' },
-  good: { label: 'Good', color: '#8fab8a' },
-  book: { label: 'Book', color: '#b08d6a' },
-  inaccuracy: { label: 'Inaccuracy', color: '#f0c04a' },
-  mistake: { label: 'Mistake', color: '#f0973a' },
-  miss: { label: 'Miss', color: '#ef6b5b' },
-  blunder: { label: 'Blunder', color: '#dc4a40' },
-  forced: { label: 'Forced', color: '#8a909a' },
+  brilliant: { label: 'Genius', color: '#8b5cf6' },
+  great: { label: 'Only move', color: '#2f80ed' },
+  best: { label: 'Precise', color: '#2e9e6a' },
+  excellent: { label: 'Sharp', color: '#4f9a3c' },
+  good: { label: 'Solid', color: '#6b7f6a' },
+  book: { label: 'Theory', color: '#8a7350' },
+  inaccuracy: { label: 'Slip', color: '#c99a16' },
+  mistake: { label: 'Error', color: '#d9711f' },
+  miss: { label: 'Oversight', color: '#cf4b63' },
+  blunder: { label: 'Blunder', color: '#c7372f' },
+  forced: { label: 'Forced', color: '#5b5f68' },
 }
 
 /** Classes worth calling out with an icon in the move list and on the graph. */

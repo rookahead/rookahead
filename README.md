@@ -3,9 +3,9 @@
 A chess analysis board running **Stockfish 19** in the browser, multi-threaded, with the full NNUE network.
 
 - Live analysis of any position: up to 5 engine lines, best-move arrows, eval bar
-- Game review: every move graded (brilliant, great, best, excellent, good, book, inaccuracy, mistake, miss, blunder),
+- Game review: every move graded with Rookahead's verdicts (Genius, Only move, Precise, Sharp, Solid, Theory, Slip, Error, Oversight, Blunder, Forced),
   accuracy per player, an eval graph marking the key moments, and a step-through mode with commentary
-- Import your recent games straight from **Chess.com** by username, or paste a PGN / FEN
+- Paste a PGN / FEN, or import recent games by username
 - Play your own moves on the board to explore side variations (promote or delete them later)
 - Clocks from the PGN, keyboard navigation, board themes, and the session survives a refresh
 - Move sounds (synthesised in the browser, no audio files) and animated pieces, verdicts and summary
@@ -38,10 +38,10 @@ Each move is measured in *expected points*: the mover's win chance before (with 
 The loss bands follow Chess.com's published thresholds — excellent < 2%, good < 5%, inaccuracy < 10%, mistake < 20%,
 blunder beyond that. On top of those (`src/lib/classify.ts`):
 
-- **Book** — the position is in the opening book (Lichess's CC0 opening list, `src/data/openings.json`)
-- **Great** — the engine's move, and the second-best move is at least 15% worse
-- **Brilliant** — a (near-)best move that gives up at least two pawns of material the engine's line doesn't win straight back
-- **Miss** — your opponent just made a mistake, you were winning, and you let most of it go
+- **Theory** (internally `book`) — the position is in the opening book (Lichess's CC0 opening list, `src/data/openings.json`)
+- **Only move** (internally `great`) — the engine's move, and the second-best move is at least 15% worse
+- **Genius** (internally `brilliant`) — a (near-)best move that gives up at least two pawns of material the engine's line doesn't win straight back
+- **Oversight** (internally `miss`) — your opponent just made a mistake, you were winning, and you let most of it go
 - **Accuracy** — Lichess's open formula (volatility-weighted and harmonic means of per-move accuracy)
 
 To rebuild the opening book: `node scripts/build-openings.mjs <dir with a.tsv … e.tsv>` from

@@ -226,17 +226,17 @@ describe('game conversion', () => {
 describe('share text', () => {
   const players = { White: 'Hikaru', Black: 'Bortnyk' }
 
-  it('describes a brilliant moment', () => {
-    expect(momentShareText(40, 'Nxc4', 'brilliant', players)).toBe('20… Nxc4!! Brilliant · Hikaru vs Bortnyk, reviewed on Rookahead')
+  it('describes a genius moment', () => {
+    expect(momentShareText(40, 'Nxc4', 'brilliant', players)).toBe('20… Nxc4!! Genius · Hikaru vs Bortnyk, reviewed on Rookahead')
   })
 
   it('annotates only the classes that have a symbol', () => {
-    expect(momentShareText(9, 'Qb3', 'great', players)).toBe('5. Qb3! Great · Hikaru vs Bortnyk, reviewed on Rookahead')
-    expect(momentShareText(10, 'f6', 'inaccuracy', players)).toBe('5… f6?! Inaccuracy · Hikaru vs Bortnyk, reviewed on Rookahead')
-    expect(momentShareText(10, 'f6', 'mistake', players)).toBe('5… f6? Mistake · Hikaru vs Bortnyk, reviewed on Rookahead')
-    expect(momentShareText(10, 'f6', 'miss', players)).toBe('5… f6? Miss · Hikaru vs Bortnyk, reviewed on Rookahead')
+    expect(momentShareText(9, 'Qb3', 'great', players)).toBe('5. Qb3! Only move · Hikaru vs Bortnyk, reviewed on Rookahead')
+    expect(momentShareText(10, 'f6', 'inaccuracy', players)).toBe('5… f6?! Slip · Hikaru vs Bortnyk, reviewed on Rookahead')
+    expect(momentShareText(10, 'f6', 'mistake', players)).toBe('5… f6? Error · Hikaru vs Bortnyk, reviewed on Rookahead')
+    expect(momentShareText(10, 'f6', 'miss', players)).toBe('5… f6? Oversight · Hikaru vs Bortnyk, reviewed on Rookahead')
     expect(momentShareText(10, 'f6', 'blunder', players)).toBe('5… f6?? Blunder · Hikaru vs Bortnyk, reviewed on Rookahead')
-    expect(momentShareText(9, 'e4', 'best', players)).toBe('5. e4 Best · Hikaru vs Bortnyk, reviewed on Rookahead')
+    expect(momentShareText(9, 'e4', 'best', players)).toBe('5. e4 Precise · Hikaru vs Bortnyk, reviewed on Rookahead')
   })
 
   it('describes a move without a review', () => {

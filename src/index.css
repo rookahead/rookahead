@@ -977,17 +977,17 @@ svg {
 }
 
 /* Last-move squares take the colour of the move's classification. */
-.board cg-board square.cls-brilliant { background-color: rgba(34, 195, 166, 0.6); }
-.board cg-board square.cls-great { background-color: rgba(90, 143, 208, 0.6); }
-.board cg-board square.cls-best,
-.board cg-board square.cls-excellent { background-color: rgba(127, 191, 95, 0.6); }
-.board cg-board square.cls-good { background-color: rgba(143, 171, 138, 0.6); }
-.board cg-board square.cls-book { background-color: rgba(176, 141, 106, 0.6); }
-.board cg-board square.cls-inaccuracy { background-color: rgba(240, 192, 74, 0.6); }
-.board cg-board square.cls-mistake { background-color: rgba(240, 151, 58, 0.6); }
-.board cg-board square.cls-miss { background-color: rgba(239, 107, 91, 0.6); }
-.board cg-board square.cls-blunder { background-color: rgba(220, 74, 64, 0.65); }
-.board cg-board square.cls-forced { background-color: rgba(138, 144, 154, 0.55); }
+.board cg-board square.cls-brilliant { background-color: rgba(139, 92, 246, 0.55); }
+.board cg-board square.cls-great { background-color: rgba(47, 128, 237, 0.5); }
+.board cg-board square.cls-best { background-color: rgba(46, 158, 106, 0.55); }
+.board cg-board square.cls-excellent { background-color: rgba(79, 154, 60, 0.5); }
+.board cg-board square.cls-good { background-color: rgba(107, 127, 106, 0.5); }
+.board cg-board square.cls-book { background-color: rgba(138, 115, 80, 0.5); }
+.board cg-board square.cls-inaccuracy { background-color: rgba(201, 154, 22, 0.55); }
+.board cg-board square.cls-mistake { background-color: rgba(217, 113, 31, 0.55); }
+.board cg-board square.cls-miss { background-color: rgba(207, 75, 99, 0.55); }
+.board cg-board square.cls-blunder { background-color: rgba(199, 55, 47, 0.6); }
+.board cg-board square.cls-forced { background-color: rgba(91, 95, 104, 0.5); }
 
 .board cg-board square.move-dest {
   background: radial-gradient(rgba(0, 0, 0, 0.18) 19%, rgba(0, 0, 0, 0) 20%);

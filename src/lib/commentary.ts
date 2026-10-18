@@ -6,24 +6,20 @@ const article = (word: string) => (/^[aeiou]/i.test(word) ? 'an' : 'a')
 
 /** One-line verdict for a classified move, e.g. "Nxe5 is a blunder". */
 export function moveHeadline(san: string, review: MoveReview): string {
-  switch (review.cls) {
-    case 'brilliant':
-      return `${san} is brilliant!`
-    case 'great':
-      return `${san} is a great move`
-    case 'best':
-      return `${san} is the best move`
-    case 'book':
-      return `${san} is a book move`
-    case 'forced':
-      return `${san} is forced`
-    case 'miss':
-      return `${san} is a miss`
-    default: {
-      const label = CLASS_INFO[review.cls].label.toLowerCase()
-      return `${san} is ${article(label)} ${label}`
-    }
+  const HEADLINES: Record<MoveReview['cls'], string> = {
+    brilliant: 'is genius!',
+    great: 'is the only move',
+    best: 'is precise',
+    excellent: 'is sharp',
+    good: 'is solid',
+    book: 'is theory',
+    inaccuracy: 'is a slip',
+    mistake: 'is an error',
+    miss: 'is an oversight',
+    blunder: 'is a blunder',
+    forced: 'is forced',
   }
+  return `${san} ${HEADLINES[review.cls]}`
 }
 
 /** A second sentence giving context, when there's something useful to say. */
@@ -32,7 +28,7 @@ export function moveDetail(review: MoveReview, bestSan?: string): string | undef
     case 'brilliant':
       return 'A sound sacrifice — the material comes back with interest.'
     case 'great':
-      return 'The only move that keeps the position together.'
+      return 'Nothing else holds the position together.'
     case 'miss':
       return bestSan ? `Your opponent slipped, and ${bestSan} would have punished it.` : 'Your opponent slipped, and this lets them off the hook.'
     case 'inaccuracy':
@@ -74,7 +70,7 @@ export function gameSummary(report: GameReport, tree: GameTree, headers: PgnHead
   }
 
   const brilliant = Object.values(report.moves).find((m) => m.cls === 'brilliant')
-  if (brilliant) parts.push(`Look out for ${moveNumberLabel(brilliant.ply)} ${tree.nodes[brilliant.nodeId]?.san} — brilliant!`)
+  if (brilliant) parts.push(`Look out for ${moveNumberLabel(brilliant.ply)} ${tree.nodes[brilliant.nodeId]?.san} — genius!`)
 
   return parts.join(' ') || 'Here’s how the game went.'
 }

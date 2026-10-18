@@ -281,9 +281,18 @@ describe('openings', () => {
 describe('commentary', () => {
   it('writes natural headlines', () => {
     const base = { nodeId: 'x', ply: 1, color: 'white' as const, winBefore: 50, winAfter: 50, loss: 0, accuracy: 100, score: cp(0) }
-    expect(moveHeadline('Nf3', { ...base, cls: 'best' })).toBe('Nf3 is the best move')
-    expect(moveHeadline('Qh5', { ...base, cls: 'inaccuracy' })).toBe('Qh5 is an inaccuracy')
-    expect(moveHeadline('Qh5', { ...base, cls: 'blunder' })).toBe('Qh5 is a blunder')
+    const headline = (cls: Parameters<typeof moveHeadline>[1]['cls']) => moveHeadline('Nf3', { ...base, cls })
+    expect(headline('brilliant')).toBe('Nf3 is genius!')
+    expect(headline('great')).toBe('Nf3 is the only move')
+    expect(headline('best')).toBe('Nf3 is precise')
+    expect(headline('excellent')).toBe('Nf3 is sharp')
+    expect(headline('good')).toBe('Nf3 is solid')
+    expect(headline('book')).toBe('Nf3 is theory')
+    expect(headline('inaccuracy')).toBe('Nf3 is a slip')
+    expect(headline('mistake')).toBe('Nf3 is an error')
+    expect(headline('miss')).toBe('Nf3 is an oversight')
+    expect(headline('blunder')).toBe('Nf3 is a blunder')
+    expect(headline('forced')).toBe('Nf3 is forced')
   })
 })
 
