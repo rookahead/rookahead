@@ -12,6 +12,7 @@ describe('routeFor', () => {
     expect(routeFor('/play/')).toBe('play')
     expect(routeFor('/games')).toBe('games')
     expect(routeFor('/games/')).toBe('games')
+    expect(routeFor('/board')).toBe('board')
     expect(routeFor('/puzzles')).toBe('puzzles')
     expect(routeFor('/puzzles/daily')).toBe('puzzles')
     expect(routeFor('/puzzles/mistakes/')).toBe('puzzles')

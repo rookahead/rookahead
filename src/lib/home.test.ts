@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentGame, formatDay, movesInPgn, playedRow } from './home'
+import { currentGame, formatDay, greeting, movesInPgn, nudge, playedRow } from './home'
 import type { Session } from './session'
 
 describe('movesInPgn', () => {
@@ -58,5 +58,37 @@ describe('playedRow', () => {
     expect(row.detail).toBe('Black · Untimed · 2 moves · Oct 18')
     expect(row.assists).toBe('2 takebacks · 1 hint')
     expect(row.result).toBe('Draw')
+  })
+})
+
+describe('greeting', () => {
+  it('follows the hour and uses the name when there is one', () => {
+    expect(greeting(8, 'bijoy')).toBe('Good morning, bijoy')
+    expect(greeting(12, 'bijoy')).toBe('Good afternoon, bijoy')
+    expect(greeting(19, null)).toBe('Good evening')
+    expect(greeting(2, 'bijoy')).toBe('Up late, bijoy?')
+    expect(greeting(4)).toBe('Up late?')
+  })
+})
+
+describe('nudge', () => {
+  const now = 10 * 86400000
+  const base = { mistakes: 0, streak: 0, solvedToday: false, trend: null, hasGames: true, now }
+
+  it('points at a fresh unreviewed game first', () => {
+    expect(nudge({ ...base, mistakes: 5, unreviewed: { opponent: 'knightowl', endedAt: now - 3600000 } })).toBe('Your game vs knightowl is ready to review.')
+  })
+
+  it('skips an old unreviewed game for the mistakes, then the streak, then the trend', () => {
+    const old = { opponent: 'x', endedAt: now - 5 * 86400000 }
+    expect(nudge({ ...base, unreviewed: old, mistakes: 14 })).toBe('14 mistakes from your games are waiting as puzzles.')
+    expect(nudge({ ...base, mistakes: 1 })).toBe('A mistake from your games is waiting as a puzzle.')
+    expect(nudge({ ...base, streak: 4 })).toBe('Solve a puzzle today to keep your 4-day streak.')
+    expect(nudge({ ...base, streak: 4, solvedToday: true, trend: 2.14 })).toBe('Your accuracy is up 2.1 over your last 10 games.')
+  })
+
+  it('falls back to an invitation', () => {
+    expect(nudge(base)).toBe('Pick a game and see where it turned.')
+    expect(nudge({ ...base, hasGames: false, trend: 0.2 })).toBe('Load a game and see where it turned.')
   })
 })

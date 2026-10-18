@@ -13,14 +13,14 @@ export function TabBar({ route }: { route: Route }) {
           </svg>
         )
         return item.path ? (
-          <Link key={item.id} to={item.path} className={`tab-item ${route === item.id ? 'active' : ''}`} aria-current={route === item.id ? 'page' : undefined}>
+          <Link key={item.id} to={item.path} className={`tab-item ${route === item.id ? 'active' : ''} ${item.featured ? 'featured' : ''}`} aria-current={route === item.id ? 'page' : undefined}>
             {icon}
-            {item.label}
+            {item.short}
           </Link>
         ) : (
           <span key={item.id} className="tab-item soon" aria-disabled="true" title={`${item.label}: coming soon`}>
             {icon}
-            {item.label}
+            {item.short}
           </span>
         )
       })}

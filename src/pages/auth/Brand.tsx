@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ClassIcon } from '../../components/ClassIcon'
 import { Link } from '../../components/Link'
+import { Wordmark } from '../../components/Wordmark'
 import { RookLogo } from '../../components/RookLogo'
 import { NAV_ITEMS } from '../../lib/nav'
 
@@ -31,7 +32,7 @@ export function Brand() {
     <aside className="auth-brand">
       <Link to="/" className="auth-brand-home" aria-label="Rookahead home">
         <RookLogo />
-        <span>Rookahead</span>
+        <Wordmark />
       </Link>
       <div className="auth-pitch">
         <h1>Review every game. Train every day.</h1>

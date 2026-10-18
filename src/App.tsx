@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
+import { TodayCard } from './components/TodayCard'
 import { AvatarFace, UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
@@ -37,14 +38,16 @@ export default function App() {
   const [expandOnAnalysis, setExpandOnAnalysis] = useState(readExpanded)
   // Analysis mounts on first visit and then stays, hidden, so a running review or a loaded game
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
-  const [analysisMounted, setAnalysisMounted] = useState(route === 'analysis')
+  // /board (Analyze) is the same page, opened on a clean board.
+  const onBoard = route === 'analysis' || route === 'board'
+  const [analysisMounted, setAnalysisMounted] = useState(onBoard)
   const [analysisKey, setAnalysisKey] = useState(0)
-  if (route === 'analysis' && !analysisMounted) setAnalysisMounted(true)
+  if (onBoard && !analysisMounted) setAnalysisMounted(true)
   // Play also stays mounted once visited, so a game keeps going (and the computer keeps moving) elsewhere.
   const [playMounted, setPlayMounted] = useState(route === 'play')
   if (route === 'play' && !playMounted) setPlayMounted(true)
 
-  const board = route === 'analysis' || route === 'play' || route === 'puzzles'
+  const board = onBoard || route === 'play' || route === 'puzzles'
   // The account page has the window to itself: no sidebar or tab bar.
   const auth = route === 'auth'
   const rail = board && !expandOnAnalysis
@@ -95,7 +98,14 @@ export default function App() {
 
   return (
     <div className="shell">
-      {!phone && !auth && <Sidebar route={route} rail={rail} onToggleRail={board ? toggleRail : undefined} footer={userCard} />}
+      {!phone && !auth && <Sidebar
+          route={route}
+          rail={rail}
+          onToggleRail={board ? toggleRail : undefined}
+          footer={userCard}
+          // Re-read on every page change: what's left to do today moves as you play.
+          today={<TodayCard key={route} settings={settings} />}
+        />}
       <div className="shell-page">
         {auth && <AuthPage />}
         {route === 'home' && <HomePage avatar={avatar} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
@@ -109,14 +119,15 @@ export default function App() {
           </div>
         )}
         {analysisMounted && (
-          <div className="analysis-host" hidden={route !== 'analysis'}>
+          <div className="analysis-host" hidden={!onBoard}>
             <AnalysisPage
               key={analysisKey}
               settings={settings}
               updateSettings={updateSettings}
               engine={engine}
               status={status}
-              active={route === 'analysis'}
+              active={onBoard}
+              blank={route === 'board'}
               avatar={avatar}
             />
           </div>

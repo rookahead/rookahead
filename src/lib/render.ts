@@ -11,7 +11,7 @@ import { frameLayout, squareOrigin, type FrameSpec } from './frame'
 const BG = '#0b0b0c'
 const TEXT = '#ededed'
 const MUTED = '#8b8b94'
-const FONT = "'Geist Variable', Geist, system-ui, sans-serif"
+const FONT = "'DM Sans Variable', 'DM Sans', system-ui, sans-serif"
 const ROLES: Record<string, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' }
 
 function loadImage(src: string): Promise<HTMLImageElement> {

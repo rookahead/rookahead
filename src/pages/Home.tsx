@@ -4,9 +4,11 @@ import { GameTable } from '../components/GameTable'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
 import { UsernameForm } from '../components/UsernameForm'
+import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
-import { currentGame, formatDay } from '../lib/home'
-import { loadMistakes, type MistakePuzzle } from '../lib/mistakes'
+import { useAccount } from '../lib/account'
+import { currentGame, formatDay, greeting, nudge } from '../lib/home'
+import type { MistakePuzzle } from '../lib/mistakes'
 import { gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
 import { dailyLine } from '../lib/puzzleData'
 import { dayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
@@ -44,26 +46,21 @@ function ago(ms: number, now = Date.now()): string {
 export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading, errors } = useMyGames(users)
+  const account = useAccount()
+  const name = account.status === 'signed-in' ? (account.username ?? account.account?.name.split(' ')[0] ?? null) : null
   const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
   const current = useMemo(() => currentGame(readSession()), [])
   const puzzlesVersion = useStoreVersion('puzzles')
   const progress = useMemo(() => loadProgress(), [puzzlesVersion])
   const today = dayNumber(new Date())
 
-  // Mistake puzzles come from every saved review; decoding them is async.
-  const [mistakes, setMistakes] = useState<MistakePuzzle[] | null>(null)
-  useEffect(() => {
-    let live = true
-    loadMistakes(progress.mistakesSolved).then((m) => live && setMistakes(m), () => live && setMistakes([]))
-    return () => {
-      live = false
-    }
-  }, [reviews, progress])
+  const mistakes = useMistakes()
 
-  const open = async (game: MyGame, review?: CachedReview) => {
-    await openMyGame(game, review)
+  const open = async (game: MyGame, review?: CachedReview, genius = false) => {
+    await openMyGame(game, review, { genius })
     onOpenAnalysis()
   }
+  const geniusGame = games.find((g) => g.key === stats.geniusKey)
   const loadGame = () => {
     requestLoadDialog()
     onOpenAnalysis()
@@ -73,8 +70,18 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
   const firstVisit = games.length === 0 && !loading
   const importError = Object.values(errors).find(Boolean)
   const latest = games[0]
-  const sources = [users.chesscom && 'Chess.com', users.lichess && 'Lichess'].filter(Boolean).join(' and ')
-  const newSince = games.filter((g) => g.endedAt > Date.now() - 86400000).length
+  const streak = dayStreak(progress, today)
+  const line =
+    loading && !games.length
+      ? 'Loading your games…'
+      : nudge({
+          unreviewed: latest && !reviews[latest.key] ? { opponent: (latest.color === 'white' ? latest.black : latest.white).name, endedAt: latest.endedAt } : undefined,
+          mistakes: mistakes?.length ?? 0,
+          streak,
+          solvedToday: progress.days?.last === today,
+          trend: stats.trend,
+          hasGames: games.length > 0,
+        })
 
   return (
     <div className="home-page">
@@ -82,18 +89,8 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
       <main className="home">
         <div className="home-main">
           <div className="home-welcome">
-            <h1>Welcome to Rookahead</h1>
-            {!firstVisit && (
-              <span>
-                {loading && !games.length
-                  ? 'Loading your games…'
-                  : newSince
-                    ? `${newSince} ${newSince === 1 ? 'game' : 'games'} in the last day${sources ? `, from ${sources}` : ''}`
-                    : sources
-                      ? `Your games from ${sources} and from playing here`
-                      : 'Your games from playing here'}
-              </span>
-            )}
+            <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(new Date().getHours(), name)}</h1>
+            {!firstVisit && <span>{line}</span>}
           </div>
 
           {latest && (
@@ -120,37 +117,43 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
             </section>
           ) : (
             <section className="stat-grid" aria-label="Your numbers">
-              <div className="home-card stat-card">
-                <AccuracyRing value={stats.accuracy} />
-                <strong>Avg accuracy</strong>
-                <span>
-                  {stats.accuracy == null ? 'No reviews yet' : 'Last 10 reviewed'}
-                  {stats.trend != null && (
-                    <>
-                      {' · '}
-                      <span className={stats.trend >= 0 ? 'up' : 'down'}>
-                        {stats.trend >= 0 ? '+' : ''}
-                        {stats.trend.toFixed(1)}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </div>
-              <div className="home-card stat-card">
-                <b className="stat-number genius">{stats.genius}</b>
-                <strong>Genius moves</strong>
-                <span>This week</span>
-              </div>
-              <button className="home-card stat-card" onClick={() => navigate('/puzzles/mistakes')}>
-                <b className="stat-number">{mistakes?.length ?? '–'}</b>
-                <strong>Mistakes to fix</strong>
-                <span>From your games</span>
-              </button>
-              <button className="home-card stat-card" onClick={() => navigate('/puzzles')}>
-                <b className="stat-number streak">{dayStreak(progress, today)}</b>
-                <strong>Day streak</strong>
-                <span>Puzzles{progress.days?.best ? ` · best ${progress.days.best}` : ''}</span>
-              </button>
+              <StatCard tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
+                {stats.accuracy == null ? (
+                  'Review a game to see it'
+                ) : stats.trend != null ? (
+                  <>
+                    <span className={stats.trend >= 0 ? 'up' : 'down'}>
+                      {stats.trend >= 0 ? '+' : ''}
+                      {stats.trend.toFixed(1)}
+                    </span>{' '}
+                    over your last 10
+                  </>
+                ) : (
+                  'Your last 10 reviewed'
+                )}
+              </StatCard>
+              <StatCard
+                tone="genius"
+                label="Genius moves"
+                empty="None yet"
+                value={stats.genius ? String(stats.genius) : undefined}
+                onClick={geniusGame ? () => void open(geniusGame, reviews[geniusGame.key], true) : undefined}
+              >
+                {geniusGame ? 'This week · see it ›' : 'This week'}
+              </StatCard>
+              <StatCard
+                tone="mistakes"
+               
+                label="Mistakes to fix"
+                empty={mistakes ? 'All clear' : '–'}
+                value={mistakes?.length ? String(mistakes.length) : undefined}
+                onClick={() => navigate('/puzzles/mistakes')}
+              >
+                {mistakes?.length ? 'Practise them ›' : 'From your games'}
+              </StatCard>
+              <StatCard tone="streak" label="Day streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
+                {streak ? `Puzzles${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
+              </StatCard>
             </section>
           )}
 
@@ -200,7 +203,7 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
           </button>
           <DailyCard theme={settings.boardTheme} />
           <PuzzlesCard rating={progress.rating} />
-          <button className="home-card quick-card" onClick={() => navigate('/analysis')}>
+          <button className="home-card quick-card" onClick={() => navigate(current ? '/analysis' : '/board')}>
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
             </svg>
@@ -218,17 +221,50 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
   )
 }
 
-/** Average accuracy as a ring that fills to the number. */
-function AccuracyRing({ value }: { value: number | null }) {
-  const c = 2 * Math.PI * 26
+/** A trend line through the values (oldest first), ending on a dot at the latest one. */
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null
+  const lo = Math.min(...values) - 2
+  const hi = Math.max(...values) + 2
+  const pts = values.map((v, i) => [2 + (i / (values.length - 1)) * 70, 28 - ((v - lo) / (hi - lo)) * 24] as const)
+  const [x, y] = pts[pts.length - 1]
   return (
-    <svg className="accuracy-ring" viewBox="0 0 64 64" aria-hidden>
-      <circle cx="32" cy="32" r="26" className="ring-track" />
-      {value != null && <circle cx="32" cy="32" r="26" className="ring-fill" strokeDasharray={`${(value / 100) * c} ${c}`} transform="rotate(-90 32 32)" />}
-      <text x="32" y="37" textAnchor="middle">
-        {value == null ? '–' : value.toFixed(1)}
-      </text>
+    <svg className="stat-spark" viewBox="0 0 74 30" preserveAspectRatio="none" aria-hidden>
+      <polyline points={pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ')} />
+      <circle cx={x} cy={y} r="3" />
     </svg>
+  )
+}
+
+interface StatCardProps {
+  tone: 'accuracy' | 'genius' | 'mistakes' | 'streak'
+  label: string
+  /** The number; left out, the card says `empty` in words instead of a lone "0". */
+  value?: string
+  empty: string
+  spark?: number[]
+  onClick?: () => void
+  children: ReactNode
+}
+
+/** One of the four numbers: its label, the number (or words when there's nothing yet), a line of context. */
+function StatCard({ tone, label, value, empty, spark, onClick, children }: StatCardProps) {
+  const body = (
+    <>
+      <span className="stat-head">{label}</span>
+      <span className="stat-row">
+        {value ? <b className="stat-value">{value}</b> : <b className="stat-empty">{empty}</b>}
+        {value && spark && <Sparkline values={spark} />}
+      </span>
+      <span className="stat-sub">{children}</span>
+    </>
+  )
+  return onClick ? (
+    <button className={`home-card stat-card ${tone}`} onClick={onClick}>
+      {body}
+    </button>
+  ) : (
+    <div className={`home-card stat-card ${tone}`}>{body}</div>
   )
 }
 

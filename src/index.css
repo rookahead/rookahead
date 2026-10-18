@@ -47,8 +47,11 @@
   /* Keeps black captured pieces visible against the page. */
   --dark-piece-glow: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55));
 
-  --font-ui: 'Geist Variable', Geist, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-ui: 'DM Sans Variable', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Headings, big numbers and the wordmark. Syne's default figures are old-style (7 and 9 dip
+     below the line, 0 is a round O): anything in it uses lining figures. */
+  --font-display: 'Syne Variable', Syne, var(--font-ui);
 
   --nav-h: 56px;
   --info-w: 288px;
@@ -524,7 +527,7 @@ svg {
   bottom: 0;
   z-index: 35;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -4869,11 +4872,26 @@ button.user-avatar.guest:hover {
 .stat-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 18px;
-  text-align: center;
+  gap: 8px;
+  padding: 16px 18px;
+  text-align: left;
+  --tone: var(--text-2);
+}
+
+.stat-card.accuracy {
+  --tone: var(--brand);
+}
+
+.stat-card.genius {
+  --tone: #a78bfa;
+}
+
+.stat-card.mistakes {
+  --tone: var(--danger);
+}
+
+.stat-card.streak {
+  --tone: var(--streak);
 }
 
 button.stat-card {
@@ -4885,64 +4903,74 @@ button.stat-card:hover {
   background: var(--card-hover);
 }
 
-.stat-card strong {
-  font-size: 14px;
-  font-weight: 600;
+.stat-head {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
 }
 
-.stat-card > span {
-  margin-top: -4px;
+.stat-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.stat-card.genius .stat-value,
+.stat-card.streak .stat-value {
+  color: var(--tone);
+}
+
+.stat-empty {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.stat-spark {
+  flex: 0 1 60px;
+  min-width: 0;
+  height: 28px;
+}
+
+
+.stat-spark polyline {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stat-spark circle {
+  fill: var(--tone);
+}
+
+.stat-sub {
   color: var(--muted);
   font-size: 12.5px;
 }
 
-.stat-card .up {
+.stat-sub .up {
   color: var(--win);
+  font-weight: 600;
 }
 
-.stat-card .down {
+.stat-sub .down {
   color: var(--danger);
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-}
-
-.stat-number.genius {
-  color: #a78bfa;
-}
-
-.stat-number.streak {
-  color: var(--streak);
-}
-
-.accuracy-ring {
-  width: 64px;
-  height: 64px;
-}
-
-.accuracy-ring circle {
-  fill: none;
-  stroke-width: 6;
-}
-
-.ring-track {
-  stroke: var(--surface-4);
-}
-
-.ring-fill {
-  stroke: var(--brand);
-  stroke-linecap: round;
-}
-
-.accuracy-ring text {
-  fill: var(--text);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .see-all {
@@ -5524,4 +5552,188 @@ button.chip:hover {
   .desktop-first {
     display: none;
   }
+}
+
+/* ═══════════════ Brand type: Syne headings and wordmark, DM Sans text, DM Mono numbers ═══════════════ */
+:root {
+  /* DM Mono comes in 400 and 500 only: never fake a bolder weight. */
+  font-synthesis-weight: none;
+}
+
+h1,
+h2,
+.stat-value,
+.stat-empty {
+  font-family: var(--font-display);
+  font-variant-numeric: lining-nums;
+}
+
+h1,
+h2 {
+  letter-spacing: -0.02em;
+}
+
+/* Big numbers in DM Sans: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
+.games-totals dd,
+.puzzle-rating strong,
+.streak-tile strong,
+.sprint-score strong,
+.sprint-result strong,
+.player-clock,
+.sprint-clock {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-brand .wordmark {
+  font-size: 20px;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.wordmark-tail {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.auth-brand .wordmark-tail {
+  color: inherit;
+  opacity: 0.6;
+}
+
+.page-header-home .wordmark {
+  font-size: 19px;
+}
+
+/* Sidebar items in the brand's voice: Syne labels, the current page's icon in sky. */
+.sidebar-item {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  /* Syne's word space is narrow: "Game review" would read as one word. */
+  word-spacing: 0.14em;
+}
+
+.sidebar-item.active svg {
+  color: var(--brand);
+}
+
+/* Today: a short to-do list above the user card. */
+.today-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px 8px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.today-card h2 {
+  margin: 0;
+  padding: 0 8px 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.today-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.today-row:hover {
+  background: var(--surface-3);
+}
+
+.today-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.today-row.daily .today-dot {
+  background: var(--streak);
+}
+
+.today-row.mistakes .today-dot {
+  background: var(--danger);
+}
+
+.today-row.done .today-dot {
+  background: var(--win);
+}
+
+.today-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.today-value {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accuracy in tables and the latest-game card: even-width digits without DM Mono's slashed zero. */
+.gt-accuracy,
+.latest-accuracy {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Game review: set apart under a thin line, tinted in the brand colour. */
+.sidebar-item.featured {
+  position: relative;
+  margin-top: 13px;
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+  color: var(--text);
+}
+
+.sidebar-item.featured::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--border);
+}
+
+.sidebar-item.featured svg {
+  color: var(--brand);
+}
+
+.sidebar-item.featured:hover,
+.sidebar-item.featured.active {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.sidebar.rail .sidebar-item.featured::before {
+  left: 8px;
+  right: 8px;
+}
+
+.tab-item.featured {
+  color: var(--brand);
 }

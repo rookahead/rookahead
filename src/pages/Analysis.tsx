@@ -30,6 +30,7 @@ import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { gameKey, saveReview } from '../lib/reviewCache'
+import { navigate } from '../lib/router'
 import { clearLoadRequest, loadDialogRequested, readSession, writeSession, type Session } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { clampPly, decodeShare, encodeShare, fromSharedGame, parseShareHash, toSharedGame, type ShareError } from '../lib/share'
@@ -101,9 +102,11 @@ interface Props {
   active: boolean
   /** The phone header's avatar button, from the shell. */
   avatar?: ReactNode
+  /** Opened as Analyze (/board): starts on a clean board each time it's opened. */
+  blank?: boolean
 }
 
-export function AnalysisPage({ settings, updateSettings, engine, status, active, avatar }: Props) {
+export function AnalysisPage({ settings, updateSettings, engine, status, active, avatar, blank = false }: Props) {
   const ready = status?.state === 'ready'
 
   const [restored] = useState(restoreSession)
@@ -317,6 +320,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     setTab('analysis')
     setStepping(false)
   }
+
+  // Analyze clears the board each time it's opened (not on every render while it's showing).
+  const wasBlank = useRef(false)
+  useEffect(() => {
+    if (blank && !wasBlank.current) newBoard()
+    wasBlank.current = blank
+  }, [blank])
 
   // Open a share link once on start-up (the ref keeps StrictMode's second run from repeating it).
   const openedShare = useRef(false)
@@ -551,7 +561,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   return (
     <div className="analysis-page">
-      <PageHeader title="Analysis" avatar={avatar}>
+      <PageHeader title={blank ? 'Analysis board' : 'Game review'} avatar={avatar}>
         <button className="btn ghost small page-header-action" onClick={newBoard} title="New board">
           <svg viewBox="0 0 24 24" aria-hidden>
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -749,7 +759,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       <LoadGameDialog
         open={loadOpen}
         onClose={() => setLoadOpen(false)}
-        onLoad={loadGame}
+        onLoad={(req) => {
+          const err = loadGame(req)
+          // A game loaded on Analyze is a game to review: the address (and the menu) follow.
+          if (!err && blank && req.kind === 'pgn') navigate('/analysis', { replace: true })
+          return err
+        }}
         chesscomUser={settings.chesscomUser}
         onChesscomUser={(chesscomUser) => updateSettings({ chesscomUser })}
         lichessUser={settings.lichessUser}

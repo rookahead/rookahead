@@ -3,6 +3,7 @@ import { NAV_ITEMS } from '../lib/nav'
 import type { Route } from '../lib/router'
 import { Link } from './Link'
 import { RookLogo } from './RookLogo'
+import { Wordmark } from './Wordmark'
 
 interface Props {
   route: Route
@@ -12,16 +13,18 @@ interface Props {
   onToggleRail?: () => void
   /** The user card. */
   footer: ReactNode
+  /** The Today card, shown above the user card when the sidebar is full width. */
+  today?: ReactNode
 }
 
 /** Desktop navigation: a floating panel, full window height, with the user card at the bottom. */
-export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
+export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
   return (
     <aside className={`sidebar ${rail ? 'rail' : ''}`} aria-label="Sidebar">
       <div className="sidebar-head">
         <Link to="/" className="sidebar-brand" aria-label="Rookahead home" aria-current={route === 'home' ? 'page' : undefined} title="Home">
           <RookLogo />
-          <span className="sidebar-wordmark">Rookahead</span>
+          <Wordmark className="sidebar-wordmark" />
         </Link>
         {onToggleRail && (
           <button className="icon-btn sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : 'Collapse'}>
@@ -42,7 +45,7 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
             <Link
               key={item.id}
               to={item.path}
-              className={`sidebar-item ${route === item.id ? 'active' : ''}`}
+              className={`sidebar-item ${route === item.id ? 'active' : ''} ${item.featured ? 'featured' : ''}`}
               aria-current={route === item.id ? 'page' : undefined}
               title={rail ? item.label : undefined}
             >
@@ -59,6 +62,7 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
         })}
       </nav>
       <div className="sidebar-foot">
+        {!rail && today}
         {footer}
         <div className="sidebar-links">
           <a href="/about">About</a>

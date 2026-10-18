@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from './Link'
 import { RookLogo } from './RookLogo'
+import { Wordmark } from './Wordmark'
 
 interface Props {
   /** Shown on desktop; phones show the logo instead. */
@@ -19,7 +20,7 @@ export function PageHeader({ title, children, avatar, phoneOnly }: Props) {
     <header className={`page-header ${phoneOnly ? 'phone-only' : ''}`}>
       <Link to="/" className="page-header-home" aria-label="Rookahead home">
         <RookLogo />
-        <span className="page-header-wordmark">Rookahead</span>
+        <Wordmark className="page-header-wordmark" />
       </Link>
       {title && <h1 className="page-header-title">{title}</h1>}
       <div className="page-header-actions">

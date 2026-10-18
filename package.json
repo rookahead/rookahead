@@ -17,8 +17,11 @@
     "lint": "oxlint"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/syne": "^5.3.0",
+    "@fontsource/dm-mono": "^5.3.0",
     "@lichess-org/chessground": "^10.4.2",
     "@supabase/supabase-js": "^2.118.0",
     "chess.js": "^1.4.0",
