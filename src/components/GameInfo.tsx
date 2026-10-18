@@ -1,4 +1,4 @@
-import { formatTimeControl, isChesscomUrl } from '../lib/chesscom'
+import { formatTimeControl } from '../lib/chesscom'
 import type { PgnHeaders } from '../lib/tree'
 
 interface Props {
@@ -19,7 +19,7 @@ function formatPgnDate(date?: string): string | undefined {
   return `${d ? `${d} ` : ''}${MONTHS[m - 1]} ${y}`
 }
 
-/** Chess.com's buckets: estimated game length is base + 40 × increment. */
+/** Time-control buckets: estimated game length is base + 40 × increment. */
 function speedOf(tc: string): string | undefined {
   if (tc.includes('/')) return 'Daily'
   const [base, inc = 0] = tc.split('+').map(Number)
@@ -70,7 +70,7 @@ export function GameInfo({ headers, hasGame, opening, positionNote }: Props) {
       fields.push([
         'Source',
         <a key="source" className="gi-link" href={link} target="_blank" rel="noreferrer">
-          {isChesscomUrl(link) ? 'Chess.com' : 'Original game'}
+          Original game
           <span aria-hidden> ↗</span>
         </a>,
       ])

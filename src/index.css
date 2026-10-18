@@ -18,6 +18,15 @@
   --accent-hover: #ffffff;
   --accent-ink: #0b0b0c;
   --accent-soft: rgba(255, 255, 255, 0.08);
+  /* Rookahead's one colour (the Brilliant teal): the home page's main card. */
+  --brand: #22c3a6;
+  --brand-ink: #06201c;
+  --brand-card: #123d37;
+  --brand-card-text: #ededed;
+  /* Home cards: a shade off the page, no borders. */
+  --card: #161618;
+  --card-hover: #1c1c1f;
+  --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
   --danger: #ef6b5f;
   --white-piece: #f2f2f3;
@@ -48,17 +57,9 @@
   --pad-y: 20px;
   --panel-w: 400px;
   --evalbar-w: 36px;
-  /* Wide layout: info card | board | panel. The board takes whatever height and width are left. */
-  --board-size: max(
-    300px,
-    min(
-      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-      calc(100vw - var(--info-w) - var(--panel-w) - var(--evalbar-w) - 12px - 2 * var(--gap) - 2 * var(--pad-x)),
-      880px
-    )
-  );
-  /* Height of the board column; the cards either side match it. */
-  --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
+  /* Room taken by the sidebar (set from data-side by the shell) and by the phone's tab bar. */
+  --side-w: 0px;
+  --tabbar-h: 0px;
 
   font-family: var(--font-ui);
   font-size: 14px;
@@ -85,6 +86,13 @@
   --accent-hover: #000000;
   --accent-ink: #ffffff;
   --accent-soft: rgba(0, 0, 0, 0.05);
+  --brand: #12806d;
+  --brand-ink: #ffffff;
+  --brand-card: #dcf1ec;
+  --brand-card-text: #0d2a25;
+  --card: #ffffff;
+  --card-hover: #f4f4f5;
+  --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
   --danger: #d4433a;
   --warn: #a2700f;
@@ -263,32 +271,29 @@ svg {
   line-height: 1.5;
 }
 
-/* ═══════════════ App shell: top bar + three columns ═══════════════ */
-.app {
+/* ═══════════════ App shell: sidebar + page ═══════════════ */
+:root[data-side='sidebar'] {
+  --side-w: 260px;
+}
+
+:root[data-side='rail'] {
+  --side-w: 84px;
+}
+
+.shell {
+  display: flex;
+  align-items: flex-start;
   min-height: 100vh;
 }
 
-.topnav {
-  /* Above the page so the settings dropdown isn't painted over. */
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  height: var(--nav-h);
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  padding: 0 var(--pad-x);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+/* Pages size themselves from this box (container units), so the sidebar's width is already taken out. */
+.shell-page {
+  flex: 1;
+  min-width: 0;
+  container: page / inline-size;
 }
 
-.topnav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.topnav-logo {
+.brand-logo {
   flex-shrink: 0;
   width: 30px;
   height: 30px;
@@ -299,64 +304,294 @@ svg {
   place-items: center;
 }
 
-.topnav-logo svg {
+.brand-logo svg {
   width: 22px;
   height: 22px;
 }
 
-.topnav-wordmark {
-  font-size: 16px;
+/* A floating panel, always the window's height, so the user card at its foot never scrolls away. */
+.sidebar {
+  position: sticky;
+  top: 12px;
+  z-index: 30;
+  flex: 0 0 248px;
+  box-sizing: border-box;
+  height: calc(100vh - 24px);
+  min-height: 420px;
+  margin: 12px 0 12px 12px;
+  padding: 16px 12px 12px;
+  border-radius: 22px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar.rail {
+  flex-basis: 72px;
+  padding: 14px 10px 10px;
+  align-items: center;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 16px;
+  align-self: stretch;
+}
+
+.sidebar.rail .sidebar-head {
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.02em;
 }
 
-/* Sections of the app; each tab is underlined on the bar's bottom edge when current. */
-.topnav-tabs {
-  align-self: stretch;
-  display: flex;
-  gap: 22px;
+.sidebar-toggle {
+  margin-left: auto;
 }
 
-.topnav-tab {
+.sidebar.rail .sidebar-toggle {
+  margin: 0;
+}
+
+.sidebar-toggle svg,
+.sidebar-item svg,
+.tab-item svg,
+.page-header-action svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-self: stretch;
+}
+
+.sidebar-item {
   display: flex;
   align-items: center;
-  margin-bottom: -1px;
-  padding: 0;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font-size: 14px;
-  font-weight: 500;
+  gap: 12px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 11px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 550;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar-item svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-item:hover:not(.soon),
+.sidebar-item.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.sidebar-item.soon {
   color: var(--muted);
+  opacity: 0.6;
+  cursor: default;
 }
 
-.topnav-tab:hover {
+.soon-tag {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sidebar.rail .sidebar-item {
+  justify-content: center;
+  width: 48px;
+  padding: 0;
+  align-self: center;
+}
+
+.sidebar.rail .sidebar-wordmark,
+.sidebar.rail .sidebar-label,
+.sidebar.rail .soon-tag,
+.sidebar.rail .sidebar-links {
+  display: none;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  padding-top: 16px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar.rail .sidebar-foot {
+  align-items: center;
+}
+
+.sidebar-links {
+  display: flex;
+  gap: 14px;
+  padding: 0 8px 2px;
+  font-size: 12.5px;
+}
+
+.sidebar-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.sidebar-links a:hover {
   color: var(--text);
 }
 
-.topnav-tab.active {
-  color: var(--text);
-  font-weight: 600;
-  border-bottom-color: var(--text);
+/* The bar at the top of a page: title and actions (on phones also the logo and the avatar). */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 var(--pad-x);
+  background: var(--bg);
 }
 
-.topnav-actions {
+.page-header.phone-only,
+.page-header-home {
+  display: none;
+}
+
+.page-header-home {
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.page-header-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.page-header-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.topnav-action svg {
-  fill: none;
+/* Phones: a tab bar along the bottom instead of the sidebar. */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
-.topnav .icon-btn svg {
-  fill: none;
+.tab-item {
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 550;
 }
 
-.settings-anchor {
-  position: relative;
+.tab-item svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tab-item.active {
+  color: var(--text);
+}
+
+.tab-item.soon {
+  opacity: 0.45;
+}
+
+/* Analysis stays mounted while Home shows: laid out but invisible, so the board keeps real
+   measurements (a display:none board would draw its arrows at NaN). */
+.analysis-host[hidden] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Settings open from the sidebar (or the phone header) as a floating panel. */
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+}
+
+.settings-layer {
+  position: fixed;
+  z-index: 60;
+  left: calc(var(--side-w) + 8px);
+  bottom: 12px;
+}
+
+.layout {
+  /* Wide layout: info card | board | panel. The board takes whatever height and width are left. */
+  --board-size: max(
+    300px,
+    min(
+      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+      calc(100cqw - var(--info-w) - var(--panel-w) - var(--evalbar-w) - 12px - 2 * var(--gap) - 2 * var(--pad-x)),
+      880px
+    )
+  );
+  /* Height of the board column; the cards either side match it. */
+  --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
 }
 
 .layout {
@@ -1106,7 +1341,7 @@ svg {
 .summary .grades .faceoff-row:nth-child(n + 11) { animation-delay: 0.4s; }
 
 .settings-popover {
-  transform-origin: top right;
+  transform-origin: bottom left;
   animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -2096,12 +2331,9 @@ svg {
 }
 
 .settings-popover {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: 50;
+  position: relative;
   width: 360px;
-  max-height: calc(100vh - var(--nav-h) - 24px);
+  max-height: calc(100vh - 24px);
   overflow-y: auto;
   padding: 14px 16px 16px;
   border-radius: 12px;
@@ -2212,13 +2444,15 @@ svg {
 
 /* ═══════════════ Medium screens: no room for three columns ═══════════════
    The info card moves above the panel, on the right of the board, sharing its height. */
-@media (max-width: 1279px) {
-  :root {
+/* Two columns (info card above the panel) unless the page is wide enough that three give a bigger board:
+   three columns win only past ~1460px of page width at common laptop heights. */
+@container page (max-width: 1460px) {
+  .layout {
     --board-size: max(
       300px,
       min(
         calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-        calc(100vw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+        calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
         880px
       )
     );
@@ -2245,6 +2479,11 @@ svg {
     flex-shrink: 0;
   }
 
+  /* The card is short here and scrolls: its foot (sponsor, links) flows at the end instead of covering it. */
+  .info-card .info-share {
+    position: static;
+  }
+
   .panel {
     flex: 1;
     height: auto;
@@ -2254,24 +2493,40 @@ svg {
 /* ═══════════════ Narrow screens: one column ═══════════════ */
 @media (max-width: 1000px) {
   :root {
-    --board-size: min(calc(100vw - 32px - var(--evalbar-w) - 12px), 640px);
     --pad-x: 16px;
+    --tabbar-h: calc(61px + env(safe-area-inset-bottom));
   }
 
-  .topnav {
-    gap: 16px;
+  .layout {
+    --board-size: min(calc(100vw - 32px - var(--evalbar-w) - 12px), 640px);
   }
 
-  .topnav-tabs {
+  .page-header,
+  .page-header.phone-only {
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header-home {
+    display: flex;
+  }
+
+  .page-header-title {
     display: none;
   }
 
-  .settings-popover {
-    position: fixed;
+  .settings-layer {
     left: 16px;
     right: 16px;
     top: calc(var(--nav-h) + 8px);
+    bottom: auto;
+  }
+
+  .settings-popover {
     width: auto;
+    max-height: calc(100vh - var(--nav-h) - var(--tabbar-h) - 24px);
+    transform-origin: top right;
   }
 
   .layout {
@@ -2306,7 +2561,8 @@ svg {
 @media (max-width: 1000px) {
   :root {
     --player-h: 34px;
-    --mobile-nav-h: calc(62px + env(safe-area-inset-bottom));
+    /* The pinned move bar; it sits on the tab bar, which handles the home indicator. */
+    --mobile-nav-h: 62px;
   }
 
   .board-column {
@@ -2329,24 +2585,25 @@ svg {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--tabbar-h);
     z-index: 30;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 16px;
     background: var(--surface);
   }
 
   .layout {
     row-gap: 12px;
-    padding-bottom: calc(var(--mobile-nav-h) + 24px);
+    padding-bottom: calc(var(--mobile-nav-h) + var(--tabbar-h) + 24px);
   }
 }
 
 @media (max-width: 520px) {
-  .topnav-label {
+  .page-header-label,
+  .page-header-wordmark {
     display: none;
   }
 
-  .topnav-action {
+  .page-header-action {
     width: 36px;
     padding: 0;
   }
@@ -2440,6 +2697,9 @@ svg {
 
 .sponsor-label {
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2680,4 +2940,284 @@ svg {
 .copy-area .embed-code {
   height: 92px;
   padding-right: 56px;
+}
+
+/* ═══════════════ Home ═══════════════ */
+.home {
+  max-width: 1240px;
+  box-sizing: border-box;
+  padding: 26px var(--pad-x) 48px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.home-main {
+  flex: 2 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.home-side {
+  flex: 1 1 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-welcome {
+  margin: 6px 4px 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.home-card {
+  box-sizing: border-box;
+  padding: 20px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.home-card h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.home-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 10px;
+}
+
+.games-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 12px 12px;
+}
+
+.games-empty svg {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--surface-3);
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.games-empty p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.games-empty strong {
+  font-weight: 600;
+}
+
+.games-empty span {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.quick-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.quick-card:hover {
+  background: var(--card-hover);
+}
+
+.quick-card svg {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quick-card strong {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.quick-card small {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.quick-go {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* The one coloured card. */
+.accent-card {
+  padding: 22px;
+  border-radius: 20px;
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accent-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.accent-card p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.78;
+}
+
+.accent-btn {
+  height: 50px;
+  margin-top: 8px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.accent-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+@media (max-width: 1000px) {
+  .home {
+    padding: 16px 16px calc(var(--tabbar-h) + 24px);
+    gap: 14px;
+  }
+
+  .home-side {
+    order: -1;
+  }
+
+  /* One column: the latest-game card first, then welcome, stats and games. */
+  .home-main {
+    display: contents;
+  }
+
+  .home-main > *,
+  .home-side {
+    flex: 1 1 100%;
+  }
+
+  .home-welcome {
+    order: -2;
+    margin: 0;
+    font-size: 20px;
+  }
+}
+
+/* User card: who you are and the way into settings, at the sidebar's foot. */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 8px 8px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.user-card.rail {
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px;
+  background: none;
+}
+
+.user-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--text);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.user-avatar.guest {
+  background: var(--surface-4);
+  color: var(--text-2);
+}
+
+.user-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.user-card-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-card-text span {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.user-card-gear svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.username-dialog {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.header-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
 }
