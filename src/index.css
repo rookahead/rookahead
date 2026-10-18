@@ -1,0 +1,2334 @@
+/* ═══════════════ Graphite ═══════════════
+   A near-monochrome interface: greys and white do all the structural work,
+   so the only colour on screen carries meaning (classifications, the eval). */
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0c;
+  --surface: #111113;
+  --surface-2: #161618;
+  --surface-3: #1c1c1f;
+  --surface-4: #26262b;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text: #ededed;
+  --text-2: #a1a1aa;
+  --muted: #8a8a94;
+  /* The "accent" is simply ink-on-paper inverted: white. */
+  --accent: #ededed;
+  --accent-hover: #ffffff;
+  --accent-ink: #0b0b0c;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --win: #7fc35f;
+  --danger: #ef6b5f;
+  --white-piece: #f2f2f3;
+  --black-piece: #111113;
+  --bar-light: #ececee;
+  --bar-dark: #2a2a2f;
+  --warn: #e0b25b;
+  /* Faint banding (alternate move rows) and graph guide lines. */
+  --tint: rgba(255, 255, 255, 0.025);
+  --guide: rgba(255, 255, 255, 0.14);
+  --guide-strong: rgba(255, 255, 255, 0.3);
+  /* Floating things: tooltips, popovers, dialogs and the dim layer behind them. */
+  --float-bg: rgba(8, 8, 9, 0.95);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 18px 60px rgba(0, 0, 0, 0.6);
+  --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.4);
+  /* Keeps black captured pieces visible against the page. */
+  --dark-piece-glow: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55));
+
+  --font-ui: 'Geist Variable', Geist, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --nav-h: 56px;
+  --info-w: 288px;
+  --player-h: 48px;
+  --gap: 24px;
+  --pad-x: 28px;
+  --pad-y: 20px;
+  --panel-w: 400px;
+  --evalbar-w: 36px;
+  /* Wide layout: info card | board | panel. The board takes whatever height and width are left. */
+  --board-size: max(
+    300px,
+    min(
+      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+      calc(100vw - var(--info-w) - var(--panel-w) - var(--evalbar-w) - 12px - 2 * var(--gap) - 2 * var(--pad-x)),
+      880px
+    )
+  );
+  /* Height of the board column; the cards either side match it. */
+  --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
+
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Light: the same near-monochrome idea, inverted. Ink is near-black; colour still only carries meaning. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --surface-3: #ededef;
+  --surface-4: #e2e2e6;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --text: #17171a;
+  --text-2: #4e4e56;
+  --muted: #74747d;
+  --accent: #17171a;
+  --accent-hover: #000000;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 0, 0, 0.05);
+  --win: #4c9a2a;
+  --danger: #d4433a;
+  --warn: #a2700f;
+  --tint: rgba(0, 0, 0, 0.022);
+  --guide: rgba(0, 0, 0, 0.14);
+  --guide-strong: rgba(0, 0, 0, 0.3);
+  --float-bg: rgba(255, 255, 255, 0.97);
+  --scrim: rgba(20, 20, 26, 0.32);
+  --shadow-pop: 0 18px 50px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);
+  --dark-piece-glow: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12.5px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+/* ═══════════════ Buttons & inputs ═══════════════ */
+.btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.btn.small {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.btn.big {
+  height: 48px;
+  font-size: 15px;
+  width: 100%;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn.primary:disabled {
+  background: var(--surface-4);
+  color: var(--muted);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.btn.danger:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.icon-btn:hover,
+.icon-btn.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--text-2);
+}
+
+.input.mono,
+.textarea {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.textarea {
+  height: 220px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ═══════════════ App shell: top bar + three columns ═══════════════ */
+.app {
+  min-height: 100vh;
+}
+
+.topnav {
+  /* Above the page so the settings dropdown isn't painted over. */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 var(--pad-x);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topnav-logo {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  display: grid;
+  place-items: center;
+}
+
+.topnav-logo svg {
+  width: 22px;
+  height: 22px;
+}
+
+.topnav-wordmark {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* Sections of the app; each tab is underlined on the bar's bottom edge when current. */
+.topnav-tabs {
+  align-self: stretch;
+  display: flex;
+  gap: 22px;
+}
+
+.topnav-tab {
+  display: flex;
+  align-items: center;
+  margin-bottom: -1px;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.topnav-tab:hover {
+  color: var(--text);
+}
+
+.topnav-tab.active {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--text);
+}
+
+.topnav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topnav-action svg {
+  fill: none;
+}
+
+.topnav .icon-btn svg {
+  fill: none;
+}
+
+.settings-anchor {
+  position: relative;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--info-w) auto var(--panel-w);
+  grid-template-areas: 'info board panel';
+  justify-content: center;
+  align-items: start;
+  gap: var(--gap);
+  padding: var(--pad-y) var(--pad-x);
+}
+
+/* On wide screens the stack dissolves, so its two cards land in the grid's outer columns. */
+.side-stack {
+  display: contents;
+}
+
+.board-column {
+  grid-area: board;
+}
+
+.info-card {
+  grid-area: info;
+}
+
+.panel {
+  grid-area: panel;
+}
+
+.board-column {
+  /* Exactly bar + board wide, so a long game title truncates instead of widening the column. */
+  width: calc(var(--evalbar-w) + 12px + var(--board-size));
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ═══════════════ Info card (left) ═══════════════
+   Read like the head of a scoresheet: the opening as the headline, then the game's facts
+   as labelled fields (the same facts a PGN's tags carry), then the key moments. */
+.info-card {
+  height: var(--column-h);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.info-section {
+  flex-shrink: 0;
+  padding: 16px;
+}
+
+.info-section + .info-section {
+  border-top: 1px solid var(--border);
+}
+
+.gi-opening {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.gi-eco {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.gi-family {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.gi-variation {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+/* Two columns, label over value: Time | Date, then Result | Source. */
+.gi-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.gi-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.gi-field dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.gi-field dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gi-result {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gi-result .result-pill {
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.gi-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+.gi-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.position-opening {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.position-opening-name {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.info-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-empty p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.result-pill {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.board-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* ═══════════════ Player bars ═══════════════ */
+.player-bar {
+  height: var(--player-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: calc(var(--evalbar-w) + 12px);
+}
+
+.player-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.player-avatar.white {
+  background: var(--white-piece);
+  color: var(--black-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.player-avatar.black {
+  background: var(--black-piece);
+  color: var(--white-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.player-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.player-username {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-rating {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.player-result {
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--surface-4);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.player-material {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 18px;
+}
+
+.captured {
+  display: flex;
+  gap: 4px;
+}
+
+.captured-group {
+  display: flex;
+}
+
+.captured-piece {
+  width: 19px;
+  height: 19px;
+  margin-right: -9px;
+}
+
+.captured-group .captured-piece:last-child {
+  margin-right: 0;
+}
+
+/* Black pieces vanish on the dark background without a faint halo. */
+.captured piece.black {
+  filter: var(--dark-piece-glow);
+}
+
+.material-lead {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+/* ═══════════════ Eval bar ═══════════════
+   A wide bar whose score chip sits inside it, on the split. */
+.eval-bar {
+  position: relative;
+  width: var(--evalbar-w);
+  height: var(--board-size);
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.eval-bar.white-bottom {
+  background: var(--bar-dark);
+}
+
+.eval-bar.black-bottom {
+  background: var(--bar-light);
+}
+
+.eval-bar-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: bottom;
+  will-change: transform;
+  /* transform runs on the compositor, and a new target mid-animation just re-aims it: no jumps. */
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.white-bottom .eval-bar-fill {
+  background: var(--bar-light);
+}
+
+.black-bottom .eval-bar-fill {
+  background: var(--bar-dark);
+}
+
+.eval-bar-chip {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 1;
+  transform: translateY(-50%);
+  padding: 4px 0;
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-chip);
+  /* Same curve and duration as the fill, so the chip stays on the split. */
+  transition: top 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+/* ═══════════════ Board ═══════════════ */
+.board {
+  position: relative;
+  width: var(--board-size);
+  height: var(--board-size);
+  flex-shrink: 0;
+}
+
+.board-cg {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.board cg-board {
+  background-color: var(--sq-light);
+  background-image: var(--board-image);
+}
+
+.board cg-board square.last-move {
+  background-color: var(--last-move);
+}
+
+.board cg-board square.selected {
+  background-color: rgba(255, 214, 102, 0.6);
+}
+
+/* Last-move squares take the colour of the move's classification. */
+.board cg-board square.cls-brilliant { background-color: rgba(34, 195, 166, 0.6); }
+.board cg-board square.cls-great { background-color: rgba(90, 143, 208, 0.6); }
+.board cg-board square.cls-best,
+.board cg-board square.cls-excellent { background-color: rgba(127, 191, 95, 0.6); }
+.board cg-board square.cls-good { background-color: rgba(143, 171, 138, 0.6); }
+.board cg-board square.cls-book { background-color: rgba(176, 141, 106, 0.6); }
+.board cg-board square.cls-inaccuracy { background-color: rgba(240, 192, 74, 0.6); }
+.board cg-board square.cls-mistake { background-color: rgba(240, 151, 58, 0.6); }
+.board cg-board square.cls-miss { background-color: rgba(239, 107, 91, 0.6); }
+.board cg-board square.cls-blunder { background-color: rgba(220, 74, 64, 0.65); }
+.board cg-board square.cls-forced { background-color: rgba(138, 144, 154, 0.55); }
+
+.board cg-board square.move-dest {
+  background: radial-gradient(rgba(0, 0, 0, 0.18) 19%, rgba(0, 0, 0, 0) 20%);
+}
+
+.board cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 78%, rgba(0, 0, 0, 0.18) 79%);
+}
+
+.board cg-board square.move-dest:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.board cg-board square.check {
+  background: radial-gradient(ellipse at center, rgba(255, 40, 40, 0.95) 0%, rgba(231, 0, 0, 0.75) 30%, rgba(169, 0, 0, 0) 75%);
+}
+
+/* Chessground fades every arrow to 60%; the per-arrow opacity is enough. */
+.board .cg-wrap .cg-shapes {
+  opacity: 0.88;
+}
+
+/* Arrows fade in rather than blink on. Chessground keeps an arrow's element while it stays, so only new ones animate. */
+.board .cg-wrap .cg-shapes > g > g {
+  animation: fade-in 0.2s ease-out;
+}
+
+.board-badge {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.board-badge .class-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  height: 40%;
+  transform: translate(35%, -35%);
+  filter: drop-shadow(0 0 0 var(--bg)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  /* Pops in as the piece lands, not while it's still sliding over. */
+  animation: badge-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--slide-ms) - 40ms) backwards;
+}
+
+@keyframes badge-in {
+  from {
+    transform: translate(35%, -35%) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.board .cg-wrap coords {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: clamp(9px, calc(var(--board-size) / 58), 13px);
+  opacity: 1;
+  text-transform: lowercase;
+}
+
+.board .cg-wrap coords.ranks,
+.board .cg-wrap coords.ranks.left {
+  left: 0;
+  top: 0;
+  width: auto;
+  height: 100%;
+  align-items: flex-start;
+}
+
+.board .cg-wrap coords.ranks coord {
+  flex: 1 1 0;
+  transform: none;
+  padding: 3px 0 0 5px;
+}
+
+.board .cg-wrap coords.files {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+}
+
+.board .cg-wrap coords.files coord {
+  flex: 1 1 0;
+  text-align: right;
+  padding: 0 5px 2px 0;
+}
+
+/* Each label takes the colour of the *other* square shade so it reads on its own square. */
+.board .orientation-white .ranks :nth-child(odd),
+.board .orientation-white .files :nth-child(odd),
+.board .orientation-black .ranks :nth-child(even),
+.board .orientation-black .files :nth-child(even) {
+  color: var(--sq-light);
+}
+
+.board .orientation-white .ranks :nth-child(even),
+.board .orientation-white .files :nth-child(even),
+.board .orientation-black .ranks :nth-child(odd),
+.board .orientation-black .files :nth-child(odd) {
+  color: var(--sq-dark);
+}
+
+.promotion {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--scrim);
+  border-radius: 8px;
+}
+
+.promotion-choices {
+  position: absolute;
+  width: 12.5%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-radius: 8px;
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+}
+
+.promotion-choices.top {
+  top: 0;
+}
+
+.promotion-choices.bottom {
+  bottom: 0;
+  flex-direction: column-reverse;
+}
+
+.promotion-piece {
+  aspect-ratio: 1;
+  border: 0;
+  padding: 6%;
+  background: transparent;
+  transition: background 0.12s;
+}
+
+.promotion-piece:hover {
+  background: var(--accent-soft);
+}
+
+.piece-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.piece-icon piece {
+  width: 100%;
+  height: 100%;
+}
+
+/* ═══════════════ Side panel ═══════════════
+   Two cards: game info on top, then tabs + content + move controls in one card.
+   Inside that card, sections are flat and split by hairlines; no boxes inside boxes. */
+.panel {
+  width: var(--panel-w);
+  height: var(--column-h);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.panel-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-header .icon-btn {
+  margin-bottom: 6px;
+}
+
+.panel-tabs {
+  display: flex;
+  gap: 22px;
+}
+
+.panel-tabs button {
+  border: 0;
+  background: none;
+  padding: 4px 0 12px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.panel-tabs button:hover {
+  color: var(--text);
+}
+
+.panel-tabs button.active {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--text);
+}
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+/* In list views the move list takes the free space and scrolls on its own. */
+.panel-body:has(> .move-list) {
+  overflow: hidden;
+}
+
+/* Sections in the card: padded, one hairline between each. */
+.panel-body > * + * {
+  border-top: 1px solid var(--border);
+}
+
+.panel-body > .coach,
+.panel-body > .summary,
+.panel-body > .variation-actions {
+  padding: 14px;
+}
+
+.panel-body > .move-list {
+  padding: 6px 8px;
+}
+
+.panel-body > .engine-panel,
+.panel-body > .eval-graph {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.panel-nav {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 50px;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* Flip sits apart from the move controls: it changes the view, not the position. */
+.ctrl.flip {
+  margin-left: 6px;
+}
+
+.ctrl {
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+
+.ctrl:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.ctrl:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ctrl.active {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.ctrl:disabled {
+  opacity: 0.35;
+}
+
+.ctrl svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* ═══════════════ Motion ═══════════════ */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+/* Whatever appears in the panel (a tab, the next move's verdict, the summary) eases in. */
+.panel-body > * {
+  animation: rise-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The summary's rows follow one after another. */
+.summary .faceoff-row {
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.summary .grades .faceoff-row:nth-child(1) { animation-delay: 0.1s; }
+.summary .grades .faceoff-row:nth-child(2) { animation-delay: 0.13s; }
+.summary .grades .faceoff-row:nth-child(3) { animation-delay: 0.16s; }
+.summary .grades .faceoff-row:nth-child(4) { animation-delay: 0.19s; }
+.summary .grades .faceoff-row:nth-child(5) { animation-delay: 0.22s; }
+.summary .grades .faceoff-row:nth-child(6) { animation-delay: 0.25s; }
+.summary .grades .faceoff-row:nth-child(7) { animation-delay: 0.28s; }
+.summary .grades .faceoff-row:nth-child(8) { animation-delay: 0.31s; }
+.summary .grades .faceoff-row:nth-child(9) { animation-delay: 0.34s; }
+.summary .grades .faceoff-row:nth-child(10) { animation-delay: 0.37s; }
+.summary .grades .faceoff-row:nth-child(n + 11) { animation-delay: 0.4s; }
+
+.settings-popover {
+  transform-origin: top right;
+  animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dialog[open] {
+  animation: pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dialog[open]::backdrop {
+  animation: fade-in 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════ Coach (verdict) ═══════════════ */
+.coach {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coach-kicker {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.coach-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.eval-pill {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.coach-detail {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.coach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.review-progress {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.review-progress .progress {
+  grid-column: 1 / -1;
+}
+
+/* ═══════════════ Key moments ═══════════════ */
+.key-moments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-label {
+  margin: 0;
+}
+
+.key-moments-intro {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Rows bleed to the card's edges so the hover and the current marker span the full width. */
+.moments {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -16px;
+}
+
+.moment {
+  display: grid;
+  grid-template-columns: 18px 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  font-size: 13.5px;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.moment:hover {
+  background: var(--surface-2);
+}
+
+.moment.current {
+  background: var(--surface-3);
+}
+
+.moment-num {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.moment-san {
+  font-weight: 600;
+}
+
+.moment-cls {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* ═══════════════ Review summary: the face-off ═══════════════
+   One three-column grid for everything: White's numbers on the left, Black's on the right,
+   row names down the middle. Each score sits on its own side's colour, like the eval bar. */
+.summary {
+  --faceoff-cols: minmax(0, 1fr) 148px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+}
+
+.faceoff-row {
+  display: grid;
+  grid-template-columns: var(--faceoff-cols);
+  align-items: center;
+  column-gap: 8px;
+}
+
+.faceoff-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.faceoff-row.scores {
+  margin-top: 6px;
+}
+
+.faceoff-score {
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.faceoff-score.white {
+  background: var(--white-piece);
+  color: var(--black-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.faceoff-score.black {
+  background: var(--black-piece);
+  color: var(--white-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.faceoff-caption {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.grades {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.faceoff-row.grade {
+  height: 30px;
+}
+
+.faceoff-row.grade.zero {
+  opacity: 0.35;
+}
+
+.count {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Left-aligned inside a centred column, so the icons line up down the table. */
+.grade-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* Keep the call to action in reach while the summary scrolls underneath. */
+.panel-body > .summary-cta {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 14px;
+  border-top: 0;
+  background: linear-gradient(180deg, transparent, var(--surface) 18px);
+}
+
+/* ═══════════════ Classification icon ═══════════════ */
+.class-icon {
+  display: block;
+}
+
+.class-icon text {
+  font-family: var(--font-ui);
+}
+
+/* ═══════════════ Engine lines ═══════════════ */
+.engine-panel {
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.engine-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.engine-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.engine-name {
+  font-weight: 600;
+}
+
+.engine-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.engine-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.depth.searching::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--win);
+  vertical-align: 1px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--surface-4);
+  position: relative;
+  transition: background 0.18s;
+}
+
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.18s, background 0.18s;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--text);
+}
+
+.switch input:checked + .switch-track::after {
+  transform: translateX(14px);
+  background: var(--bg);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Each line is its own strip, so each PV reads on its own. */
+.engine-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.engine-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 7px;
+  background: var(--surface-3);
+}
+
+.engine-line.skeleton::after {
+  content: '';
+  flex: 1;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-3) 0%, var(--surface-4) 50%, var(--surface-3) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.score-badge {
+  flex-shrink: 0;
+  min-width: 54px;
+  text-align: center;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.score-badge.white {
+  background: var(--white-piece);
+  color: var(--black-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.score-badge.black {
+  background: var(--black-piece);
+  color: var(--white-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.score-badge.even {
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.engine-pv {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+
+.pv-move {
+  border: 0;
+  background: transparent;
+  padding: 2px 3px;
+  border-radius: 4px;
+  color: var(--text-2);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.pv-move:hover {
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.pv-num {
+  color: var(--muted);
+  margin-right: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.engine-empty {
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.engine-empty.error {
+  color: var(--danger);
+}
+
+.engine-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+}
+
+.progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-4);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text);
+  transition: width 0.3s ease;
+}
+
+/* ═══════════════ Eval graph ═══════════════ */
+.eval-graph {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+
+.eval-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.eval-graph-stop {
+  stop-color: var(--text);
+}
+
+.eval-graph-line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.6px;
+}
+
+.eval-graph-mid {
+  stroke: var(--guide);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 3 4;
+}
+
+.eval-graph-cursor {
+  stroke: var(--text);
+  stroke-opacity: 0.45;
+  stroke-width: 1.5px;
+}
+
+.eval-graph-hover {
+  stroke: var(--guide-strong);
+  stroke-width: 1px;
+}
+
+.eval-graph-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px var(--surface);
+  pointer-events: none;
+  transition: transform 0.15s;
+}
+
+.eval-graph-dot.current {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+.eval-graph-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  pointer-events: none;
+}
+
+/* ═══════════════ Move list ═══════════════ */
+.move-list {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+.move-list.empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+
+.move-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  height: 34px;
+  border-radius: 6px;
+}
+
+.move-row:nth-of-type(even) {
+  background: var(--tint);
+}
+
+.move-num {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding-left: 10px;
+}
+
+.move-cell {
+  min-width: 0;
+}
+
+.move {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+  transition: background 0.1s;
+}
+
+.move:hover {
+  background: var(--surface-3);
+}
+
+.move.current {
+  background: var(--surface-4);
+  font-weight: 600;
+}
+
+.move.placeholder {
+  color: var(--muted);
+  cursor: default;
+}
+
+.san {
+  display: inline-flex;
+  align-items: center;
+}
+
+.figurine {
+  width: 1.35em;
+  height: 1.35em;
+  margin: -0.15em 0 -0.15em -0.1em;
+  display: inline-block;
+}
+
+.variations {
+  padding: 4px 12px 6px 44px;
+  background: var(--tint);
+  border-radius: 6px;
+}
+
+.variation {
+  line-height: 1.9;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.variation .move {
+  font-weight: 400;
+  font-size: 13px;
+  padding: 1px 4px;
+  color: var(--text-2);
+}
+
+.variation .move.current {
+  color: var(--text);
+}
+
+.var-num {
+  color: var(--muted);
+  margin: 0 1px 0 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.subvariation {
+  color: var(--muted);
+}
+
+.game-result {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 10px 0 6px;
+}
+
+.variation-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.variation-actions .muted {
+  margin-right: auto;
+}
+
+/* ═══════════════ Dialog ═══════════════ */
+.dialog {
+  width: min(580px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 48px));
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+
+.dialog::backdrop {
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+}
+
+.dialog-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px 20px;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tabs {
+  display: flex;
+  gap: 18px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  padding: 10px 0;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--text);
+}
+
+.tab-body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.game-list {
+  list-style: none;
+  margin: 0 -8px;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 440px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+.game-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.game-row:hover {
+  background: var(--surface-3);
+}
+
+.outcome {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.outcome.win {
+  background: rgba(127, 195, 95, 0.15);
+  color: var(--win);
+}
+
+.outcome.loss {
+  background: rgba(239, 107, 95, 0.14);
+  color: var(--danger);
+}
+
+.outcome.draw {
+  background: var(--surface-4);
+  color: var(--text-2);
+}
+
+.game-players {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.game-opponent {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-sub {
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot.white {
+  background: var(--white-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.dot.black {
+  background: var(--black-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.game-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════ Settings ═══════════════ */
+.engine-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.engine-status-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin: 6px 2px 0;
+  border-radius: 50%;
+  background: var(--win);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--win) 22%, transparent);
+}
+
+.engine-status.loading .engine-status-dot {
+  background: var(--muted);
+  box-shadow: none;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.engine-status.error .engine-status-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.engine-status-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.35;
+}
+
+.engine-status-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.engine-status-detail {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.engine-status.error .engine-status-detail {
+  color: var(--danger);
+}
+
+.engine-status .progress {
+  margin-top: 6px;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 50;
+  width: 360px;
+  max-height: calc(100vh - var(--nav-h) - 24px);
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.setting-label {
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hint.warn {
+  margin: -6px 0 0;
+  color: var(--warn);
+}
+
+.setting.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  color: var(--text-2);
+}
+
+.setting.check input {
+  accent-color: var(--text);
+  width: 15px;
+  height: 15px;
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.segmented button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 5px 6px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented button.active {
+  background: var(--surface-4);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 8px;
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.swatch.active {
+  border-color: var(--text);
+}
+
+/* ═══════════════ Medium screens: no room for three columns ═══════════════
+   The info card moves above the panel, on the right of the board, sharing its height. */
+@media (max-width: 1279px) {
+  :root {
+    --board-size: max(
+      300px,
+      min(
+        calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+        calc(100vw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+        880px
+      )
+    );
+  }
+
+  .layout {
+    grid-template-columns: auto var(--panel-w);
+    grid-template-areas: 'board side';
+  }
+
+  .side-stack {
+    grid-area: side;
+    height: var(--column-h);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  /* The info card takes what it needs, up to 40%; the panel gets the rest. */
+  .info-card {
+    height: auto;
+    max-height: 40%;
+    flex-shrink: 0;
+  }
+
+  .panel {
+    flex: 1;
+    height: auto;
+  }
+}
+
+/* ═══════════════ Narrow screens: one column ═══════════════ */
+@media (max-width: 1000px) {
+  :root {
+    --board-size: min(calc(100vw - 32px - var(--evalbar-w) - 12px), 640px);
+    --pad-x: 16px;
+  }
+
+  .topnav {
+    gap: 16px;
+  }
+
+  .topnav-tabs {
+    display: none;
+  }
+
+  .settings-popover {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: calc(var(--nav-h) + 8px);
+    width: auto;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, calc(var(--board-size) + var(--evalbar-w) + 12px));
+    grid-template-areas: 'board' 'side';
+    padding: 14px 16px 24px;
+  }
+
+  .side-stack {
+    height: auto;
+  }
+
+  .info-card {
+    max-height: none;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .panel-body,
+  .panel-body:has(> .move-list) {
+    overflow: visible;
+  }
+
+  .move-list {
+    max-height: 340px;
+  }
+}
+
+/* ═══════════════ Phones: board and review on one screen ═══════════════ */
+@media (max-width: 1000px) {
+  :root {
+    --player-h: 34px;
+    --mobile-nav-h: calc(62px + env(safe-area-inset-bottom));
+  }
+
+  .board-column {
+    gap: 6px;
+  }
+
+  .player-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+
+  /* The panel (coach, Next move) comes straight after the board; game info after it. */
+  .panel {
+    order: -1;
+  }
+
+  /* Move controls stay in thumb reach wherever the page is scrolled. */
+  .panel-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--surface);
+  }
+
+  .layout {
+    row-gap: 12px;
+    padding-bottom: calc(var(--mobile-nav-h) + 24px);
+  }
+}
+
+@media (max-width: 520px) {
+  .topnav-label {
+    display: none;
+  }
+
+  .topnav-action {
+    width: 36px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 460px) {
+  .summary {
+    --faceoff-cols: minmax(0, 1fr) 128px minmax(0, 1fr);
+  }
+
+  .faceoff-score {
+    height: 56px;
+    font-size: 27px;
+  }
+
+  .grade-label {
+    padding-left: 8px;
+  }
+}

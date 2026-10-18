@@ -1,0 +1,12 @@
+# Cloudflare Pages response headers.
+# Multi-threaded Stockfish needs SharedArrayBuffer, which browsers only expose
+# on cross-origin isolated pages. These two headers turn isolation on.
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+
+# Hashed bundles never change; engine files change only with a new Stockfish version.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/engine/*
+  Cache-Control: public, max-age=604800

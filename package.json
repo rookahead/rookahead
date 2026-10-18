@@ -1,0 +1,38 @@
+{
+  "name": "chess-analysis",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "postinstall": "node scripts/copy-engine.mjs",
+    "predev": "node scripts/copy-engine.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-engine.mjs",
+    "build": "tsc -b && vite build",
+    "prebuild:web": "node scripts/copy-engine.mjs",
+    "build:web": "tsc -b && vite build --mode web",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@lichess-org/chessground": "^10.4.2",
+    "chess.js": "^1.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "stockfish": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.5"
+  }
+}
