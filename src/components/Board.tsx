@@ -37,6 +37,8 @@ interface Props {
   onMove: (move: { from: string; to: string; promotion?: string }) => void
   /** Classification of the move that led here: tints the last-move squares and badges the destination. */
   annotation?: MoveClass
+  /** No moving pieces (the embed viewer). */
+  viewOnly?: boolean
 }
 
 /** How long a piece takes to slide to its square. The classification badge waits for it to land. */
@@ -52,7 +54,7 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
@@ -110,6 +112,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   useEffect(() => {
     api.current?.set({
       fen,
+      viewOnly,
       orientation,
       turnColor: position.turn,
       check: position.check,
@@ -137,7 +140,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       },
     })
     setPromotion(null)
-  }, [fen, orientation, position, lastMove, coordinates, annotation])
+  }, [fen, viewOnly, orientation, position, lastMove, coordinates, annotation])
 
   useEffect(() => {
     api.current?.setAutoShapes(shapes)

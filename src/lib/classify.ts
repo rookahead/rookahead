@@ -302,6 +302,20 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
   return { moves, counts, accuracy: gameAccuracy(line, evals) }
 }
 
+/** Replaces the classes of the given moves (keyed by node id), e.g. a shared review's verdicts. */
+export function withClasses(report: GameReport, classes: Record<string, MoveClass>): GameReport {
+  const moves = { ...report.moves }
+  const counts = { white: { ...report.counts.white }, black: { ...report.counts.black } }
+  for (const [id, cls] of Object.entries(classes)) {
+    const move = moves[id]
+    if (!move || move.cls === cls) continue
+    counts[move.color][move.cls]--
+    counts[move.color][cls]++
+    moves[id] = { ...move, cls }
+  }
+  return { ...report, moves, counts }
+}
+
 function stdDev(xs: number[]) {
   const mean = xs.reduce((a, b) => a + b, 0) / xs.length
   return Math.sqrt(xs.reduce((a, x) => a + (x - mean) ** 2, 0) / xs.length)

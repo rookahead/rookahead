@@ -31,7 +31,7 @@
   --guide-strong: rgba(255, 255, 255, 0.3);
   /* Floating things: tooltips, popovers, dialogs and the dim layer behind them. */
   --float-bg: rgba(8, 8, 9, 0.95);
-  --scrim: rgba(0, 0, 0, 0.6);
+  --scrim: rgba(0, 0, 0, 0.66);
   --shadow-pop: 0 18px 60px rgba(0, 0, 0, 0.6);
   --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.4);
   /* Keeps black captured pieces visible against the page. */
@@ -1110,12 +1110,49 @@ svg {
   animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Dialogs rise and scale in, and fade out on close. Only opacity and transform animate, so the
+   GPU does the work; `overlay`/`display` keep a closing dialog on screen until it has faded. */
+.dialog {
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  will-change: opacity, transform;
+  transition:
+    opacity 0.16s ease-in,
+    transform 0.16s ease-in,
+    overlay 0.16s allow-discrete,
+    display 0.16s allow-discrete;
+}
+
 .dialog[open] {
-  animation: pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 1;
+  transform: none;
+  transition-duration: 0.24s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+.dialog::backdrop {
+  background: transparent;
+  transition:
+    background-color 0.2s ease,
+    overlay 0.2s allow-discrete,
+    display 0.2s allow-discrete;
 }
 
 .dialog[open]::backdrop {
-  animation: fade-in 0.2s ease-out;
+  background: var(--scrim);
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    background: transparent;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1823,10 +1860,7 @@ svg {
   box-shadow: var(--shadow-pop);
 }
 
-.dialog::backdrop {
-  background: var(--scrim);
-  backdrop-filter: blur(3px);
-}
+/* No backdrop blur: blurring the whole page every frame made the fade choppy. */
 
 .dialog-inner {
   display: flex;
@@ -2331,4 +2365,227 @@ svg {
   .grade-label {
     padding-left: 8px;
   }
+}
+
+/* ═══════════════ Sharing ═══════════════ */
+/* Game share sits at the foot of the info card, visible while the card scrolls. */
+.info-share {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  background: var(--surface);
+}
+
+.info-share-btn {
+  width: 100%;
+}
+
+/* Move share: apart from the move actions, at the far right. */
+.coach-share {
+  margin-left: auto;
+}
+
+.share-banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-bottom: 12px;
+  padding: 8px 6px 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.share-banner.damaged,
+.share-banner.newer-version {
+  color: var(--text);
+}
+
+.share-banner-action {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.share-banner-action:hover {
+  text-decoration: underline;
+}
+
+.share-banner-close {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+}
+
+.share-banner-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Share dialog */
+.share-link {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 20px 16px;
+}
+
+.share-link .segmented button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.copy-field,
+.copy-area {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copy-field .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.copy-area {
+  align-items: stretch;
+}
+
+.copy-area .textarea {
+  flex: 1;
+  height: 200px;
+}
+
+.copy-area .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--surface-3);
+}
+
+.copy-btn {
+  flex-shrink: 0;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.copy-btn:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.copy-btn.copied {
+  color: var(--good, #7fbf5f);
+}
+
+.copy-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.share-body {
+  overflow-y: auto;
+}
+
+.share-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.share-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-options label.disabled {
+  opacity: 0.45;
+}
+
+.media-preview {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.media-preview img {
+  display: block;
+  width: 100%;
+  max-height: min(44vh, 460px);
+  object-fit: contain;
+}
+
+.media-actions {
+  gap: 8px;
+}
+
+.gif-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gif-options .segmented {
+  flex: 1 1 200px;
+}
+
+.gif-progress {
+  width: min(320px, 80%);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.gif-progress .progress {
+  width: 100%;
+}
+
+.gif-size {
+  margin-right: auto;
+  align-self: center;
+}
+
+.embed-preview {
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.embed-preview iframe {
+  display: block;
+  border: 0;
+  border-radius: 8px;
+  transform-origin: top left;
+}
+
+.copy-area .embed-code {
+  height: 92px;
+  padding-right: 56px;
 }

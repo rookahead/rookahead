@@ -42,6 +42,16 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 /** "https://www.chess.com/openings/Italian-Game-Two-Knights-Defense" → "Italian Game Two Knights Defense" */
+/** True only for chess.com itself (or a subdomain), not URLs that merely mention it. */
+export function isChesscomUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return host === 'chess.com' || host.endsWith('.chess.com')
+  } catch {
+    return false
+  }
+}
+
 export function openingFromEcoUrl(url?: string): string | undefined {
   const slug = url?.split('/openings/')[1]
   if (!slug) return undefined

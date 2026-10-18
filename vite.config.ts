@@ -31,6 +31,8 @@ function dropFullEngine(): Plugin {
 
 export default defineConfig(({ mode }) => ({
   plugins: [react(), loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true' && dropFullEngine()],
+  // Two pages: the app, and the engine-free viewer other sites embed (rookahead.com/embed).
+  build: { rollupOptions: { input: { main: 'index.html', embed: 'embed.html' } } },
   server: { headers: isolationHeaders },
   preview: { headers: isolationHeaders },
   test: {

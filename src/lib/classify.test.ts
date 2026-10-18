@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyGame, gameAccuracy, isSacrifice, materialBalance, moveAccuracy, type ReviewedPosition } from './classify'
+import { classifyGame, gameAccuracy, isSacrifice, materialBalance, moveAccuracy, withClasses, type ReviewedPosition } from './classify'
 import { moveHeadline } from './commentary'
 import { materialState } from './material'
 import { makeBook, openingOf } from './openings'
@@ -284,5 +284,25 @@ describe('commentary', () => {
     expect(moveHeadline('Nf3', { ...base, cls: 'best' })).toBe('Nf3 is the best move')
     expect(moveHeadline('Qh5', { ...base, cls: 'inaccuracy' })).toBe('Qh5 is an inaccuracy')
     expect(moveHeadline('Qh5', { ...base, cls: 'blunder' })).toBe('Qh5 is a blunder')
+  })
+})
+
+describe('withClasses', () => {
+  const { line, evals } = game(['e2e4', 'e7e5', 'g1f3'], [{ score: cp(30), bestMove: 'e2e4' }, { score: cp(30), bestMove: 'e7e5' }, { score: cp(30), bestMove: 'g1f3' }, { score: cp(30) }])
+  const report = classifyGame(line, evals)
+
+  it('leaves a report alone when nothing is overridden', () => {
+    expect(withClasses(report, {})).toEqual(report)
+  })
+
+  it('replaces a class and moves its count, keeping accuracy', () => {
+    const third = line[3].id
+    expect(report.moves[third].cls).toBe('best')
+    const out = withClasses(report, { [third]: 'brilliant' })
+    expect(out.moves[third].cls).toBe('brilliant')
+    expect(out.counts.white.best).toBe(report.counts.white.best - 1)
+    expect(out.counts.white.brilliant).toBe(report.counts.white.brilliant + 1)
+    expect(out.accuracy).toEqual(report.accuracy)
+    expect(report.moves[third].cls).toBe('best')
   })
 })

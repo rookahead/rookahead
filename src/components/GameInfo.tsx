@@ -1,4 +1,4 @@
-import { formatTimeControl } from '../lib/chesscom'
+import { formatTimeControl, isChesscomUrl } from '../lib/chesscom'
 import type { PgnHeaders } from '../lib/tree'
 
 interface Props {
@@ -70,7 +70,7 @@ export function GameInfo({ headers, hasGame, opening, positionNote }: Props) {
       fields.push([
         'Source',
         <a key="source" className="gi-link" href={link} target="_blank" rel="noreferrer">
-          {link.includes('chess.com') ? 'Chess.com' : 'Original game'}
+          {isChesscomUrl(link) ? 'Chess.com' : 'Original game'}
           <span aria-hidden> ↗</span>
         </a>,
       ])

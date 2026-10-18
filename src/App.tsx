@@ -1,7 +1,7 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Board } from './components/Board'
 import { ClassIcon } from './components/ClassIcon'
 import { CoachCard } from './components/CoachCard'
@@ -16,6 +16,8 @@ import { PlayerBar } from './components/PlayerBar'
 import { ReviewSummary } from './components/ReviewSummary'
 import { San } from './components/San'
 import { SettingsPanel } from './components/SettingsPanel'
+import { ShareBanner } from './components/ShareBanner'
+import { ShareDialog, ShareIcon, type ShareMode } from './components/ShareDialog'
 import { TopNav } from './components/TopNav'
 import type { AnalysisResult } from './engine/Engine'
 import { terminalState, useGameReview, useLiveAnalysis, type PositionEval } from './hooks/useAnalysis'
@@ -23,12 +25,13 @@ import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useMoveSounds } from './hooks/useMoveSounds'
 import { openingFromEcoUrl } from './lib/chesscom'
-import { classifyGame } from './lib/classify'
+import { classifyGame, withClasses, type MoveClass } from './lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from './lib/commentary'
 import type { Color } from './lib/evaluation'
 import { materialState } from './lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from './lib/openings'
 import { useSettings } from './lib/settings'
+import { clampPly, decodeShare, encodeShare, fromSharedGame, parseShareHash, toSharedGame, type ShareError } from './lib/share'
 import {
   addLine,
   addMove,
@@ -65,9 +68,19 @@ interface Session {
   orientation: Color
   currentPly: number
   evals: Record<string, PositionEval>
+  /** A shared review's verdicts, in main-line order: they override the classifier's. */
+  classes?: (MoveClass | null)[]
 }
 
-function restoreSession(): { game: Game; orientation: Color; currentId: string; evals: Record<string, PositionEval> } | null {
+function restoreSession(): {
+  game: Game
+  orientation: Color
+  currentId: string
+  evals: Record<string, PositionEval>
+  classes: Record<string, MoveClass> | null
+} | null {
+  // A share link replaces the saved game, so don't flash the old one first.
+  if (parseShareHash(location.pathname, location.hash)) return null
   try {
     const raw = localStorage.getItem(SESSION_KEY)
     if (!raw) return null
@@ -75,7 +88,15 @@ function restoreSession(): { game: Game; orientation: Color; currentId: string; 
     const { tree, headers } = treeFromPgn(s.pgn)
     const line = mainline(tree)
     const current = line[Math.min(s.currentPly, line.length - 1)]
-    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {} }
+    let classes: Record<string, MoveClass> | null = null
+    if (s.classes) {
+      classes = {}
+      line.slice(1).forEach((node, i) => {
+        const cls = s.classes![i]
+        if (cls) classes![node.id] = cls
+      })
+    }
+    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes }
   } catch {
     return null
   }
@@ -115,6 +136,10 @@ export default function App() {
   const [stepping, setStepping] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
+  const [sharedClasses, setSharedClasses] = useState<Record<string, MoveClass> | null>(() => restored?.classes ?? null)
+  const [banner, setBanner] = useState<'shared' | ShareError | null>(null)
+  const [shareLink] = useState(() => parseShareHash(location.pathname, location.hash))
+  const [shareMode, setShareMode] = useState<ShareMode | null>(null)
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
   // Layout effect, so the first paint already has the right colours.
@@ -146,8 +171,12 @@ export default function App() {
   }, [restored, hydrateReview])
 
   const report = useMemo(
-    () => (Object.keys(review.evals).length ? classifyGame(line, review.evals, book?.isBook) : null),
-    [line, review.evals, book],
+    () => {
+      if (!Object.keys(review.evals).length) return null
+      const classified = classifyGame(line, review.evals, book?.isBook)
+      return sharedClasses ? withClasses(classified, sharedClasses) : classified
+    },
+    [line, review.evals, book, sharedClasses],
   )
   const currentReview = report?.moves[node.id]
 
@@ -158,7 +187,8 @@ export default function App() {
     enabled: engineOn,
     multiPv: settings.lines,
     depth: settings.liveDepth,
-    paused: reviewing,
+    // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
+    paused: reviewing || loadOpen || shareMode !== null,
   })
 
   // During a review, fall back to the review's verdict for positions it has reached.
@@ -207,14 +237,16 @@ export default function App() {
         orientation,
         currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
         evals: review.evals,
+        classes: sharedClasses ? line.slice(1).map((n) => sharedClasses[n.id] ?? null) : undefined,
       }
       localStorage.setItem(SESSION_KEY, JSON.stringify(session))
     } catch {
       // Storage full or unavailable — not fatal.
     }
-  }, [tree, headers, orientation, node, line, review.evals])
+  }, [tree, headers, orientation, node, line, review.evals, sharedClasses])
 
   const runReview = useCallback(() => {
+    setSharedClasses(null)
     setTab('review')
     setStepping(false)
     void startReview(line)
@@ -260,6 +292,8 @@ export default function App() {
           next = { tree: createTree(req.fen), headers: req.fen === DEFAULT_POSITION ? {} : { SetUp: '1', FEN: req.fen } }
         }
         resetReview()
+        setSharedClasses(null)
+        setBanner(null)
         setGame(next)
         setCurrentId(ROOT_ID)
         setStepping(false)
@@ -284,10 +318,58 @@ export default function App() {
 
   const newBoard = () => {
     resetReview()
+    setSharedClasses(null)
+    setBanner(null)
     setGame({ tree: createTree(), headers: {} })
     setCurrentId(ROOT_ID)
     setTab('analysis')
     setStepping(false)
+  }
+
+  // Open a share link once on start-up (the ref keeps StrictMode's second run from repeating it).
+  const openedShare = useRef(false)
+  useEffect(() => {
+    if (!shareLink || openedShare.current) return
+    openedShare.current = true
+    void decodeShare(shareLink.token).then((shared) => {
+      // An unknown version keeps its address, so the refresh it asks for (fetching the new app) opens it.
+      if (!('error' in shared && shared.error === 'newer-version')) history.replaceState(null, '', '/')
+      resetReview()
+      setStepping(false)
+      setPlaying(false)
+      if ('error' in shared) {
+        setGame({ tree: createTree(), headers: {} })
+        setCurrentId(ROOT_ID)
+        setTab('analysis')
+        setBanner(shared.error)
+        return
+      }
+      const opened = fromSharedGame(shared)
+      const sharedLine = mainline(opened.tree)
+      const index = clampPly(shareLink.ply, sharedLine.length)
+      const at = index === null ? null : sharedLine[index]
+      setGame({ tree: opened.tree, headers: opened.headers })
+      setOrientation(opened.orientation)
+      setSharedClasses(opened.classes)
+      setBanner('shared')
+      if (opened.classes) {
+        hydrateReview(opened.evals)
+        setTab('review')
+        setStepping(Boolean(at?.parentId))
+        setCurrentId(at?.id ?? ROOT_ID)
+      } else {
+        setCurrentId(at?.id ?? ROOT_ID)
+        const review = settings.autoReview && sharedLine.length > 1
+        setTab(review ? 'review' : 'analysis')
+        setPendingReview(review)
+      }
+    })
+  }, [shareLink, resetReview, hydrateReview, settings.autoReview])
+
+  /** The share-link token for the main line (and its review, when finished). */
+  const makeShareToken = () => {
+    const reviewed = review.status === 'done' && report ? { evals: review.evals, report, depth: Object.values(review.evals)[0]?.depth ?? settings.reviewDepth } : null
+    return encodeShare(toSharedGame(line, headers, orientation, reviewed))
   }
 
   const goto = useCallback((id: string | null | undefined) => id && setCurrentId(id), [])
@@ -406,6 +488,10 @@ export default function App() {
         <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
           Next move
           <Svg>{Icon.next}</Svg>
+        </button>
+        <button className="btn ghost coach-share" onClick={() => setShareMode('move')}>
+          <ShareIcon />
+          Share move
         </button>
       </CoachCard>
     )
@@ -555,9 +641,18 @@ export default function App() {
                 <p>Review the game to find its key moments.</p>
               </section>
             ) : null}
+            {line.length > 1 && (
+              <section className="info-section info-share">
+                <button className="btn ghost info-share-btn" onClick={() => setShareMode('game')}>
+                  <ShareIcon />
+                  Share game
+                </button>
+              </section>
+            )}
           </aside>
 
           <aside className="panel">
+            {banner && <ShareBanner kind={banner} onLoadGame={() => setLoadOpen(true)} onClose={() => setBanner(null)} />}
             <div className="panel-card">
               <header className="panel-header">
                 {steppingThrough && (
@@ -645,6 +740,20 @@ export default function App() {
           </aside>
         </div>
       </main>
+
+      {shareMode && (
+        <ShareDialog
+          onClose={() => setShareMode(null)}
+          initialMode={shareMode}
+          line={line}
+          currentNode={node}
+          headers={headers}
+          orientation={orientation}
+          report={review.status === 'done' ? report : null}
+          boardTheme={settings.boardTheme}
+          getToken={makeShareToken}
+        />
+      )}
 
       <LoadGameDialog
         open={loadOpen}
