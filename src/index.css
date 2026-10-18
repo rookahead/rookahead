@@ -18,10 +18,10 @@
   --accent-hover: #ffffff;
   --accent-ink: #0b0b0c;
   --accent-soft: rgba(255, 255, 255, 0.08);
-  /* Rookahead's one colour (the Brilliant teal): the home page's main card. */
-  --brand: #22c3a6;
-  --brand-ink: #06201c;
-  --brand-card: #123d37;
+  /* Rookahead's one colour (sky): the home page's main card, Play's slider and Start button. */
+  --brand: #38bdf8;
+  --brand-ink: #04202e;
+  --brand-card: #0f3446;
   --brand-card-text: #ededed;
   /* Home cards: a shade off the page, no borders. */
   --card: #161618;
@@ -86,10 +86,10 @@
   --accent-hover: #000000;
   --accent-ink: #ffffff;
   --accent-soft: rgba(0, 0, 0, 0.05);
-  --brand: #12806d;
+  --brand: #0284c7;
   --brand-ink: #ffffff;
-  --brand-card: #dcf1ec;
-  --brand-card-text: #0d2a25;
+  --brand-card: #dbeffa;
+  --brand-card-text: #082f45;
   --card: #ffffff;
   --card-hover: #f4f4f5;
   --card-row: rgba(0, 0, 0, 0.025);
