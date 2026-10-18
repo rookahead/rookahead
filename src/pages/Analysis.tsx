@@ -4,6 +4,7 @@ import { DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
+import { NavIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
 import { EngineLines } from '../components/EngineLines'
 import { EvalBar } from '../components/EvalBar'
@@ -90,23 +91,6 @@ function restoreSession(): {
     return null
   }
 }
-
-const Icon = {
-  first: <path d="M6 5h2v14H6zM20 5v14l-10-7z" />,
-  prev: <path d="M15.4 5.4 9 12l6.4 6.6-1.4 1.4L6.2 12 14 4z" />,
-  next: <path d="m8.6 18.6 6.4-6.6-6.4-6.6L10 4l7.8 8-7.8 8z" />,
-  last: <path d="M16 5h2v14h-2zM4 5v14l10-7z" />,
-  play: <path d="M7 4.5v15l12.5-7.5z" />,
-  pause: <path d="M6.5 5h4v14h-4zm7 0h4v14h-4z" />,
-  flip: <path d="M7 3 3 7l4 4V8h11V6H7zm10 10v3H6v2h11v3l4-4z" />,
-  back: <path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z" />,
-}
-
-const Svg = ({ children }: { children: React.ReactNode }) => (
-  <svg viewBox="0 0 24 24" aria-hidden>
-    {children}
-  </svg>
-)
 
 interface Props {
   settings: Settings
@@ -496,7 +480,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         )}
         <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
           Next move
-          <Svg>{Icon.next}</Svg>
+          <NavIcon name="next" />
         </button>
       </CoachCard>
     )
@@ -665,7 +649,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               <header className="panel-header">
                 {steppingThrough && (
                   <button className="icon-btn" onClick={() => setStepping(false)} aria-label="Back to summary" title="Back to summary">
-                    <Svg>{Icon.back}</Svg>
+                    <NavIcon name="back" />
                   </button>
                 )}
                 <div className="panel-tabs" role="tablist">
@@ -720,10 +704,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
               <nav className="panel-nav" aria-label="Move navigation">
                 <button className="ctrl" onClick={goStart} disabled={!node.parentId} aria-label="First move" title="First move (↑)">
-                  <Svg>{Icon.first}</Svg>
+                  <NavIcon name="first" />
                 </button>
                 <button className="ctrl" onClick={goPrev} disabled={!node.parentId} aria-label="Previous move" title="Previous move (←)">
-                  <Svg>{Icon.prev}</Svg>
+                  <NavIcon name="prev" />
                 </button>
                 <button
                   className={`ctrl ${playing ? 'active' : ''}`}
@@ -732,16 +716,16 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   aria-label={playing ? 'Pause' : 'Play'}
                   title="Play through (Space)"
                 >
-                  <Svg>{playing ? Icon.pause : Icon.play}</Svg>
+                  <NavIcon name={playing ? 'pause' : 'play'} />
                 </button>
                 <button className="ctrl" onClick={goNext} disabled={!node.children.length} aria-label="Next move" title="Next move (→)">
-                  <Svg>{Icon.next}</Svg>
+                  <NavIcon name="next" />
                 </button>
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
-                  <Svg>{Icon.last}</Svg>
+                  <NavIcon name="last" />
                 </button>
                 <button className="ctrl flip" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-                  <Svg>{Icon.flip}</Svg>
+                  <NavIcon name="flip" />
                 </button>
               </nav>
             </div>

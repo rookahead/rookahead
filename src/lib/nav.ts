@@ -8,7 +8,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { id: 'play', label: 'Play', path: null, icon: 'M6 4l14 8-14 8z' },
+  { id: 'play', label: 'Play', path: '/play', icon: 'M6 4l14 8-14 8z' },
   {
     id: 'puzzles',
     label: 'Puzzles',

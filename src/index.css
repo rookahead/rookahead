@@ -556,7 +556,8 @@ svg {
 
 /* Analysis stays mounted while Home shows: laid out but invisible, so the board keeps real
    measurements (a display:none board would draw its arrows at NaN). */
-.analysis-host[hidden] {
+.analysis-host[hidden],
+.page-host[hidden] {
   display: block;
   position: fixed;
   inset: 0;
@@ -3220,4 +3221,493 @@ svg {
   width: 36px;
   height: 36px;
   font-size: 15px;
+}
+
+/* ═══════════════ Play ═══════════════ */
+.play-setup {
+  display: flex;
+  justify-content: center;
+  padding: 26px var(--pad-x) 48px;
+}
+
+.setup-card {
+  width: min(560px, 100%);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setup-card h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.setup-card > p {
+  margin: 0;
+}
+
+.setup-label {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.level-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.level-readout strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-left: 4px;
+}
+
+.level-readout span {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The track fills up to the thumb's centre: the thumb (20px) travels the track's width less itself. */
+.level-slider {
+  --fill: calc(10px + (100% - 20px) * var(--p));
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.level-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--brand) var(--fill), var(--surface-4) var(--fill));
+}
+
+.level-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--brand) var(--fill), var(--surface-4) var(--fill));
+}
+
+.level-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  transition: transform 0.12s;
+}
+
+.level-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.45);
+  transition: transform 0.12s;
+}
+
+.level-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.level-slider:active::-moz-range-thumb {
+  transform: scale(1.12);
+}
+
+.level-slider:focus-visible {
+  outline: none;
+}
+
+.level-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.level-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+/* Tick numbers sit under the thumb's stops: 12px labels, inset so their centres land 10px in. */
+.level-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.level-ticks span {
+  width: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.12s;
+}
+
+.level-ticks span.active {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.setup-card .segmented button {
+  padding: 8px 6px;
+  font-size: 13.5px;
+}
+
+.setup-start {
+  margin-top: 12px;
+}
+
+.clock-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clock-row {
+  display: grid;
+  grid-template-columns: 76px repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+}
+
+.clock-group {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.clock-chip {
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    transform 0.12s;
+}
+
+.clock-chip.untimed {
+  font-weight: 500;
+}
+
+.clock-chip:hover {
+  background: var(--surface-4);
+}
+
+.clock-chip.active {
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.clock-chip:active {
+  transform: scale(0.96);
+}
+
+/* Motion: pages fade in as you switch to them; the Play screens rise in. A page kept mounted
+   (Play, Analysis) restarts its fade each time it's shown, since [hidden] clears the animation. */
+.home-page,
+.page-host,
+.analysis-host {
+  animation: fade-in 0.22s ease-out;
+}
+
+.page-host[hidden],
+.analysis-host[hidden] {
+  animation: none;
+}
+
+.home-main > *,
+.home-side > * {
+  animation: rise-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-main > :nth-child(2),
+.home-side > :nth-child(1) {
+  animation-delay: 0.04s;
+}
+
+.home-side > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.home-side > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.setup-card,
+.result-card {
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.play-layout {
+  animation: fade-in 0.25s ease-out;
+}
+
+.play-layout {
+  /* The board takes the height, and whatever width the panel leaves. */
+  --board-size: max(
+    280px,
+    min(
+      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+      calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)),
+      880px
+    )
+  );
+  --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
+  display: grid;
+  grid-template-columns: auto var(--panel-w);
+  justify-content: center;
+  align-items: start;
+  gap: var(--gap);
+  padding: var(--pad-y) var(--pad-x);
+}
+
+.play-board {
+  grid-area: auto;
+  width: var(--board-size);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.play-page .player-bar {
+  padding-left: 0;
+}
+
+.player-clock {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-clock.running {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.player-clock.running.low {
+  background: #c7372f;
+  color: #fff;
+}
+
+/* It reuses the Analysis panel's card, but not its place in the Analysis grid. */
+.play-layout > .play-panel {
+  grid-area: auto;
+  width: var(--panel-w);
+  height: var(--column-h);
+}
+
+.play-panel-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.play-panel-head .muted {
+  font-size: 13px;
+}
+
+.play-status {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.play-status.over {
+  font-size: 16px;
+}
+
+.play-actions,
+.result-card {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Like Analysis's move controls, but it stays in the panel on phones too. */
+.play-nav {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 50px;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.play-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.resign-confirm {
+  display: contents;
+}
+
+.result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result-card p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.result-card .accent-btn {
+  margin-top: 0;
+}
+
+.result-more {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 1000px) {
+  .play-setup {
+    padding: 16px 16px calc(var(--tabbar-h) + 24px);
+  }
+
+  .play-layout {
+    --board-size: min(calc(100vw - 32px), 640px);
+    grid-template-columns: minmax(0, var(--board-size));
+    padding: 14px 16px calc(var(--tabbar-h) + 24px);
+    row-gap: 12px;
+  }
+
+  /* On Analysis the panel jumps above the board; here the board stays first. */
+  .play-layout > .play-panel {
+    order: 0;
+    width: auto;
+    height: auto;
+  }
+}
+
+.played-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.played-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.played-row:nth-child(even) {
+  background: var(--card-row);
+}
+
+.played-result {
+  flex: 0 0 46px;
+  font-weight: 650;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.played-result.win {
+  color: #6fb050;
+}
+
+.played-result.loss {
+  color: #e0604f;
+}
+
+.played-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.played-text strong {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.played-text > span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.played-accuracy {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.games-more {
+  margin: 6px 12px 2px;
+}
+
+.games-empty .btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.games-card {
+  padding: 20px 8px 10px;
+}
+
+.games-card .home-card-head {
+  padding: 0 12px 6px;
+}
+
+.games-card .games-empty {
+  padding: 12px;
+}
+
+@media (max-width: 520px) {
+  .games-empty {
+    flex-wrap: wrap;
+  }
+
+  .games-empty .btn {
+    margin-left: 0;
+  }
 }

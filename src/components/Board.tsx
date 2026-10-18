@@ -37,8 +37,10 @@ interface Props {
   onMove: (move: { from: string; to: string; promotion?: string }) => void
   /** Classification of the move that led here: tints the last-move squares and badges the destination. */
   annotation?: MoveClass
-  /** No moving pieces (the embed viewer). */
+  /** No moving pieces, ever (the embed viewer). Fixed for the board's lifetime: Chessground only reads it when it builds the board. */
   viewOnly?: boolean
+  /** No moving pieces right now (e.g. the computer is thinking); unlike viewOnly, this can change at any time. */
+  locked?: boolean
 }
 
 /** How long a piece takes to slide to its square. The classification badge waits for it to land. */
@@ -54,7 +56,7 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
@@ -124,8 +126,8 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
         custom: annotation && lastMove ? new Map(lastMove.map((sq) => [sq as Key, `cls-${annotation}`])) : new Map(),
       },
       movable: {
-        color: position.turn,
-        dests: position.dests,
+        color: locked ? undefined : position.turn,
+        dests: locked ? new Map() : position.dests,
         events: {
           after: (orig, dest) => {
             const piece = position.chess.get(orig as Square)
@@ -140,7 +142,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       },
     })
     setPromotion(null)
-  }, [fen, viewOnly, orientation, position, lastMove, coordinates, annotation])
+  }, [fen, viewOnly, locked, orientation, position, lastMove, coordinates, annotation])
 
   useEffect(() => {
     api.current?.setAutoShapes(shapes)

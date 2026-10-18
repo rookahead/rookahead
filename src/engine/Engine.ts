@@ -51,6 +51,11 @@ export interface AnalyzeRequest {
   threads?: number
   /** Hash table size for this search (default: the engine's own). The size changes the result. */
   hashMb?: number
+  /**
+   * Play weaker (the computer opponent): `elo` uses Stockfish's Elo limiter (≥ 1320), `skill` its
+   * Skill Level 0–20. Searches without it run at full strength.
+   */
+  strength?: { skill?: number; elo?: number }
   onUpdate?: (result: AnalysisResult) => void
   /** Aborting stops this search (or drops it if it hasn't started) without touching others. */
   signal?: AbortSignal
@@ -114,6 +119,10 @@ export class StockfishEngine {
   private readonly hashMb: number
   private activeThreads = 0
   private activeHashMb = 0
+  /** Strength options as last sent; a new worker starts at full strength. */
+  private activeLimit = false
+  private activeElo: number | null = null
+  private activeSkill = 20
 
   constructor(strength: EngineStrength, opts: { hashMb?: number; threads?: number } = {}) {
     const multiThreaded = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated
@@ -219,6 +228,9 @@ export class StockfishEngine {
     this.send(`setoption name Threads value ${threads}`)
     this.send(`setoption name Hash value ${this.hashMb}`)
     this.activeHashMb = this.hashMb
+    this.activeLimit = false
+    this.activeElo = null
+    this.activeSkill = 20
     this.send('setoption name UCI_ShowWDL value true')
     this.send('isready')
     await this.waitFor((l) => l === 'readyok')
@@ -245,6 +257,20 @@ export class StockfishEngine {
     if (job.multiPv !== this.multiPv) {
       this.multiPv = job.multiPv
       this.send(`setoption name MultiPV value ${job.multiPv}`)
+    }
+    const limit = job.strength?.elo !== undefined
+    if (limit !== this.activeLimit) {
+      this.activeLimit = limit
+      this.send(`setoption name UCI_LimitStrength value ${limit}`)
+    }
+    if (limit && job.strength!.elo !== this.activeElo) {
+      this.activeElo = job.strength!.elo!
+      this.send(`setoption name UCI_Elo value ${this.activeElo}`)
+    }
+    const skill = job.strength?.skill ?? 20
+    if (skill !== this.activeSkill) {
+      this.activeSkill = skill
+      this.send(`setoption name Skill Level value ${skill}`)
     }
     if (job.fresh) this.send('ucinewgame')
     this.send(`position fen ${job.fen}`)

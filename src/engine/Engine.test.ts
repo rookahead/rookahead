@@ -94,6 +94,37 @@ describe('StockfishEngine', () => {
     expect(updates).toEqual([1, 2, 2])
   })
 
+  it('limits strength per search and restores full strength afterwards', async () => {
+    const engine = new StockfishEngine('lite')
+    await engine.ready
+    const w = FakeWorker.last
+    /** The commands sent to the worker for one search. */
+    const run = async (request: Parameters<typeof engine.analyze>[0]) => {
+      const start = w.received.length
+      const done = engine.analyze(request)
+      await flush()
+      const sent = w.received.slice(start)
+      w.finish('e2e4')
+      await done
+      return sent
+    }
+
+    const elo = await run({ fen: START, multiPv: 1, movetime: 300, strength: { elo: 1600 } })
+    expect(elo).toContain('setoption name UCI_LimitStrength value true')
+    expect(elo).toContain('setoption name UCI_Elo value 1600')
+    expect(elo.indexOf('setoption name UCI_Elo value 1600')).toBeLessThan(elo.indexOf('go movetime 300'))
+
+    const skill = await run({ fen: START, multiPv: 1, depth: 2, strength: { skill: 3 } })
+    expect(skill).toContain('setoption name UCI_LimitStrength value false')
+    expect(skill).toContain('setoption name Skill Level value 3')
+
+    const full = await run({ fen: START, multiPv: 1, depth: 10 })
+    expect(full).toContain('setoption name Skill Level value 20')
+    expect(full).not.toContain('setoption name UCI_LimitStrength value true')
+    // Nothing changed, so no options are resent.
+    expect((await run({ fen: START, multiPv: 1, depth: 10 })).filter((c) => c.startsWith('setoption'))).toEqual([])
+  })
+
   it('a newer request stops the running search; a queued one is dropped', async () => {
     const engine = new StockfishEngine('full')
     await engine.ready

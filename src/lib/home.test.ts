@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentGame, formatDay, movesInPgn } from './home'
+import { currentGame, formatDay, movesInPgn, playedRow } from './home'
 import type { Session } from './session'
 
 describe('movesInPgn', () => {
@@ -42,5 +42,21 @@ describe('currentGame', () => {
   it('is null without a game in progress', () => {
     expect(currentGame(null)).toBeNull()
     expect(currentGame(session('[White "Ann"]\n\n*'))).toBeNull()
+  })
+})
+
+describe('playedRow', () => {
+  const base = { id: 'g', pgn: '1. e4 e5 2. Nf3 *', result: 'win' as const, reason: 'checkmate' as const, color: 'white' as const, level: 4, clock: '600+5' as const, takebacks: 0, hints: 0, endedAt: Date.parse('2026-10-18T10:00:00Z') }
+  const now = new Date('2026-10-18T12:00:00Z')
+
+  it('describes the opponent, your side, clock, moves and date', () => {
+    expect(playedRow(base, now)).toEqual({ opponent: 'Rookahead · Level 4', rating: '1300', detail: 'White · 10+5 · 2 moves · Oct 18', assists: '', result: 'Won' })
+  })
+
+  it('mentions takebacks and hints, and untimed games', () => {
+    const row = playedRow({ ...base, clock: 'none', takebacks: 2, hints: 1, result: 'draw', color: 'black' }, now)
+    expect(row.detail).toBe('Black · Untimed · 2 moves · Oct 18')
+    expect(row.assists).toBe('2 takebacks · 1 hint')
+    expect(row.result).toBe('Draw')
   })
 })

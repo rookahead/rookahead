@@ -9,6 +9,7 @@ import { navigate, useRoute } from './lib/router'
 import { useSettings } from './lib/settings'
 import { AnalysisPage } from './pages/Analysis'
 import { HomePage } from './pages/Home'
+import { PlayPage } from './pages/Play'
 
 /** Whether the sidebar stays expanded on the Analysis page (it's a rail there by default). */
 const SIDEBAR_KEY = 'rookahead.sidebar'
@@ -34,8 +35,12 @@ export default function App() {
   const [analysisMounted, setAnalysisMounted] = useState(route === 'analysis')
   const [analysisKey, setAnalysisKey] = useState(0)
   if (route === 'analysis' && !analysisMounted) setAnalysisMounted(true)
+  // Play also stays mounted once visited, so a game keeps going (and the computer keeps moving) elsewhere.
+  const [playMounted, setPlayMounted] = useState(route === 'play')
+  if (route === 'play' && !playMounted) setPlayMounted(true)
 
-  const rail = route === 'analysis' && !expandOnAnalysis
+  const board = route === 'analysis' || route === 'play'
+  const rail = board && !expandOnAnalysis
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
@@ -81,9 +86,14 @@ export default function App() {
 
   return (
     <div className="shell">
-      {!phone && <Sidebar route={route} rail={rail} onToggleRail={route === 'analysis' ? toggleRail : undefined} footer={userCard} />}
+      {!phone && <Sidebar route={route} rail={rail} onToggleRail={board ? toggleRail : undefined} footer={userCard} />}
       <div className="shell-page">
         {route === 'home' && <HomePage avatar={avatar} onOpenAnalysis={openAnalysis} />}
+        {playMounted && (
+          <div className="page-host" hidden={route !== 'play'}>
+            <PlayPage active={route === 'play'} settings={settings} avatar={avatar} onOpenAnalysis={openAnalysis} />
+          </div>
+        )}
         {analysisMounted && (
           <div className="analysis-host" hidden={route !== 'analysis'}>
             <AnalysisPage

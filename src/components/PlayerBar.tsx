@@ -11,6 +11,8 @@ interface Props {
   captured: Role[]
   /** Material lead in pawns (0 if level or behind). */
   advantage: number
+  /** A clock, shown at the bar's right end (games with a time control). */
+  clock?: React.ReactNode
 }
 
 function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
@@ -36,7 +38,7 @@ function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
   )
 }
 
-export function PlayerBar({ color, name, rating, result, captured, advantage }: Props) {
+export function PlayerBar({ color, name, rating, result, captured, advantage, clock }: Props) {
   const opponent: Color = color === 'white' ? 'black' : 'white'
   return (
     <div className="player-bar">
@@ -54,6 +56,7 @@ export function PlayerBar({ color, name, rating, result, captured, advantage }: 
           {advantage > 0 && <span className="material-lead">+{advantage}</span>}
         </div>
       </div>
+      {clock}
     </div>
   )
 }
