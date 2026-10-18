@@ -1,12 +1,20 @@
 // A tiny History-API router: pages switch without a reload, so the engine and the loaded game survive.
 import { useSyncExternalStore } from 'react'
 
-export type Route = 'home' | 'analysis' | 'play'
+export type Route = 'home' | 'analysis' | 'play' | 'puzzles'
+export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 
 export function routeFor(pathname: string): Route {
   if (/^\/(analysis|r)\/?$/.test(pathname)) return 'analysis'
   if (/^\/play\/?$/.test(pathname)) return 'play'
+  if (/^\/puzzles(\/(sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
   return 'home'
+}
+
+/** The Puzzles page's tab: /puzzles, /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */
+export function puzzleTab(pathname: string): PuzzleTab {
+  const m = /^\/puzzles\/(sprint|daily|mistakes)\/?$/.exec(pathname)
+  return m ? (m[1] as PuzzleTab) : 'rated'
 }
 
 const listeners = new Set<() => void>()
@@ -31,14 +39,15 @@ export function navigate(path: string): void {
   notify()
 }
 
-/** Re-renders when the address changes through `navigate` or Back/Forward. */
-export function useRoute(): Route {
-  const pathname = useSyncExternalStore(
+/** The address's path; re-renders when it changes through `navigate` or Back/Forward. */
+export function usePathname(): string {
+  return useSyncExternalStore(
     (l) => {
       listeners.add(l)
       return () => listeners.delete(l)
     },
     () => location.pathname,
   )
-  return routeFor(pathname)
 }
+
+export const useRoute = (): Route => routeFor(usePathname())

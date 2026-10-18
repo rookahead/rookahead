@@ -1,12 +1,18 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
 import { loadGames, type PlayedGame } from '../lib/games'
-import { currentGame, playedRow } from '../lib/home'
+import { currentGame, formatDay, playedRow } from '../lib/home'
+import { dailyLine } from '../lib/puzzleData'
+import { dayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
+import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import { gameKey, loadReviews, type CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
 import { readSession, requestLoadDialog, writeSession } from '../lib/session'
 import { decodeShare, fromSharedGame } from '../lib/share'
+import type { BoardTheme } from '../lib/settings'
 import { mainline, treeFromPgn } from '../lib/tree'
+import { DayStreak } from './puzzles/shared'
 
 const SHOWN = 10
 
@@ -25,12 +31,13 @@ function withReviews(games: PlayedGame[]): { game: PlayedGame; review?: CachedRe
 
 interface Props {
   avatar?: ReactNode
+  boardTheme: BoardTheme
   /** The Load dialog has been requested: show Analysis. */
   onOpenAnalysis: () => void
 }
 
 /** The home dashboard: your games (once you play here) and the ways into the board. */
-export function HomePage({ avatar, onOpenAnalysis }: Props) {
+export function HomePage({ avatar, boardTheme, onOpenAnalysis }: Props) {
   const current = useMemo(() => currentGame(readSession()), [])
   const games = useMemo(() => withReviews(loadGames()), [])
   const [showAll, setShowAll] = useState(false)
@@ -135,6 +142,7 @@ export function HomePage({ avatar, onOpenAnalysis }: Props) {
               </button>
             </section>
           )}
+          <DailyCard theme={boardTheme} />
           <button className="home-card quick-card" onClick={() => navigate('/analysis')}>
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
@@ -162,5 +170,49 @@ export function HomePage({ avatar, onOpenAnalysis }: Props) {
         </aside>
       </main>
     </div>
+  )
+}
+
+/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). */
+function DailyCard({ theme }: { theme: BoardTheme }) {
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
+  useEffect(() => {
+    dailyLine().then(
+      (l) => setPuzzle(parsePuzzleLine(l)),
+      () => {},
+    )
+  }, [])
+  const { done, days } = useMemo(() => {
+    const progress = loadProgress()
+    const today = dayNumber(new Date())
+    return { done: progress.daily?.day === today ? progress.daily.result : undefined, days: dayStreak(progress, today) }
+  }, [])
+  if (!puzzle) return null
+  const color = playerColor(puzzle)
+  const first = puzzle.moves[0]
+  const open = () => navigate('/puzzles/daily')
+  return (
+    <section className="home-card daily-card" aria-labelledby="daily-puzzle">
+      <header className="daily-head">
+        <h2 id="daily-puzzle">
+          Daily puzzle <span className="muted">{formatDay(Date.now() / 1000)}</span>
+        </h2>
+        <DayStreak days={days} />
+      </header>
+      <button className="daily-board" onClick={open} aria-label="Solve the daily puzzle">
+        <MiniBoard fen={positionAfter(puzzle, [first]).fen()} orientation={color} theme={theme} lastMove={[first.slice(0, 2), first.slice(2, 4)]} />
+      </button>
+      <div className="daily-foot">
+        <p>
+          <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
+          <span className="muted">
+            {done === 'solved' ? 'Solved · next one tomorrow' : done === 'failed' ? 'Missed · next one tomorrow' : `Rated ${puzzle.rating}`}
+          </span>
+        </p>
+        <button className={`btn small ${done ? 'ghost' : 'primary'}`} onClick={open}>
+          {done ? 'See it' : 'Solve'}
+        </button>
+      </div>
+    </section>
   )
 }

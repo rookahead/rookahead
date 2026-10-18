@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { navigate, onReselect, routeFor } from './router'
+import { navigate, onReselect, puzzleTab, routeFor } from './router'
 
 describe('routeFor', () => {
   it('maps paths to pages', () => {
@@ -10,6 +10,18 @@ describe('routeFor', () => {
     expect(routeFor('/r/')).toBe('analysis')
     expect(routeFor('/play')).toBe('play')
     expect(routeFor('/play/')).toBe('play')
+    expect(routeFor('/puzzles')).toBe('puzzles')
+    expect(routeFor('/puzzles/daily')).toBe('puzzles')
+    expect(routeFor('/puzzles/mistakes/')).toBe('puzzles')
+    expect(routeFor('/puzzles/other')).toBe('home')
+  })
+
+  it('reads the puzzle tab', () => {
+    expect(puzzleTab('/puzzles')).toBe('rated')
+    expect(puzzleTab('/puzzles/daily')).toBe('daily')
+    expect(puzzleTab('/puzzles/sprint')).toBe('sprint')
+    expect(routeFor('/puzzles/sprint')).toBe('puzzles')
+    expect(puzzleTab('/puzzles/mistakes/')).toBe('mistakes')
   })
 
   it('sends unknown paths home', () => {

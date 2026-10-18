@@ -34,6 +34,7 @@
   --bar-light: #ececee;
   --bar-dark: #2a2a2f;
   --warn: #e0b25b;
+  --streak: #ff8f3f;
   /* Faint banding (alternate move rows) and graph guide lines. */
   --tint: rgba(255, 255, 255, 0.025);
   --guide: rgba(255, 255, 255, 0.14);
@@ -96,6 +97,7 @@
   --win: #4c9a2a;
   --danger: #d4433a;
   --warn: #a2700f;
+  --streak: #e2620b;
   --tint: rgba(0, 0, 0, 0.022);
   --guide: rgba(0, 0, 0, 0.14);
   --guide-strong: rgba(0, 0, 0, 0.3);
@@ -3709,5 +3711,714 @@ svg {
 
   .games-empty .btn {
     margin-left: 0;
+  }
+}
+
+/* ---------- Puzzles ---------- */
+
+/* The Analysis panel's tabs, as links (each puzzle mode has its own address). */
+.panel-tabs a {
+  padding: 4px 0 12px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.panel-tabs a:hover {
+  color: var(--text);
+}
+
+.panel-tabs a.active {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--text);
+}
+
+.puzzle-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.puzzle-head > .muted {
+  font-size: 13px;
+}
+
+.puzzle-rating {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.puzzle-rating .muted {
+  font-size: 13px;
+}
+
+.puzzle-rating strong {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.rating-delta {
+  align-self: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rating-delta.up {
+  background: color-mix(in srgb, var(--win) 18%, transparent);
+  color: var(--win);
+}
+
+.rating-delta.down {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+}
+
+.puzzle-body {
+  padding: 14px 16px;
+  gap: 12px;
+}
+
+.puzzle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.puzzle-info p,
+.mistake-played p,
+.mistake-best {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.theme-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.theme-chips li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.puzzle-source {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.puzzle-source:hover {
+  color: var(--text);
+}
+
+.puzzle-message {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.puzzle-message p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.puzzle-message p span {
+  color: var(--text-2);
+}
+
+.puzzle-message-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mistake-played {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.mistake-best {
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mistake-nav {
+  grid-template-columns: 50px;
+  justify-content: end;
+}
+
+.play-actions .puzzle-next {
+  height: 40px;
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.puzzle-rating strong.date {
+  font-family: var(--font-ui);
+  font-size: 22px;
+}
+
+.puzzle-message-actions .btn {
+  text-decoration: none;
+}
+
+/* Home: today's puzzle. */
+.daily-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.daily-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.daily-head h2 .muted {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.daily-board {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.daily-board:hover {
+  transform: scale(1.01);
+}
+
+.mini-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  aspect-ratio: 1;
+  background: var(--board-image) center / cover;
+}
+
+.mini-board span {
+  aspect-ratio: 1;
+}
+
+.mini-board span.last {
+  background: var(--last-move);
+}
+
+.daily-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.daily-foot p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.daily-foot .muted {
+  font-size: 13px;
+}
+
+/* Phones: what you need while solving (status, buttons, move controls) sits right under the board. */
+@media (max-width: 1000px) {
+  .puzzle-layout .feedback {
+    order: -3;
+  }
+
+  .puzzle-layout .play-actions {
+    order: -2;
+    border-top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .puzzle-layout .play-nav {
+    order: -1;
+    border-top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .puzzle-layout .panel-body {
+    min-height: 0;
+  }
+}
+
+/* Puzzles, round 2: feedback block, streaks, chips, Sprint. */
+.feedback {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.feedback.good {
+  background: color-mix(in srgb, var(--win) 9%, transparent);
+}
+
+.feedback.bad {
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+}
+
+.feedback-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.feedback.turn .feedback-icon {
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+
+.feedback.turn .feedback-icon .piece-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.feedback-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.feedback.good .feedback-icon {
+  background: var(--win);
+}
+
+.feedback.bad .feedback-icon {
+  background: var(--danger);
+}
+
+.feedback.neutral .feedback-icon {
+  background: var(--surface-4);
+}
+
+.feedback.neutral .feedback-icon svg {
+  stroke: var(--text-2);
+}
+
+.feedback-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feedback-text strong {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.feedback.good .feedback-text strong {
+  color: var(--win);
+}
+
+.feedback.bad .feedback-text strong {
+  color: var(--danger);
+}
+
+.feedback-text span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.flame {
+  flex-shrink: 0;
+  fill: var(--muted);
+}
+
+.flame .flame-core {
+  fill: var(--surface-2);
+}
+
+.flame.lit {
+  fill: var(--streak);
+}
+
+.flame.lit .flame-core {
+  fill: #ffd27a;
+}
+
+.streak-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.streak-tile {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.streak-tile > svg {
+  grid-row: span 2;
+}
+
+.streak-tile strong {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.streak-tile span {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.streak-tile.hot {
+  background: color-mix(in srgb, var(--streak) 14%, var(--surface-2));
+}
+
+.streak-tile.hot strong {
+  color: var(--streak);
+}
+
+.tile-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.streak-tile.hot .tile-icon {
+  stroke: var(--streak);
+}
+
+.day-streak {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.day-streak strong {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.day-streak.lit {
+  background: color-mix(in srgb, var(--streak) 16%, transparent);
+  color: var(--streak);
+}
+
+.puzzle-below {
+  min-height: 30px;
+}
+
+.session-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.session-chips a {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  animation: badge-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.session-chips a.up {
+  background: var(--win);
+  color: #0d2a06;
+}
+
+.session-chips a.down {
+  background: var(--danger);
+  color: #fff;
+}
+
+.puzzle-prefs {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.pref-select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.play-actions.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sprint-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.sprint-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sprint-mode {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sprint-mode:hover {
+  background: var(--surface-3);
+}
+
+.sprint-mode.active {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
+}
+
+.sprint-mode strong {
+  font-size: 17px;
+}
+
+.sprint-mode span {
+  grid-column: 1;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.sprint-mode .sprint-best {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sprint-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sprint-clock {
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sprint-clock.low {
+  background: #c7372f;
+  color: #fff;
+}
+
+.sprint-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.sprint-score strong {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 700;
+  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sprint-score span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sprint-strikes {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.sprint-strikes span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sprint-strikes span.used {
+  background: var(--danger);
+  color: #fff;
+  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sprint-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 0 6px;
+  text-align: center;
+}
+
+.sprint-result strong {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  animation: badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sprint-result > span {
+  color: var(--text-2);
+}
+
+.new-best {
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--streak);
+  color: #2a1200 !important;
+  font-weight: 800;
+}
+
+.sprint-note {
+  margin: 0;
+  text-align: center;
+  color: var(--text-2);
+}
+
+@media (min-width: 1001px) {
+  /* No player bars: the board takes the height, less a row for the chips under it. */
+  .play-layout.puzzle-layout {
+    --board-size: max(
+      280px,
+      min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 40px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)
+    );
+    --column-h: calc(var(--board-size) + 40px);
+  }
+}
+
+@media (max-width: 1000px) {
+  /* The rating and streaks stay in view on phones too, just above the feedback. */
+  .puzzle-layout .sprint-head,
+  .puzzle-layout .puzzle-head {
+    order: -4;
+  }
+
+  .puzzle-below {
+    min-height: 0;
   }
 }

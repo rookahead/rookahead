@@ -3,11 +3,12 @@ import type { Api } from '@lichess-org/chessground/api'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { Chess, SQUARES, type Square } from 'chess.js'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Color } from '../lib/evaluation'
 import type { BoardTheme } from '../lib/settings'
 import type { MoveClass } from '../lib/classify'
 import { ClassIcon } from './ClassIcon'
+import { PuzzleMark } from './PuzzleIcons'
 import { PieceIcon } from './PieceIcon'
 
 export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string; label: string; lastMove?: string }> = {
@@ -19,7 +20,7 @@ export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string; lab
   slate: { light: '#c9cfd8', dark: '#6b7a8f', label: 'Slate' },
 }
 
-function boardImage(light: string, dark: string) {
+export function boardImage(light: string, dark: string) {
   let rects = ''
   for (let r = 0; r < 8; r++)
     for (let f = 0; f < 8; f++) if ((r + f) % 2 === 1) rects += `<rect x="${f}" y="${r}" width="1" height="1"/>`
@@ -41,6 +42,8 @@ interface Props {
   viewOnly?: boolean
   /** No moving pieces right now (e.g. the computer is thinking); unlike viewOnly, this can change at any time. */
   locked?: boolean
+  /** A puzzle's verdict on the last move: a ✓ or ✗ badge on its square. */
+  mark?: 'correct' | 'wrong'
 }
 
 /** How long a piece takes to slide to its square. The classification badge waits for it to land. */
@@ -56,7 +59,7 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, mark }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
@@ -76,8 +79,8 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     return { chess, dests, turn: (chess.turn() === 'w' ? 'white' : 'black') as Color, check: chess.inCheck() }
   }, [fen])
 
-  // Mount once; afterwards everything goes through api.set().
-  useEffect(() => {
+  // Mount once, before the first paint; afterwards everything goes through api.set().
+  useLayoutEffect(() => {
     if (!el.current) return
     api.current = Chessground(el.current, {
       animation: { enabled: !matchMedia('(prefers-reduced-motion: reduce)').matches, duration: SLIDE_MS },
@@ -111,7 +114,8 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     }
   }, [])
 
-  useEffect(() => {
+  // Before paint (as is the mount above), so a new board's first frame already shows its position.
+  useLayoutEffect(() => {
     api.current?.set({
       fen,
       viewOnly,
@@ -162,15 +166,15 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   const column = orientation === 'white' ? pickerFile : 7 - pickerFile
   const fromTop = promotion ? (promotion.to[1] === '8') === (orientation === 'white') : true
 
-  const badge = annotation && lastMove ? squarePosition(lastMove[1], orientation) : null
+  const badge = (annotation || mark) && lastMove ? squarePosition(lastMove[1], orientation) : null
 
   return (
     <div className="board" style={style}>
       <div ref={el} className="board-cg" />
-      {badge && annotation && (
+      {badge && (annotation || mark) && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
-        <div key={`${lastMove!.join('')}-${annotation}`} className="board-badge" style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
-          <ClassIcon cls={annotation} size={28} />
+        <div key={`${lastMove!.join('')}-${annotation ?? mark}`} className="board-badge" style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
+          {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
         </div>
       )}
       {promotion && (

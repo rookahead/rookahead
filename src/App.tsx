@@ -10,6 +10,7 @@ import { useSettings } from './lib/settings'
 import { AnalysisPage } from './pages/Analysis'
 import { HomePage } from './pages/Home'
 import { PlayPage } from './pages/Play'
+import { PuzzlesPage } from './pages/Puzzles'
 
 /** Whether the sidebar stays expanded on the Analysis page (it's a rail there by default). */
 const SIDEBAR_KEY = 'rookahead.sidebar'
@@ -39,7 +40,7 @@ export default function App() {
   const [playMounted, setPlayMounted] = useState(route === 'play')
   if (route === 'play' && !playMounted) setPlayMounted(true)
 
-  const board = route === 'analysis' || route === 'play'
+  const board = route === 'analysis' || route === 'play' || route === 'puzzles'
   const rail = board && !expandOnAnalysis
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
@@ -88,7 +89,8 @@ export default function App() {
     <div className="shell">
       {!phone && <Sidebar route={route} rail={rail} onToggleRail={board ? toggleRail : undefined} footer={userCard} />}
       <div className="shell-page">
-        {route === 'home' && <HomePage avatar={avatar} onOpenAnalysis={openAnalysis} />}
+        {route === 'home' && <HomePage avatar={avatar} boardTheme={settings.boardTheme} onOpenAnalysis={openAnalysis} />}
+        {route === 'puzzles' && <PuzzlesPage settings={settings} avatar={avatar} onOpenAnalysis={openAnalysis} />}
         {playMounted && (
           <div className="page-host" hidden={route !== 'play'}>
             <PlayPage active={route === 'play'} settings={settings} avatar={avatar} onOpenAnalysis={openAnalysis} />

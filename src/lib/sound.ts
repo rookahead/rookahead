@@ -2,7 +2,7 @@
 // Every sound is built from two parts: a "tap" (a wooden piece meeting the board) and
 // a "chime" (a soft bell, for the moments that deserve a little ceremony).
 
-export type SoundKind = 'move' | 'capture' | 'castle' | 'check' | 'promote' | 'end'
+export type SoundKind = 'move' | 'capture' | 'castle' | 'check' | 'promote' | 'end' | 'success' | 'fail'
 
 /** The sound for a move, read off its SAN. A check outranks everything else it might also be. */
 export function moveSoundKind(san: string): SoundKind {
@@ -149,6 +149,15 @@ export function playSound(kind: SoundKind, volume: number) {
         chime(t, 523.25, 0.12, 1.2)
         chime(t + 0.05, 784, 0.1, 1.1)
         chime(t + 0.1, 1046.5, 0.07, 1)
+        break
+      case 'success':
+        // A quick, bright rising pair: puzzle solved.
+        chime(t, 880, 0.11, 0.35)
+        chime(t + 0.09, 1318.5, 0.11, 0.6)
+        break
+      case 'fail':
+        // One low, short note: not the move.
+        chime(t, 220, 0.16, 0.3)
         break
     }
   } catch {

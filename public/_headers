@@ -10,6 +10,9 @@
   Cache-Control: public, max-age=31536000, immutable
 /engine/*
   Cache-Control: public, max-age=604800
+# Puzzle shards change only when the data is rebuilt.
+/puzzle-data/*
+  Cache-Control: public, max-age=86400
 
 # The embed viewer runs inside other sites' iframes. Its own isolation headers don't stop
 # ordinary pages from framing it; this also lets cross-origin isolated pages (and the app's
