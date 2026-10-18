@@ -1,5 +1,6 @@
 // Puzzle progress on this device: the rating, counts, puzzles seen, today's daily and solved mistakes.
 import { dayNumber, DIFFICULTY, newRating, parsePuzzleLine, SPRINT_MODES, type Difficulty, type SprintMode } from './puzzles'
+import { markChanged, STORE_KEYS } from './syncBus'
 
 export interface PuzzleProgress {
   rating: number
@@ -24,20 +25,25 @@ export interface PuzzleProgress {
   mistakesSolved: string[]
 }
 
-const KEY = 'rookahead.puzzles.v1'
+const KEY = STORE_KEYS.puzzles
 export const SEEN_LIMIT = 3000
 const defaultStorage = (): Storage | undefined => (typeof localStorage === 'undefined' ? undefined : localStorage)
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [])
 const count = (v: unknown, fallback = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
 
 export function loadProgress(storage = defaultStorage()): PuzzleProgress {
-  let raw: Record<string, unknown> = {}
+  let parsed: unknown
   try {
-    const parsed: unknown = JSON.parse(storage?.getItem(KEY) ?? '{}')
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) raw = parsed as Record<string, unknown>
+    parsed = JSON.parse(storage?.getItem(KEY) ?? '{}')
   } catch {
     // Unreadable: start over.
   }
+  return parseProgress(parsed)
+}
+
+/** Progress from stored JSON, with anything missing or malformed set to its default. */
+export function parseProgress(parsed: unknown): PuzzleProgress {
+  const raw = (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}) as Record<string, unknown>
   const current = raw.current as PuzzleProgress['current']
   const daily = raw.daily as PuzzleProgress['daily']
   const days = raw.days as PuzzleProgress['days']
@@ -62,6 +68,7 @@ export function loadProgress(storage = defaultStorage()): PuzzleProgress {
 export function saveProgress(progress: PuzzleProgress, storage = defaultStorage()): void {
   try {
     storage?.setItem(KEY, JSON.stringify(progress))
+    markChanged('puzzles', storage)
   } catch {
     // Storage full or unavailable: progress just isn't remembered.
   }

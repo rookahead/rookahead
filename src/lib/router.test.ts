@@ -48,3 +48,11 @@ describe('navigate', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('auth routes', () => {
+  it('sends /signup and /login to the account page', () => {
+    expect(routeFor('/signup')).toBe('auth')
+    expect(routeFor('/login/')).toBe('auth')
+    expect(routeFor('/reset-password')).toBe('auth')
+  })
+})

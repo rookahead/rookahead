@@ -11,6 +11,7 @@ import { navigate } from '../lib/router'
 import { readSession, requestLoadDialog, writeSession } from '../lib/session'
 import { decodeShare, fromSharedGame } from '../lib/share'
 import type { BoardTheme } from '../lib/settings'
+import { useStoreVersion } from '../lib/syncBus'
 import { mainline, treeFromPgn } from '../lib/tree'
 import { DayStreak } from './puzzles/shared'
 
@@ -39,7 +40,10 @@ interface Props {
 /** The home dashboard: your games (once you play here) and the ways into the board. */
 export function HomePage({ avatar, boardTheme, onOpenAnalysis }: Props) {
   const current = useMemo(() => currentGame(readSession()), [])
-  const games = useMemo(() => withReviews(loadGames()), [])
+  // The versions re-read the stores after a sync pass replaces them.
+  const gamesVersion = useStoreVersion('games')
+  const reviewsVersion = useStoreVersion('reviews')
+  const games = useMemo(() => withReviews(loadGames()), [gamesVersion, reviewsVersion])
   const [showAll, setShowAll] = useState(false)
 
   /** Opens a played game in Analysis: instantly with its saved review, or reviewing it on arrival. */
@@ -182,11 +186,12 @@ function DailyCard({ theme }: { theme: BoardTheme }) {
       () => {},
     )
   }, [])
+  const version = useStoreVersion('puzzles')
   const { done, days } = useMemo(() => {
     const progress = loadProgress()
     const today = dayNumber(new Date())
     return { done: progress.daily?.day === today ? progress.daily.result : undefined, days: dayStreak(progress, today) }
-  }, [])
+  }, [version])
   if (!puzzle) return null
   const color = playerColor(puzzle)
   const first = puzzle.moves[0]

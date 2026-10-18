@@ -2,6 +2,7 @@
 // instantly. Each entry holds the review as a share-link token (~0.5 KB).
 import type { Color } from './evaluation'
 import { isChesscomUrl } from './chesscom'
+import { markChanged, STORE_KEYS } from './syncBus'
 import type { MoveNode, PgnHeaders } from './tree'
 
 export interface CachedReview {
@@ -15,8 +16,8 @@ export interface CachedReview {
   at: number
 }
 
-const KEY = 'rookahead.reviews.v1'
-const LIMIT = 300
+const KEY = STORE_KEYS.reviews
+export const REVIEWS_LIMIT = 300
 
 const defaultStorage = (): Storage | undefined => (typeof localStorage === 'undefined' ? undefined : localStorage)
 
@@ -44,8 +45,9 @@ export function saveReview(key: string, entry: CachedReview, storage = defaultSt
   try {
     const all = { ...loadReviews(storage), [key]: entry }
     const keys = Object.keys(all).sort((a, b) => all[b].at - all[a].at)
-    const kept = Object.fromEntries(keys.slice(0, LIMIT).map((k) => [k, all[k]]))
+    const kept = Object.fromEntries(keys.slice(0, REVIEWS_LIMIT).map((k) => [k, all[k]]))
     storage?.setItem(KEY, JSON.stringify(kept))
+    markChanged('reviews', storage)
   } catch {
     // Storage full or unavailable: the review just won't be remembered.
   }

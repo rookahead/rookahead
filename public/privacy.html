@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/pages.css" />
     <link rel="canonical" href="https://rookahead.com/privacy" />
     <title>Privacy · Rookahead</title>
-    <meta name="description" content="What Rookahead does and doesn't collect: no accounts, games analysed on your device, cookieless analytics." />
+    <meta name="description" content="What Rookahead does and doesn't collect: optional accounts, games analysed on your device, cookieless analytics." />
   </head>
   <body>
     <header>
@@ -17,18 +17,37 @@
       <h1>Privacy</h1>
       <p class="updated">Last updated 18 October 2026</p>
       <p class="note">
-        <strong>In short:</strong> Rookahead has no accounts and collects no personal information. Your games are analysed on
-        your own device. Visits are counted without cookies.
+        <strong>In short:</strong> You can use all of Rookahead without an account. If you make one, we keep your email,
+        your name and your progress so it follows you to other devices, and nothing more. Games are analysed on your own
+        device. Visits are counted without cookies.
       </p>
 
-      <h2>No accounts</h2>
-      <p>You don’t sign up, so we don’t have your name, email address or password.</p>
-
-      <h2>Your games stay on your device</h2>
+      <h2>Accounts are optional</h2>
       <p>
-        The chess engine runs in your browser. Games you load or play are analysed on your computer or phone and are not
-        sent to us. Your settings and the game you’re working on are saved in your browser’s storage, so they survive a
-        refresh; clearing your browser’s site data removes them.
+        Everything works without signing up, and then we have no personal information about you at all. If you do sign
+        up, your account holds:
+      </p>
+      <ul>
+        <li>your email address and your username, used only for your account (we never send newsletters or share them);</li>
+        <li>if you sign in with Google, the name and profile picture link Google gives us;</li>
+        <li>
+          your progress: puzzle rating and streaks, games you played here, your review history and your settings, so they
+          are the same on every device.
+        </li>
+      </ul>
+      <p>
+        If you sign up with email, you also choose a password; it is stored only as a secure hash, never as the
+        password itself. Accounts are stored by Supabase, our database provider, and account emails (confirming your
+        address, resetting your password) are sent through Resend. Signing in keeps a login token in your browser’s storage; it isn’t a tracking cookie. You can
+        delete your account, and everything in it, at any time under Settings → Delete account.
+      </p>
+
+      <h2>Your games are analysed on your device</h2>
+      <p>
+        The chess engine runs in your browser. Games you load or play are analysed on your computer or phone. Without an
+        account, your settings, progress and the game you’re working on are saved only in your browser’s storage, so they
+        survive a refresh; clearing your browser’s site data removes them. With an account, the progress listed above is
+        also copied to your account.
       </p>
 
       <h2>Importing from Chess.com</h2>

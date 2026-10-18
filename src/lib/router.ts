@@ -1,13 +1,14 @@
 // A tiny History-API router: pages switch without a reload, so the engine and the loaded game survive.
 import { useSyncExternalStore } from 'react'
 
-export type Route = 'home' | 'analysis' | 'play' | 'puzzles'
+export type Route = 'home' | 'analysis' | 'play' | 'puzzles' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 
 export function routeFor(pathname: string): Route {
   if (/^\/(analysis|r)\/?$/.test(pathname)) return 'analysis'
   if (/^\/play\/?$/.test(pathname)) return 'play'
   if (/^\/puzzles(\/(sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
+  if (/^\/(signup|login|reset-password|auth\/google)\/?$/.test(pathname)) return 'auth'
   return 'home'
 }
 
@@ -29,12 +30,14 @@ export function onReselect(listener: (path: string) => void): () => void {
   return () => reselectListeners.delete(listener)
 }
 
-export function navigate(path: string): void {
+/** Goes to `path`; `replace` swaps the current history entry (Back skips it). */
+export function navigate(path: string, { replace = false } = {}): void {
   if (path === location.pathname + location.search + location.hash) {
     reselectListeners.forEach((l) => l(path))
     return
   }
-  history.pushState(null, '', path)
+  if (replace) history.replaceState(null, '', path)
+  else history.pushState(null, '', path)
   window.scrollTo(0, 0)
   notify()
 }

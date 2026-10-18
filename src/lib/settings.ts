@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { FULL_ENGINE_AVAILABLE, type EngineStrength } from '../engine/Engine'
+import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
 
 export type Appearance = 'dark' | 'light' | 'system'
 
@@ -39,7 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.7,
 }
 
-const KEY = 'rookahead.settings.v2'
+const KEY = STORE_KEYS.settings
 /** v1 defaulted to the full engine; its other settings carry over, the engine choice doesn't. */
 const OLD_KEY = 'rookahead.settings.v1'
 const REVIEW_DEPTHS = [12, 16, 20]
@@ -68,11 +69,19 @@ function load(): Settings {
 
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(load)
+  // A sync pass brought the account's settings: show them.
+  const version = useStoreVersion('settings')
+  const [loadedVersion, setLoadedVersion] = useState(version)
+  if (version !== loadedVersion) {
+    setLoadedVersion(version)
+    setSettings(load())
+  }
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...patch }
       try {
         localStorage.setItem(KEY, JSON.stringify(next))
+        markChanged('settings')
       } catch {
         // Not fatal: settings just won't persist.
       }

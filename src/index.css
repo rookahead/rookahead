@@ -3203,6 +3203,8 @@ svg {
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-card-gear svg {
@@ -3213,6 +3215,496 @@ svg {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.user-avatar {
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+button.user-avatar.guest:hover {
+  color: var(--text);
+}
+
+.user-card-signup {
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+}
+
+.user-card-text.user-card-signup span {
+  color: var(--brand);
+}
+
+.user-card-signup:hover span {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.user-card-text .user-card-sync.offline {
+  color: var(--warn);
+}
+
+.link-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.link-btn:hover:not(:disabled) {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-btn:disabled {
+  color: var(--muted);
+}
+
+/* Account page (/signup, /login): what Rookahead is on the left, the forms on the right. */
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 36px clamp(32px, 6vw, 88px);
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+}
+
+.auth-brand-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  color: inherit;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.auth-pitch {
+  margin: auto 0;
+  max-width: 500px;
+}
+
+.auth-pitch h1 {
+  margin: 0;
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.08;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.auth-pitch > p {
+  margin: 16px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+.auth-features {
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-features li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.auth-features li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.auth-features strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.auth-features li > span:last-child span {
+  opacity: 0.72;
+}
+
+.auth-feature-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.auth-feature-icon svg:not(.class-icon) {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.auth-brand-foot {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.auth-panel {
+  display: grid;
+  /* Top-aligned at a fixed height, so the tabs stay put when the form's length changes. */
+  place-items: start center;
+  padding: max(40px, 18vh) 24px 40px;
+}
+
+.auth-box {
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-box h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.auth-tabs a {
+  flex: 1;
+  padding: 12px 0;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  text-align: center;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.auth-tabs a:hover {
+  color: var(--text);
+}
+
+.auth-tabs a.active {
+  color: var(--text);
+  border-bottom-color: var(--brand);
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.auth-field .input,
+.auth-form .input {
+  height: 48px;
+  font-size: 15px;
+}
+
+.auth-field .input[aria-invalid='true'] {
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+}
+
+.auth-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.auth-forgot {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.auth-password {
+  position: relative;
+  display: block;
+}
+
+.auth-password .input {
+  padding-right: 48px;
+}
+
+.auth-eye {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.auth-eye svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.auth-notice {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--win);
+}
+
+.auth-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.auth-hint.bad {
+  color: var(--danger);
+}
+
+.auth-hint.good {
+  color: var(--win);
+}
+
+.auth-lead {
+  margin: -6px 0 4px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.auth-lead strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.auth-google .google-g {
+  width: 18px;
+  height: 18px;
+}
+
+.auth-google:disabled {
+  opacity: 0.45;
+}
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-form .input.auth-code {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.3em;
+}
+
+.auth-links {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-error {
+  text-align: center;
+}
+
+.auth-fine {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.auth-fine a {
+  color: var(--text-2);
+}
+
+.auth-wait {
+  margin: 0;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.auth-guest {
+  align-self: center;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.auth-guest:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Phones and narrow windows: a short brand band on top, the form below; the feature list goes. */
+@media (max-width: 860px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .auth-brand {
+    gap: 18px;
+    padding: 20px 20px 24px;
+  }
+
+  .auth-pitch {
+    margin: 0;
+  }
+
+  .auth-pitch h1 {
+    font-size: 26px;
+  }
+
+  .auth-pitch > p {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .auth-features,
+  .auth-brand-foot {
+    display: none;
+  }
+
+  .auth-panel {
+    place-items: start center;
+    padding: 28px 16px 40px;
+  }
+}
+
+/* Settings → Account. */
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-popover > .account-row {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.account-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-text span {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-delete {
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.account-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.account-confirm p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+.account-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .username-dialog {

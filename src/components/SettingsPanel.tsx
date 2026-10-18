@@ -1,6 +1,8 @@
 import { FULL_ENGINE_AVAILABLE, type EngineStatus } from '../engine/Engine'
+import { ACCOUNTS_ENABLED } from '../lib/account'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
+import { AccountSettings } from './AccountSettings'
 import { BOARD_THEMES } from './Board'
 
 interface Props {
@@ -57,6 +59,8 @@ export function SettingsPanel({ settings, status, onChange, onClose, crossOrigin
           ✕
         </button>
       </header>
+
+      {ACCOUNTS_ENABLED && <AccountSettings onClose={onClose} />}
 
       <div className="setting">
         <div className="setting-label">Appearance</div>

@@ -13,6 +13,7 @@ import { puzzleTab, usePathname, type PuzzleTab } from '../lib/router'
 import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
+import { useStoreVersion } from '../lib/syncBus'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { MistakesView } from './puzzles/Mistakes'
 import { DayStreak, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, StepNav, usePuzzleSolve, useStepKeys, type Update, type ViewProps } from './puzzles/shared'
@@ -29,6 +30,13 @@ interface Props {
 export function PuzzlesPage({ settings, avatar, onOpenAnalysis }: Props) {
   const tab = puzzleTab(usePathname())
   const [progress, setProgress] = useState(loadProgress)
+  // A sync pass brought progress from the account: carry on from it.
+  const version = useStoreVersion('puzzles')
+  const [loadedVersion, setLoadedVersion] = useState(version)
+  if (version !== loadedVersion) {
+    setLoadedVersion(version)
+    setProgress(loadProgress())
+  }
   const update: Update = useCallback((change) => {
     setProgress((p) => {
       const next = change(p)
