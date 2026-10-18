@@ -64,6 +64,8 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
   const day = dayNumber(new Date())
   return (
     <MistakeSolver
+      // A fresh solver per step through the queue: nothing from the last mistake (its move) carries over.
+      key={`${mistake.id}/${round}`}
       turn={`${mistake.id}/${round}`}
       mistake={mistake}
       left={queue.length}
@@ -114,13 +116,6 @@ function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, on
   const [move, setMove] = useState<string | null>(null)
   const [wrongScore, setWrongScore] = useState<string | null>(null)
   const [flipped, setFlipped] = useState(false)
-  const [shownTurn, setShownTurn] = useState(turn)
-  if (shownTurn !== turn) {
-    setShownTurn(turn)
-    setPhase('playing')
-    setMove(null)
-    setWrongScore(null)
-  }
   const check = useRef<AbortController | null>(null)
   // A check still running for the last mistake is dropped.
   useEffect(() => () => check.current?.abort(), [turn])

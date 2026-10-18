@@ -1,7 +1,8 @@
 import { validateFen } from 'chess.js'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { fetchRecentGames, formatTimeControl, outcomeFor, type ChesscomGame } from '../lib/chesscom'
+import * as chesscom from '../lib/chesscom'
 import type { Color } from '../lib/evaluation'
+import * as lichess from '../lib/lichess'
 
 export type LoadRequest = { kind: 'pgn'; pgn: string; orientation?: Color } | { kind: 'fen'; fen: string }
 
@@ -11,9 +12,45 @@ interface Props {
   onLoad: (req: LoadRequest) => string | null // returns an error message, or null on success
   chesscomUser: string
   onChesscomUser: (name: string) => void
+  lichessUser: string
+  onLichessUser: (name: string) => void
 }
 
-type Tab = 'chesscom' | 'pgn' | 'fen'
+type Tab = 'chesscom' | 'lichess' | 'pgn' | 'fen'
+
+/** What the games list needs from a site's game, Chess.com's or Lichess's. */
+interface ListedGame {
+  url: string
+  pgn: string
+  timeControl: string
+  endTime: number
+  white: { username: string; rating?: number }
+  black: { username: string; rating?: number }
+  opening?: string
+}
+
+interface Source<G extends ListedGame> {
+  name: string
+  fetchGames: (username: string) => Promise<G[]>
+  outcomeFor: (game: G, username: string) => 'win' | 'loss' | 'draw'
+  empty: string
+}
+
+const CHESSCOM: Source<chesscom.ChesscomGame> = {
+  name: 'Chess.com',
+  fetchGames: (u) => chesscom.fetchRecentGames(u),
+  outcomeFor: chesscom.outcomeFor,
+  empty: 'No standard games in the last few months.',
+}
+
+const LICHESS: Source<lichess.LichessGame> = {
+  name: 'Lichess',
+  fetchGames: (u) => lichess.fetchRecentGames(u),
+  outcomeFor: lichess.outcomeFor,
+  empty: 'No standard games yet.',
+}
+
+const isWhite = (g: ListedGame, user: string) => g.white.username.toLowerCase() === user.toLowerCase()
 
 function relativeDate(epochSeconds: number) {
   const days = Math.floor((Date.now() / 1000 - epochSeconds) / 86400)
@@ -23,9 +60,9 @@ function relativeDate(epochSeconds: number) {
   return new Date(epochSeconds * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: string) => void; onPick: (g: ChesscomGame, user: string) => void }) {
+function GamesTab<G extends ListedGame>({ source, user, onUser, onPick }: { source: Source<G>; user: string; onUser: (u: string) => void; onPick: (g: G, user: string) => void }) {
   const [input, setInput] = useState(user)
-  const [games, setGames] = useState<ChesscomGame[] | null>(null)
+  const [games, setGames] = useState<G[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fetchedFor, setFetchedFor] = useState('')
@@ -35,12 +72,12 @@ function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: strin
     setLoading(true)
     setError(null)
     try {
-      const list = await fetchRecentGames(name)
+      const list = await source.fetchGames(name)
       setGames(list)
       setFetchedFor(name.trim())
       onUser(name.trim())
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reach Chess.com.')
+      setError(err instanceof Error ? err.message : `Could not reach ${source.name}.`)
       setGames(null)
     } finally {
       setLoading(false)
@@ -66,7 +103,7 @@ function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: strin
       <form className="inline-form" onSubmit={submit}>
         <input
           className="input"
-          placeholder="Chess.com username"
+          placeholder={`${source.name} username`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           autoFocus
@@ -77,12 +114,12 @@ function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: strin
         </button>
       </form>
       {error && <p className="form-error">{error}</p>}
-      {games && games.length === 0 && <p className="muted">No standard games in the last few months.</p>}
+      {games && games.length === 0 && <p className="muted">{source.empty}</p>}
       {games && games.length > 0 && (
         <ul className="game-list">
           {games.map((g) => {
-            const outcome = outcomeFor(g, fetchedFor)
-            const meWhite = g.white.username.toLowerCase() === fetchedFor.toLowerCase()
+            const outcome = source.outcomeFor(g, fetchedFor)
+            const meWhite = isWhite(g, fetchedFor)
             const opp = meWhite ? g.black : g.white
             return (
               <li key={g.url}>
@@ -91,12 +128,12 @@ function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: strin
                   <span className="game-players">
                     <span className="game-opponent">
                       <span className={`dot ${meWhite ? 'black' : 'white'}`} />
-                      {opp.username} <span className="muted">({opp.rating})</span>
+                      {opp.username} {opp.rating != null && <span className="muted">({opp.rating})</span>}
                     </span>
                     <span className="game-sub muted">{g.opening ?? 'Unknown opening'}</span>
                   </span>
                   <span className="game-meta">
-                    <span>{formatTimeControl(g.timeControl)}</span>
+                    <span>{g.timeControl === '-' ? 'Unlimited' : chesscom.formatTimeControl(g.timeControl)}</span>
                     <span className="muted">{relativeDate(g.endTime)}</span>
                   </span>
                 </button>
@@ -109,8 +146,9 @@ function ChesscomTab({ user, onUser, onPick }: { user: string; onUser: (u: strin
   )
 }
 
-export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscomUser }: Props) {
-  const [tab, setTab] = useState<Tab>('chesscom')
+export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscomUser, lichessUser, onLichessUser }: Props) {
+  // Open on the site the player uses, when we only know one of their usernames.
+  const [tab, setTab] = useState<Tab>(lichessUser && !chesscomUser ? 'lichess' : 'chesscom')
   const [pgn, setPgn] = useState('')
   const [fen, setFen] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -153,6 +191,7 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
           {(
             [
               ['chesscom', 'Chess.com'],
+              ['lichess', 'Lichess'],
               ['pgn', 'PGN'],
               ['fen', 'FEN'],
             ] as const
@@ -173,13 +212,22 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
         </div>
 
         {open && tab === 'chesscom' && (
-          <ChesscomTab
+          <GamesTab
+            key="chesscom"
+            source={CHESSCOM}
             user={chesscomUser}
             onUser={onChesscomUser}
-            onPick={(g, user) => {
-              const meWhite = g.white.username.toLowerCase() === user.toLowerCase()
-              finish({ kind: 'pgn', pgn: g.pgn, orientation: meWhite ? 'white' : 'black' })
-            }}
+            onPick={(g, user) => finish({ kind: 'pgn', pgn: g.pgn, orientation: isWhite(g, user) ? 'white' : 'black' })}
+          />
+        )}
+
+        {open && tab === 'lichess' && (
+          <GamesTab
+            key="lichess"
+            source={LICHESS}
+            user={lichessUser}
+            onUser={onLichessUser}
+            onPick={(g, user) => finish({ kind: 'pgn', pgn: g.pgn, orientation: isWhite(g, user) ? 'white' : 'black' })}
           />
         )}
 

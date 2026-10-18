@@ -63,6 +63,10 @@ describe('gameKey', () => {
     expect(gameKey({ Link: 'https://www.chess.com/game/live/123' }, line)).toBe('https://www.chess.com/game/live/123')
   })
 
+  it('uses the Lichess game link', () => {
+    expect(gameKey({ Site: 'https://lichess.org/PndlSDZg' }, line)).toBe('https://lichess.org/PndlSDZg')
+  })
+
   it('hashes the moves otherwise, the same for the same moves', () => {
     const k = gameKey({ Link: 'https://evil.example/x' }, line)
     expect(k).toMatch(/^pgn:[0-9a-f]{8}$/)

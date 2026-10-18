@@ -617,7 +617,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               />
             ) : !hasGame && line.length < 2 ? (
               <section className="info-section info-empty">
-                <p>Load a game from Chess.com or paste a PGN, and its review shows up here.</p>
+                <p>Load a game from Chess.com or Lichess, or paste a PGN, and its review shows up here.</p>
                 <button className="btn ghost small" onClick={() => setLoadOpen(true)}>
                   Load game
                 </button>
@@ -752,6 +752,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         onLoad={loadGame}
         chesscomUser={settings.chesscomUser}
         onChesscomUser={(chesscomUser) => updateSettings({ chesscomUser })}
+        lichessUser={settings.lichessUser}
+        onLichessUser={(lichessUser) => updateSettings({ lichessUser })}
       />
     </div>
   )

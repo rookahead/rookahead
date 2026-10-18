@@ -2,6 +2,7 @@
 // instantly. Each entry holds the review as a share-link token (~0.5 KB).
 import type { Color } from './evaluation'
 import { isChesscomUrl } from './chesscom'
+import { isLichessUrl } from './lichess'
 import { markChanged, STORE_KEYS } from './syncBus'
 import type { MoveNode, PgnHeaders } from './tree'
 
@@ -21,9 +22,10 @@ export const REVIEWS_LIMIT = 300
 
 const defaultStorage = (): Storage | undefined => (typeof localStorage === 'undefined' ? undefined : localStorage)
 
-/** Chess.com games are keyed by their URL; anything else by a hash of its moves. */
+/** Chess.com and Lichess games are keyed by their URL; anything else by a hash of its moves. */
 export function gameKey(headers: PgnHeaders, line: MoveNode[]): string {
   if (headers.Link && isChesscomUrl(headers.Link)) return headers.Link
+  if (headers.Site && isLichessUrl(headers.Site)) return headers.Site
   let h = 0x811c9dc5 // FNV-1a
   for (const ch of line[0].fen + ' ' + line.slice(1).map((n) => n.uci).join(' ')) {
     h ^= ch.charCodeAt(0)

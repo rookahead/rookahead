@@ -1,12 +1,13 @@
 // A tiny History-API router: pages switch without a reload, so the engine and the loaded game survive.
 import { useSyncExternalStore } from 'react'
 
-export type Route = 'home' | 'analysis' | 'play' | 'puzzles' | 'auth'
+export type Route = 'home' | 'analysis' | 'games' | 'play' | 'puzzles' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 
 export function routeFor(pathname: string): Route {
   if (/^\/(analysis|r)\/?$/.test(pathname)) return 'analysis'
   if (/^\/play\/?$/.test(pathname)) return 'play'
+  if (/^\/games\/?$/.test(pathname)) return 'games'
   if (/^\/puzzles(\/(sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
   if (/^\/(signup|login|reset-password|auth\/google)\/?$/.test(pathname)) return 'auth'
   return 'home'

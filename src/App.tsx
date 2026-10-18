@@ -10,6 +10,7 @@ import { navigate, useRoute } from './lib/router'
 import { useSettings } from './lib/settings'
 import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
+import { GamesPage } from './pages/Games'
 import { HomePage } from './pages/Home'
 import { PlayPage } from './pages/Play'
 import { PuzzlesPage } from './pages/Puzzles'
@@ -97,7 +98,10 @@ export default function App() {
       {!phone && !auth && <Sidebar route={route} rail={rail} onToggleRail={board ? toggleRail : undefined} footer={userCard} />}
       <div className="shell-page">
         {auth && <AuthPage />}
-        {route === 'home' && <HomePage avatar={avatar} boardTheme={settings.boardTheme} onOpenAnalysis={openAnalysis} />}
+        {route === 'home' && <HomePage avatar={avatar} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
+        {route === 'games' && (
+          <GamesPage avatar={avatar} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => setSettingsOpen(true)} />
+        )}
         {route === 'puzzles' && <PuzzlesPage settings={settings} avatar={avatar} onOpenAnalysis={openAnalysis} />}
         {playMounted && (
           <div className="page-host" hidden={route !== 'play'}>

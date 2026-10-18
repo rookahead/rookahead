@@ -22,6 +22,7 @@ export interface Settings {
   /** Start a review automatically after loading a game. */
   autoReview: boolean
   chesscomUser: string
+  lichessUser: string
   /** Move sounds, 0 (off) to 1. */
   soundVolume: number
 }
@@ -37,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   coordinates: true,
   autoReview: true,
   chesscomUser: '',
+  lichessUser: '',
   soundVolume: 0.7,
 }
 

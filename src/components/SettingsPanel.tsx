@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FULL_ENGINE_AVAILABLE, type EngineStatus } from '../engine/Engine'
 import { ACCOUNTS_ENABLED } from '../lib/account'
 import type { BoardTheme, Settings } from '../lib/settings'
@@ -50,6 +51,34 @@ function EngineStatusRow({ status, strength }: { status: EngineStatus | null; st
   )
 }
 
+/** A username saved when you leave the field or press Enter; an empty field forgets it. */
+function UsernameField({ label, value, onSave }: { label: string; value: string; onSave: (name: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  const [shown, setShown] = useState(value)
+  // A sync pass (or the home page) changed it: show the new name.
+  if (value !== shown) {
+    setShown(value)
+    setDraft(value)
+  }
+  const save = () => draft.trim() !== value && onSave(draft.trim())
+  return (
+    <label className="username-field">
+      <span>{label}</span>
+      <input
+        className="input"
+        value={draft}
+        placeholder="Not added"
+        spellCheck={false}
+        autoCapitalize="off"
+        autoComplete="off"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+      />
+    </label>
+  )
+}
+
 export function SettingsPanel({ settings, status, onChange, onClose, crossOriginIsolated }: Props) {
   return (
     <div className="settings-popover" role="dialog" aria-label="Settings">
@@ -61,6 +90,15 @@ export function SettingsPanel({ settings, status, onChange, onClose, crossOrigin
       </header>
 
       {ACCOUNTS_ENABLED && <AccountSettings onClose={onClose} />}
+
+      <div className="setting">
+        <div className="setting-label">
+          Your games
+          <span className="hint">Your public games from these sites show up in My games. Rookahead only reads them.</span>
+        </div>
+        <UsernameField label="Chess.com" value={settings.chesscomUser} onSave={(chesscomUser) => onChange({ chesscomUser })} />
+        <UsernameField label="Lichess" value={settings.lichessUser} onSave={(lichessUser) => onChange({ lichessUser })} />
+      </div>
 
       <div className="setting">
         <div className="setting-label">Appearance</div>

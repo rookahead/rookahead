@@ -1,4 +1,5 @@
 import { formatTimeControl } from '../lib/chesscom'
+import { isLichessUrl } from '../lib/lichess'
 import type { PgnHeaders } from '../lib/tree'
 
 interface Props {
@@ -50,7 +51,8 @@ function splitOpening(name: string): [string, string | undefined] {
 export function GameInfo({ headers, hasGame, opening, positionNote }: Props) {
   const tc = headers.TimeControl && headers.TimeControl !== '-' ? headers.TimeControl : undefined
   const result = headers.Result && headers.Result !== '*' ? headers.Result.replace('1/2', '½').replace('-', '–') : undefined
-  const link = headers.Link?.startsWith('https://') ? headers.Link : undefined
+  // Chess.com puts the game's address in Link; Lichess in Site.
+  const link = headers.Link?.startsWith('https://') ? headers.Link : headers.Site?.startsWith('https://') && isLichessUrl(headers.Site) ? headers.Site : undefined
   const [family, variation] = opening ? splitOpening(opening.name) : [undefined, undefined]
 
   const fields: [string, React.ReactNode][] = []

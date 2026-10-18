@@ -2974,9 +2974,21 @@ svg {
 
 .home-welcome {
   margin: 6px 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-welcome h1 {
+  margin: 0;
   font-size: 22px;
   font-weight: 650;
   letter-spacing: -0.01em;
+}
+
+.home-welcome span {
+  color: var(--muted);
+  font-size: 13.5px;
 }
 
 .home-card {
@@ -3125,9 +3137,6 @@ svg {
     gap: 14px;
   }
 
-  .home-side {
-    order: -1;
-  }
 
   /* One column: the latest-game card first, then welcome, stats and games. */
   .home-main {
@@ -4114,71 +4123,6 @@ button.user-avatar.guest:hover {
   }
 }
 
-.played-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 4px;
-  display: flex;
-  flex-direction: column;
-}
-
-.played-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.played-row:nth-child(even) {
-  background: var(--card-row);
-}
-
-.played-result {
-  flex: 0 0 46px;
-  font-weight: 650;
-  font-size: 13.5px;
-  color: var(--muted);
-}
-
-.played-result.win {
-  color: #6fb050;
-}
-
-.played-result.loss {
-  color: #e0604f;
-}
-
-.played-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.played-text strong {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.played-text > span {
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
-.played-accuracy {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.games-more {
-  margin: 6px 12px 2px;
-}
-
 .games-empty .btn {
   margin-left: auto;
   flex-shrink: 0;
@@ -4912,5 +4856,672 @@ button.user-avatar.guest:hover {
 
   .puzzle-below {
     min-height: 0;
+  }
+}
+
+/* ═══════════════ My games: stat cards, the games table, the Games page ═══════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 18px;
+  text-align: center;
+}
+
+button.stat-card {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+button.stat-card:hover {
+  background: var(--card-hover);
+}
+
+.stat-card strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stat-card > span {
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.stat-card .up {
+  color: var(--win);
+}
+
+.stat-card .down {
+  color: var(--danger);
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.stat-number.genius {
+  color: #a78bfa;
+}
+
+.stat-number.streak {
+  color: var(--streak);
+}
+
+.accuracy-ring {
+  width: 64px;
+  height: 64px;
+}
+
+.accuracy-ring circle {
+  fill: none;
+  stroke-width: 6;
+}
+
+.ring-track {
+  stroke: var(--surface-4);
+}
+
+.ring-fill {
+  stroke: var(--brand);
+  stroke-linecap: round;
+}
+
+.accuracy-ring text {
+  fill: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.see-all {
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.games-error,
+.games-loading {
+  margin: 4px 12px 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.games-error {
+  color: var(--danger);
+}
+
+/* The games table: From · Time · Players · Result · Accuracy · Moves · Date · button. */
+.gt {
+  display: flex;
+  flex-direction: column;
+}
+
+.gt-row {
+  display: grid;
+  grid-template-columns: 84px 58px minmax(0, 1fr) 50px 66px 46px 72px 84px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 12px;
+}
+
+.gt.no-date .gt-row {
+  grid-template-columns: 84px 58px minmax(0, 1fr) 50px 66px 46px 84px;
+}
+
+.gt-row:not(.gt-head):nth-child(even) {
+  background: var(--card-row);
+}
+
+.gt-head {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.gt-time,
+.gt-moves,
+.gt-date {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.gt-players {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gt-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.gt-player.me .gt-name {
+  font-weight: 650;
+}
+
+.gt-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-rating {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.gt-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.gt-swatch.white {
+  background: var(--bar-light);
+}
+
+.gt-swatch.black {
+  background: var(--bar-dark);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.gt-sub {
+  display: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.gt-result {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.gt-result.win {
+  color: var(--win);
+}
+
+.gt-result.loss {
+  color: var(--danger);
+}
+
+.gt-accuracy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.gt-not-yet {
+  color: var(--muted);
+  font-family: var(--font-ui);
+}
+
+.gt-action {
+  width: 100%;
+}
+
+.btn.quiet {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.btn.quiet:hover:not(:disabled) {
+  background: var(--surface-4);
+}
+
+/* Narrow: drop From/Time/Moves/Date columns; where it's from goes under the players. */
+@media (max-width: 760px) {
+  .gt-row,
+  .gt.no-date .gt-row {
+    grid-template-columns: minmax(0, 1fr) 44px 56px 74px;
+  }
+
+  .gt-from,
+  .gt-time,
+  .gt-moves,
+  .gt-date {
+    display: none;
+  }
+
+  .gt-sub {
+    display: block;
+  }
+}
+
+/* The coloured card: your latest game. */
+.latest-card {
+  gap: 14px;
+}
+
+.latest-card h2 {
+  font-size: 24px;
+}
+
+.latest-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.latest-board {
+  flex: 0 0 120px;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.latest-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.latest-result {
+  font-weight: 700;
+}
+
+.latest-result.win {
+  color: var(--win);
+}
+
+.latest-result.loss {
+  color: var(--danger);
+}
+
+.muted-on-brand {
+  opacity: 0.72;
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.latest-accuracy {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.latest-card .accent-btn {
+  margin-top: 0;
+}
+
+.latest-more {
+  align-self: center;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.latest-more:hover:not(:disabled) {
+  color: inherit;
+  opacity: 1;
+}
+
+/* First visit: where you play and your username. */
+.hero-card {
+  padding: 26px;
+  gap: 14px;
+}
+
+.hero-card h2 {
+  font-size: 26px;
+}
+
+.hero-card > p {
+  max-width: 520px;
+  font-size: 15px;
+}
+
+.hero-alt {
+  font-size: 13px;
+}
+
+.hero-alt .link-btn {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.username-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.site-switch {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+}
+
+.site-switch button {
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 550;
+  opacity: 0.8;
+}
+
+.site-switch button.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.username-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.username-row .input {
+  flex: 1 1 240px;
+  width: auto;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.username-row .accent-btn {
+  height: 48px;
+  margin: 0;
+  padding: 0 22px;
+}
+
+.username-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+/* Learn from your mistakes. */
+.mistakes-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+}
+
+.mistakes-board {
+  flex: 0 0 168px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.mistakes-text {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mistakes-text p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.mistakes-go {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+button.chip {
+  cursor: pointer;
+}
+
+button.chip:hover {
+  background: var(--surface-4);
+}
+
+.puzzles-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.puzzles-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.puzzles-card .muted {
+  font-size: 13px;
+}
+
+/* Settings: your usernames. */
+.username-field {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.username-field .input {
+  height: 36px;
+}
+
+/* The Games page. */
+.games-page {
+  max-width: 1000px;
+  box-sizing: border-box;
+  padding: 26px var(--pad-x) 48px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.games-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 6px 4px 0;
+}
+
+.games-title {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.games-title h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.games-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.games-title strong {
+  color: var(--text-2);
+  font-weight: 550;
+}
+
+.games-totals {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+}
+
+.games-totals div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+}
+
+.games-totals dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.games-totals dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 550;
+}
+
+.games-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pill-group {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.pill-group button {
+  height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.pill-group button:hover {
+  color: var(--text);
+}
+
+.pill-group button.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.games-load {
+  margin-left: auto;
+}
+
+.games-load svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.games-day {
+  padding: 14px 8px 8px;
+}
+
+.games-day-label {
+  margin: 0;
+  padding: 0 12px 6px;
+  color: var(--muted);
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.games-older {
+  align-self: center;
+}
+
+@media (max-width: 1000px) {
+  .games-page {
+    padding: 16px 16px calc(var(--tabbar-h) + 24px);
+  }
+
+  .games-load {
+    margin-left: 0;
+  }
+}
+
+/* The latest game leads on phones (top of the page), and the side column on desktop. */
+.phone-first {
+  display: none;
+}
+
+.gt-head[hidden] {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .phone-first {
+    display: block;
+  }
+
+  .desktop-first {
+    display: none;
   }
 }
