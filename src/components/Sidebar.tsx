@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { NAV_ITEMS } from '../lib/nav'
+import { NAV_ITEMS, type NavItem } from '../lib/nav'
 import type { Route } from '../lib/router'
 import { Link } from './Link'
 import { RookLogo } from './RookLogo'
@@ -7,17 +7,30 @@ import { Wordmark } from './Wordmark'
 
 interface Props {
   route: Route
-  /** Icons only (the Analysis page, to keep the board big). */
+  /** Icons only; the full sidebar is the default. */
   rail: boolean
-  /** Collapse/expand button; left out where the sidebar is always full (Home). */
-  onToggleRail?: () => void
+  onToggleRail: () => void
   /** The user card. */
   footer: ReactNode
-  /** The Today card, shown above the user card when the sidebar is full width. */
+  /** The Today card, folded away when the sidebar is a rail. */
   today?: ReactNode
 }
 
-/** Desktop navigation: a floating panel, full window height, with the user card at the bottom. */
+/** A section's icon: its strokes, plus any solid shapes. */
+export function NavItemIcon({ item }: { item: NavItem }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d={item.icon} />
+      {item.fill && <path className="icon-fill" d={item.fill} />}
+    </svg>
+  )
+}
+
+/**
+ * Desktop navigation: a floating panel, full window height, with the user card at the bottom.
+ * Collapsing slides it to a rail of icons: the icons, logo and avatar keep their places while
+ * the words fade and the width (and with it the page) animates.
+ */
 export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
   return (
     <aside className={`sidebar ${rail ? 'rail' : ''}`} aria-label="Sidebar">
@@ -26,21 +39,10 @@ export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
           <RookLogo />
           <Wordmark className="sidebar-wordmark" />
         </Link>
-        {onToggleRail && (
-          <button className="icon-btn sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : 'Collapse'}>
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d={rail ? 'm10 7 5 5-5 5' : 'm14 7-5 5 5 5'} />
-            </svg>
-          </button>
-        )}
       </div>
       <nav className="sidebar-nav" aria-label="Main">
         {NAV_ITEMS.map((item) => {
-          const icon = (
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d={item.icon} />
-            </svg>
-          )
+          const icon = <NavItemIcon item={item} />
           return item.path ? (
             <Link
               key={item.id}
@@ -62,12 +64,23 @@ export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
         })}
       </nav>
       <div className="sidebar-foot">
-        {!rail && today}
+        {today && (
+          <div className="sidebar-fold" inert={rail}>
+            <div>{today}</div>
+          </div>
+        )}
         {footer}
-        <div className="sidebar-links">
-          <a href="/about">About</a>
-          <a href="/privacy">Privacy</a>
-          <a href="https://github.com/rookahead/rookahead">GitHub</a>
+        <div className="sidebar-bottom">
+          <div className="sidebar-links" inert={rail}>
+            <a href="/about">About</a>
+            <a href="/privacy">Privacy</a>
+            <a href="https://github.com/rookahead/rookahead">GitHub</a>
+          </div>
+          <button className="icon-btn sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : 'Collapse'}>
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="m11 7-5 5 5 5M18 7l-5 5 5 5" />
+            </svg>
+          </button>
         </div>
       </div>
     </aside>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
-import { GameTable } from '../components/GameTable'
+import { GameList } from '../components/GameList'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
 import { UsernameForm } from '../components/UsernameForm'
@@ -9,7 +9,7 @@ import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { useAccount } from '../lib/account'
 import { currentGame, formatDay, greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
-import { gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
+import { finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
 import { dailyLine } from '../lib/puzzleData'
 import { dayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress } from '../lib/puzzleStore'
@@ -18,7 +18,6 @@ import { navigate } from '../lib/router'
 import { readSession, requestLoadDialog } from '../lib/session'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
-import { mainline, treeFromPgn } from '../lib/tree'
 import { DayStreak } from './puzzles/shared'
 
 const SHOWN = 6
@@ -47,7 +46,8 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading, errors } = useMyGames(users)
   const account = useAccount()
-  const name = account.status === 'signed-in' ? (account.username ?? account.account?.name.split(' ')[0] ?? null) : null
+  // Only the Rookahead username: the Google name would show first and then swap on every reload.
+  const name = account.status === 'guest' ? null : account.username
   const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
   const current = useMemo(() => currentGame(readSession()), [])
   const puzzlesVersion = useStoreVersion('puzzles')
@@ -168,7 +168,7 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
             </header>
             {importError && hasUsers && !firstVisit && <p className="games-error">{importError}</p>}
             {games.length ? (
-              <GameTable games={games.slice(0, SHOWN)} reviews={reviews} onOpen={(g, r) => void open(g, r)} />
+              <GameList games={games.slice(0, SHOWN)} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} />
             ) : loading ? (
               <p className="games-loading">Loading your games…</p>
             ) : (
@@ -270,15 +270,7 @@ function StatCard({ tone, label, value, empty, spark, onClick, children }: StatC
 
 /** The newest game, big: its final position and one button to review it. */
 function LatestCard({ game, review, theme, onOpen, className = '' }: { game: MyGame; review?: CachedReview; theme: BoardTheme; onOpen: () => void; className?: string }) {
-  const final = useMemo(() => {
-    try {
-      const line = mainline(treeFromPgn(game.pgn).tree)
-      const last = line[line.length - 1]
-      return { fen: last.fen, lastMove: last.uci ? ([last.uci.slice(0, 2), last.uci.slice(2, 4)] as [string, string]) : undefined }
-    } catch {
-      return null
-    }
-  }, [game.pgn])
+  const final = finalPosition(game)
   const opponent = game.color === 'white' ? game.black : game.white
   const accuracy = review?.accuracy[game.color]
   return (

@@ -8,6 +8,10 @@ interface Props {
   opening?: { eco?: string; name: string }
   /** On a fresh board, in place of the game details: "White to move", "Checkmate". */
   positionNote: string
+  /** The opening the moves have reached, when it isn't the game's own. */
+  positionOpening?: { eco?: string; name: string }
+  /** A sentence about how the game went, once it's reviewed. */
+  summary?: string
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -45,10 +49,10 @@ function splitOpening(name: string): [string, string | undefined] {
 }
 
 /**
- * The game's header, laid out like the top of a scoresheet: the opening as the headline,
- * then the facts a PGN's tags carry (time control, date, result, where it was played).
+ * The panel's Info tab, laid out like the top of a scoresheet: the opening as the headline, then the
+ * facts a PGN's tags carry (time control, date, result, where it was played), then how the game went.
  */
-export function GameInfo({ headers, hasGame, opening, positionNote }: Props) {
+export function GameInfo({ headers, hasGame, opening, positionNote, positionOpening, summary }: Props) {
   const tc = headers.TimeControl && headers.TimeControl !== '-' ? headers.TimeControl : undefined
   const result = headers.Result && headers.Result !== '*' ? headers.Result.replace('1/2', '½').replace('-', '–') : undefined
   // Chess.com puts the game's address in Link; Lichess in Site.
@@ -82,24 +86,39 @@ export function GameInfo({ headers, hasGame, opening, positionNote }: Props) {
 
   return (
     <>
-      <section className="info-section gi-opening" aria-label="Opening">
+      <section className="gi-section gi-opening" aria-label="Opening">
         {opening?.eco && <span className="gi-eco">{opening.eco}</span>}
         <h2 className="gi-family">{family ?? 'Unknown opening'}</h2>
         {variation && <p className="gi-variation">{variation}</p>}
       </section>
 
-      {fields.length > 0 && (
-        <section className="info-section" aria-label="Game details">
-          <dl className="gi-fields">
-            {fields.map(([label, value]) => (
-              <div key={label} className="gi-field">
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
+      {positionOpening && (
+        <section className="gi-section" aria-label="Opening at this move">
+          <h3 className="section-label">At this move</h3>
+          <p className="gi-text">
+            <span className="gi-eco">{positionOpening.eco}</span> {positionOpening.name}
+          </p>
+        </section>
+      )}
+
+      <section className="gi-section" aria-label="Game details">
+        <dl className="gi-fields">
+          {fields.map(([label, value]) => (
+            <div key={label} className="gi-field">
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {summary && (
+        <section className="gi-section" aria-label="How the game went">
+          <h3 className="section-label">How it went</h3>
+          <p className="gi-text">{summary}</p>
         </section>
       )}
     </>
   )
 }
+

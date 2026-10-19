@@ -29,8 +29,27 @@ function dropFullEngine(): Plugin {
   }
 }
 
+// The browser only fetches a font once text needs it, and React draws the text late, so the page
+// would paint in a fallback face first. Preloading the Latin files starts them with the HTML.
+const PRELOAD_FONTS = /^assets\/(dm-sans-latin-wght-normal|syne-latin-wght-normal|dm-mono-latin-(400|500)-normal)-[\w-]+\.woff2$/
+
+function preloadFonts(): Plugin {
+  return {
+    name: 'preload-fonts',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        return Object.keys(ctx.bundle ?? {})
+          .filter((file) => PRELOAD_FONTS.test(file))
+          .map((file) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: `/${file}`, crossorigin: '' }, injectTo: 'head-prepend' as const }))
+      },
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true' && dropFullEngine()],
+  plugins: [react(), preloadFonts(), loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true' && dropFullEngine()],
   // Two pages: the app, and the engine-free viewer other sites embed (rookahead.com/embed).
   build: { rollupOptions: { input: { main: 'index.html', embed: 'embed.html' } } },
   server: { headers: isolationHeaders },

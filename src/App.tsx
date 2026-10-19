@@ -16,12 +16,12 @@ import { HomePage } from './pages/Home'
 import { PlayPage } from './pages/Play'
 import { PuzzlesPage } from './pages/Puzzles'
 
-/** Whether the sidebar stays expanded on the Analysis page (it's a rail there by default). */
+/** Whether the sidebar is collapsed to a rail ('rail') or full ('expanded', the default), on every page. */
 const SIDEBAR_KEY = 'rookahead.sidebar'
 
-const readExpanded = () => {
+const readRail = () => {
   try {
-    return localStorage.getItem(SIDEBAR_KEY) === 'expanded'
+    return localStorage.getItem(SIDEBAR_KEY) === 'rail'
   } catch {
     return false
   }
@@ -35,7 +35,7 @@ export default function App() {
   const phone = useMediaQuery('(max-width: 1000px)')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { status: accountStatus, account } = useAccount()
-  const [expandOnAnalysis, setExpandOnAnalysis] = useState(readExpanded)
+  const [rail, setRail] = useState(readRail)
   // Analysis mounts on first visit and then stays, hidden, so a running review or a loaded game
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
   // /board (Analyze) is the same page, opened on a clean board.
@@ -47,10 +47,8 @@ export default function App() {
   const [playMounted, setPlayMounted] = useState(route === 'play')
   if (route === 'play' && !playMounted) setPlayMounted(true)
 
-  const board = onBoard || route === 'play' || route === 'puzzles'
   // The account page has the window to itself: no sidebar or tab bar.
   const auth = route === 'auth'
-  const rail = board && !expandOnAnalysis
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
@@ -71,13 +69,13 @@ export default function App() {
   }, [settingsOpen])
 
   const toggleRail = () => {
-    setExpandOnAnalysis((expanded) => {
+    setRail((was) => {
       try {
-        localStorage.setItem(SIDEBAR_KEY, expanded ? 'rail' : 'expanded')
+        localStorage.setItem(SIDEBAR_KEY, was ? 'expanded' : 'rail')
       } catch {
         // Not remembered; fine.
       }
-      return !expanded
+      return !was
     })
   }
 
@@ -101,7 +99,7 @@ export default function App() {
       {!phone && !auth && <Sidebar
           route={route}
           rail={rail}
-          onToggleRail={board ? toggleRail : undefined}
+          onToggleRail={toggleRail}
           footer={userCard}
           // Re-read on every page change: what's left to do today moves as you play.
           today={<TodayCard key={route} settings={settings} />}

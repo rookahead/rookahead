@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { GameTable } from '../components/GameTable'
+import { GameList } from '../components/GameList'
 import { PageHeader } from '../components/PageHeader'
+import { Tabs } from '../components/Tabs'
 import { UsernameForm } from '../components/UsernameForm'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { dayLabel, gameStats, SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
@@ -21,12 +22,14 @@ interface Props {
   onOpenSettings: () => void
 }
 
-function Pills<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
+/** Filter chips, each in its own colour (a dot, and a tint when chosen), with how many games each holds. */
+function Chips<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string, number][]; onChange: (v: T) => void }) {
   return (
-    <div className="pill-group" role="radiogroup" aria-label={label}>
-      {options.map(([v, text]) => (
-        <button key={v} role="radio" aria-checked={value === v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
+    <div className="filter-chips" role="radiogroup" aria-label={label}>
+      {options.map(([v, text, count]) => (
+        <button key={v} role="radio" aria-checked={value === v} className={`filter-chip ${v} ${value === v ? 'on' : ''}`} onClick={() => onChange(v)}>
           {text}
+          <span className="filter-count">{count}</span>
         </button>
       ))}
     </div>
@@ -41,7 +44,10 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
   const [result, setResult] = useState<ResultFilter>('all')
   const [shown, setShown] = useState(PAGE)
 
-  const filtered = useMemo(() => games.filter((g) => (source === 'all' || g.source === source) && (result === 'all' || g.result === result)), [games, source, result])
+  const fromSource = useMemo(() => games.filter((g) => source === 'all' || g.source === source), [games, source])
+  const filtered = useMemo(() => fromSource.filter((g) => result === 'all' || g.result === result), [fromSource, result])
+  const bySource = (s: GameSource) => games.filter((g) => g.source === s).length
+  const byResult = (r: MyGame['result']) => fromSource.filter((g) => g.result === r).length
   const days = useMemo(() => {
     const groups: { label: string; games: MyGame[] }[] = []
     for (const g of filtered.slice(0, shown)) {
@@ -114,29 +120,29 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
           </section>
         ) : (
           <>
+            <Tabs
+              label="Where from"
+              value={source}
+              onSelect={(v) => {
+                setSource(v)
+                setShown(PAGE)
+              }}
+              items={[
+                { id: 'all', label: 'All games', count: games.length },
+                { id: 'chesscom', label: 'Chess.com', count: bySource('chesscom'), tone: 'green' },
+                { id: 'lichess', label: 'Lichess', count: bySource('lichess'), tone: 'amber' },
+                { id: 'rookahead', label: 'Rookahead', count: bySource('rookahead'), tone: 'violet' },
+              ]}
+            />
             <div className="games-filters">
-              <Pills
-                label="Where from"
-                value={source}
-                options={[
-                  ['all', 'All'],
-                  ['chesscom', 'Chess.com'],
-                  ['lichess', 'Lichess'],
-                  ['rookahead', 'Rookahead'],
-                ]}
-                onChange={(v) => {
-                  setSource(v)
-                  setShown(PAGE)
-                }}
-              />
-              <Pills
+              <Chips
                 label="Result"
                 value={result}
                 options={[
-                  ['all', 'All results'],
-                  ['win', 'Wins'],
-                  ['loss', 'Losses'],
-                  ['draw', 'Draws'],
+                  ['all', 'All results', fromSource.length],
+                  ['win', 'Wins', byResult('win')],
+                  ['loss', 'Losses', byResult('loss')],
+                  ['draw', 'Draws', byResult('draw')],
                 ]}
                 onChange={(v) => {
                   setResult(v)
@@ -154,10 +160,10 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
             {loading && !games.length && <p className="games-loading">Loading your games…</p>}
             {games.length > 0 && filtered.length === 0 && <p className="games-loading">No games match these filters.</p>}
 
-            {days.map((day, i) => (
+            {days.map((day) => (
               <section key={day.label} className="home-card games-card games-day" aria-label={day.label}>
                 <h2 className="games-day-label">{day.label}</h2>
-                <GameTable games={day.games} reviews={reviews} onOpen={(g, r) => void open(g, r)} showDate={false} showHead={i === 0} />
+                <GameList games={day.games} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} showDate={false} />
               </section>
             ))}
 

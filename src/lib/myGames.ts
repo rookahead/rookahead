@@ -225,3 +225,21 @@ export function dayLabel(ms: number, now = new Date()): string {
   if (days === 1) return 'Yesterday'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }) })
 }
+
+// Each game's final position, worked out once (replaying a PGN is the slow part of drawing a row).
+const finals = new Map<string, { fen: string; lastMove?: [string, string] } | null>()
+
+/** Where the game ended, and its last move, for a small board picture. */
+export function finalPosition(game: MyGame): { fen: string; lastMove?: [string, string] } | null {
+  const id = `${game.source}:${game.key}`
+  if (!finals.has(id)) {
+    try {
+      const line = mainline(treeFromPgn(game.pgn).tree)
+      const last = line[line.length - 1]
+      finals.set(id, { fen: last.fen, lastMove: last.uci ? [last.uci.slice(0, 2), last.uci.slice(2, 4)] : undefined })
+    } catch {
+      finals.set(id, null)
+    }
+  }
+  return finals.get(id)!
+}

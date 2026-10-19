@@ -1,0 +1,81 @@
+import { useEffect, useRef, useState } from 'react'
+
+interface Props {
+  onFlip: () => void
+  onNewBoard: () => void
+  onLoadGame: () => void
+}
+
+const ITEMS = [
+  {
+    id: 'flip',
+    label: 'Flip board',
+    key: 'F',
+    icon: <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />,
+  },
+  {
+    id: 'new',
+    label: 'New board',
+    icon: (
+      <>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+      </>
+    ),
+  },
+  {
+    id: 'load',
+    label: 'Load game',
+    icon: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
+  },
+] as const
+
+/** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame }: Props) {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => !root.current?.contains(e.target as Node) && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const actions = { flip: onFlip, new: onNewBoard, load: onLoadGame }
+  return (
+    <div className="board-menu" ref={root}>
+      <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game">
+        <svg viewBox="0 0 24 24" aria-hidden>
+          <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
+        </svg>
+      </button>
+      {open && (
+        <div className="board-menu-list" role="menu">
+          {ITEMS.map((item) => (
+            <button
+              key={item.id}
+              role="menuitem"
+              className="board-menu-item"
+              onClick={() => {
+                setOpen(false)
+                actions[item.id]()
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden>
+                {item.icon}
+              </svg>
+              {item.label}
+              {'key' in item && <kbd>{item.key}</kbd>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

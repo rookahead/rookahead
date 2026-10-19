@@ -1,17 +1,14 @@
 import { NAV_ITEMS } from '../lib/nav'
 import type { Route } from '../lib/router'
 import { Link } from './Link'
+import { NavItemIcon } from './Sidebar'
 
 /** Phone navigation along the bottom of the screen. */
 export function TabBar({ route }: { route: Route }) {
   return (
     <nav className="tabbar" aria-label="Main">
       {NAV_ITEMS.map((item) => {
-        const icon = (
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d={item.icon} />
-          </svg>
-        )
+        const icon = <NavItemIcon item={item} />
         return item.path ? (
           <Link key={item.id} to={item.path} className={`tab-item ${route === item.id ? 'active' : ''} ${item.featured ? 'featured' : ''}`} aria-current={route === item.id ? 'page' : undefined}>
             {icon}

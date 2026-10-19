@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ACCOUNTS_ENABLED, openAccountPage, useAccount, type Account, type AccountState } from '../lib/account'
+import { ACCOUNTS_ENABLED, openAccountPage, useAccount, type Account } from '../lib/account'
 
 interface Props {
   rail: boolean
@@ -14,18 +14,17 @@ const Gear = () => (
   </svg>
 )
 
-/** Your picture (Google's), else your initial; `?` for a guest. */
+/** Your uploaded photo, else your username's initial; `?` for a guest. */
 export function AvatarFace({ account }: { account: Account | null }) {
+  const { avatarUrl, username } = useAccount()
   const [broken, setBroken] = useState<string | null>(null)
-  if (!account) return <>?</>
-  if (account.avatar && broken !== account.avatar) {
+  if (!account && !username) return <>?</>
+  if (avatarUrl && broken !== avatarUrl) {
     // crossOrigin: the page is cross-origin isolated, so images from other sites need CORS.
-    return <img src={account.avatar} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setBroken(account.avatar!)} />
+    return <img src={avatarUrl} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setBroken(avatarUrl)} />
   }
-  return <>{account.name.slice(0, 1).toUpperCase()}</>
+  return <>{(username ?? account?.name ?? '?').slice(0, 1).toUpperCase()}</>
 }
-
-const SYNC_LINE: Record<AccountState['sync'], string> = { synced: 'Synced', syncing: 'Syncing…', offline: 'Offline · will sync later' }
 
 /** Who you are and the way into settings, at the foot of the sidebar. Guests get the way to sign up. */
 export function UserCard({ rail, settingsOpen, onSettings }: Props) {
@@ -37,23 +36,21 @@ export function UserCard({ rail, settingsOpen, onSettings }: Props) {
     </button>
   )
   const canSignUp = ACCOUNTS_ENABLED && status === 'guest'
-  const avatar = canSignUp ? (
+  const face = canSignUp ? '?' : status === 'loading' && !username ? '' : <AvatarFace account={account} />
+  // In the rail only the avatar shows, so it's the way into settings (sign-up is in there too).
+  const avatar = rail ? (
+    <button className={`user-avatar ${guest ? 'guest' : ''}`} onClick={onSettings} aria-label="Settings" title="Settings">
+      {face}
+    </button>
+  ) : canSignUp ? (
     <button className="user-avatar guest" onClick={() => openAccountPage()} aria-label="Sign up" title="Sign up">
-      ?
+      {face}
     </button>
   ) : (
     <span className={`user-avatar ${guest ? 'guest' : ''}`} aria-hidden>
-      {status === 'loading' ? '' : <AvatarFace account={account} />}
+      {face}
     </span>
   )
-  if (rail) {
-    return (
-      <div className="user-card rail">
-        {avatar}
-        {settings}
-      </div>
-    )
-  }
   return (
     <div className="user-card">
       {avatar}
@@ -66,7 +63,8 @@ export function UserCard({ rail, settingsOpen, onSettings }: Props) {
         ) : (
           <span className="user-card-text">
             <strong>{username ?? account.name}</strong>
-            <span className={`user-card-sync ${sync}`}>{SYNC_LINE[sync]}</span>
+            {/* Syncing is normally invisible; only changes stuck on this device are worth a line. */}
+            {sync === 'offline' && <span className="user-card-sync offline">Offline · will sync later</span>}
           </span>
         )
       ) : canSignUp ? (
@@ -74,6 +72,10 @@ export function UserCard({ rail, settingsOpen, onSettings }: Props) {
           <strong>Guest</strong>
           <span>Sign up · it's free</span>
         </button>
+      ) : status === 'loading' && username ? (
+        <span className="user-card-text">
+          <strong>{username}</strong>
+        </span>
       ) : (
         <span className="user-card-text">
           <strong>{status === 'loading' ? 'Signing in…' : 'Guest'}</strong>

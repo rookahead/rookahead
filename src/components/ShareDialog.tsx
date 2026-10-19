@@ -6,6 +6,7 @@ import { exportPgn, pgnFileName } from '../lib/pgn'
 import type { BoardTheme } from '../lib/settings'
 import { EMBED_SIZES, embedUrl, gameShareText, iframeSnippet, momentShareText, moveLabel, shareUrl, type EmbedSize } from '../lib/share'
 import { GifTab, ImageTab } from './ShareMedia'
+import { Tabs } from './Tabs'
 import type { MoveNode, PgnHeaders } from '../lib/tree'
 
 type ShareMode = 'game' | 'move'
@@ -168,13 +169,7 @@ export function ShareDialog({ onClose, line, currentNode, headers, orientation, 
           )}
         </section>
 
-        <div className="tabs" role="tablist">
-          {tabs.map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} onSelect={setTab} items={tabs.map(([id, label]) => ({ id, label }))} />
 
         <div className="tab-body share-body">
           {tab === 'pgn' && (

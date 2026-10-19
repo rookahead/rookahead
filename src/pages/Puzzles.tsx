@@ -2,9 +2,10 @@ import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../components/Board'
-import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { Flame } from '../components/PuzzleIcons'
+import { TAB_ICONS, Tabs } from '../components/Tabs'
+import { useMistakes } from '../hooks/useMistakes'
 import { formatDay } from '../lib/home'
 import { dailyLine, nextRatedLine } from '../lib/puzzleData'
 import { dayNumber, DIFFICULTY, parsePuzzleLine, playerColor, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
@@ -45,7 +46,7 @@ export function PuzzlesPage({ settings, avatar, onOpenAnalysis }: Props) {
     })
   }, [])
 
-  const tabs = <PuzzleTabs tab={tab} />
+  const tabs = <PuzzleTabs tab={tab} solved={progress.mistakesSolved} />
   const props: ViewProps = { progress, update, settings, tabs, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
@@ -58,21 +59,21 @@ export function PuzzlesPage({ settings, avatar, onOpenAnalysis }: Props) {
   )
 }
 
-function PuzzleTabs({ tab }: { tab: PuzzleTab }) {
-  const item = (id: PuzzleTab, to: string, label: string) => (
-    <Link to={to} role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''}>
-      {label}
-    </Link>
-  )
+function PuzzleTabs({ tab, solved }: { tab: PuzzleTab; solved: string[] }) {
+  const mistakes = useMistakes()
+  // Mistakes solved on this page don't reach the shared list until it re-reads: leave them out here.
+  const waiting = mistakes?.filter((m) => !solved.includes(m.id)).length
   return (
-    <header className="panel-header">
-      <nav className="panel-tabs" role="tablist" aria-label="Puzzle modes">
-        {item('rated', '/puzzles', 'Rated')}
-        {item('sprint', '/puzzles/sprint', 'Sprint')}
-        {item('daily', '/puzzles/daily', 'Daily')}
-        {item('mistakes', '/puzzles/mistakes', 'Your mistakes')}
-      </nav>
-    </header>
+    <Tabs
+      label="Puzzle modes"
+      value={tab}
+      items={[
+        { id: 'rated', to: '/puzzles', label: 'Rated', icon: TAB_ICONS.rated, tone: 'sky' },
+        { id: 'sprint', to: '/puzzles/sprint', label: 'Sprint', icon: TAB_ICONS.sprint, tone: 'amber' },
+        { id: 'daily', to: '/puzzles/daily', label: 'Daily', icon: TAB_ICONS.daily, tone: 'violet' },
+        { id: 'mistakes', to: '/puzzles/mistakes', label: 'Your mistakes', icon: TAB_ICONS.mistakes, tone: 'rose', badge: waiting },
+      ]}
+    />
   )
 }
 

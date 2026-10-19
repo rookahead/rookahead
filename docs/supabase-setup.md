@@ -10,7 +10,8 @@ sign-in emails from rookahead.com).
 2. **New project**: name `rookahead`, generate a database password and keep it somewhere safe,
    region **South Asia (Mumbai)**, Free plan. Wait a minute or two while it starts.
 3. **SQL Editor** → New query → paste all of [`supabase/schema.sql`](../supabase/schema.sql) → **Run**.
-   It should say "Success. No rows returned".
+   It should say "Success. No rows returned". It also makes the public `avatars` storage bucket for
+   profile photos; run the file again whenever it changes (it's safe to repeat).
 4. **Project Settings → API Keys**: copy the **Project URL** (`https://xxxx.supabase.co`) and the
    **publishable key** (`sb_publishable_…`; on older dashboards, the `anon` `public` key). These two
    are public by design: the database rules decide who can read what, and every user can only

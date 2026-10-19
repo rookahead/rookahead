@@ -2,6 +2,7 @@
 // the synced stores in step with the account. The Supabase client loads only once it's needed.
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { useSyncExternalStore } from 'react'
+import { avatarBlob } from './avatar'
 import { googleAuthUrl, randomHex, readGoogleReturn, sha256Hex } from './googleSignIn'
 import { navigate } from './router'
 import { forgetLocal, syncOnce, type Remote } from './sync'
@@ -23,12 +24,54 @@ const GOOGLE_HOSTS = ['rookahead.com', 'www.rookahead.com', 'localhost', 'signup
 const GOOGLE_PENDING_KEY = 'rookahead.googleSignIn'
 /** The username asked for on Register, kept across the trip to Google or the email. */
 const PENDING_USERNAME_KEY = 'rookahead.pendingUsername'
+/** The signed-in account's username and photo, kept so a reload shows them at once instead of waiting for the server. */
+const USERNAME_KEY = 'rookahead.username'
+
+interface CachedProfile {
+  id?: string
+  username?: string
+  avatarUrl?: string | null
+}
+
+function readProfileCache(): CachedProfile | null {
+  try {
+    return JSON.parse(localStorage.getItem(USERNAME_KEY) ?? 'null') as CachedProfile | null
+  } catch {
+    return null
+  }
+}
+
+function cachedProfile(id: string): { username: string | null; avatarUrl: string | null } {
+  const saved = readProfileCache()
+  if (saved?.id !== id) return { username: null, avatarUrl: null }
+  return { username: typeof saved.username === 'string' ? saved.username : null, avatarUrl: typeof saved.avatarUrl === 'string' ? saved.avatarUrl : null }
+}
+
+function rememberedSignIn(): { username: string | null; avatarUrl: string | null } | null {
+  if (!ACCOUNTS_ENABLED) return null
+  try {
+    if (localStorage.getItem(AUTH_KEY) === null) return null
+  } catch {
+    return null
+  }
+  const saved = readProfileCache()
+  return saved?.id ? cachedProfile(saved.id) : { username: null, avatarUrl: null }
+}
+
+/** Remembers the account's username and photo on this device; no id forgets them. */
+function cacheProfile(id: string | undefined, profile?: { username: string | null; avatarUrl: string | null }) {
+  try {
+    if (id && profile?.username) localStorage.setItem(USERNAME_KEY, JSON.stringify({ id, ...profile }))
+    else localStorage.removeItem(USERNAME_KEY)
+  } catch {
+    // Not remembered: the next reload waits for the server again.
+  }
+}
 
 export interface Account {
   id: string
   email: string
   name: string
-  avatar?: string
   /** The username given when registering by email, until it's claimed. */
   requestedUsername?: string
 }
@@ -38,6 +81,8 @@ export interface AccountState {
   account: Account | null
   /** The account's username; null until it's loaded or chosen. */
   username: string | null
+  /** The profile photo uploaded here; null shows the username's first letter. */
+  avatarUrl: string | null
   /** Signed in without a username yet: the account page asks for one. */
   needsUsername: boolean
   sync: 'synced' | 'syncing' | 'offline'
@@ -45,7 +90,18 @@ export interface AccountState {
   error: string | null
 }
 
-let state: AccountState = { status: 'guest', account: null, username: null, needsUsername: false, sync: 'synced', error: null }
+// A device with a saved sign-in starts as "loading" with the remembered username, so the first frame
+// already greets the right person (the session itself is restored a moment later).
+const remembered = rememberedSignIn()
+let state: AccountState = {
+  status: remembered ? 'loading' : 'guest',
+  account: null,
+  username: remembered?.username ?? null,
+  avatarUrl: remembered?.avatarUrl ?? null,
+  needsUsername: false,
+  sync: 'synced',
+  error: null,
+}
 const listeners = new Set<() => void>()
 function setState(patch: Partial<AccountState>) {
   state = { ...state, ...patch }
@@ -89,12 +145,10 @@ export const preloadAccounts = () => void (ACCOUNTS_ENABLED && client())
 function accountFrom(session: Session): Account {
   const { id, email = '', user_metadata: meta = {} } = session.user
   const name: unknown = meta.full_name ?? meta.name
-  const avatar: unknown = meta.avatar_url ?? meta.picture
   return {
     id,
     email,
     name: typeof name === 'string' && name.trim() ? name.trim() : email.split('@')[0],
-    avatar: typeof avatar === 'string' ? avatar : undefined,
     requestedUsername: typeof meta.username === 'string' ? meta.username : undefined,
   }
 }
@@ -102,12 +156,12 @@ function accountFrom(session: Session): Account {
 function applySession(session: Session | null) {
   if (!session) {
     setChangeHook(undefined)
-    if (state.status !== 'guest') setState({ status: 'guest', account: null, username: null, needsUsername: false, sync: 'synced' })
+    if (state.status !== 'guest') setState({ status: 'guest', account: null, username: null, avatarUrl: null, needsUsername: false, sync: 'synced' })
     return
   }
   const account = accountFrom(session)
   const isNew = state.account?.id !== account.id
-  setState(isNew ? { status: 'signed-in', account, username: null, needsUsername: false, error: null } : { status: 'signed-in', account })
+  setState(isNew ? { status: 'signed-in', account, ...cachedProfile(account.id), needsUsername: false, error: null } : { status: 'signed-in', account })
   setChangeHook(() => scheduleSync())
   watchForSync()
   if (isNew) {
@@ -119,9 +173,13 @@ function applySession(session: Session | null) {
 /** The account's username; a new account claims the one asked for on Register, if it's still free. */
 async function loadUsername(id: string) {
   const c = await client()
-  const { data } = await c.from('profiles').select('username').eq('id', id).maybeSingle()
+  const { data } = await c.from('profiles').select('username, avatar_url').eq('id', id).maybeSingle()
   if (state.account?.id !== id) return
-  if (data) return setState({ username: data.username, needsUsername: false })
+  if (data) {
+    const profile = { username: data.username as string, avatarUrl: (data.avatar_url as string | null) ?? null }
+    cacheProfile(id, profile)
+    return setState({ ...profile, needsUsername: false })
+  }
   let pending: string | null = null
   try {
     pending = localStorage.getItem(PENDING_USERNAME_KEY)
@@ -164,6 +222,7 @@ export async function chooseUsername(name: string): Promise<string | null> {
     // Taken by someone else, or this account already has one (another tab): find out which.
     const { data } = await c.from('profiles').select('username').maybeSingle()
     if (data) {
+      cacheProfile(state.account?.id, { username: data.username, avatarUrl: state.avatarUrl })
       setState({ username: data.username, needsUsername: false })
       return null
     }
@@ -171,6 +230,7 @@ export async function chooseUsername(name: string): Promise<string | null> {
   }
   if (error?.code === '23514') return 'That username isn’t allowed.'
   if (error) return error.message
+  cacheProfile(state.account?.id, { username: name, avatarUrl: state.avatarUrl })
   setState({ username: name, needsUsername: false })
   return null
 }
@@ -425,6 +485,8 @@ export async function logOut(): Promise<void> {
 /** Deletes the account and everything in it. */
 export async function deleteAccount(): Promise<string | null> {
   const c = await client()
+  // Storage files don't go with the user row: remove the photo first.
+  if (state.account) await c.storage.from(AVATARS).remove([avatarPath(state.account.id)])
   const { error } = await c.rpc('delete_account')
   if (error) return error.message
   await c.auth.signOut({ scope: 'local' })
@@ -434,7 +496,50 @@ export async function deleteAccount(): Promise<string | null> {
 
 function leave() {
   setChangeHook(undefined)
+  cacheProfile(undefined)
   forgetLocal()
   storesReplaced(SYNCED)
-  setState({ status: 'guest', account: null, username: null, needsUsername: false, sync: 'synced' })
+  setState({ status: 'guest', account: null, username: null, avatarUrl: null, needsUsername: false, sync: 'synced' })
+}
+
+const AVATARS = 'avatars'
+const avatarPath = (id: string) => `${id}/avatar.webp`
+
+/** Uploads a picked image as the profile photo. Returns an error message, or null. */
+export async function uploadAvatar(file: File): Promise<string | null> {
+  const id = state.account?.id
+  if (!id) return 'Sign in to add a photo.'
+  let blob: Blob
+  try {
+    blob = await avatarBlob(file)
+  } catch (err) {
+    return err instanceof Error ? err.message : 'Couldn’t read that image.'
+  }
+  const c = await client()
+  const path = avatarPath(id)
+  const { error } = await c.storage.from(AVATARS).upload(path, blob, { upsert: true, contentType: 'image/webp', cacheControl: '31536000' })
+  if (error) return 'Couldn’t upload the photo. Try again in a moment.'
+  // Same file name every time; ?v= makes each upload a new address, so caches can keep it for good.
+  const avatarUrl = `${c.storage.from(AVATARS).getPublicUrl(path).data.publicUrl}?v=${Date.now()}`
+  return saveAvatarUrl(id, avatarUrl)
+}
+
+/** Back to the username's letter. Returns an error message, or null. */
+export async function removeAvatar(): Promise<string | null> {
+  const id = state.account?.id
+  if (!id) return null
+  const c = await client()
+  await c.storage.from(AVATARS).remove([avatarPath(id)])
+  return saveAvatarUrl(id, null)
+}
+
+async function saveAvatarUrl(id: string, avatarUrl: string | null): Promise<string | null> {
+  const c = await client()
+  const { error } = await c.from('profiles').update({ avatar_url: avatarUrl }).eq('id', id)
+  if (error) return 'Couldn’t save the photo to your account.'
+  if (state.account?.id === id) {
+    cacheProfile(id, { username: state.username, avatarUrl })
+    setState({ avatarUrl })
+  }
+  return null
 }

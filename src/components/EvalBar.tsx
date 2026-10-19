@@ -35,8 +35,9 @@ export function EvalBar({ score, orientation, active }: Props) {
   const white = shown ? winPercent(shown) : 50
   // The bar fills from the bottom with the colour of whoever sits at the bottom.
   const fill = orientation === 'white' ? white : 100 - white
-  // The chip marks the split, kept clear of the bar's rounded ends.
-  const chipTop = Math.min(97, Math.max(3, 100 - fill))
+  // The chip marks the split, but stays whole inside the bar: at least half its height (plus a
+  // little air) from either end, in pixels, so it fits however short the board makes the bar.
+  const chipTop = `clamp(15px, ${100 - fill}%, calc(100% - 15px))`
 
   return (
     <div
@@ -50,7 +51,7 @@ export function EvalBar({ score, orientation, active }: Props) {
       title={shown ? formatScore(shown) : undefined}
     >
       <div className="eval-bar-fill" style={{ transform: `scaleY(${fill / 100})` }} />
-      <span className="eval-bar-chip" style={{ top: `${chipTop}%` }}>
+      <span className="eval-bar-chip" style={{ top: chipTop }}>
         {shown ? chipText(shown) : '0.0'}
       </span>
     </div>

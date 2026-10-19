@@ -7,6 +7,8 @@ export interface NavItem {
   path: string | null
   /** Stroke icon, 24×24. */
   icon: string
+  /** Solid shapes drawn over the strokes. */
+  fill?: string
   /** The one item set apart and tinted in the brand colour. */
   featured?: boolean
 }
@@ -22,7 +24,15 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { id: 'games', label: 'My games', short: 'Games', path: '/games', icon: 'M4 5h16M4 12h16M4 19h10' },
   // A clean board for exploring any position (Game review is the same page with a game in it).
-  { id: 'board', label: 'Analyze', short: 'Analyze', path: '/board', icon: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 16 16' },
+  // A lens over two board squares.
+  {
+    id: 'board',
+    label: 'Analyze',
+    short: 'Analyze',
+    path: '/board',
+    icon: 'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6',
+    fill: 'M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z',
+  },
   // Rookahead's main thing: set apart and highlighted.
   { id: 'analysis', label: 'Game review', short: 'Review', path: '/analysis', icon: 'M4 20V10M10 20V4M16 20v-8M22 20H2', featured: true },
 ]

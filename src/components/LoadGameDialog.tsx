@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import * as chesscom from '../lib/chesscom'
 import type { Color } from '../lib/evaluation'
 import * as lichess from '../lib/lichess'
+import { Tabs } from './Tabs'
 
 export type LoadRequest = { kind: 'pgn'; pgn: string; orientation?: Color } | { kind: 'fen'; fen: string }
 
@@ -187,29 +188,19 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
             ✕
           </button>
         </header>
-        <div className="tabs" role="tablist">
-          {(
-            [
-              ['chesscom', 'Chess.com'],
-              ['lichess', 'Lichess'],
-              ['pgn', 'PGN'],
-              ['fen', 'FEN'],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={tab === id}
-              className={`tab ${tab === id ? 'active' : ''}`}
-              onClick={() => {
-                setTab(id)
-                setError(null)
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          value={tab}
+          onSelect={(id) => {
+            setTab(id)
+            setError(null)
+          }}
+          items={[
+            { id: 'chesscom', label: 'Chess.com' },
+            { id: 'lichess', label: 'Lichess' },
+            { id: 'pgn', label: 'PGN' },
+            { id: 'fen', label: 'FEN' },
+          ]}
+        />
 
         {open && tab === 'chesscom' && (
           <GamesTab

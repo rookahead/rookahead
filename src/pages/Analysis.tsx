@@ -9,6 +9,7 @@ import { CoachCard } from '../components/CoachCard'
 import { EngineLines } from '../components/EngineLines'
 import { EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
+import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
 import { KeyMoments } from '../components/KeyMoments'
 import { LoadGameDialog, type LoadRequest } from '../components/LoadGameDialog'
@@ -16,9 +17,9 @@ import { MoveList } from '../components/MoveList'
 import { PlayerBar } from '../components/PlayerBar'
 import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
-import { SponsorCard } from '../components/SponsorCard'
 import { ShareBanner } from '../components/ShareBanner'
-import { ShareDialog, ShareIcon } from '../components/ShareDialog'
+import { ShareDialog } from '../components/ShareDialog'
+import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
 import { terminalState, useGameReview, useLiveAnalysis, type PositionEval } from '../hooks/useAnalysis'
@@ -58,7 +59,7 @@ interface Game {
   headers: PgnHeaders
 }
 
-type Tab = 'review' | 'analysis'
+type Tab = 'review' | 'analysis' | 'info'
 
 /** Live scores shallower than this don't move the eval bar (a few ms at most with SF19). */
 const BAR_MIN_DEPTH = 12
@@ -114,11 +115,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [currentId, setCurrentId] = useState(() => restored?.currentId ?? ROOT_ID)
   const [orientation, setOrientation] = useState<Color>(() => restored?.orientation ?? 'white')
   const [engineOn, setEngineOn] = useState(true)
+  // The board's size when dragged by its corner handle (this device only); null fits it to the window.
+  const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
   const [loadOpen, setLoadOpen] = useState(loadDialogRequested)
   useEffect(clearLoadRequest, [])
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
-  const [tab, setTab] = useState<Tab>(() => (restored && (Object.keys(restored.evals).length || restored.review) ? 'review' : 'analysis'))
+  // Analyze's clean board opens on the engine; Game review on its Review tab (Load game is there when it's empty).
+  const [tab, setTab] = useState<Tab>(() => (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'review' : 'analysis')
   const [stepping, setStepping] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
@@ -188,10 +192,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const liveTop = live.result?.lines[0]
   const barScore = terminal?.score ?? (liveTop && liveTop.depth >= BAR_MIN_DEPTH ? liveTop.score : null) ?? reviewEval?.score ?? null
   const steppingThrough = tab === 'review' && stepping && review.status === 'done'
+  // A look at the Info tab mid-review keeps the review's arrows on the board.
+  const reviewArrows = tab !== 'analysis' && stepping && review.status === 'done'
 
   const shapes = useMemo<DrawShape[]>(() => {
     // While stepping through a review, show only "this was better" for the move just played.
-    if (steppingThrough) {
+    if (reviewArrows) {
       const best = currentReview?.bestMove
       if (!best || !currentReview || ['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)) return []
       return [{ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'suggest' }]
@@ -206,7 +212,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       out.push({ orig: uci.slice(0, 2) as Key, dest: uci.slice(2, 4) as Key, brush: i === 0 ? 'best' : 'alt' })
     })
     return out
-  }, [steppingThrough, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
+  }, [reviewArrows, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
 
   // Persist the session so a refresh doesn't lose the game.
   useEffect(() => {
@@ -544,43 +550,90 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     )
   } else {
     reviewBody = (
-      <CoachCard
-        title={line.length > 1 ? 'Ready when you are' : 'Nothing to review yet'}
-        detail={
-          line.length > 1
-            ? `Stockfish 19 will grade every move — genius to blunder — and work out each side’s accuracy.`
-            : 'Load a game or play some moves on the board first.'
-        }
-      >
-        <button className="btn primary" disabled={!ready || line.length < 2} onClick={runReview}>
-          Review game
-        </button>
-      </CoachCard>
+      <>
+        <CoachCard
+          title={line.length > 1 ? 'Ready when you are' : 'Nothing to review yet'}
+          detail={
+            line.length > 1
+              ? `Stockfish 19 will grade every move — genius to blunder — and work out each side’s accuracy.`
+              : 'Load a game or play some moves on the board first.'
+          }
+        >
+          {line.length > 1 ? (
+            <button className="btn primary" disabled={!ready} onClick={runReview}>
+              Review game
+            </button>
+          ) : (
+            <button className="btn primary" onClick={() => setLoadOpen(true)}>
+              Load game
+            </button>
+          )}
+        </CoachCard>
+      </>
     )
+  }
+
+  /** Drag the corner handle: the board follows the pointer (whichever way it moved further). The
+   *  layout's size variable is set directly while dragging, so the page doesn't re-render each frame. */
+  const startResize = (e: React.PointerEvent<HTMLElement>) => {
+    const board = e.currentTarget.parentElement?.querySelector('.board')
+    const layout = e.currentTarget.closest<HTMLElement>('.layout')
+    if (!board || !layout) return
+    e.preventDefault()
+    const handle = e.currentTarget
+    handle.setPointerCapture(e.pointerId)
+    const start = board.getBoundingClientRect().width
+    const max = boardLimit(layout)
+    const [x0, y0] = [e.clientX, e.clientY]
+    let size = start
+    let moved = false
+    const onMove = (ev: PointerEvent) => {
+      moved = true
+      const dx = ev.clientX - x0
+      const dy = ev.clientY - y0
+      size = Math.round(Math.min(Math.max(start + (Math.abs(dx) > Math.abs(dy) ? dx : dy), MIN_BOARD), max))
+      layout.style.setProperty('--board-user', `${size}px`)
+      layout.classList.add('sized')
+    }
+    const onUp = () => {
+      handle.removeEventListener('pointermove', onMove)
+      handle.removeEventListener('pointerup', onUp)
+      handle.removeEventListener('pointercancel', onUp)
+      if (moved) saveBoardSize(setBoardSize, size)
+    }
+    handle.addEventListener('pointermove', onMove)
+    handle.addEventListener('pointerup', onUp)
+    handle.addEventListener('pointercancel', onUp)
   }
 
   return (
     <div className="analysis-page">
       <PageHeader title={blank ? 'Analysis board' : 'Game review'} avatar={avatar}>
-        <button className="btn ghost small page-header-action" onClick={newBoard} title="New board">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
-          </svg>
-          <span className="page-header-label">New board</span>
-        </button>
-        <button className="btn primary small page-header-action" onClick={() => setLoadOpen(true)} title="Load game">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-          </svg>
-          <span className="page-header-label">Load game</span>
-        </button>
+        {line.length > 1 && (
+          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+            </svg>
+            <span className="page-header-label">Share</span>
+          </button>
+        )}
       </PageHeader>
 
-      <main className="layout">
+      <main
+        className={`layout ${blank ? '' : 'with-moments'} ${boardSize ? 'sized' : ''}`}
+        style={boardSize ? ({ '--board-user': `${boardSize}px` } as React.CSSProperties) : undefined}
+      >
         <section className="board-column">
           {player(orientation === 'white' ? 'black' : 'white')}
           <div className="board-row">
+            <span
+              className="board-resize"
+              role="separator"
+              aria-label="Resize the board"
+              title="Drag to resize the board · double-click to fit"
+              onPointerDown={startResize}
+              onDoubleClick={() => saveBoardSize(setBoardSize, null)}
+            />
             <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />
             <Board
               fen={node.fen}
@@ -596,63 +649,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           {player(orientation)}
         </section>
 
-        {/* Wide screens: the info card goes left of the board, the panel right. Narrower: both stack on the right. */}
-        <div className="side-stack">
-          <aside className="info-card" aria-label="Game">
-            <GameInfo
-              headers={headers}
-              hasGame={hasGame}
-              opening={infoOpening}
-              positionNote={terminal ? terminal.label : `${turn === 'white' ? 'White' : 'Black'} to move`}
-            />
-            {hasGame && opening && opening.name !== infoOpening?.name && (
-              <section className="info-section position-opening" aria-label="Opening at this move">
-                <span className="section-label">At this move</span>
-                <span className="position-opening-name">
-                  <span className="gi-eco">{opening.eco}</span> {opening.name}
-                </span>
-              </section>
-            )}
-            {review.status === 'done' && report ? (
-              <KeyMoments
-                report={report}
-                tree={tree}
-                currentId={node.id}
-                intro={summaryText}
-                onSelect={(id) => {
-                  setTab('review')
-                  setStepping(true)
-                  setCurrentId(id)
-                }}
-              />
-            ) : !hasGame && line.length < 2 ? (
-              <section className="info-section info-empty">
-                <p>Load a game from Chess.com or Lichess, or paste a PGN, and its review shows up here.</p>
-                <button className="btn ghost small" onClick={() => setLoadOpen(true)}>
-                  Load game
-                </button>
-              </section>
-            ) : hasGame && review.status !== 'running' ? (
-              <section className="info-section info-empty">
-                <p>Review the game to find its key moments.</p>
-              </section>
-            ) : null}
-            <section className="info-section info-share">
-              {line.length > 1 && (
-                <button className="btn ghost info-share-btn" onClick={() => setShareOpen(true)}>
-                  <ShareIcon />
-                  Share game
-                </button>
-              )}
-              <SponsorCard />
-              <nav className="site-links" aria-label="Site">
-                <a href="/about">About</a>
-                <span aria-hidden>·</span>
-                <a href="/privacy">Privacy</a>
-              </nav>
-            </section>
-          </aside>
-
           <aside className="panel">
             {banner && <ShareBanner kind={banner} onLoadGame={() => setLoadOpen(true)} onClose={() => setBanner(null)} />}
             <div className="panel-card">
@@ -662,18 +658,35 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                     <NavIcon name="back" />
                   </button>
                 )}
-                <div className="panel-tabs" role="tablist">
-                  <button role="tab" aria-selected={tab === 'review'} className={tab === 'review' ? 'active' : ''} onClick={() => setTab('review')}>
-                    Review
-                  </button>
-                  <button role="tab" aria-selected={tab === 'analysis'} className={tab === 'analysis' ? 'active' : ''} onClick={() => setTab('analysis')}>
-                    Analysis
-                  </button>
-                </div>
+                <Tabs
+                  value={tab}
+                  onSelect={setTab}
+                  items={[
+                    { id: 'review', label: 'Review', icon: TAB_ICONS.review, tone: 'sky' },
+                    { id: 'analysis', label: 'Analysis', icon: TAB_ICONS.analysis, tone: 'green' },
+                    { id: 'info', label: 'Info', icon: TAB_ICONS.info, tone: 'violet' },
+                  ]}
+                />
               </header>
 
               <div className={`panel-body ${tab}`}>
-                {tab === 'analysis' ? (
+                {tab === 'info' ? (
+                  <>
+                    <GameInfo
+                      headers={headers}
+                      hasGame={hasGame}
+                      opening={infoOpening}
+                      positionNote={terminal ? terminal.label : `${turn === 'white' ? 'White' : 'Black'} to move`}
+                      positionOpening={hasGame && opening && opening.name !== infoOpening?.name ? opening : undefined}
+                      summary={review.status === 'done' && report ? summaryText : undefined}
+                    />
+                    <nav className="site-links phone-only" aria-label="Site">
+                      <a href="/about">About</a>
+                      <span aria-hidden>·</span>
+                      <a href="/privacy">Privacy</a>
+                    </nav>
+                  </>
+                ) : tab === 'analysis' ? (
                   <>
                     <EngineLines
                       fen={node.fen}
@@ -734,13 +747,34 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
                   <NavIcon name="last" />
                 </button>
-                <button className="ctrl flip" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-                  <NavIcon name="flip" />
-                </button>
+                <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} />
               </nav>
             </div>
           </aside>
-        </div>
+
+        {/* Under the board: the moves that decided the game, one click from the board. */}
+        {!blank && (
+          <section className="moments-strip" aria-label="Key moments">
+            {review.status === 'done' && report ? (
+              <KeyMoments
+                report={report}
+                tree={tree}
+                currentId={node.id}
+                intro={summaryText}
+                onSelect={(id) => {
+                  setTab('review')
+                  setStepping(true)
+                  setCurrentId(id)
+                }}
+              />
+            ) : (
+              <p className="moments-empty">
+                <span className="section-label">Key moments</span>
+                {review.status === 'running' ? 'Finding them…' : line.length > 1 ? 'Review the game to find them.' : 'Load a game and review it to find them.'}
+              </p>
+            )}
+          </section>
+        )}
       </main>
 
       {shareOpen && (
@@ -772,4 +806,38 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       />
     </div>
   )
+}
+
+const BOARD_SIZE_KEY = 'rookahead.boardSize'
+const MIN_BOARD = 280
+const MAX_BOARD = 1400
+
+/** The biggest board the page has room for: the same limits as `.layout.sized` in the CSS, so a drag
+ *  past them doesn't store a size the board can't show (and that you'd have to drag back through). */
+function boardLimit(layout: HTMLElement): number {
+  const css = getComputedStyle(layout)
+  const v = (name: string) => parseFloat(css.getPropertyValue(name)) || 0
+  const pageWidth = layout.parentElement?.closest('.shell-page')?.clientWidth ?? window.innerWidth
+  const byWidth = pageWidth - v('--panel-w') - v('--evalbar-w') - 12 - v('--gap') - 2 * v('--pad-x')
+  const byHeight = window.innerHeight - v('--nav-h') - 2 * v('--pad-y') - 2 * v('--player-h') - 20
+  return Math.max(MIN_BOARD, Math.min(byWidth, byHeight, MAX_BOARD))
+}
+
+function readBoardSize(): number | null {
+  try {
+    const n = Number(localStorage.getItem(BOARD_SIZE_KEY))
+    return n >= MIN_BOARD && n <= MAX_BOARD ? n : null
+  } catch {
+    return null
+  }
+}
+
+function saveBoardSize(set: (n: number | null) => void, n: number | null) {
+  set(n)
+  try {
+    if (n) localStorage.setItem(BOARD_SIZE_KEY, String(n))
+    else localStorage.removeItem(BOARD_SIZE_KEY)
+  } catch {
+    // Not remembered; fine.
+  }
 }

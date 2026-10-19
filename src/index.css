@@ -35,6 +35,14 @@
   --bar-dark: #2a2a2f;
   --warn: #e0b25b;
   --streak: #ff8f3f;
+  /* Secondary buttons: a tonal fill a step lighter than whatever they sit on. */
+  --btn: rgba(255, 255, 255, 0.085);
+  --btn-hover: rgba(255, 255, 255, 0.14);
+  --tone-sky: var(--brand);
+  --tone-amber: var(--streak);
+  --tone-violet: #a78bfa;
+  --tone-rose: #fb7185;
+  --tone-green: #4ade80;
   /* Faint banding (alternate move rows) and graph guide lines. */
   --tint: rgba(255, 255, 255, 0.025);
   --guide: rgba(255, 255, 255, 0.14);
@@ -54,7 +62,6 @@
   --font-display: 'Syne Variable', Syne, var(--font-ui);
 
   --nav-h: 56px;
-  --info-w: 288px;
   --player-h: 48px;
   --gap: 24px;
   --pad-x: 28px;
@@ -101,6 +108,11 @@
   --danger: #d4433a;
   --warn: #a2700f;
   --streak: #e2620b;
+  --btn: rgba(0, 0, 0, 0.06);
+  --btn-hover: rgba(0, 0, 0, 0.1);
+  --tone-violet: #7c3aed;
+  --tone-rose: #e11d48;
+  --tone-green: #16a34a;
   --tint: rgba(0, 0, 0, 0.022);
   --guide: rgba(0, 0, 0, 0.14);
   --guide-strong: rgba(0, 0, 0, 0.3);
@@ -206,20 +218,25 @@ svg {
   color: var(--muted);
 }
 
+/* Secondary: filled, no outline, so it reads as a button on any card. */
 .btn.ghost {
-  background: transparent;
-  border-color: var(--border-strong);
+  background: var(--btn);
   color: var(--text);
-  font-weight: 500;
+  font-weight: 550;
 }
 
 .btn.ghost:hover:not(:disabled) {
-  background: var(--surface-3);
+  background: var(--btn-hover);
+}
+
+.btn.ghost:disabled {
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .btn.danger:hover:not(:disabled) {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
 .icon-btn {
@@ -330,14 +347,46 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
+  /* The page beside it is flex: 1, so it resizes along with this. */
+  transition: flex-basis var(--side-t) var(--side-ease);
 }
 
+/*
+ * The rail: the same panel at 72px. Icons, logo and avatar are placed so they sit on the
+ * rail's centre line (36px) in both states; the words fade out and the width clips them.
+ */
 .sidebar.rail {
   flex-basis: 72px;
-  padding: 14px 10px 10px;
-  align-items: center;
+}
+
+:root {
+  --side-t: 0.32s;
+  --side-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --side-t: 0s;
+  }
+}
+
+/* Fade in once there's room (expanding); fade out at once (collapsing). */
+.sidebar-wordmark,
+.sidebar-label,
+.soon-tag,
+.sidebar-links,
+.user-card-text,
+.user-card-gear {
+  transition: opacity 0.2s ease 0.12s, visibility 0s;
+}
+
+.sidebar.rail :is(.sidebar-wordmark, .sidebar-label, .soon-tag, .sidebar-links, .user-card-text, .user-card-gear) {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.1s ease, visibility 0s linear var(--side-t);
 }
 
 .sidebar-head {
@@ -345,12 +394,7 @@ svg {
   align-items: center;
   gap: 6px;
   padding: 0 0 16px;
-  align-self: stretch;
-}
-
-.sidebar.rail .sidebar-head {
-  flex-direction: column;
-  align-items: center;
+  white-space: nowrap;
 }
 
 .sidebar-brand {
@@ -358,6 +402,7 @@ svg {
   align-items: center;
   gap: 10px;
   padding: 6px;
+  margin-left: 3px;
   border-radius: 10px;
   color: var(--text);
   text-decoration: none;
@@ -366,12 +411,38 @@ svg {
   letter-spacing: -0.02em;
 }
 
+/* The toggle sits at the right end of the bottom row, and in the rail's centre. */
 .sidebar-toggle {
+  flex: none;
   margin-left: auto;
+  transition: margin var(--side-t) var(--side-ease), background 0.15s, color 0.15s;
+}
+
+.sidebar-toggle svg {
+  transition: transform var(--side-t) var(--side-ease);
 }
 
 .sidebar.rail .sidebar-toggle {
-  margin: 0;
+  margin-right: 6px;
+}
+
+.sidebar.rail .sidebar-links {
+  padding: 0;
+}
+
+.sidebar.rail .sidebar-toggle svg {
+  transform: rotate(180deg);
+}
+
+.sidebar-bottom {
+  display: flex;
+  align-items: center;
+}
+
+/* The solid part of an icon that also has strokes. */
+.icon-fill {
+  fill: currentColor;
+  stroke: none;
 }
 
 .sidebar-toggle svg,
@@ -389,7 +460,6 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  align-self: stretch;
 }
 
 .sidebar-item {
@@ -397,7 +467,9 @@ svg {
   align-items: center;
   gap: 12px;
   height: 42px;
-  padding: 0 12px;
+  padding: 0 12px 0 14px;
+  overflow: hidden;
+  white-space: nowrap;
   border-radius: 11px;
   color: var(--text-2);
   text-decoration: none;
@@ -434,34 +506,47 @@ svg {
   text-transform: uppercase;
 }
 
-.sidebar.rail .sidebar-item {
-  justify-content: center;
-  width: 48px;
-  padding: 0;
-  align-self: center;
-}
-
-.sidebar.rail .sidebar-wordmark,
-.sidebar.rail .sidebar-label,
-.sidebar.rail .soon-tag,
-.sidebar.rail .sidebar-links {
-  display: none;
-}
-
 .sidebar-foot {
   margin-top: auto;
   padding-top: 16px;
-  align-self: stretch;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.sidebar.rail .sidebar-foot {
-  align-items: center;
+/* The Today card folds away (height to 0) in the rail; its width stays put so nothing reflows. */
+.sidebar-fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin-bottom: -10px;
+  transition: grid-template-rows var(--side-t) var(--side-ease), opacity 0.2s ease 0.12s;
 }
 
+.sidebar-fold > div {
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 10px;
+}
+
+.sidebar.rail .sidebar-fold {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--side-t) var(--side-ease), opacity 0.1s ease;
+}
+
+.sidebar-fold .today-card,
+.sidebar .user-card {
+  flex: none;
+  box-sizing: border-box;
+  width: 224px;
+}
+
+/* Shrinks away as the rail closes in, so the toggle stays in view. */
 .sidebar-links {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   display: flex;
   gap: 14px;
   padding: 0 8px 2px;
@@ -587,44 +672,69 @@ svg {
 }
 
 .layout {
-  /* Wide layout: info card | board | panel. The board takes whatever height and width are left. */
+  /* Board (with the key moments under it on the review page) | panel. The board takes whatever
+     height and width are left, but never shrinks below 360px (short screens scroll instead). */
+  --moments-h: 0px;
+  --row-gap: 0px;
   --board-size: max(
-    300px,
+    360px,
     min(
-      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-      calc(100cqw - var(--info-w) - var(--panel-w) - var(--evalbar-w) - 12px - 2 * var(--gap) - 2 * var(--pad-x)),
+      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px - var(--row-gap) - var(--moments-h)),
+      calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
       880px
     )
   );
-  /* Height of the board column; the cards either side match it. */
+  /* Height of the board column. */
   --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
+}
+
+.layout.with-moments {
+  --moments-h: 54px;
+  --row-gap: 12px;
+}
+
+/* A board sized by its corner handle: as big as asked, but never past the width there is or past
+   the window's height with both player bars showing (the key moments may go below the fold). */
+.layout.sized {
+  --board-size: max(
+    280px,
+    min(
+      var(--board-user),
+      calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px)
+    )
+  );
 }
 
 .layout {
   display: grid;
-  grid-template-columns: var(--info-w) auto var(--panel-w);
-  grid-template-areas: 'info board panel';
+  grid-template-columns: auto var(--panel-w);
+  grid-template-areas: 'board panel' 'moments panel';
   justify-content: center;
   align-items: start;
-  gap: var(--gap);
+  gap: var(--row-gap) var(--gap);
   padding: var(--pad-y) var(--pad-x);
-}
-
-/* On wide screens the stack dissolves, so its two cards land in the grid's outer columns. */
-.side-stack {
-  display: contents;
 }
 
 .board-column {
   grid-area: board;
 }
 
-.info-card {
-  grid-area: info;
+/* The panel spans the board and the key moments. Size containment keeps its long move list from
+   stretching the rows: it just fills whatever height they come to. */
+.layout > .panel {
+  grid-area: panel;
+  align-self: stretch;
+  height: auto;
+  contain: size;
+  /* Never taller than the window, and pinned while a big board scrolls past. */
+  position: sticky;
+  top: calc(var(--nav-h) + var(--pad-y));
+  max-height: calc(100vh - var(--nav-h) - 2 * var(--pad-y));
 }
 
-.panel {
-  grid-area: panel;
+.moments-strip {
+  grid-area: moments;
 }
 
 .board-column {
@@ -636,34 +746,45 @@ svg {
   gap: 10px;
 }
 
-/* ═══════════════ Info card (left) ═══════════════
-   Read like the head of a scoresheet: the opening as the headline, then the game's facts
-   as labelled fields (the same facts a PGN's tags carry), then the key moments. */
-.info-card {
-  height: var(--column-h);
+/* ═══════════════ Key moments strip (under the board) ═══════════════ */
+.moments-strip {
+  width: calc(var(--evalbar-w) + 12px + var(--board-size));
+  max-width: 100%;
+  height: var(--moments-h);
   display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--surface-4) transparent;
+  align-items: center;
+  padding: 0 12px 0 16px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
 }
 
-.info-section {
+.moments-strip > .key-moments {
+  flex: 1;
+  min-width: 0;
+}
+
+.moments-empty {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ═══════════════ Info tab ═══════════════
+   Read like the head of a scoresheet: the opening as the headline, then the game's facts as
+   labelled fields (the same facts a PGN's tags carry), then how the game went. */
+.panel-body > .gi-section {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 16px;
 }
 
-.info-section + .info-section {
-  border-top: 1px solid var(--border);
-}
-
-.gi-opening {
-  display: flex;
-  flex-direction: column;
+.panel-body > .gi-opening {
   gap: 4px;
   padding-top: 18px;
   padding-bottom: 18px;
@@ -680,7 +801,6 @@ svg {
   margin: 0;
   font-size: 21px;
   font-weight: 650;
-  letter-spacing: -0.025em;
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -692,12 +812,19 @@ svg {
   color: var(--text-2);
 }
 
+.gi-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
 /* Two columns, label over value: Time | Date, then Result | Source. */
 .gi-fields {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
+  gap: 14px 16px;
 }
 
 .gi-field {
@@ -717,7 +844,6 @@ svg {
   min-width: 0;
   font-size: 13.5px;
   font-weight: 500;
-  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -745,29 +871,8 @@ svg {
   text-decoration-color: currentColor;
 }
 
-.position-opening {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.position-opening-name {
-  font-size: 13.5px;
-  color: var(--text-2);
-}
-
-.info-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.info-empty p {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--text-2);
+.panel-body > .site-links {
+  padding: 16px;
 }
 
 .result-pill {
@@ -782,8 +887,40 @@ svg {
 }
 
 .board-row {
+  position: relative;
   display: flex;
   gap: 12px;
+}
+
+/* The board's corner handle: drag to resize, double-click to fit the window again. */
+.board-resize {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.board-resize::after {
+  content: '';
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--text-2);
+  border-bottom: 2px solid var(--text-2);
+  border-bottom-right-radius: 3px;
+}
+
+.board-row:hover .board-resize,
+.board-resize:active {
+  opacity: 1;
 }
 
 /* ═══════════════ Player bars ═══════════════ */
@@ -1174,41 +1311,149 @@ svg {
 .panel-header {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 10px 14px 0;
+  align-items: center;
   border-bottom: 1px solid var(--border);
 }
 
 .panel-header .icon-btn {
-  margin-bottom: 6px;
+  margin-left: 8px;
 }
 
-.panel-tabs {
+.panel-header .tabs-bar {
+  flex: 1;
+  border-bottom: 0;
+}
+
+/* ---------- Tabs ---------- */
+
+/* One tab bar everywhere: equal columns, icon over label, each tab in its own colour. */
+.tabs-bar {
+  flex-shrink: 0;
+  display: grid;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs-tab {
+  --tone: var(--tone-sky);
+  min-width: 0;
   display: flex;
-  gap: 22px;
-}
-
-.panel-tabs button {
-  border: 0;
-  background: none;
-  padding: 4px 0 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 4px 10px;
   margin-bottom: -1px;
+  border: 0;
   border-bottom: 2px solid transparent;
+  background: none;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
-  transition: color 0.15s, border-color 0.15s;
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.panel-tabs button:hover {
+.tabs-tab.tone-amber {
+  --tone: var(--tone-amber);
+}
+
+.tabs-tab.tone-violet {
+  --tone: var(--tone-violet);
+}
+
+.tabs-tab.tone-rose {
+  --tone: var(--tone-rose);
+}
+
+.tabs-tab.tone-green {
+  --tone: var(--tone-green);
+}
+
+.tabs-tab:hover {
   color: var(--text);
+  background: var(--tint);
 }
 
-.panel-tabs button.active {
+.tabs-tab.active {
   color: var(--text);
   font-weight: 600;
-  border-bottom-color: var(--text);
+  border-bottom-color: var(--tone);
+}
+
+/* Label-only tabs (dialogs, sign-in) read at body size. */
+.tabs-tab:not(:has(.tabs-icon)) {
+  padding: 12px 4px 11px;
+  font-size: 14px;
+}
+
+.tabs-icon {
+  position: relative;
+  display: flex;
+  color: var(--tone);
+}
+
+.tabs-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.tabs-tab:hover .tabs-icon svg,
+.tabs-tab.active .tabs-icon svg {
+  opacity: 1;
+}
+
+.tabs-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabs-count {
+  margin-left: 7px;
+  color: var(--muted);
+  font-size: 0.86em;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Narrow screens: the count goes under the label, so the label keeps its room. */
+@media (max-width: 520px) {
+  .tabs-label:has(.tabs-count) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .tabs-count {
+    margin-left: 0;
+  }
+}
+
+.tabs-badge {
+  position: absolute;
+  top: -6px;
+  left: 13px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--tone);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .panel-body {
@@ -1257,25 +1502,84 @@ svg {
   border-top: 1px solid var(--border);
 }
 
-/* Flip sits apart from the move controls: it changes the view, not the position. */
-.ctrl.flip {
+/* Flip (or the board menu) sits apart from the move controls: it changes the view, not the position. */
+.ctrl.flip,
+.board-menu {
   margin-left: 6px;
+}
+
+.board-menu {
+  position: relative;
+  display: grid;
+}
+
+/* Opens upward from the move controls, over the panel. */
+.board-menu-list {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  transform-origin: bottom right;
+  animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.board-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13.5px;
+  text-align: left;
+}
+
+.board-menu-item:hover {
+  background: var(--btn-hover);
+}
+
+.board-menu-item svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--text-2);
+}
+
+.board-menu-item kbd {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .ctrl {
   height: 42px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  border-radius: 10px;
+  border: 0;
+  background: var(--btn);
   display: grid;
   place-items: center;
-  color: var(--text-2);
+  color: var(--text);
   transition: background 0.12s, color 0.12s, transform 0.1s;
 }
 
 .ctrl:hover:not(:disabled) {
-  background: var(--surface-3);
-  color: var(--text);
+  background: var(--btn-hover);
 }
 
 .ctrl:active:not(:disabled) {
@@ -1288,7 +1592,7 @@ svg {
 }
 
 .ctrl:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
 }
 
 .ctrl svg {
@@ -1477,50 +1781,99 @@ svg {
 }
 
 /* ═══════════════ Key moments ═══════════════ */
+/* One row: the label, then the moments as chips that scroll sideways if they don't all fit. */
 .key-moments {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
 
-.section-label {
-  margin: 0;
+.key-moments .section-label {
+  flex-shrink: 0;
+  margin: 0 4px 0 0;
 }
 
 .key-moments-intro {
   margin: 0;
+  min-width: 0;
+  font-size: 13px;
   color: var(--text-2);
-  font-size: 13.5px;
-  line-height: 1.5;
 }
 
-/* Rows bleed to the card's edges so the hover and the current marker span the full width. */
 .moments {
+  position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  margin: 0 -16px;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+/* Fade whichever ends have more chips past them. */
+.moments.more-left {
+  mask-image: linear-gradient(90deg, transparent, #000 28px);
+}
+
+.moments.more-right {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+
+.moments.more-left.more-right {
+  mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
+
+.moments-arrow {
+  flex-shrink: 0;
+  width: 28px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.moments-arrow:hover:not(:disabled) {
+  background: var(--btn-hover);
+  color: var(--text);
+}
+
+.moments-arrow:disabled {
+  opacity: 0.25;
+}
+
+.moment-tag {
+  font-size: 11.5px;
+  color: var(--muted);
 }
 
 .moment {
-  display: grid;
-  grid-template-columns: 18px 40px minmax(0, 1fr) auto;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 16px;
+  gap: 5px;
+  height: 30px;
+  padding: 0 9px 0 6px;
   border: 0;
-  background: transparent;
-  font-size: 13.5px;
-  text-align: left;
+  border-radius: 8px;
+  background: var(--btn);
+  font-size: 13px;
   transition: background 0.12s;
 }
 
-.moment:hover {
-  background: var(--surface-2);
+.moment:hover,
+.moment.current {
+  background: var(--btn-hover);
 }
 
 .moment.current {
-  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1.5px var(--moment-color);
 }
 
 .moment-num {
@@ -1530,11 +1883,6 @@ svg {
 
 .moment-san {
   font-weight: 600;
-}
-
-.moment-cls {
-  font-size: 12.5px;
-  font-weight: 500;
 }
 
 /* ═══════════════ Review summary: the face-off ═══════════════
@@ -2123,33 +2471,6 @@ svg {
   letter-spacing: -0.01em;
 }
 
-.tabs {
-  display: flex;
-  gap: 18px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--border);
-}
-
-.tab {
-  border: 0;
-  background: transparent;
-  padding: 10px 0;
-  color: var(--muted);
-  font-weight: 500;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-
-.tab:hover {
-  color: var(--text);
-}
-
-.tab.active {
-  color: var(--text);
-  font-weight: 600;
-  border-bottom-color: var(--text);
-}
-
 .tab-body {
   padding: 16px 20px 20px;
   display: flex;
@@ -2448,54 +2769,6 @@ svg {
   border-color: var(--text);
 }
 
-/* ═══════════════ Medium screens: no room for three columns ═══════════════
-   The info card moves above the panel, on the right of the board, sharing its height. */
-/* Two columns (info card above the panel) unless the page is wide enough that three give a bigger board:
-   three columns win only past ~1460px of page width at common laptop heights. */
-@container page (max-width: 1460px) {
-  .layout {
-    --board-size: max(
-      300px,
-      min(
-        calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-        calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
-        880px
-      )
-    );
-  }
-
-  .layout {
-    grid-template-columns: auto var(--panel-w);
-    grid-template-areas: 'board side';
-  }
-
-  .side-stack {
-    grid-area: side;
-    height: var(--column-h);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
-  }
-
-  /* The info card takes what it needs, up to 40%; the panel gets the rest. */
-  .info-card {
-    height: auto;
-    max-height: 40%;
-    flex-shrink: 0;
-  }
-
-  /* The card is short here and scrolls: its foot (sponsor, links) flows at the end instead of covering it. */
-  .info-card .info-share {
-    position: static;
-  }
-
-  .panel {
-    flex: 1;
-    height: auto;
-  }
-}
-
 /* ═══════════════ Narrow screens: one column ═══════════════ */
 @media (max-width: 1000px) {
   :root {
@@ -2503,8 +2776,13 @@ svg {
     --tabbar-h: calc(61px + env(safe-area-inset-bottom));
   }
 
-  .layout {
+  .layout,
+  .layout.sized {
     --board-size: min(calc(100vw - 32px - var(--evalbar-w) - 12px), 640px);
+  }
+
+  .board-resize {
+    display: none;
   }
 
   .page-header,
@@ -2522,6 +2800,7 @@ svg {
     display: none;
   }
 
+
   .settings-layer {
     left: 16px;
     right: 16px;
@@ -2537,20 +2816,37 @@ svg {
 
   .layout {
     grid-template-columns: minmax(0, calc(var(--board-size) + var(--evalbar-w) + 12px));
-    grid-template-areas: 'board' 'side';
+    grid-template-areas: 'board' 'panel' 'moments';
     padding: 14px 16px 24px;
   }
 
-  .side-stack {
-    height: auto;
-  }
-
-  .info-card {
-    max-height: none;
-  }
-
-  .panel {
+  .panel,
+  .layout > .panel {
     width: 100%;
+    height: auto;
+    max-height: none;
+    position: static;
+    contain: none;
+  }
+
+  .moments-strip {
+    width: 100%;
+    height: auto;
+    padding: 12px 14px;
+  }
+
+  .key-moments {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .key-moments .section-label {
+    width: 100%;
+  }
+
+  /* Phones swipe the row instead. */
+  .moments-arrow {
+    display: none;
   }
 
   .panel-body,
@@ -2579,11 +2875,6 @@ svg {
     width: 28px;
     height: 28px;
     font-size: 13px;
-  }
-
-  /* The panel (coach, Next move) comes straight after the board; game info after it. */
-  .panel {
-    order: -1;
   }
 
   /* Move controls stay in thumb reach wherever the page is scrolled. */
@@ -2631,16 +2922,6 @@ svg {
 }
 
 /* ═══════════════ Sharing ═══════════════ */
-/* The info card's foot (sponsor, Share game, site links) stays visible while the card scrolls. */
-.info-share {
-  position: sticky;
-  bottom: 0;
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--surface);
-}
 
 .sponsor-card {
   display: flex;
@@ -2725,6 +3006,17 @@ svg {
   color: var(--muted);
 }
 
+/* Desktop has these in the sidebar. */
+.site-links.phone-only {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .site-links.phone-only {
+    display: flex;
+  }
+}
+
 .site-links a {
   color: var(--muted);
   text-decoration: none;
@@ -2732,15 +3024,6 @@ svg {
 
 .site-links a:hover {
   color: var(--text);
-}
-
-.info-share-btn {
-  width: 100%;
-}
-
-/* A little more room between the game's own action and the sponsored card. */
-.info-share-btn + .sponsor-card {
-  margin-top: 4px;
 }
 
 .share-banner {
@@ -2838,16 +3121,16 @@ svg {
   display: grid;
   place-items: center;
   border-radius: 8px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  color: var(--text-2);
+  border: 0;
+  background: var(--btn);
+  color: var(--text);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .copy-btn:hover:not(:disabled) {
-  color: var(--text);
+  background: var(--btn-hover);
 }
 
 .copy-btn.copied {
@@ -3163,16 +3446,15 @@ svg {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 6px 8px 8px;
+  /* 5px in: the avatar lands on the rail's centre line. */
+  padding: 8px 6px 8px 5px;
   border-radius: 16px;
   background: var(--surface-2);
+  transition: background-color var(--side-t) var(--side-ease);
 }
 
-.user-card.rail {
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 4px;
-  background: none;
+.sidebar.rail .user-card {
+  background-color: transparent;
 }
 
 .user-avatar {
@@ -3410,32 +3692,13 @@ button.user-avatar.guest:hover {
   letter-spacing: -0.02em;
 }
 
-.auth-tabs {
-  display: flex;
+.auth-box .tabs-bar {
   margin-bottom: 8px;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom-color: var(--border-strong);
 }
 
-.auth-tabs a {
-  flex: 1;
-  padding: 12px 0;
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-  text-align: center;
-  color: var(--muted);
+.auth-box .tabs-tab {
   font-size: 16px;
-  font-weight: 550;
-  text-decoration: none;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.auth-tabs a:hover {
-  color: var(--text);
-}
-
-.auth-tabs a.active {
-  color: var(--text);
-  border-bottom-color: var(--brand);
 }
 
 .auth-field {
@@ -4155,28 +4418,6 @@ button.user-avatar.guest:hover {
 
 /* ---------- Puzzles ---------- */
 
-/* The Analysis panel's tabs, as links (each puzzle mode has its own address). */
-.panel-tabs a {
-  padding: 4px 0 12px;
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.panel-tabs a:hover {
-  color: var(--text);
-}
-
-.panel-tabs a.active {
-  color: var(--text);
-  font-weight: 600;
-  border-bottom-color: var(--text);
-}
-
 .puzzle-head {
   flex-shrink: 0;
   display: flex;
@@ -4672,9 +4913,9 @@ button.user-avatar.guest:hover {
 .pref-select {
   height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--border-strong);
+  border: 0;
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--btn);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -4989,161 +5230,137 @@ button.stat-card:hover {
   color: var(--danger);
 }
 
-/* The games table: From · Time · Players · Result · Accuracy · Moves · Date · button. */
-.gt {
+/* Games as cards: final position, result and opponent, details, your accuracy or Review. */
+.game-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 4px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
-.gt-row {
-  display: grid;
-  grid-template-columns: 84px 58px minmax(0, 1fr) 50px 66px 46px 72px 84px;
-  gap: 10px;
+.game-card {
+  width: 100%;
+  display: flex;
   align-items: center;
-  padding: 9px 12px;
+  gap: 14px;
+  padding: 8px 16px 8px 8px;
+  border: 0;
   border-radius: 12px;
-}
-
-.gt.no-date .gt-row {
-  grid-template-columns: 84px 58px minmax(0, 1fr) 50px 66px 46px 84px;
-}
-
-.gt-row:not(.gt-head):nth-child(even) {
-  background: var(--card-row);
-}
-
-.gt-head {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.source-tag {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 999px;
   background: var(--surface-3);
-  color: var(--text-2);
-  font-size: 12px;
-  white-space: nowrap;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
 }
 
-.gt-time,
-.gt-moves,
-.gt-date {
-  color: var(--text-2);
-  font-size: 13px;
+.game-card:hover {
+  background: var(--surface-4);
 }
 
-.gt-players {
+.game-card-board {
+  flex: none;
+  width: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.game-card-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
 }
 
-.gt-player {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+.game-card-title {
+  font-size: 14.5px;
   white-space: nowrap;
-  font-size: 14px;
-}
-
-.gt-player.me .gt-name {
-  font-weight: 650;
-}
-
-.gt-name {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.gt-rating {
-  color: var(--muted);
-  font-size: 13px;
+.game-card-title strong {
+  font-weight: 650;
 }
 
-.gt-swatch {
-  flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-
-.gt-swatch.white {
-  background: var(--bar-light);
-}
-
-.gt-swatch.black {
-  background: var(--bar-dark);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
-}
-
-.gt-sub {
-  display: none;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.gt-result {
-  font-size: 13px;
-  font-weight: 600;
+.game-card-result {
+  font-weight: 650;
   color: var(--muted);
 }
 
-.gt-result.win {
+.game-card-result.win {
   color: var(--win);
 }
 
-.gt-result.loss {
+.game-card-result.loss {
   color: var(--danger);
 }
 
-.gt-accuracy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-family: var(--font-mono);
+.game-card-rating {
+  color: var(--muted);
   font-size: 13px;
 }
 
-.gt-not-yet {
+.game-card-detail {
   color: var(--muted);
-  font-family: var(--font-ui);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gt-action {
-  width: 100%;
+.game-card-accuracy {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.btn.quiet {
-  background: var(--surface-3);
-  color: var(--text);
+.game-card-accuracy b {
+  font-family: var(--font-display);
+  font-variant-numeric: lining-nums;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
-.btn.quiet:hover:not(:disabled) {
-  background: var(--surface-4);
+.game-card-accuracy small {
+  color: var(--muted);
+  font-size: 11.5px;
 }
 
-/* Narrow: drop From/Time/Moves/Date columns; where it's from goes under the players. */
-@media (max-width: 760px) {
-  .gt-row,
-  .gt.no-date .gt-row {
-    grid-template-columns: minmax(0, 1fr) 44px 56px 74px;
+/* Review: a sky pill, brighter while the card is hovered. */
+.game-card-review {
+  flex: none;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+  font-size: 13.5px;
+  font-weight: 650;
+  transition: background 0.15s, color 0.15s;
+}
+
+.game-card:hover .game-card-review {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+@media (max-width: 520px) {
+  .game-card {
+    gap: 12px;
+    padding-right: 12px;
   }
 
-  .gt-from,
-  .gt-time,
-  .gt-moves,
-  .gt-date {
-    display: none;
-  }
-
-  .gt-sub {
-    display: block;
+  .game-card-board {
+    width: 44px;
   }
 }
 
@@ -5466,33 +5683,65 @@ button.chip:hover {
   gap: 10px;
 }
 
-.pill-group {
+/* Result filters: tonal chips, a dot in each result's colour; the chosen one tinted in it. */
+.filter-chips {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--card);
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.pill-group button {
-  height: 32px;
+.filter-chip {
+  --chip: var(--text);
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 0 13px;
   border: 0;
-  border-radius: 9px;
-  background: transparent;
+  border-radius: 999px;
+  background: var(--btn);
   color: var(--text-2);
   font: inherit;
   font-size: 13px;
   font-weight: 550;
+  transition: background 0.15s, color 0.15s;
 }
 
-.pill-group button:hover {
+.filter-chip.win {
+  --chip: var(--win);
+}
+
+.filter-chip.loss {
+  --chip: var(--danger);
+}
+
+.filter-chip.draw {
+  --chip: var(--muted);
+}
+
+.filter-chip:not(.all)::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--chip);
+}
+
+.filter-chip:hover {
+  background: var(--btn-hover);
   color: var(--text);
 }
 
-.pill-group button.on {
-  background: var(--accent);
-  color: var(--accent-ink);
+.filter-chip.on {
+  background: color-mix(in srgb, var(--chip) 18%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip) 45%, transparent);
+}
+
+.filter-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .games-load {
@@ -5540,9 +5789,6 @@ button.chip:hover {
   display: none;
 }
 
-.gt-head[hidden] {
-  display: none;
-}
 
 @media (max-width: 1000px) {
   .phone-first {
@@ -5695,8 +5941,7 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Accuracy in tables and the latest-game card: even-width digits without DM Mono's slashed zero. */
-.gt-accuracy,
+/* Accuracy on the latest-game card: even-width digits without DM Mono's slashed zero. */
 .latest-accuracy {
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
@@ -5729,6 +5974,10 @@ h2 {
   background: color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
+.sidebar-item.featured::before {
+  transition: left var(--side-t) var(--side-ease), right var(--side-t) var(--side-ease);
+}
+
 .sidebar.rail .sidebar-item.featured::before {
   left: 8px;
   right: 8px;
@@ -5736,4 +5985,43 @@ h2 {
 
 .tab-item.featured {
   color: var(--brand);
+}
+
+/* Settings: your photo is the button that changes it. */
+.account-photo {
+  position: relative;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.account-photo-edit {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.account-photo:hover .account-photo-edit,
+.account-photo:focus-visible .account-photo-edit {
+  opacity: 1;
+}
+
+.account-photo-edit svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.account-photo-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from '../components/Link'
+import { Tabs } from '../components/Tabs'
 import {
   chooseUsername,
   clearAccountError,
@@ -142,18 +143,6 @@ export function AuthPage() {
       setNotice('Sent. Check your inbox (and spam).')
     }
   }
-
-  const tab = (to: 'login' | 'signup', label: string) => (
-    <Link
-      to={`/${to}${location.search}`}
-      role="tab"
-      aria-selected={register === (to === 'signup')}
-      className={register === (to === 'signup') ? 'active' : ''}
-      onClick={() => go('form')}
-    >
-      {label}
-    </Link>
-  )
 
   const resendLinks = (
     <p className="auth-links">
@@ -298,10 +287,15 @@ export function AuthPage() {
     const ready = !register || nameOk
     body = (
       <>
-        <nav className="auth-tabs" role="tablist" aria-label="Account">
-          {tab('login', 'Sign in')}
-          {tab('signup', 'Register')}
-        </nav>
+        <Tabs
+          label="Account"
+          value={register ? 'signup' : 'login'}
+          items={[
+            { id: 'login', label: 'Sign in', to: `/login${location.search}` },
+            { id: 'signup', label: 'Register', to: `/signup${location.search}` },
+          ]}
+          onSelect={() => go('form')}
+        />
         {register && <UsernameField value={name} onChange={setName} onStatus={setNameOk} />}
         <button className="btn big ghost auth-google" onClick={google} disabled={busy || !ready}>
           <GoogleG />
