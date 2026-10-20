@@ -9,7 +9,6 @@ import {
   PASSWORD_MIN,
   preloadAccounts,
   registerWithEmail,
-  rememberUsername,
   resendConfirmation,
   resetPasswordWithCode,
   sendPasswordReset,
@@ -23,6 +22,12 @@ import { Brand } from './auth/Brand'
 import { GoogleG, PasswordField, UsernameField } from './auth/fields'
 
 const RESEND_AFTER = 60
+
+/** A starting username from the account's name or email: what's allowed of it, if enough is. */
+function suggestUsername(name: string | undefined): string {
+  const base = (name ?? '').replace(/[^A-Za-z0-9_-]/g, '').replace(/^[_-]+/, '').slice(0, 20)
+  return base.length >= 3 ? base : ''
+}
 
 /** Where to go once signed in: `?next=`, if it's a path on this site. */
 function nextPath(): string {
@@ -56,7 +61,8 @@ export function AuthPage() {
   const resetLink = pathname.startsWith('/reset-password')
   const { status, username, needsUsername, account, error: accountError } = useAccount()
   const [step, setStep] = useState<Step>('form')
-  const [name, setName] = useState('')
+  // Null until typed in: the username step starts from a suggestion.
+  const [name, setName] = useState<string | null>(null)
   const [nameOk, setNameOk] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPasswordValue] = useState('')
@@ -68,6 +74,7 @@ export function AuthPage() {
   const [passwordSaved, setPasswordSaved] = useState(false)
 
   useEffect(() => preloadAccounts(), [])
+  const pickedName = name ?? suggestUsername(account?.name)
   // Signed in with a username: on to where you were going (after a new password, if that's why you came).
   const done = status === 'signed-in' && Boolean(username) && (!resetLink || passwordSaved)
   useEffect(() => {
@@ -102,7 +109,6 @@ export function AuthPage() {
   }
 
   const google = () => {
-    if (register) rememberUsername(name)
     // On success the page is leaving for Google; only an error comes back here.
     void run(signInWithGoogle)
   }
@@ -110,10 +116,10 @@ export function AuthPage() {
   const submitForm = async (e: FormEvent) => {
     e.preventDefault()
     if (register) {
-      if (!nameOk || password.length < PASSWORD_MIN) return
+      if (password.length < PASSWORD_MIN) return
       let result: Awaited<ReturnType<typeof registerWithEmail>> | undefined
       await run(async () => {
-        result = await registerWithEmail(name, email.trim(), password)
+        result = await registerWithEmail(email.trim(), password)
         return 'error' in result ? result.error : null
       })
       if (result && 'confirm' in result) {
@@ -192,10 +198,10 @@ export function AuthPage() {
           className="auth-form"
           onSubmit={(e) => {
             e.preventDefault()
-            if (nameOk) void run(() => chooseUsername(name))
+            if (nameOk) void run(() => chooseUsername(pickedName))
           }}
         >
-          <UsernameField value={name} onChange={setName} onStatus={setNameOk} />
+          <UsernameField value={pickedName} onChange={setName} onStatus={setNameOk} />
           <button className="btn big primary" disabled={busy || !nameOk}>
             {busy ? 'Saving…' : 'Continue'}
           </button>
@@ -284,7 +290,6 @@ export function AuthPage() {
       </>
     )
   } else {
-    const ready = !register || nameOk
     body = (
       <>
         <Tabs
@@ -296,14 +301,6 @@ export function AuthPage() {
           ]}
           onSelect={() => go('form')}
         />
-        {register && <UsernameField value={name} onChange={setName} onStatus={setNameOk} />}
-        <button className="btn big ghost auth-google" onClick={google} disabled={busy || !ready}>
-          <GoogleG />
-          Continue with Google
-        </button>
-        <div className="auth-or" role="separator">
-          <span>or</span>
-        </div>
         <form className="auth-form" onSubmit={submitForm}>
           <label className="auth-field">
             <span className="auth-label">Email</span>
@@ -321,13 +318,21 @@ export function AuthPage() {
               )
             }
           />
-          <button className="btn big primary" disabled={busy || !ready || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
+          <button className="btn big primary" disabled={busy || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
             {busy ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
           </button>
         </form>
+        <div className="auth-or" role="separator">
+          <span>or</span>
+        </div>
+        <button className="btn big ghost auth-google" onClick={google} disabled={busy}>
+          <GoogleG />
+          Continue with Google
+        </button>
         {register && (
           <p className="auth-fine">
-            We use your email only for your account: confirming it, and resetting your password. <a href="/privacy">Privacy</a>
+            You’ll pick a username next. We use your email only for your account: confirming it, and resetting your password.{' '}
+            <a href="/privacy">Privacy</a>
           </p>
         )}
       </>

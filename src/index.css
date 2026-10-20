@@ -3563,112 +3563,547 @@ button.user-avatar.guest:hover {
   color: var(--muted);
 }
 
-/* Account page (/signup, /login): what Rookahead is on the left, the forms on the right. */
+/* Account page (/signup, /login): Rookahead on the left (the big logo, then a tour of what it
+   offers), the forms on the right. */
 .auth-page {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
 }
 
 .auth-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  padding: 36px clamp(32px, 6vw, 88px);
+  --pad: clamp(32px, 5vw, 72px);
+  --intro-scale: 3;
+  --ease-move: cubic-bezier(0.65, 0, 0.2, 1);
+  position: sticky;
+  top: 0;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 32px var(--pad);
   background: var(--brand-card);
   color: var(--brand-card-text);
 }
 
-.auth-brand-home {
+/* The logo and wordmark: big in the middle at first, then in the corner as the home link. */
+.auth-mark {
+  position: relative;
+  z-index: 2;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  align-self: flex-start;
   color: inherit;
   text-decoration: none;
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: 22px;
+  transform-origin: left top;
+  transition: transform 0.95s var(--ease-move);
+  animation: auth-fade 0.6s ease both;
 }
 
-.auth-pitch {
-  margin: auto 0;
-  max-width: 500px;
+.auth-mark .brand-logo {
+  background: var(--brand-card-text);
+  color: var(--brand-card);
 }
 
-.auth-pitch h1 {
+.auth-brand[data-phase='intro'] .auth-mark {
+  transform: translateY(calc(50dvh - 32px - 30px * var(--intro-scale) - 12px)) scale(var(--intro-scale));
+}
+
+.auth-intro {
+  position: absolute;
+  top: 50%;
+  left: var(--pad);
+  right: var(--pad);
+  margin-top: 8px;
+  pointer-events: none;
+  transition:
+    opacity 0.45s ease,
+    transform 0.8s var(--ease-move);
+  animation: auth-rise 0.7s 0.15s ease both;
+}
+
+.auth-brand[data-phase='tour'] .auth-intro {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+.auth-intro-line {
   margin: 0;
-  font-size: clamp(30px, 3.4vw, 44px);
-  line-height: 1.08;
-  font-weight: 650;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.auth-pitch > p {
-  margin: 16px 0 0;
+.auth-intro-sub {
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+  opacity: 0.72;
+}
+
+@keyframes auth-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* The tour: one slide at a time; the next comes in from the right as the last leaves to the left. */
+.tour {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 460px);
+  min-height: 0;
+}
+
+.tour-stage {
+  display: grid;
+}
+
+.tour-slide {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-40px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.6s ease,
+    visibility 0s 0.6s;
+}
+
+.tour-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+  animation: tour-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+}
+
+.tour-slide h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(28px, 2.6vw, 38px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.tour-slide p {
+  margin: 10px 0 0;
+  max-width: 38ch;
   font-size: 16px;
   line-height: 1.5;
   opacity: 0.75;
 }
 
-.auth-features {
-  margin: 36px 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.tour-scene {
+  position: relative;
+  width: min(100%, 400px, 46dvh);
+  margin-bottom: 40px;
 }
 
-.auth-features li {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
+.tour-board .mini-board {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 28px 60px -24px rgba(0, 0, 0, 0.55);
 }
 
-.auth-features li > span:last-child {
+.tour-board {
+  position: relative;
+}
+
+.tour-badge {
+  position: absolute;
+  display: flex;
+  transform: translate(-62%, -38%);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+
+.is-active .tour-badge {
+  animation: tour-pop 0.5s 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+@keyframes tour-pop {
+  from {
+    transform: translate(-62%, -38%) scale(0);
+  }
+}
+
+/* The caption card on each picture, like the coach's note in a review. */
+.tour-note {
+  position: absolute;
+  z-index: 3;
+  right: -32px;
+  bottom: -24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 300px;
+  padding: 10px 16px 10px 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+}
+
+.is-active .tour-note {
+  animation: auth-rise 0.5s 0.35s ease both;
+}
+
+.tour-note > span:last-child {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.tour-note strong {
   font-size: 14px;
-  line-height: 1.45;
+  font-weight: 650;
 }
 
-.auth-features strong {
-  font-size: 15px;
-  font-weight: 600;
+.tour-note > span:last-child span {
+  color: var(--text-2);
 }
 
-.auth-features li > span:last-child span {
-  opacity: 0.72;
-}
-
-.auth-feature-icon {
+.tour-flame,
+.tour-check,
+.tour-level {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-.auth-feature-icon svg:not(.class-icon) {
-  width: 20px;
-  height: 20px;
+.tour-flame {
+  background: var(--streak);
+}
+
+.tour-check {
+  background: var(--tone-green);
+}
+
+.tour-flame svg,
+.tour-check svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tour-flame path {
+  fill: #fff;
+}
+
+.tour-check path {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
+  stroke: #fff;
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+.tour-level {
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Play: the eight levels as a rising ladder. */
+.tour-ladder {
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding: 26px 22px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.tour-ladder span {
+  flex: 1;
+  height: var(--h);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 7px;
+  box-sizing: border-box;
+  border-radius: 6px 6px 3px 3px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  transform-origin: bottom;
+}
+
+.is-active .tour-ladder span {
+  animation: tour-grow 0.6s calc(0.25s + var(--i) * 55ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tour-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.tour-ladder b {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.tour-ladder i {
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tour-ladder .is-pick {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* Sync: one profile, on a laptop and a phone. */
+.tour-devices {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+}
+
+.tour-laptop,
+.tour-phone {
+  position: absolute;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 3px solid color-mix(in srgb, currentColor 55%, transparent);
+  background: color-mix(in srgb, currentColor 6%, var(--brand-card));
+}
+
+.tour-laptop {
+  top: 14%;
+  left: 0;
+  width: 84%;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px 12px 4px 4px;
+  font-size: 14px;
+}
+
+.tour-laptop::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: -9%;
+  right: -9%;
+  height: 12px;
+  border-radius: 0 0 10px 10px;
+  background: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.tour-phone {
+  right: 0;
+  bottom: 16%;
+  width: 31%;
+  aspect-ratio: 9 / 18;
+  border-radius: 18px;
+  font-size: 9px;
+  background: var(--brand-card);
+}
+
+.tour-profile {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-items: center;
+  gap: 1em 1.4em;
+}
+
+.tour-phone .tour-profile {
+  grid-template-columns: auto;
+}
+
+.tour-avatar {
+  grid-column: 1 / -1;
+  width: 3em;
+  height: 3em;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.tour-lines {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: center;
+  gap: 0.4em;
+  margin-top: -0.4em;
+}
+
+.tour-lines span {
+  width: 6em;
+  height: 0.55em;
+  border-radius: 1em;
+  background: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.tour-lines span + span {
+  width: 4em;
+  opacity: 0.5;
+}
+
+.tour-stat {
+  display: grid;
+  justify-items: center;
+}
+
+.tour-stat b {
+  font-size: 1.7em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tour-stat span {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.is-active .tour-phone {
+  animation: auth-rise 0.6s 0.3s ease both;
+}
+
+/* The foot: a step per slide (the current one fills as it plays; pointing at the slide pauses it), and the fine print. */
 .auth-brand-foot {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   font-size: 13px;
+}
+
+.auth-brand-foot p {
+  margin: 0;
   opacity: 0.6;
+  text-align: right;
+}
+
+.tour-steps {
+  display: flex;
+  gap: 4px;
+  transition: opacity 0.5s ease;
+}
+
+.auth-brand[data-phase='intro'] .tour-steps {
+  opacity: 0;
+}
+
+.tour-step {
+  display: grid;
+  align-items: center;
+  width: 38px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tour-step::before,
+.tour-step span {
+  content: '';
+  grid-area: 1 / 1;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.tour-step::before {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.tour-step span {
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.tour-step.is-done span {
+  transform: none;
+}
+
+.auth-brand[data-phase='tour'] .tour-step.is-active span {
+  animation: tour-fill 5.5s linear forwards;
+}
+
+.auth-brand:has(.tour:hover, .tour-steps:hover) .tour-step.is-active span {
+  animation-play-state: paused;
+}
+
+@keyframes tour-fill {
+  to {
+    transform: none;
+  }
+}
+
+.tour-step:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 1300px) {
+  .auth-brand {
+    --intro-scale: 2.5;
+  }
+}
+
+@media (max-width: 1080px) {
+  .auth-brand {
+    --intro-scale: 2;
+  }
+}
+
+/* No motion: no intro, no sliding; the steps change slides by hand. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-mark,
+  .auth-intro,
+  .tour-slide {
+    transition: none;
+  }
+
+  .auth-mark,
+  .auth-intro,
+  .tour-slide.is-active,
+  .tour-badge,
+  .tour-note,
+  .tour-phone,
+  .tour-ladder span,
+  .tour-step span {
+    animation: none !important;
+  }
+
+  .tour-step.is-active span {
+    transform: none;
+  }
 }
 
 .auth-panel {
@@ -3875,7 +4310,7 @@ button.user-avatar.guest:hover {
   text-underline-offset: 2px;
 }
 
-/* Phones and narrow windows: a short brand band on top, the form below; the feature list goes. */
+/* Phones and narrow windows: a short brand band on top (logo and the line), the form below; no tour. */
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;
@@ -3883,24 +4318,36 @@ button.user-avatar.guest:hover {
   }
 
   .auth-brand {
-    gap: 18px;
+    position: static;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     padding: 20px 20px 24px;
   }
 
-  .auth-pitch {
+  .auth-brand[data-phase] .auth-mark {
+    transform: none;
+    transition: none;
+  }
+
+  .auth-brand[data-phase] .auth-intro {
+    position: static;
     margin: 0;
+    opacity: 1;
+    transform: none;
   }
 
-  .auth-pitch h1 {
-    font-size: 26px;
+  .auth-intro-line {
+    font-size: 24px;
   }
 
-  .auth-pitch > p {
-    margin-top: 8px;
+  .auth-intro-sub {
+    margin-top: 6px;
     font-size: 14px;
   }
 
-  .auth-features,
+  .tour,
   .auth-brand-foot {
     display: none;
   }

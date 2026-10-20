@@ -200,15 +200,6 @@ export async function usernameFree(name: string): Promise<boolean | null> {
   return error ? null : data === true
 }
 
-/** Remembers the username for a Register that leaves the page (Google, the email link). */
-export function rememberUsername(name: string): void {
-  try {
-    localStorage.setItem(PENDING_USERNAME_KEY, name)
-  } catch {
-    // Not remembered: the account page asks again after sign-in.
-  }
-}
-
 /** Gives the signed-in account its username. Returns an error message, or null. */
 export async function chooseUsername(name: string): Promise<string | null> {
   const c = await client()
@@ -415,11 +406,10 @@ function authMessage(error: { message: string; status?: number; code?: string })
 
 export type RegisterResult = { error: string } | { confirm: true } | { exists: true }
 
-/** Makes an email account. Supabase then emails a code (and link) to confirm the address. */
-export async function registerWithEmail(username: string, email: string, password: string): Promise<RegisterResult> {
+/** Makes an email account. Supabase then emails a code (and link) to confirm the address; the username comes after. */
+export async function registerWithEmail(email: string, password: string): Promise<RegisterResult> {
   const c = await client()
-  rememberUsername(username)
-  const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo: returnUrl(), data: { username } } })
+  const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo: returnUrl() } })
   if (error) return /already registered|user_already_exists/i.test(`${error.code} ${error.message}`) ? { exists: true } : { error: authMessage(error) }
   // An address that already has an account comes back as a user with no identities (so nobody
   // can probe which emails are registered); no email is sent.
