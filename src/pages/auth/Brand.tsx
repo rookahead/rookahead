@@ -11,7 +11,8 @@ import { LEVELS } from '../../lib/levels'
 
 /** How long the big logo holds before it moves to the corner and the tour starts. */
 const INTRO_MS = 1900
-const INTRO_KEY = 'rookahead.authIntro'
+/** Then the logo's trip to the corner (its CSS transition, 0.95s); the first slide waits until it's nearly there. */
+const DOCK_MS = 800
 
 /** Where a square sits on a board drawn from `orientation`'s side, as percentages from the top left. */
 function squareAt(square: string, orientation: Color): CSSProperties {
@@ -79,7 +80,7 @@ function PuzzleScene() {
         </span>
         <span>
           <strong>White to play, mate in 2</strong>
-          <span>Rated 1003 · day 12 of your streak</span>
+          <span>Rated 1003 · day 12 of your puzzle streak</span>
         </span>
       </div>
     </div>
@@ -123,7 +124,7 @@ function Profile() {
       </span>
       <span className="tour-stat">
         <b>12</b>
-        <span>day streak</span>
+        <span>puzzle streak</span>
       </span>
     </span>
   )
@@ -163,33 +164,17 @@ const SLIDES: { id: string; title: string; text: string; scene: ReactNode }[] = 
   { id: 'sync', title: 'Your progress, everywhere', text: 'Sign in and your games, reviews, rating and streaks follow you to every device.', scene: <SyncScene /> },
 ]
 
-function introSeen(): boolean {
-  try {
-    return sessionStorage.getItem(INTRO_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-/** The left half: the big logo, which then moves to the corner while what Rookahead offers slides by. */
+/** The left half: the big logo, which moves to the corner; once it's there, what Rookahead offers slides by.
+ * It plays each time the page opens; switching between Sign in and Register keeps it where it is. */
 export function Brand() {
   const still = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const [phase, setPhase] = useState<'intro' | 'tour'>(() => (introSeen() ? 'tour' : 'intro'))
+  // intro: the big logo; dock: it moves to the corner; tour: the slides, one by one.
+  const [phase, setPhase] = useState<'intro' | 'dock' | 'tour'>('intro')
   const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    if (phase !== 'intro') return
-    const t = setTimeout(
-      () => {
-        setPhase('tour')
-        try {
-          sessionStorage.setItem(INTRO_KEY, '1')
-        } catch {
-          // Plays again next time; harmless.
-        }
-      },
-      still ? 0 : INTRO_MS,
-    )
+    if (phase === 'tour') return
+    const t = setTimeout(() => setPhase(phase === 'intro' ? 'dock' : 'tour'), still ? 0 : phase === 'intro' ? INTRO_MS : DOCK_MS)
     return () => clearTimeout(t)
   }, [phase, still])
 

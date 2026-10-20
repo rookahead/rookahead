@@ -11,7 +11,7 @@ import { useMoveSounds } from '../../hooks/useMoveSounds'
 import { CLASS_INFO } from '../../lib/classify'
 import { formatDay } from '../../lib/home'
 import { acceptable, loadMistakes, type MistakePuzzle } from '../../lib/mistakes'
-import { dayNumber } from '../../lib/puzzles'
+import { localDayNumber } from '../../lib/puzzles'
 import { dayStreak, recordDay } from '../../lib/puzzleStore'
 import { requestLoadDialog, writeSession } from '../../lib/session'
 import type { Settings } from '../../lib/settings'
@@ -61,7 +61,7 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
       </PuzzleLayout>
     )
   }
-  const day = dayNumber(new Date())
+  const day = localDayNumber(new Date())
   return (
     <MistakeSolver
       // A fresh solver per step through the queue: nothing from the last mistake (its move) carries over.

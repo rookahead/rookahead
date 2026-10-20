@@ -87,8 +87,11 @@ export function pickBand(rating: number, bands: number[], rand: () => number = M
 
 const DAY_ZERO = Date.UTC(2026, 0, 1)
 
-/** Whole UTC days since 2026-01-01: the daily puzzle's number. */
+/** Whole UTC days since 2026-01-01: the daily puzzle's number (the same puzzle everywhere at once). */
 export const dayNumber = (date: Date) => Math.floor((date.getTime() - DAY_ZERO) / 86_400_000)
+
+/** Whole days since 2026-01-01 on your own calendar, turning over at your midnight: the puzzle streak's days. */
+export const localDayNumber = (date: Date) => Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - DAY_ZERO) / 86_400_000)
 
 /** Which line of the daily list is today's. */
 export function dailyIndex(date: Date, length: number): number {

@@ -6,12 +6,13 @@ import { PageHeader } from '../components/PageHeader'
 import { UsernameForm } from '../components/UsernameForm'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
-import { useAccount } from '../lib/account'
+import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
+import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
 import { currentGame, formatDay, greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
 import { finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
 import { dailyLine } from '../lib/puzzleData'
-import { dayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
+import { dayNumber, localDayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
@@ -44,15 +45,21 @@ function ago(ms: number, now = Date.now()): string {
 /** The home dashboard: your games from everywhere, your numbers, and the ways into review, puzzles and play. */
 export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
-  const { games, reviews, loading, errors } = useMyGames(users)
+  const { games, reviews, loading: importing, errors } = useMyGames(users)
   const account = useAccount()
+  // Just signed in on a device with nothing yet: your games are on their way down, so wait for them
+  // rather than showing the empty welcome for a moment.
+  const restoring = !games.length && (account.status === 'loading' || (account.status === 'signed-in' && account.sync === 'syncing'))
+  const loading = importing || restoring
+  // The numbers wait for your games, so they don't show "Not yet" and then change a moment later.
+  const waiting = loading && !games.length
   // Only the Rookahead username: the Google name would show first and then swap on every reload.
   const name = account.status === 'guest' ? null : account.username
   const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
   const current = useMemo(() => currentGame(readSession()), [])
   const puzzlesVersion = useStoreVersion('puzzles')
   const progress = useMemo(() => loadProgress(), [puzzlesVersion])
-  const today = dayNumber(new Date())
+  const today = localDayNumber(new Date())
 
   const mistakes = useMistakes()
 
@@ -71,6 +78,9 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
   const importError = Object.values(errors).find(Boolean)
   const latest = games[0]
   const streak = dayStreak(progress, today)
+  const [dismissed, setDismissed] = useState(dismissedNudges)
+  const saveNudge =
+    ACCOUNTS_ENABLED && account.status === 'guest' ? pickGuestNudge({ streak, reviews: Object.keys(reviews).length, dismissed }) : null
   const line =
     loading && !games.length
       ? 'Loading your games…'
@@ -92,6 +102,36 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
             <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(new Date().getHours(), name)}</h1>
             {!firstVisit && <span>{line}</span>}
           </div>
+
+          {saveNudge && (
+            <section className="save-nudge" aria-label="Save your progress">
+              <span className="save-nudge-icon" aria-hidden>
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9zM12 15V10M9.5 12.5 12 10l2.5 2.5" />
+                </svg>
+              </span>
+              <span className="save-nudge-text">
+                <strong>{saveNudge.title}</strong>
+                <span>{saveNudge.text}</span>
+              </span>
+              <button className="btn accent-btn save-nudge-cta" onClick={() => openAccountPage('signup')}>
+                Sign up
+              </button>
+              <button
+                className="icon-btn save-nudge-close"
+                aria-label="Not now"
+                title="Not now"
+                onClick={() => {
+                  dismissNudge(saveNudge.kind)
+                  setDismissed(dismissedNudges())
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden>
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </section>
+          )}
 
           {latest && (
             <div className="phone-first">
@@ -116,8 +156,8 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
               </p>
             </section>
           ) : (
-            <section className="stat-grid" aria-label="Your numbers">
-              <StatCard tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
+            <section className="stat-grid" aria-label="Your numbers" aria-busy={waiting || mistakes === null}>
+              <StatCard pending={waiting} tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
                 {stats.accuracy == null ? (
                   'Review a game to see it'
                 ) : stats.trend != null ? (
@@ -133,6 +173,7 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
                 )}
               </StatCard>
               <StatCard
+                pending={waiting}
                 tone="genius"
                 label="Genius moves"
                 empty="None yet"
@@ -142,17 +183,17 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
                 {geniusGame ? 'This week · see it ›' : 'This week'}
               </StatCard>
               <StatCard
+                pending={waiting || mistakes === null}
                 tone="mistakes"
-               
                 label="Mistakes to fix"
-                empty={mistakes ? 'All clear' : '–'}
+                empty="All clear"
                 value={mistakes?.length ? String(mistakes.length) : undefined}
                 onClick={() => navigate('/puzzles/mistakes')}
               >
                 {mistakes?.length ? 'Practise them ›' : 'From your games'}
               </StatCard>
-              <StatCard tone="streak" label="Day streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
-                {streak ? `Puzzles${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
+              <StatCard pending={waiting} tone="streak" label="Puzzle streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
+                {streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
               </StatCard>
             </section>
           )}
@@ -237,6 +278,8 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 interface StatCardProps {
+  /** Still loading: a placeholder where the number goes; the number fades in when it comes. */
+  pending?: boolean
   tone: 'accuracy' | 'genius' | 'mistakes' | 'streak'
   label: string
   /** The number; left out, the card says `empty` in words instead of a lone "0". */
@@ -248,15 +291,30 @@ interface StatCardProps {
 }
 
 /** One of the four numbers: its label, the number (or words when there's nothing yet), a line of context. */
-function StatCard({ tone, label, value, empty, spark, onClick, children }: StatCardProps) {
+function StatCard({ pending = false, tone, label, value, empty, spark, onClick, children }: StatCardProps) {
+  // Only a number that was waited for fades in; one that's there from the start just shows.
+  const [waited, setWaited] = useState(pending)
+  if (pending && !waited) setWaited(true)
+  const arrive = waited && !pending ? 'arrive' : ''
   const body = (
     <>
       <span className="stat-head">{label}</span>
-      <span className="stat-row">
-        {value ? <b className="stat-value">{value}</b> : <b className="stat-empty">{empty}</b>}
-        {value && spark && <Sparkline values={spark} />}
-      </span>
-      <span className="stat-sub">{children}</span>
+      {pending ? (
+        <>
+          <span className="stat-row">
+            <span className="stat-skeleton" aria-label="Loading" />
+          </span>
+          <span className="stat-sub stat-skeleton-line" aria-hidden />
+        </>
+      ) : (
+        <>
+          <span className={`stat-row ${arrive}`}>
+            {value ? <b className="stat-value">{value}</b> : <b className="stat-empty">{empty}</b>}
+            {value && spark && <Sparkline values={spark} />}
+          </span>
+          <span className={`stat-sub ${arrive}`}>{children}</span>
+        </>
+      )}
     </>
   )
   return onClick ? (
@@ -383,8 +441,8 @@ function DailyCard({ theme }: { theme: BoardTheme }) {
   const version = useStoreVersion('puzzles')
   const { done, days } = useMemo(() => {
     const progress = loadProgress()
-    const today = dayNumber(new Date())
-    return { done: progress.daily?.day === today ? progress.daily.result : undefined, days: dayStreak(progress, today) }
+    const now = new Date()
+    return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)) }
   }, [version])
   if (!puzzle) return null
   const color = playerColor(puzzle)

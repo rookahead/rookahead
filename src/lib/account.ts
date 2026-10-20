@@ -4,7 +4,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { useSyncExternalStore } from 'react'
 import { avatarBlob } from './avatar'
 import { googleAuthUrl, randomHex, readGoogleReturn, sha256Hex } from './googleSignIn'
-import { navigate } from './router'
+import { afterSignIn, navigate } from './router'
 import { forgetLocal, syncOnce, type Remote } from './sync'
 import { readMeta, setChangeHook, storesReplaced, SYNCED } from './syncBus'
 import type { StoreKey } from './syncMerge'
@@ -15,7 +15,7 @@ const SUPABASE_KEY: string | undefined = import.meta.env.VITE_SUPABASE_KEY
 export const ACCOUNTS_ENABLED = Boolean(SUPABASE_URL && SUPABASE_KEY)
 const AUTH_KEY = 'rookahead.auth'
 /** Sign-in callbacks put these in the address; they're removed once read. */
-const CALLBACK_PARAMS = ['code', 'error', 'error_code', 'error_description']
+const CALLBACK_PARAMS = ['code', 'sb_flow_id', 'error', 'error_code', 'error_description']
 const GOOGLE_CLIENT_ID: string | undefined = import.meta.env.VITE_GOOGLE_CLIENT_ID
 /** Where Google sends people back. Each host here has <host>/auth/google registered in the Google client. */
 const GOOGLE_RETURN_PATH = '/auth/google'
@@ -90,11 +90,35 @@ export interface AccountState {
   error: string | null
 }
 
+/** Arriving back from Google or a sign-in link: a sign-in is about to finish. */
+function signInReturning(): boolean {
+  if (!ACCOUNTS_ENABLED || typeof location === 'undefined') return false
+  const params = new URLSearchParams(location.search)
+  return location.pathname === GOOGLE_RETURN_PATH || CALLBACK_PARAMS.some((p) => params.has(p))
+}
+
+/** Back on Sign in or Register from a sign-in link (or Google through Supabase): before anything is drawn,
+ * the address becomes the page you were headed for, sign-in params and all (Supabase reads them from any
+ * page), so the account page never shows. `landedOn` is that account page, for showing a failure. */
+let landedOn: string | null = null
+if (ACCOUNTS_ENABLED && typeof location !== 'undefined' && /^\/(login|signup)\/?$/.test(location.pathname)) {
+  const url = new URL(location.href)
+  const callback = CALLBACK_PARAMS.filter((p) => url.searchParams.has(p)).map((p) => [p, url.searchParams.get(p)!] as const)
+  if (callback.length) {
+    callback.forEach(([p]) => url.searchParams.delete(p))
+    landedOn = url.pathname + url.search
+    const to = new URL(afterSignIn(landedOn), location.origin)
+    callback.forEach(([p, v]) => to.searchParams.set(p, v))
+    history.replaceState(history.state, '', to.pathname + to.search + url.hash)
+  }
+}
+
 // A device with a saved sign-in starts as "loading" with the remembered username, so the first frame
-// already greets the right person (the session itself is restored a moment later).
+// already greets the right person (the session itself is restored a moment later). So does a return
+// from Google, so its first frame isn't a guest's sign-in form.
 const remembered = rememberedSignIn()
 let state: AccountState = {
-  status: remembered ? 'loading' : 'guest',
+  status: remembered || signInReturning() ? 'loading' : 'guest',
   account: null,
   username: remembered?.username ?? null,
   avatarUrl: remembered?.avatarUrl ?? null,
@@ -126,6 +150,10 @@ export function openAccountPage(tab: 'signup' | 'login' = 'signup'): void {
 
 export const clearAccountError = () => state.error && setState({ error: null })
 
+/** A Google sign-in is being handed to Supabase. Supabase reports "no session" as it starts up, before
+ * that lands; it isn't a sign-out, so it mustn't turn the page back into a guest's. */
+let finishingSignIn = false
+
 let clientPromise: Promise<SupabaseClient> | null = null
 function client(): Promise<SupabaseClient> {
   clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) => {
@@ -133,7 +161,9 @@ function client(): Promise<SupabaseClient> {
       auth: { flowType: 'pkce', storageKey: AUTH_KEY, detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
     })
     // Supabase asks that nothing awaits inside this callback, so the work runs just after it.
-    c.auth.onAuthStateChange((_event, session) => setTimeout(() => applySession(session)))
+    c.auth.onAuthStateChange((_event, session) => {
+      if (session || !finishingSignIn) setTimeout(() => applySession(session))
+    })
     return c
   })
   return clientPromise
@@ -264,9 +294,12 @@ export async function startAccounts(): Promise<void> {
     if (!data.session) setState({ error: callbackError(params.get('error_description') ?? error?.message ?? '') })
   }
   applySession(data.session)
+  // It didn't work: back to the account page this came from, which says why.
+  if (callback && !data.session && landedOn) navigate(landedOn, { replace: true })
 }
 
-/** Back from Google: hand its ID token to Supabase, then return to the page that asked. */
+/** Back from Google: hand its ID token to Supabase. The page you were headed for opens at once (signing in
+ * shows there); only a failure goes back to the account page, to say what went wrong. */
 async function finishGoogle(): Promise<void> {
   const returned = readGoogleReturn(location.hash)
   let pending: { state: string; nonce: string; back: string } | null = null
@@ -276,19 +309,27 @@ async function finishGoogle(): Promise<void> {
   } catch {
     // Nothing to go on.
   }
+  const back = pending?.back.startsWith('/') ? pending.back : '/login'
   setState({ status: 'loading' })
-  navigate(pending?.back.startsWith('/') ? pending.back : '/login', { replace: true })
+  navigate(afterSignIn(back), { replace: true })
+  finishingSignIn = true
   const c = await client()
+  let error: string | null = null
   if (!returned || !pending || returned.state !== pending.state) {
-    setState({ error: 'Google sign-in didn’t finish. Try again.' })
+    error = 'Google sign-in didn’t finish. Try again.'
   } else if ('error' in returned) {
-    setState({ error: returned.error === 'access_denied' ? 'Sign-in was cancelled.' : `Google said: ${returned.error}` })
+    error = returned.error === 'access_denied' ? 'Sign-in was cancelled.' : `Google said: ${returned.error}`
   } else {
-    const { error } = await c.auth.signInWithIdToken({ provider: 'google', token: returned.idToken, nonce: pending.nonce })
-    if (error) setState({ error: error.message })
+    const result = await c.auth.signInWithIdToken({ provider: 'google', token: returned.idToken, nonce: pending.nonce })
+    error = result.error?.message ?? null
   }
   const { data } = await c.auth.getSession()
+  finishingSignIn = false
   applySession(data.session)
+  if (error && !data.session) {
+    setState({ error })
+    navigate(back, { replace: true })
+  }
 }
 
 function callbackError(message: string): string {

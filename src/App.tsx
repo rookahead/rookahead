@@ -3,10 +3,10 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { TodayCard } from './components/TodayCard'
-import { AvatarFace, UserCard } from './components/UserCard'
+import { AvatarFace, Gear, UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
-import { startAccounts, useAccount } from './lib/account'
+import { ACCOUNTS_ENABLED, openAccountPage, startAccounts, useAccount } from './lib/account'
 import { navigate, useRoute } from './lib/router'
 import { useSettings } from './lib/settings'
 import { AnalysisPage } from './pages/Analysis'
@@ -34,7 +34,7 @@ export default function App() {
   const route = useRoute()
   const phone = useMediaQuery('(max-width: 1000px)')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const { status: accountStatus, account } = useAccount()
+  const { status: accountStatus, account, needsUsername } = useAccount()
   const [rail, setRail] = useState(readRail)
   // Analysis mounts on first visit and then stays, hidden, so a running review or a loaded game
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
@@ -61,6 +61,11 @@ export default function App() {
 
   useEffect(() => void startAccounts(), [])
 
+  // Signed in without a username (a new Google account lands on the page it was headed for): choose one first.
+  useEffect(() => {
+    if (accountStatus === 'signed-in' && needsUsername && !auth) openAccountPage('signup')
+  }, [accountStatus, needsUsername, auth])
+
   useEffect(() => {
     if (!settingsOpen) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSettingsOpen(false)
@@ -86,13 +91,25 @@ export default function App() {
   }
 
   const toggleSettings = () => setSettingsOpen((o) => !o)
-  const userCard = <UserCard rail={rail} settingsOpen={settingsOpen} onSettings={toggleSettings} />
-  // Phones: the avatar in the page header opens settings.
-  const avatar = phone ? (
+  const userCard = <UserCard rail={rail} settingsOpen={settingsOpen} onSettings={toggleSettings} settings={settings} onChange={updateSettings} />
+  // Phones: the avatar in the page header opens settings; a guest gets Log in and Sign up beside a gear instead.
+  const avatar = !phone ? undefined : ACCOUNTS_ENABLED && accountStatus === 'guest' ? (
+    <div className="header-account">
+      <button className="btn small ghost" onClick={() => openAccountPage('login')}>
+        Log in
+      </button>
+      <button className="btn small accent-btn header-signup" onClick={() => openAccountPage('signup')}>
+        Sign up
+      </button>
+      <button className="icon-btn user-card-gear" onClick={toggleSettings} aria-label="Settings" title="Settings">
+        <Gear />
+      </button>
+    </div>
+  ) : (
     <button className={`user-avatar header-avatar ${accountStatus === 'signed-in' ? '' : 'guest'}`} onClick={toggleSettings} aria-label="Settings">
       <AvatarFace account={accountStatus === 'signed-in' ? account : null} />
     </button>
-  ) : undefined
+  )
 
   return (
     <div className="shell">

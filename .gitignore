@@ -25,3 +25,6 @@ dist-ssr
 
 # Stockfish builds copied from node_modules (≈200MB)
 public/engine/
+
+# Screen recordings for bug reports (local only)
+recordings/

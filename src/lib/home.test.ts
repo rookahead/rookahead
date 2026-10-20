@@ -83,7 +83,7 @@ describe('nudge', () => {
     const old = { opponent: 'x', endedAt: now - 5 * 86400000 }
     expect(nudge({ ...base, unreviewed: old, mistakes: 14 })).toBe('14 mistakes from your games are waiting as puzzles.')
     expect(nudge({ ...base, mistakes: 1 })).toBe('A mistake from your games is waiting as a puzzle.')
-    expect(nudge({ ...base, streak: 4 })).toBe('Solve a puzzle today to keep your 4-day streak.')
+    expect(nudge({ ...base, streak: 4 })).toBe('Solve a puzzle today to keep your 4-day puzzle streak.')
     expect(nudge({ ...base, streak: 4, solvedToday: true, trend: 2.14 })).toBe('Your accuracy is up 2.1 over your last 10 games.')
   })
 

@@ -1,5 +1,5 @@
 // Puzzle progress on this device: the rating, counts, puzzles seen, today's daily and solved mistakes.
-import { dayNumber, DIFFICULTY, newRating, parsePuzzleLine, SPRINT_MODES, type Difficulty, type SprintMode } from './puzzles'
+import { DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, SPRINT_MODES, type Difficulty, type SprintMode } from './puzzles'
 import { markChanged, STORE_KEYS } from './syncBus'
 
 export interface PuzzleProgress {
@@ -80,7 +80,7 @@ export function startRated(progress: PuzzleProgress, line: string): PuzzleProgre
   return { ...progress, current: { line }, seen: [...progress.seen.filter((s) => s !== id), id].slice(-SEEN_LIMIT) }
 }
 
-/** A puzzle was solved on `day`: the day streak goes on (or starts again). */
+/** A puzzle was solved on `day` (a local day): the puzzle streak goes on (or starts again). */
 export function recordDay(progress: PuzzleProgress, day: number): PuzzleProgress {
   const d = progress.days
   if (d?.last === day) return progress
@@ -88,14 +88,14 @@ export function recordDay(progress: PuzzleProgress, day: number): PuzzleProgress
   return { ...progress, days: { last: day, count, best: Math.max(count, d?.best ?? 0) } }
 }
 
-/** The day streak as of `today`: still alive until a whole day goes by without a solve. */
+/** The puzzle streak as of `today` (a local day): still alive until a whole day goes by without a solve. */
 export function dayStreak(progress: PuzzleProgress, today: number): number {
   const d = progress.days
   return d && d.last >= today - 1 ? d.count : 0
 }
 
-/** A finished sprint: keeps the best score per mode; any solve counts for the day streak. */
-export function recordSprint(progress: PuzzleProgress, mode: SprintMode, score: number, day = dayNumber(new Date())): { progress: PuzzleProgress; newBest: boolean } {
+/** A finished sprint: keeps the best score per mode; any solve counts for the puzzle streak. */
+export function recordSprint(progress: PuzzleProgress, mode: SprintMode, score: number, day = localDayNumber(new Date())): { progress: PuzzleProgress; newBest: boolean } {
   const newBest = score > (progress.sprintBest[mode] ?? 0)
   let next = newBest ? { ...progress, sprintBest: { ...progress.sprintBest, [mode]: score } } : progress
   if (score > 0) next = recordDay(next, day)
@@ -103,7 +103,7 @@ export function recordSprint(progress: PuzzleProgress, mode: SprintMode, score: 
 }
 
 /** The current rated puzzle's result: counts once (the first wrong move, or the solve). */
-export function recordRated(progress: PuzzleProgress, won: boolean, day = dayNumber(new Date())): PuzzleProgress {
+export function recordRated(progress: PuzzleProgress, won: boolean, day = localDayNumber(new Date())): PuzzleProgress {
   const current = progress.current
   const puzzle = current && parsePuzzleLine(current.line)
   if (!current || !puzzle || current.result) return progress

@@ -68,7 +68,7 @@ export interface NudgeInput {
   /** The newest game, if it hasn't been reviewed: who it was against and when it ended (ms). */
   unreviewed?: { opponent: string; endedAt: number }
   mistakes: number
-  /** Puzzle day streak, and whether today already counts. */
+  /** The puzzle streak, and whether today already counts. */
   streak: number
   solvedToday: boolean
   /** Accuracy change over the last 10 reviewed games. */
@@ -81,7 +81,7 @@ export interface NudgeInput {
 export function nudge({ unreviewed, mistakes, streak, solvedToday, trend, hasGames, now = Date.now() }: NudgeInput): string {
   if (unreviewed && now - unreviewed.endedAt < 3 * 86400000) return `Your game vs ${unreviewed.opponent} is ready to review.`
   if (mistakes > 0) return mistakes === 1 ? 'A mistake from your games is waiting as a puzzle.' : `${mistakes} mistakes from your games are waiting as puzzles.`
-  if (streak > 0 && !solvedToday) return `Solve a puzzle today to keep your ${streak}-day streak.`
+  if (streak > 0 && !solvedToday) return `Solve a puzzle today to keep your ${streak}-day puzzle streak.`
   if (trend != null && trend >= 0.5) return `Your accuracy is up ${trend.toFixed(1)} over your last 10 games.`
   return hasGames ? 'Pick a game and see where it turned.' : 'Load a game and see where it turned.'
 }

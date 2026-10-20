@@ -20,6 +20,14 @@ export function puzzleTab(pathname: string): PuzzleTab {
   return m ? (m[1] as PuzzleTab) : 'rated'
 }
 
+/** Where a sign-in started at `back` ends up: an account page's `?next=` (a path on this site, else Home); any other page is itself. */
+export function afterSignIn(back: string): string {
+  const url = new URL(back, 'https://x.invalid')
+  if (!/^\/(login|signup|reset-password)\/?$/.test(url.pathname)) return back
+  const next = url.searchParams.get('next')
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+}
+
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach((l) => l())
 if (typeof window !== 'undefined') window.addEventListener('popstate', notify)

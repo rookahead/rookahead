@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { navigate, onReselect, puzzleTab, routeFor } from './router'
+import { afterSignIn, navigate, onReselect, puzzleTab, routeFor } from './router'
 
 describe('routeFor', () => {
   it('maps paths to pages', () => {
@@ -57,5 +57,23 @@ describe('auth routes', () => {
     expect(routeFor('/signup')).toBe('auth')
     expect(routeFor('/login/')).toBe('auth')
     expect(routeFor('/reset-password')).toBe('auth')
+  })
+})
+
+describe('afterSignIn', () => {
+  it('goes on to an account page’s next', () => {
+    expect(afterSignIn('/login?next=%2Fgames')).toBe('/games')
+    expect(afterSignIn('/signup?next=/puzzles/daily')).toBe('/puzzles/daily')
+    expect(afterSignIn('/reset-password?next=/play')).toBe('/play')
+  })
+
+  it('goes Home from an account page without one, or with one off the site', () => {
+    expect(afterSignIn('/signup')).toBe('/')
+    expect(afterSignIn('/login?next=//evil.example')).toBe('/')
+    expect(afterSignIn('/login?next=https://evil.example')).toBe('/')
+  })
+
+  it('stays on any other page', () => {
+    expect(afterSignIn('/games')).toBe('/games')
   })
 })

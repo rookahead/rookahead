@@ -8,7 +8,7 @@ import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { useMistakes } from '../hooks/useMistakes'
 import { formatDay } from '../lib/home'
 import { dailyLine, nextRatedLine } from '../lib/puzzleData'
-import { dayNumber, DIFFICULTY, parsePuzzleLine, playerColor, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
+import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress, recordDay, recordRated, saveProgress, startRated, type PuzzleProgress } from '../lib/puzzleStore'
 import { puzzleTab, usePathname, type PuzzleTab } from '../lib/router'
 import { writeSession } from '../lib/session'
@@ -146,7 +146,7 @@ function RatedView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
   if (!puzzle) return <Placeholder tabs={tabs} settings={settings} error={error} onRetry={next} />
   const current = progress.current?.line === line ? progress.current : undefined
   const delta = current?.delta
-  const days = dayStreak(progress, dayNumber(new Date()))
+  const days = dayStreak(progress, localDayNumber(new Date()))
 
   const onResult = (won: boolean) => {
     const after = recordRated(progressRef.current, won)
@@ -265,7 +265,7 @@ function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
       tabs={tabs}
       counted={Boolean(done)}
       onResult={(won) => update((p) => (p.daily?.day === day ? p : { ...p, daily: { day, result: won ? 'solved' : 'failed' } }))}
-      onSolved={() => update((p) => recordDay(p, day))}
+      onSolved={() => update((p) => recordDay(p, localDayNumber(new Date())))}
       onAnalyse={(played) => analysePuzzle(puzzle, played, onOpenAnalysis)}
       solvedDetail="A new puzzle every day. Come back tomorrow."
       head={

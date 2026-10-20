@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyIndex, DIFFICULTY, newRating, parsePuzzleLine, pickBand, playerColor, revealSolution, sprintRating, startSolve, themeLabels, tryMove, type Puzzle } from './puzzles'
+import { dailyIndex, DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, pickBand, playerColor, revealSolution, sprintRating, startSolve, themeLabels, tryMove, type Puzzle } from './puzzles'
 
 const MATE_IN_2 = 'XPBtt r3r1k1/pp3p1R/2nb1p2/8/4B1N1/4P3/PP3P2/2K5_b_-_-_0_25 d6e5,g4h6,g8f8,h7f7 1559 mate,mateIn2,middlegame,short'
 const puzzle = (line: string) => parsePuzzleLine(line) as Puzzle
@@ -131,5 +131,15 @@ describe('DIFFICULTY', () => {
     expect(DIFFICULTY.easiest.offset).toBe(-600)
     expect(DIFFICULTY.normal.offset).toBe(0)
     expect(DIFFICULTY.hardest.offset).toBe(600)
+  })
+})
+
+describe('localDayNumber', () => {
+  it('turns over at your own midnight, wherever you are', () => {
+    // Local times: the same calendar day all the way to 23:59, the next from 00:00.
+    expect(localDayNumber(new Date(2026, 0, 1, 0, 30))).toBe(0)
+    expect(localDayNumber(new Date(2026, 0, 1, 23, 59))).toBe(0)
+    expect(localDayNumber(new Date(2026, 0, 2, 0, 0))).toBe(1)
+    expect(localDayNumber(new Date(2026, 9, 20, 2, 0))).toBe(localDayNumber(new Date(2026, 9, 20, 22, 0)))
   })
 })

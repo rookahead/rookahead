@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
 import { nextRatedLine } from '../../lib/puzzleData'
-import { dayNumber, parsePuzzleLine, playerColor, sprintRating, SPRINT_MODES, SPRINT_STRIKES, type Puzzle, type SprintMode } from '../../lib/puzzles'
+import { localDayNumber, parsePuzzleLine, playerColor, sprintRating, SPRINT_MODES, SPRINT_STRIKES, type Puzzle, type SprintMode } from '../../lib/puzzles'
 import { dayStreak, recordSprint } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 import { playSound } from '../../lib/sound'
@@ -38,7 +38,7 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
-  const days = dayStreak(progress, dayNumber(new Date()))
+  const days = dayStreak(progress, localDayNumber(new Date()))
 
   const start = (m: SprintMode) => {
     setMode(m)

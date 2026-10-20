@@ -3541,6 +3541,60 @@ button.user-avatar.guest:hover {
   text-underline-offset: 2px;
 }
 
+/* A guest's card: Sign up and Log in as real buttons, settings beside Log in. */
+.user-card.guest-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+}
+
+.guest-card .guest-signup {
+  height: 40px;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.guest-card .guest-login {
+  height: 40px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Theme, sounds and settings: three equal tonal buttons under Log in. */
+.guest-card-tools {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.guest-card-tools .icon-btn {
+  width: auto;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--btn);
+  color: var(--text-2);
+}
+
+.guest-card-tools .icon-btn:hover,
+.guest-card-tools .icon-btn.active {
+  background: var(--btn-hover);
+  color: var(--text);
+}
+
+.guest-card-tools svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .user-card-text .user-card-sync.offline {
   color: var(--warn);
 }
@@ -3628,7 +3682,7 @@ button.user-avatar.guest:hover {
   animation: auth-rise 0.7s 0.15s ease both;
 }
 
-.auth-brand[data-phase='tour'] .auth-intro {
+.auth-brand:not([data-phase='intro']) .auth-intro {
   opacity: 0;
   transform: translateY(-28px);
 }
@@ -4012,7 +4066,7 @@ button.user-avatar.guest:hover {
   transition: opacity 0.5s ease;
 }
 
-.auth-brand[data-phase='intro'] .tour-steps {
+.auth-brand:not([data-phase='tour']) .tour-steps {
   opacity: 0;
 }
 
@@ -4437,6 +4491,22 @@ button.user-avatar.guest:hover {
   width: 36px;
   height: 36px;
   font-size: 15px;
+}
+
+.header-account {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-account .btn.small {
+  height: 34px;
+  border-radius: 9px;
+}
+
+.header-account .header-signup {
+  margin: 0;
+  font-size: 13px;
 }
 
 /* ═══════════════ Play ═══════════════ */
@@ -5651,6 +5721,57 @@ button.stat-card:hover {
   font-size: 12.5px;
 }
 
+/* A number on its way: a soft pulsing bar where it goes, then the number rises in. */
+.stat-skeleton,
+.stat-skeleton-line {
+  display: block;
+  border-radius: 8px;
+  background: var(--btn);
+  animation: stat-pulse 1.4s ease-in-out infinite;
+}
+
+.stat-skeleton {
+  width: 58%;
+  height: 30px;
+}
+
+.stat-skeleton-line {
+  width: 78%;
+  height: 12px;
+  margin-top: 2px;
+}
+
+@keyframes stat-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.stat-row.arrive,
+.stat-sub.arrive {
+  animation: stat-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stat-sub.arrive {
+  animation-delay: 0.06s;
+}
+
+@keyframes stat-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-skeleton,
+  .stat-skeleton-line,
+  .stat-row.arrive,
+  .stat-sub.arrive {
+    animation: none;
+  }
+}
+
 .stat-sub .up {
   color: var(--win);
   font-weight: 600;
@@ -5879,6 +6000,91 @@ button.stat-card:hover {
 }
 
 /* First visit: where you play and your username. */
+/* A guest's one sign-up nudge on Home, when there's progress worth keeping. */
+.save-nudge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px 14px 16px;
+  border-radius: 16px;
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+}
+
+.save-nudge-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.save-nudge-icon svg,
+.save-nudge-close svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.save-nudge-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+}
+
+.save-nudge-text strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.save-nudge-text span {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.save-nudge-cta {
+  flex-shrink: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.save-nudge-close {
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.save-nudge-close:hover {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .save-nudge {
+    flex-wrap: wrap;
+  }
+
+  .save-nudge-text {
+    flex-basis: calc(100% - 110px);
+  }
+
+  .save-nudge-cta {
+    order: 4;
+    width: 100%;
+  }
+}
+
 .hero-card {
   padding: 26px;
   gap: 14px;

@@ -17,7 +17,7 @@ import {
   signInWithPassword,
   useAccount,
 } from '../lib/account'
-import { navigate, usePathname } from '../lib/router'
+import { afterSignIn, navigate, usePathname } from '../lib/router'
 import { Brand } from './auth/Brand'
 import { GoogleG, PasswordField, UsernameField } from './auth/fields'
 
@@ -30,10 +30,7 @@ function suggestUsername(name: string | undefined): string {
 }
 
 /** Where to go once signed in: `?next=`, if it's a path on this site. */
-function nextPath(): string {
-  const next = new URLSearchParams(location.search).get('next')
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
-}
+const nextPath = () => afterSignIn(location.pathname + location.search)
 
 /** Steps after the first form: the emailed code to confirm an address, and resetting a password. */
 type Step = 'form' | 'confirm' | 'forgot' | 'reset'
@@ -75,6 +72,8 @@ export function AuthPage() {
 
   useEffect(() => preloadAccounts(), [])
   const pickedName = name ?? suggestUsername(account?.name)
+  // Signed in, waiting a moment for the username: the form stays, busy, so nothing flashes before we move on.
+  const pending = busy || (status === 'signed-in' && !needsUsername && !(resetLink && !passwordSaved))
   // Signed in with a username: on to where you were going (after a new password, if that's why you came).
   const done = status === 'signed-in' && Boolean(username) && (!resetLink || passwordSaved)
   useEffect(() => {
@@ -162,8 +161,11 @@ export function AuthPage() {
     </p>
   )
 
+  // Back from Google, on the way to the page you were headed for: nothing to show here.
+  if (pathname.startsWith('/auth/google')) return null
+
   let body: ReactNode
-  if (status === 'loading' || (status === 'signed-in' && !needsUsername && !(resetLink && !passwordSaved))) {
+  if (status === 'loading' && !busy) {
     body = <p className="auth-wait">Signing you in…</p>
   } else if (status === 'signed-in' && resetLink && !passwordSaved) {
     // Arrived from the reset email's link: signed in for this one purpose.
@@ -181,13 +183,13 @@ export function AuthPage() {
           }}
         >
           <PasswordField value={password} onChange={setPasswordValue} fresh={{ min: PASSWORD_MIN }} label="New password" />
-          <button className="btn big primary" disabled={busy || password.length < PASSWORD_MIN}>
-            {busy ? 'Saving…' : 'Save password'}
+          <button className="btn big primary" disabled={pending || password.length < PASSWORD_MIN}>
+            {pending ? 'Saving…' : 'Save password'}
           </button>
         </form>
       </>
     )
-  } else if (status === 'signed-in') {
+  } else if (status === 'signed-in' && needsUsername) {
     body = (
       <>
         <h2>Choose your username</h2>
@@ -202,8 +204,8 @@ export function AuthPage() {
           }}
         >
           <UsernameField value={pickedName} onChange={setName} onStatus={setNameOk} />
-          <button className="btn big primary" disabled={busy || !nameOk}>
-            {busy ? 'Saving…' : 'Continue'}
+          <button className="btn big primary" disabled={pending || !nameOk}>
+            {pending ? 'Saving…' : 'Continue'}
           </button>
         </form>
         <p className="auth-links">
@@ -228,8 +230,8 @@ export function AuthPage() {
           }}
         >
           <CodeInput value={code} onChange={setCode} />
-          <button className="btn big primary" disabled={busy || code.length < 6}>
-            {busy ? 'Checking…' : 'Confirm'}
+          <button className="btn big primary" disabled={pending || code.length < 6}>
+            {pending ? 'Checking…' : 'Confirm'}
           </button>
         </form>
         {resendLinks}
@@ -254,8 +256,8 @@ export function AuthPage() {
             <span className="auth-label">Email</span>
             <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
           </label>
-          <button className="btn big primary" disabled={busy || !email.trim()}>
-            {busy ? 'Sending…' : 'Send code'}
+          <button className="btn big primary" disabled={pending || !email.trim()}>
+            {pending ? 'Sending…' : 'Send code'}
           </button>
         </form>
         <p className="auth-links">
@@ -282,8 +284,8 @@ export function AuthPage() {
         >
           <CodeInput value={code} onChange={setCode} />
           <PasswordField value={password} onChange={setPasswordValue} fresh={{ min: PASSWORD_MIN }} label="New password" />
-          <button className="btn big primary" disabled={busy || code.length < 6 || password.length < PASSWORD_MIN}>
-            {busy ? 'Saving…' : 'Save password and sign in'}
+          <button className="btn big primary" disabled={pending || code.length < 6 || password.length < PASSWORD_MIN}>
+            {pending ? 'Saving…' : 'Save password and sign in'}
           </button>
         </form>
         {resendLinks}
@@ -318,14 +320,14 @@ export function AuthPage() {
               )
             }
           />
-          <button className="btn big primary" disabled={busy || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
-            {busy ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
+          <button className="btn big primary" disabled={pending || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
+            {pending ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
           </button>
         </form>
         <div className="auth-or" role="separator">
           <span>or</span>
         </div>
-        <button className="btn big ghost auth-google" onClick={google} disabled={busy}>
+        <button className="btn big ghost auth-google" onClick={google} disabled={pending}>
           <GoogleG />
           Continue with Google
         </button>
