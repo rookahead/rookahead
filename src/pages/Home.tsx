@@ -1,18 +1,21 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
+import { DailyCard } from '../components/DailyCard'
 import { GameList } from '../components/GameList'
+import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
+import { TodayTiles } from '../components/TodayCard'
 import { UsernameForm } from '../components/UsernameForm'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
 import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
-import { currentGame, formatDay, greeting, nudge } from '../lib/home'
+import { currentGame, greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
 import { finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
-import { dailyLine } from '../lib/puzzleData'
-import { dayNumber, localDayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
+import { localDayNumber } from '../lib/puzzles'
 import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
@@ -24,7 +27,6 @@ import { DayStreak } from './puzzles/shared'
 const SHOWN = 6
 
 interface Props {
-  avatar?: ReactNode
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
   /** A game has been put in the session (or the Load dialog requested): show Analysis. */
@@ -43,7 +45,7 @@ function ago(ms: number, now = Date.now()): string {
 }
 
 /** The home dashboard: your games from everywhere, your numbers, and the ways into review, puzzles and play. */
-export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: Props) {
+export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading: importing, errors } = useMyGames(users)
   const account = useAccount()
@@ -60,6 +62,8 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
   const puzzlesVersion = useStoreVersion('puzzles')
   const progress = useMemo(() => loadProgress(), [puzzlesVersion])
   const today = localDayNumber(new Date())
+  const hour = new Date().getHours()
+  const phone = useMediaQuery('(max-width: 1000px)')
 
   const mistakes = useMistakes()
 
@@ -93,110 +97,153 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
           hasGames: games.length > 0,
         })
 
+  const guestNudge = saveNudge && (
+    <section className="save-nudge" aria-label="Save your progress">
+      <span className="save-nudge-icon" aria-hidden>
+        <svg viewBox="0 0 24 24">
+          <path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9zM12 15V10M9.5 12.5 12 10l2.5 2.5" />
+        </svg>
+      </span>
+      <span className="save-nudge-text">
+        <strong>{saveNudge.title}</strong>
+        <span>{saveNudge.text}</span>
+      </span>
+      <button className="btn accent-btn save-nudge-cta" onClick={() => openAccountPage('signup')}>
+        Sign up
+      </button>
+      <button
+        className="icon-btn save-nudge-close"
+        aria-label="Not now"
+        title="Not now"
+        onClick={() => {
+          dismissNudge(saveNudge.kind)
+          setDismissed(dismissedNudges())
+        }}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden>
+          <path d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </section>
+  )
+  const heroOrStats = firstVisit ? (
+    <section className="home-card accent-card hero-card" aria-labelledby="hero">
+      <h2 id="hero">Review your games, free</h2>
+      <p>Stockfish 19 grades every move, from Legendary to Blunder. No limits, no sign-up needed.</p>
+      <UsernameForm
+        key={importError ?? ''}
+        error={hasUsers ? importError : undefined}
+        onSaved={(site, name) => updateSettings(site === 'chesscom' ? { chesscomUser: name } : { lichessUser: name })}
+      />
+      <p className="hero-alt">
+        Or{' '}
+        <button className="link-btn" onClick={loadGame}>
+          paste a PGN
+        </button>
+      </p>
+    </section>
+  ) : (
+    <section className="stat-grid" aria-label="Your numbers" aria-busy={waiting || mistakes === null}>
+      <StatCard pending={waiting} tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
+        {stats.accuracy == null ? (
+          'Review a game to see it'
+        ) : stats.trend != null ? (
+          <>
+            <span className={stats.trend >= 0 ? 'up' : 'down'}>
+              {stats.trend >= 0 ? '+' : ''}
+              {stats.trend.toFixed(1)}
+            </span>{' '}
+            over your last 10
+          </>
+        ) : (
+          'Your last 10 reviewed'
+        )}
+      </StatCard>
+      <StatCard
+        pending={waiting}
+        tone="legendary"
+        label="Legendary moves"
+        empty="None yet"
+        value={stats.legendary ? String(stats.legendary) : undefined}
+        onClick={legendaryGame ? () => void open(legendaryGame, reviews[legendaryGame.key], true) : undefined}
+      >
+        {legendaryGame ? 'This week · see it ›' : 'This week'}
+      </StatCard>
+      <StatCard
+        pending={waiting || mistakes === null}
+        tone="mistakes"
+        label="Mistakes to fix"
+        empty="All clear"
+        value={mistakes?.length ? String(mistakes.length) : undefined}
+        onClick={() => navigate('/puzzles/mistakes')}
+      >
+        {mistakes?.length ? 'Practise them ›' : 'From your games'}
+      </StatCard>
+      <StatCard pending={waiting} tone="streak" label="Puzzle streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
+        {streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
+      </StatCard>
+    </section>
+  )
+
+  if (phone) {
+    // Phones: who you are and what's waiting, your latest game, then the ways in. The full games
+    // list lives in the Review tab and the daily puzzle in Puzzles.
+    return (
+      <div className="home-page">
+        <PageHeader phoneOnly>
+          <Link to="/puzzles" className="home-streak" aria-label={streak ? `Puzzle streak: ${streak} ${streak === 1 ? 'day' : 'days'}` : 'Puzzles'}>
+            <DayStreak days={streak} />
+          </Link>
+        </PageHeader>
+        <main className="phone-home">
+          <div className="phone-welcome">
+            {name ? (
+              <>
+                <span>{greeting(hour).replace(/^Good (\w+)$/, 'Good $1,')}</span>
+                <h1>{name}</h1>
+              </>
+            ) : (
+              <h1>{firstVisit ? 'Welcome to Rookahead' : greeting(hour)}</h1>
+            )}
+            {!firstVisit && <p>{line}</p>}
+          </div>
+          {guestNudge}
+          <TodayTiles settings={settings} />
+          {latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
+          {firstVisit && heroOrStats}
+          <nav className="quick-grid" aria-label="More to do">
+            <QuickTile to="/play" tone="sky" title="Play the computer" sub="8 levels, any time control" d="M7 4.5l12.5 7.5L7 19.5z" />
+            <QuickTile to="/puzzles/sprint" tone="amber" title="Puzzle Sprint" sub="Race the clock" d="M13 2 4 14h7l-1 8 9-12h-7z" />
+            <QuickTile
+              to={current ? '/analysis' : '/board'}
+              tone="green"
+              title={current ? 'Continue on the board' : 'Analysis board'}
+              sub={current ? current.title : 'Any position, PGN or FEN'}
+              d="M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6"
+              fill="M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z"
+            />
+            <QuickTile onClick={loadGame} tone="violet" title="Load a game" sub="PGN, Chess.com, Lichess" d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+          </nav>
+          {!firstVisit && heroOrStats}
+          {mistakes && mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />}
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="home-page">
-      <PageHeader phoneOnly avatar={avatar} />
+      <PageHeader phoneOnly />
       <main className="home">
         <div className="home-main">
           <div className="home-welcome">
-            <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(new Date().getHours(), name)}</h1>
+            <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
             {!firstVisit && <span>{line}</span>}
           </div>
 
-          {saveNudge && (
-            <section className="save-nudge" aria-label="Save your progress">
-              <span className="save-nudge-icon" aria-hidden>
-                <svg viewBox="0 0 24 24">
-                  <path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9zM12 15V10M9.5 12.5 12 10l2.5 2.5" />
-                </svg>
-              </span>
-              <span className="save-nudge-text">
-                <strong>{saveNudge.title}</strong>
-                <span>{saveNudge.text}</span>
-              </span>
-              <button className="btn accent-btn save-nudge-cta" onClick={() => openAccountPage('signup')}>
-                Sign up
-              </button>
-              <button
-                className="icon-btn save-nudge-close"
-                aria-label="Not now"
-                title="Not now"
-                onClick={() => {
-                  dismissNudge(saveNudge.kind)
-                  setDismissed(dismissedNudges())
-                }}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d="M6 6l12 12M18 6 6 18" />
-                </svg>
-              </button>
-            </section>
-          )}
+          {guestNudge}
 
-          {latest && (
-            <div className="phone-first">
-              <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
-            </div>
-          )}
-
-          {firstVisit ? (
-            <section className="home-card accent-card hero-card" aria-labelledby="hero">
-              <h2 id="hero">Review your games, free</h2>
-              <p>Stockfish 19 grades every move, from Legendary to Blunder. No limits, no sign-up needed.</p>
-              <UsernameForm
-                key={importError ?? ''}
-                error={hasUsers ? importError : undefined}
-                onSaved={(site, name) => updateSettings(site === 'chesscom' ? { chesscomUser: name } : { lichessUser: name })}
-              />
-              <p className="hero-alt">
-                Or{' '}
-                <button className="link-btn" onClick={loadGame}>
-                  paste a PGN
-                </button>
-              </p>
-            </section>
-          ) : (
-            <section className="stat-grid" aria-label="Your numbers" aria-busy={waiting || mistakes === null}>
-              <StatCard pending={waiting} tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
-                {stats.accuracy == null ? (
-                  'Review a game to see it'
-                ) : stats.trend != null ? (
-                  <>
-                    <span className={stats.trend >= 0 ? 'up' : 'down'}>
-                      {stats.trend >= 0 ? '+' : ''}
-                      {stats.trend.toFixed(1)}
-                    </span>{' '}
-                    over your last 10
-                  </>
-                ) : (
-                  'Your last 10 reviewed'
-                )}
-              </StatCard>
-              <StatCard
-                pending={waiting}
-                tone="legendary"
-                label="Legendary moves"
-                empty="None yet"
-                value={stats.legendary ? String(stats.legendary) : undefined}
-                onClick={legendaryGame ? () => void open(legendaryGame, reviews[legendaryGame.key], true) : undefined}
-              >
-                {legendaryGame ? 'This week · see it ›' : 'This week'}
-              </StatCard>
-              <StatCard
-                pending={waiting || mistakes === null}
-                tone="mistakes"
-                label="Mistakes to fix"
-                empty="All clear"
-                value={mistakes?.length ? String(mistakes.length) : undefined}
-                onClick={() => navigate('/puzzles/mistakes')}
-              >
-                {mistakes?.length ? 'Practise them ›' : 'From your games'}
-              </StatCard>
-              <StatCard pending={waiting} tone="streak" label="Puzzle streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
-                {streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
-              </StatCard>
-            </section>
-          )}
+          {heroOrStats}
 
           <section className="home-card games-card" aria-labelledby="my-games">
             <header className="home-card-head">
@@ -229,7 +276,7 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
         </div>
 
         <aside className="home-side" aria-label="Start">
-          {latest && <LatestCard className="desktop-first" game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
+          {latest && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
           <button className="home-card quick-card" onClick={() => navigate('/play')}>
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M6 4l14 8-14 8z" />
@@ -259,6 +306,31 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
         </aside>
       </main>
     </div>
+  )
+}
+
+/** Phones: one of Home's four ways in, a tinted icon over its name. */
+function QuickTile({ to, onClick, tone, title, sub, d, fill }: { to?: string; onClick?: () => void; tone: string; title: string; sub: string; d: string; fill?: string }) {
+  const body = (
+    <>
+      <span className="quick-tile-icon" aria-hidden>
+        <svg viewBox="0 0 24 24">
+          <path d={d} />
+          {fill && <path className="icon-fill" d={fill} />}
+        </svg>
+      </span>
+      <strong>{title}</strong>
+      <small>{sub}</small>
+    </>
+  )
+  return to ? (
+    <Link to={to} className={`home-card quick-tile ${tone}`}>
+      {body}
+    </Link>
+  ) : (
+    <button className={`home-card quick-tile ${tone}`} onClick={onClick}>
+      {body}
+    </button>
   )
 }
 
@@ -423,51 +495,6 @@ function PuzzlesCard({ rating }: { rating: number }) {
         </button>
         <button className="chip" onClick={() => navigate('/puzzles/mistakes')}>
           Your mistakes
-        </button>
-      </div>
-    </section>
-  )
-}
-
-/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). */
-function DailyCard({ theme }: { theme: BoardTheme }) {
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
-  useEffect(() => {
-    dailyLine().then(
-      (l) => setPuzzle(parsePuzzleLine(l)),
-      () => {},
-    )
-  }, [])
-  const version = useStoreVersion('puzzles')
-  const { done, days } = useMemo(() => {
-    const progress = loadProgress()
-    const now = new Date()
-    return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)) }
-  }, [version])
-  if (!puzzle) return null
-  const color = playerColor(puzzle)
-  const first = puzzle.moves[0]
-  const open = () => navigate('/puzzles/daily')
-  return (
-    <section className="home-card daily-card" aria-labelledby="daily-puzzle">
-      <header className="daily-head">
-        <h2 id="daily-puzzle">
-          Daily puzzle <span className="muted">{formatDay(Date.now() / 1000)}</span>
-        </h2>
-        <DayStreak days={days} />
-      </header>
-      <button className="daily-board" onClick={open} aria-label="Solve the daily puzzle">
-        <MiniBoard fen={positionAfter(puzzle, [first]).fen()} orientation={color} theme={theme} lastMove={[first.slice(0, 2), first.slice(2, 4)]} />
-      </button>
-      <div className="daily-foot">
-        <p>
-          <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
-          <span className="muted">
-            {done === 'solved' ? 'Solved · next one tomorrow' : done === 'failed' ? 'Missed · next one tomorrow' : `Rated ${puzzle.rating}`}
-          </span>
-        </p>
-        <button className={`btn small ${done ? 'ghost' : 'primary'}`} onClick={open}>
-          {done ? 'See it' : 'Solve'}
         </button>
       </div>
     </section>

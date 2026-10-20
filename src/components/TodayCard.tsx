@@ -7,8 +7,8 @@ import { navigate } from '../lib/router'
 import type { Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 
-/** The sidebar's short to-do list for today: the daily puzzle, mistakes waiting, games played. */
-export function TodayCard({ settings }: { settings: Settings }) {
+/** What's left to do today: the daily puzzle, mistakes waiting, games played. */
+function useToday(settings: Settings) {
   const { games } = useMyGames({ chesscom: settings.chesscomUser, lichess: settings.lichessUser })
   const mistakes = useMistakes()
   const puzzlesVersion = useStoreVersion('puzzles')
@@ -18,11 +18,24 @@ export function TodayCard({ settings }: { settings: Settings }) {
   }, [puzzlesVersion])
   const today = games.filter((g) => g.endedAt > Date.now() - 86400000).length
 
-  const rows = [
+  return [
     { id: 'daily', label: 'Daily puzzle', value: daily === 'solved' ? 'Solved' : daily === 'failed' ? 'Missed' : 'To do', done: !!daily, to: '/puzzles/daily' },
-    { id: 'mistakes', label: 'Mistakes to fix', value: mistakes == null ? '–' : mistakes.length ? String(mistakes.length) : 'All clear', done: mistakes?.length === 0, to: '/puzzles/mistakes' },
-    { id: 'games', label: 'Games today', value: today ? String(today) : 'None yet', done: false, to: '/games' },
+    {
+      id: 'mistakes',
+      label: 'Mistakes to fix',
+      short: 'Mistakes',
+      value: mistakes == null ? '–' : mistakes.length ? String(mistakes.length) : 'All clear',
+      tile: mistakes?.length ? `${mistakes.length} to fix` : undefined,
+      done: mistakes?.length === 0,
+      to: '/puzzles/mistakes',
+    },
+    { id: 'games', label: 'Games today', value: today ? String(today) : 'None yet', tile: today ? `${today} played` : undefined, done: false, to: '/games' },
   ]
+}
+
+/** The sidebar's short to-do list for today. */
+export function TodayCard({ settings }: { settings: Settings }) {
+  const rows = useToday(settings)
   return (
     <section className="today-card" aria-labelledby="today-title">
       <h2 id="today-title">Today</h2>
@@ -34,5 +47,23 @@ export function TodayCard({ settings }: { settings: Settings }) {
         </button>
       ))}
     </section>
+  )
+}
+
+/** Phones: the same three things as tiles across the top of Home. */
+export function TodayTiles({ settings }: { settings: Settings }) {
+  const rows = useToday(settings)
+  return (
+    <nav className="today-tiles" aria-label="Today">
+      {rows.map((r) => (
+        <button key={r.id} className={`today-tile ${r.id} ${r.done ? 'done' : ''}`} onClick={() => navigate(r.to)}>
+          <span className="today-tile-label">
+            <span className="today-dot" aria-hidden />
+            {r.short ?? r.label}
+          </span>
+          <strong>{r.tile ?? r.value}</strong>
+        </button>
+      ))}
+    </nav>
   )
 }

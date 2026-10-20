@@ -5,6 +5,8 @@ interface Props {
   onNewBoard: () => void
   onLoadGame: () => void
   onSettings: () => void
+  /** Which way the list opens: up from the move controls (the default), or down from a page header. */
+  placement?: 'up' | 'down'
 }
 
 const ITEMS = [
@@ -42,7 +44,7 @@ const ITEMS = [
 ] as const
 
 /** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
-export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings }: Props) {
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up' }: Props) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -60,7 +62,7 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings }: Props)
 
   const actions = { flip: onFlip, new: onNewBoard, load: onLoadGame, settings: onSettings }
   return (
-    <div className="board-menu" ref={root}>
+    <div className={`board-menu ${placement}`} ref={root}>
       <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game, settings">
         <svg viewBox="0 0 24 24" aria-hidden>
           <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />

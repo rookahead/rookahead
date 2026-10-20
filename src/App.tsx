@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { TodayCard } from './components/TodayCard'
-import { AccountMenu } from './components/AccountMenu'
-import { AvatarFace, Gear, UserCard } from './components/UserCard'
+import { UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
-import { ACCOUNTS_ENABLED, openAccountPage, startAccounts, useAccount } from './lib/account'
+import { openAccountPage, startAccounts, useAccount } from './lib/account'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { navigate, useRoute, type Route } from './lib/router'
 import { useSettings } from './lib/settings'
@@ -17,6 +16,7 @@ import { HomePage } from './pages/Home'
 import { PlayPage } from './pages/Play'
 import { PuzzlesPage } from './pages/Puzzles'
 import { SettingsPage } from './pages/Settings'
+import { YouPage } from './pages/You'
 
 /** Whether the sidebar is collapsed to a rail ('rail') or full ('expanded', the default), on every page. */
 const SIDEBAR_KEY = 'rookahead.sidebar'
@@ -42,11 +42,8 @@ export default function App() {
   const boardPrefs = useMemo(() => ({ highlightLastMove, showLegalMoves, animation, notation }), [highlightLastMove, showLegalMoves, animation, notation])
   const route = useRoute()
   const phone = useMediaQuery('(max-width: 1000px)')
-  const { status: accountStatus, account, needsUsername } = useAccount()
+  const { status: accountStatus, needsUsername } = useAccount()
   const [rail, setRail] = useState(readRail)
-  // Phones: the account menu, open against the header's avatar.
-  const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
-  const closeMenu = useCallback(() => setMenuAt(null), [])
   // Analysis mounts on first visit and then stays, hidden, so a running review or a loaded game
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
   // /board (Analyze) is the same page, opened on a clean board.
@@ -123,38 +120,13 @@ export default function App() {
 
   const openSettings = () => navigate('/settings')
   const userCard = <UserCard rail={rail} settingsOpen={route === 'settings'} onSettings={openSettings} settings={settings} onChange={updateSettings} />
-  // Phones: the avatar in the page header opens settings; a guest gets Log in and Sign up beside a gear instead.
-  const avatar = !phone ? undefined : ACCOUNTS_ENABLED && accountStatus === 'guest' ? (
-    <div className="header-account">
-      <button className="btn small ghost" onClick={() => openAccountPage('login')}>
-        Log in
-      </button>
-      <button className="btn small accent-btn header-signup" onClick={() => openAccountPage('signup')}>
-        Sign up
-      </button>
-      <button className="icon-btn user-card-gear" onClick={openSettings} aria-label="Settings" title="Settings">
-        <Gear />
-      </button>
-    </div>
-  ) : accountStatus === 'signed-in' ? (
-    // Signed in: the avatar opens the account menu (Profile, Settings, Log out).
-    <button
-      className="user-avatar header-avatar"
-      onClick={(e) => {
-        const at = e.currentTarget
-        setMenuAt((open) => (open ? null : at))
-      }}
-      aria-haspopup="menu"
-      aria-expanded={Boolean(menuAt)}
-      aria-label="Account"
-    >
-      <AvatarFace account={account} />
-    </button>
-  ) : (
-    <button className="user-avatar header-avatar guest" onClick={openSettings} aria-label="Settings">
-      <AvatarFace account={null} />
-    </button>
-  )
+
+  // You (/you) is the phones' tab for your profile and settings; desktop has the sidebar's user card and Settings.
+  // Phones' plain /settings list is the You page too.
+  useEffect(() => {
+    if (!phone && route === 'you') navigate('/settings', { replace: true })
+    if (phone && location.pathname.replace(/\/$/, '') === '/settings') navigate('/you', { replace: true })
+  }, [phone, route])
 
   return (
     <BoardPrefsContext.Provider value={boardPrefs}>
@@ -168,15 +140,16 @@ export default function App() {
             today={<TodayCard key={appRoute} settings={settings} />}
           />}
         <div className="shell-page">
-          {appRoute === 'home' && <HomePage avatar={avatar} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
+          {appRoute === 'home' && <HomePage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'games' && (
-            <GamesPage avatar={avatar} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+            <GamesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
           )}
-          {appRoute === 'puzzles' && <PuzzlesPage settings={settings} avatar={avatar} onOpenAnalysis={openAnalysis} />}
-          {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} avatar={avatar} />}
+          {appRoute === 'puzzles' && <PuzzlesPage settings={settings} onOpenAnalysis={openAnalysis} />}
+          {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
+          {appRoute === 'you' && phone && <YouPage settings={settings} updateSettings={updateSettings} />}
           {playMounted && (
             <div className="page-host" hidden={appRoute !== 'play'}>
-              <PlayPage active={route === 'play'} settings={settings} updateSettings={updateSettings} avatar={avatar} onOpenAnalysis={openAnalysis} />
+              <PlayPage active={route === 'play'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
             </div>
           )}
           {analysisMounted && (
@@ -189,13 +162,12 @@ export default function App() {
                 status={status}
                 active={onBoard}
                 blank={route === 'board'}
-                avatar={avatar}
+               
               />
             </div>
           )}
         </div>
         {phone && appRoute && <TabBar route={appRoute} />}
-        {menuAt && phone && accountStatus === 'signed-in' && <AccountMenu anchor={menuAt} placement="down" onClose={closeMenu} />}
       </div>
       {(auth || leaving) && (
         <div className={`auth-layer ${under ? 'entering' : ''} ${leaving ? 'leaving' : ''}`}>

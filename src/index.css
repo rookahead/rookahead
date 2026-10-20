@@ -2862,8 +2862,7 @@ svg {
 }
 
 @media (max-width: 520px) {
-  .page-header-label,
-  .page-header-wordmark {
+  .page-header-label {
     display: none;
   }
 
@@ -6398,21 +6397,6 @@ button.chip:hover {
   }
 }
 
-/* The latest game leads on phones (top of the page), and the side column on desktop. */
-.phone-first {
-  display: none;
-}
-
-
-@media (max-width: 1000px) {
-  .phone-first {
-    display: block;
-  }
-
-  .desktop-first {
-    display: none;
-  }
-}
 
 /* ═══════════════ Brand type: Syne headings and wordmark, DM Sans text, DM Mono numbers ═══════════════ */
 :root {
@@ -6595,10 +6579,6 @@ h2 {
 .sidebar.rail .sidebar-item.featured::before {
   left: 8px;
   right: 8px;
-}
-
-.tab-item.featured {
-  color: var(--brand);
 }
 
 /* Settings → Profile: your photo is the button that changes it. */
@@ -7713,4 +7693,1042 @@ strong.settings-value {
 
 .confirm-actions.single {
   grid-template-columns: 1fr;
+}
+
+/* ═══════════════ Phone app: tab bar, full-screen board pages, the You tab ═══════════════ */
+
+.tab-item.active {
+  color: var(--brand);
+  font-weight: 650;
+}
+
+/* The icon sits in a pill that fills in for the tab you're on. */
+.tab-icon {
+  width: 52px;
+  height: 30px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+
+.tab-item.active .tab-icon {
+  background: color-mix(in srgb, var(--brand) 15%, transparent);
+}
+
+/* Your photo as the You tab's icon: a ring shows it's the tab you're on. */
+.tab-photo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--surface-4);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--border-strong);
+}
+
+.tab-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tab-item.active .tab-icon:has(.tab-photo) {
+  background: none;
+}
+
+.tab-item.active .tab-photo {
+  box-shadow: 0 0 0 2px var(--brand);
+}
+
+/* Full-screen pages: Back and the page's name instead of the logo (phones only). */
+.page-header-back,
+.page-header-phone-title {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  /* A board page in use: no tab bar, the room goes to the board. */
+  :root[data-immersive] {
+    --tabbar-h: 0px;
+  }
+
+  :root[data-immersive] .tabbar {
+    display: none;
+  }
+
+  .page-header.has-back {
+    gap: 4px;
+    padding-left: 6px;
+  }
+
+  .page-header-back {
+    display: grid;
+    width: 44px;
+    height: 44px;
+  }
+
+  .page-header-back svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+  }
+
+  .page-header-phone-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  .page-header-phone-title strong {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .page-header-phone-title span {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ── The You tab ── */
+.you-page {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px calc(var(--tabbar-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.you-who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 4px 6px;
+}
+
+.you-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 24px;
+}
+
+.you-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.you-name strong {
+  font-family: var(--font-display);
+  font-variant-numeric: lining-nums;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.you-name span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.you-guest-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.you-guest .you-guest-actions .btn {
+  flex: 1;
+  height: 48px;
+  padding: 0 12px;
+}
+
+.you-list {
+  padding: 4px 0;
+  overflow: hidden;
+}
+
+.you-row {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.you-row + .you-row {
+  box-shadow: inset 0 1px 0 var(--border);
+}
+
+a.you-row:active {
+  background: var(--card-hover);
+}
+
+.you-row > svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.you-row > svg:last-child {
+  width: 16px;
+  height: 16px;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.you-row-label {
+  flex: 1;
+  font-weight: 600;
+}
+
+.you-row-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.you-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+}
+
+.you-theme {
+  width: auto;
+}
+
+.you-theme button {
+  padding: 0 12px;
+}
+
+.you-install {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.you-install-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+}
+
+.you-install-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--bg);
+}
+
+.you-install-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.you-install-text strong {
+  font-size: 15px;
+}
+
+.you-install-text span {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.you-install .btn.small {
+  height: 38px;
+  padding: 0 16px;
+}
+
+.you-page .you-logout {
+  height: 48px;
+  color: var(--danger);
+}
+
+.you-who .btn {
+  text-decoration: none;
+}
+
+.you-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.you-links a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+/* ── Phone Home ── */
+.phone-home {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 14px 16px calc(var(--tabbar-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phone-welcome {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 4px 2px;
+}
+
+.phone-welcome > span {
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.phone-welcome h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variant-numeric: lining-nums;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.phone-welcome p {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.home-streak {
+  color: inherit;
+  text-decoration: none;
+}
+
+.today-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.today-tile {
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.today-tile-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.today-tile strong {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--brand);
+}
+
+.today-tile .today-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.today-tile.daily .today-dot {
+  background: var(--streak);
+}
+
+.today-tile.daily strong {
+  color: var(--streak);
+}
+
+.today-tile.mistakes .today-dot {
+  background: var(--tone-rose);
+}
+
+.today-tile.mistakes strong {
+  color: var(--tone-rose);
+}
+
+.today-tile.done .today-dot {
+  background: var(--win);
+}
+
+.today-tile.done strong {
+  color: var(--win);
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 13px 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.quick-tile strong {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.quick-tile small {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.quick-tile-icon {
+  --tone: var(--brand);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+}
+
+.quick-tile.amber .quick-tile-icon {
+  --tone: var(--tone-amber);
+}
+
+.quick-tile.green .quick-tile-icon {
+  --tone: var(--tone-green);
+}
+
+.quick-tile.violet .quick-tile-icon {
+  --tone: var(--tone-violet);
+}
+
+.quick-tile-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Home's latest game on a phone: a compact card, the board beside the result. */
+.phone-home .latest-card {
+  padding: 16px;
+  gap: 12px;
+}
+
+.phone-home .latest-card h2 {
+  font-size: 19px;
+}
+
+.phone-home .latest-card p {
+  font-size: 13px;
+}
+
+.phone-home .latest-board {
+  flex-basis: 104px;
+}
+
+.phone-home .latest-card .accent-btn {
+  height: 48px;
+}
+
+.phone-home .latest-more {
+  margin-top: -4px;
+}
+
+/* Phones' Review tab: load a game or open the analysis board, above your games. */
+.games-start {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.games-start .btn {
+  height: 48px;
+  margin: 0;
+  gap: 8px;
+  padding: 0 10px;
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.games-start svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Game review and Analyze on a phone: the board edge to edge, the rest under it ── */
+.board-menu.down .board-menu-list {
+  top: calc(100% + 6px);
+  bottom: auto;
+  transform-origin: top right;
+}
+
+.board-menu.down .ctrl.more {
+  width: 40px;
+  height: 40px;
+  background: none;
+}
+
+.eval-bar.horizontal {
+  width: auto;
+  height: 16px;
+  margin: 0 12px;
+  border-radius: 5px;
+}
+
+.eval-bar.horizontal .eval-bar-fill {
+  transform-origin: left;
+}
+
+.eval-bar.horizontal .eval-bar-chip {
+  top: 50%;
+  left: auto;
+  right: auto;
+  transform: translate(-50%, -50%);
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  line-height: 14px;
+}
+
+.phone-views {
+  flex: 1;
+  display: flex;
+  gap: 2px;
+  margin: 8px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.phone-views button {
+  flex: 1;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.phone-views button.active {
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.phone-views-score {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bar-light);
+  color: var(--black-piece);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.move-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -4px;
+  padding: 2px 4px;
+}
+
+.move-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.move-strip-move {
+  flex-shrink: 0;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+}
+
+.move-strip-move.current {
+  background: var(--surface-4);
+}
+
+.move-strip-num {
+  color: var(--muted);
+}
+
+@media (max-width: 1000px) {
+  .analysis-page .layout,
+  .analysis-page .layout.sized {
+    --board-size: min(100vw, 640px);
+    --evalbar-w: 0px;
+    grid-template-columns: minmax(0, var(--board-size));
+    justify-content: center;
+    row-gap: 12px;
+    padding: 4px 0 calc(var(--mobile-nav-h) + 24px);
+  }
+
+  .analysis-page .board-column {
+    width: var(--board-size);
+    gap: 6px;
+  }
+
+  .analysis-page .board-row {
+    gap: 0;
+  }
+
+  .analysis-page .player-bar {
+    padding: 0 12px;
+  }
+
+  /* Edge to edge on a phone; rounded only when the screen is wider than the board. */
+  .analysis-page .board-cg {
+    border-radius: 0;
+  }
+
+  .analysis-page .panel,
+  .analysis-page .moments-strip {
+    box-sizing: border-box;
+    width: auto;
+    margin: 0 12px;
+  }
+
+  .analysis-page .panel-card {
+    border-radius: 16px;
+  }
+
+  /* The move controls: Next is the big one, under your thumb. */
+  .analysis-page .panel-nav {
+    grid-template-columns: 1fr 1fr 1fr 2.2fr 1fr;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+  }
+
+  .analysis-page .panel-nav .ctrl {
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .analysis-page .panel-nav .ctrl.next {
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+
+  .analysis-page .panel-nav .ctrl.next:disabled {
+    background: var(--btn);
+    color: var(--muted);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1000px) {
+  .analysis-page .board-cg {
+    border-radius: 8px;
+  }
+}
+
+.board-menu.down .ctrl.more.active {
+  background: var(--btn);
+  color: var(--text);
+}
+
+@media (max-width: 1000px) {
+  /* Header actions on a full-screen page are plain icons, like Back. */
+  .page-header.has-back .page-header-action {
+    width: 40px;
+    height: 40px;
+    background: none;
+  }
+}
+
+/* Keyboard shortcuts mean nothing on a touch screen. */
+@media (hover: none) {
+  .board-menu-item kbd {
+    display: none;
+  }
+}
+
+/* ── Playing the computer on a phone: the board edge to edge, big clocks, the controls under it ── */
+@media (max-width: 1000px) {
+  .play-layout.play-game {
+    --board-size: min(100vw, 640px);
+    padding: 6px 0 24px;
+  }
+
+  .play-game .play-board {
+    gap: 6px;
+  }
+
+  .play-game .player-bar {
+    padding: 0 12px;
+  }
+
+  .play-game .board-cg {
+    border-radius: 0;
+  }
+
+  .play-game .player-clock {
+    min-width: 88px;
+    padding: 6px 12px;
+    border-radius: 11px;
+    font-size: 22px;
+    text-align: right;
+  }
+
+  .play-game > .play-panel {
+    margin: 0 12px;
+  }
+
+  .play-game .panel-card {
+    border-radius: 16px;
+  }
+
+  /* The title and Board settings are in the page header. */
+  .play-game .play-panel-head {
+    display: none;
+  }
+
+  .play-game .panel-body {
+    padding: 8px 8px 4px;
+  }
+
+  .play-game .play-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .play-game .play-actions .btn {
+    padding: 0 6px;
+    font-size: 13.5px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1000px) {
+  .play-game .board-cg {
+    border-radius: 8px;
+  }
+}
+
+/* ── Phones' Puzzles tab: streaks, today's puzzle, the modes ── */
+.puzzle-hub {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px calc(var(--tabbar-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.puzzle-hub-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.puzzle-hub-head h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.puzzle-hub-head span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.puzzle-hub-head strong {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.hub-streaks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hub-streak {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+}
+
+.hub-streak strong {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.hub-streak span {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.hub-streak.hot {
+  background: color-mix(in srgb, var(--streak) 13%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--streak) 25%, transparent);
+}
+
+.hub-streak.hot strong {
+  color: var(--streak);
+}
+
+.hub-mode {
+  min-height: 66px;
+}
+
+.hub-mode-icon {
+  --tone: var(--brand);
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+}
+
+.hub-mode.amber .hub-mode-icon {
+  --tone: var(--tone-amber);
+}
+
+.hub-mode.rose .hub-mode-icon {
+  --tone: var(--tone-rose);
+}
+
+.hub-mode-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-mode-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.hub-mode-text strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.hub-mode-text span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hub-badge {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--tone-rose);
+  color: #2a0710;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Solving on a phone: the board edge to edge, like a game. */
+@media (max-width: 1000px) {
+  .puzzles-page .play-layout {
+    --board-size: min(100vw, 640px);
+    padding: 6px 0 24px;
+  }
+
+  .puzzles-page .board-cg {
+    border-radius: 0;
+  }
+
+  .puzzles-page .play-layout > .play-panel {
+    margin: 0 12px;
+  }
+
+  .puzzles-page .panel-card {
+    border-radius: 16px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1000px) {
+  .puzzles-page .board-cg {
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 1000px) {
+  /* Full screen, what to do next comes first; the rating and streaks follow. */
+  .puzzles-page .puzzle-layout .puzzle-head {
+    order: 1;
+  }
+}
+
+/* The tour's points on phones: a row of cards to swipe, the next one peeking in. */
+.tour-cards {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .tour-cards {
+    display: flex;
+    gap: 10px;
+    margin: 0 -20px;
+    padding: 0 20px;
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 20px;
+    scrollbar-width: none;
+  }
+
+  .tour-cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tour-card {
+    --tone: var(--brand);
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: var(--card-edge);
+  }
+
+  .tour-card.mistakes {
+    --tone: var(--tone-rose);
+  }
+
+  .tour-card.puzzles {
+    --tone: var(--tone-amber);
+  }
+
+  .tour-card.play {
+    --tone: var(--tone-green);
+  }
+
+  .tour-card.sync {
+    --tone: var(--tone-violet);
+  }
+
+  .tour-card strong {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--tone);
+  }
+
+  .tour-card span {
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--text-2);
+  }
 }

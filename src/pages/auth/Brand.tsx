@@ -201,6 +201,16 @@ export function Brand() {
         </div>
       </section>
 
+      {/* Phones: no room for the scenes; the same five points as cards you swipe through. */}
+      <ul className="tour-cards" aria-label="What Rookahead offers">
+        {SLIDES.map((s) => (
+          <li key={s.id} className={`tour-card ${s.id}`}>
+            <strong>{s.title}</strong>
+            <span>{s.text}</span>
+          </li>
+        ))}
+      </ul>
+
       <footer className="auth-brand-foot">
         <div className="tour-steps">
           {SLIDES.map((s, i) => (

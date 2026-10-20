@@ -5,31 +5,38 @@ import { Board } from '../components/Board'
 import { PageHeader } from '../components/PageHeader'
 import { Flame } from '../components/PuzzleIcons'
 import { TAB_ICONS, Tabs } from '../components/Tabs'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMistakes } from '../hooks/useMistakes'
 import { formatDay } from '../lib/home'
+import { useImmersive } from '../lib/immersive'
 import { dailyLine, nextRatedLine } from '../lib/puzzleData'
 import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress, recordDay, recordRated, saveProgress, startRated, type PuzzleProgress } from '../lib/puzzleStore'
-import { puzzleTab, usePathname, type PuzzleTab } from '../lib/router'
+import { isPuzzleHub, puzzleTab, usePathname, type PuzzleTab } from '../lib/router'
 import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
 import { useStoreVersion } from '../lib/syncBus'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
+import { PuzzleHub } from './puzzles/Hub'
 import { MistakesView } from './puzzles/Mistakes'
 import { DayStreak, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, StepNav, usePuzzleSolve, useStepKeys, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
   settings: Settings
-  avatar?: ReactNode
   /** A game or position has been put in the session: show it in Analysis. */
   onOpenAnalysis: () => void
 }
 
 /** Puzzles: rated Lichess puzzles, Puzzle Sprint, today's daily puzzle, and your own mistakes. */
-export function PuzzlesPage({ settings, avatar, onOpenAnalysis }: Props) {
-  const tab = puzzleTab(usePathname())
+export function PuzzlesPage({ settings, onOpenAnalysis }: Props) {
+  const pathname = usePathname()
+  const tab = puzzleTab(pathname)
+  // Phones: plain /puzzles lists the modes; a mode opens full screen, with Back to that list.
+  const phone = useMediaQuery('(max-width: 1000px)')
+  const hub = phone && isPuzzleHub(pathname)
+  useImmersive(phone && !hub)
   const [progress, setProgress] = useState(loadProgress)
   // A sync pass brought progress from the account: carry on from it.
   const version = useStoreVersion('puzzles')
@@ -46,18 +53,26 @@ export function PuzzlesPage({ settings, avatar, onOpenAnalysis }: Props) {
     })
   }, [])
 
-  const tabs = <PuzzleTabs tab={tab} solved={progress.mistakesSolved} />
+  const tabs = phone ? null : <PuzzleTabs tab={tab} solved={progress.mistakesSolved} />
   const props: ViewProps = { progress, update, settings, tabs, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
-      <PageHeader title="Puzzles" avatar={avatar} />
-      {tab === 'rated' && <RatedView {...props} />}
-      {tab === 'sprint' && <SprintView {...props} />}
-      {tab === 'daily' && <DailyView {...props} />}
-      {tab === 'mistakes' && <MistakesView {...props} />}
+      <PageHeader title="Puzzles" back={hub ? undefined : '/puzzles'} phoneTitle={MODE_NAMES[tab]} />
+      {hub ? (
+        <PuzzleHub progress={progress} settings={settings} />
+      ) : (
+        <>
+          {tab === 'rated' && <RatedView {...props} />}
+          {tab === 'sprint' && <SprintView {...props} />}
+          {tab === 'daily' && <DailyView {...props} />}
+          {tab === 'mistakes' && <MistakesView {...props} />}
+        </>
+      )}
     </div>
   )
 }
+
+const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Your mistakes' }
 
 function PuzzleTabs({ tab, solved }: { tab: PuzzleTab; solved: string[] }) {
   const mistakes = useMistakes()

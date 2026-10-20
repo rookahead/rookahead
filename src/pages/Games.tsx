@@ -1,8 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { GameList } from '../components/GameList'
+import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { Tabs } from '../components/Tabs'
 import { UsernameForm } from '../components/UsernameForm'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { dayLabel, gameStats, SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import type { CachedReview } from '../lib/reviewCache'
@@ -11,11 +13,16 @@ import type { Settings } from '../lib/settings'
 
 const PAGE = 40
 
+const LOAD_ICON = (
+  <svg viewBox="0 0 24 24" aria-hidden>
+    <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+  </svg>
+)
+
 type SourceFilter = 'all' | GameSource
 type ResultFilter = 'all' | MyGame['result']
 
 interface Props {
-  avatar?: ReactNode
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
   onOpenAnalysis: () => void
@@ -37,12 +44,13 @@ function Chips<T extends string>({ label, value, options, onChange }: { label: s
 }
 
 /** Every game in one list, newest first and grouped by day, wherever it was played. */
-export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, onOpenSettings }: Props) {
+export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSettings }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading, errors } = useMyGames(users)
   const [source, setSource] = useState<SourceFilter>('all')
   const [result, setResult] = useState<ResultFilter>('all')
   const [shown, setShown] = useState(PAGE)
+  const phone = useMediaQuery('(max-width: 1000px)')
 
   const fromSource = useMemo(() => games.filter((g) => source === 'all' || g.source === source), [games, source])
   const filtered = useMemo(() => fromSource.filter((g) => result === 'all' || g.result === result), [fromSource, result])
@@ -75,11 +83,11 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
 
   return (
     <div className="home-page">
-      <PageHeader phoneOnly avatar={avatar} />
+      <PageHeader phoneOnly />
       <main className="games-page">
         <header className="games-head">
           <div className="games-title">
-            <h1>My games</h1>
+            <h1>{phone ? 'Review' : 'My games'}</h1>
             <p>
               {accounts.map((s) => (
                 <span key={s}>
@@ -109,6 +117,23 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
             </dl>
           )}
         </header>
+
+        {/* Phones: the Review tab is also where a game is loaded and the analysis board opened. */}
+        {phone && (
+          <div className="games-start">
+            <button className="btn accent-btn" onClick={loadGame}>
+              {LOAD_ICON}
+              Load a game
+            </button>
+            <Link to="/board" className="btn ghost">
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6" />
+                <path className="icon-fill" d="M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z" />
+              </svg>
+              Analysis board
+            </Link>
+          </div>
+        )}
 
         {importError && <p className="games-error">{importError}</p>}
 
@@ -149,12 +174,12 @@ export function GamesPage({ avatar, settings, updateSettings, onOpenAnalysis, on
                   setShown(PAGE)
                 }}
               />
-              <button className="btn ghost games-load" onClick={loadGame}>
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-                </svg>
-                Load a game
-              </button>
+              {!phone && (
+                <button className="btn ghost games-load" onClick={loadGame}>
+                  {LOAD_ICON}
+                  Load a game
+                </button>
+              )}
             </div>
 
             {loading && !games.length && <p className="games-loading">Loading your games…</p>}

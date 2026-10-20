@@ -1,7 +1,7 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
 import { NavIcon } from '../components/NavIcons'
@@ -9,13 +9,14 @@ import { CoachCard } from '../components/CoachCard'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
-import { EvalBar } from '../components/EvalBar'
+import { chipText, EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
 import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
 import { KeyMoments } from '../components/KeyMoments'
 import { LoadGameDialog, type LoadRequest } from '../components/LoadGameDialog'
 import { MoveList } from '../components/MoveList'
+import { MoveStrip } from '../components/MoveStrip'
 import { PlayerBar } from '../components/PlayerBar'
 import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
@@ -26,6 +27,7 @@ import { PageHeader } from '../components/PageHeader'
 import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
 import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds } from '../hooks/useMoveSounds'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
@@ -35,6 +37,7 @@ import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
+import { useImmersive } from '../lib/immersive'
 import { sendVerdictReport } from '../lib/reports'
 import { navigate } from '../lib/router'
 import { clearLoadRequest, loadDialogRequested, readSession, writeSession, type Session } from '../lib/session'
@@ -106,14 +109,15 @@ interface Props {
   status: EngineStatus | null
   /** False while another page is showing: the engine pauses and the keyboard is left alone. */
   active: boolean
-  /** The phone header's avatar button, from the shell. */
-  avatar?: ReactNode
   /** Opened as Analyze (/board): starts on a clean board each time it's opened. */
   blank?: boolean
 }
 
-export function AnalysisPage({ settings, updateSettings, engine, status, active, avatar, blank = false }: Props) {
+export function AnalysisPage({ settings, updateSettings, engine, status, active, blank = false }: Props) {
   const ready = status?.state === 'ready'
+  // Phones show the board full screen, with the review's parts one at a time under it.
+  const phone = useMediaQuery('(max-width: 1000px)')
+  useImmersive(active && phone)
 
   const [restored] = useState(restoreSession)
   const [game, setGame] = useState<Game>(() => restored?.game ?? { tree: createTree(), headers: {} })
@@ -237,6 +241,20 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const liveTop = live.result?.lines[0]
   const barScore = terminal?.score ?? (liveTop && liveTop.depth >= BAR_MIN_DEPTH ? liveTop.score : null) ?? reviewEval?.score ?? null
   const steppingThrough = tab === 'review' && stepping && review.status === 'done'
+  // Phones pick one part at a time under the board: the coach (stepping through), the engine,
+  // the review's summary, or the game's details.
+  const reviewed = review.status === 'done' && Boolean(report)
+  const phoneView: PhoneView = tab === 'analysis' ? 'engine' : tab === 'info' ? 'info' : reviewed && !stepping ? 'summary' : 'coach'
+  const pickPhoneView = (view: PhoneView) => {
+    if (view === 'engine') return setTab('analysis')
+    if (view === 'info') return setTab('info')
+    setTab('review')
+    if (view === 'summary') return setStepping(false)
+    if (reviewed) {
+      setStepping(true)
+      if (!node.parentId && line[1]) setCurrentId(line[1].id)
+    }
+  }
   // A look at the Info tab mid-review keeps the review's arrows on the board.
   const reviewArrows = tab !== 'analysis' && stepping && review.status === 'done'
 
@@ -386,7 +404,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     openedShare.current = true
     void decodeShare(shareLink.token).then((shared) => {
       // An unknown version keeps its address, so the refresh it asks for (fetching the new app) opens it.
-      if (!('error' in shared && shared.error === 'newer-version')) history.replaceState(null, '', '/analysis')
+      if (!('error' in shared && shared.error === 'newer-version')) history.replaceState(history.state, '', '/analysis')
       resetReview()
       setStepping(false)
       setPlaying(false)
@@ -541,10 +559,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             Show {bestSan ?? 'best'}
           </button>
         )}
-        <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
-          Next move
-          <NavIcon name="next" />
-        </button>
+        {/* Phones have the big Next under the thumb instead. */}
+        {!phone && (
+          <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
+            Next move
+            <NavIcon name="next" />
+          </button>
+        )}
       </CoachCard>
     )
   }
@@ -567,16 +588,28 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             </button>
           </div>
         </CoachCard>
-        <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={104} />
-        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+        {phone ? (
+          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
+        ) : (
+          <>
+            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={104} />
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+          </>
+        )}
       </>
     )
   } else if (review.status === 'done' && report) {
     reviewBody = stepping ? (
       <>
         {stepCoach()}
-        <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
-        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+        {phone ? (
+          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
+        ) : (
+          <>
+            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+          </>
+        )}
       </>
     ) : (
       <>
@@ -679,15 +712,21 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   return (
     <div className="analysis-page">
-      <PageHeader title={blank ? 'Analysis board' : 'Game review'} avatar={avatar}>
+      <PageHeader
+        title={blank ? 'Analysis board' : 'Game review'}
+        back="/games"
+        phoneTitle={hasGame ? `${headers.White || 'White'} vs ${headers.Black || 'Black'}` : blank ? 'Analysis board' : 'Game review'}
+        phoneSub={hasGame ? [blank ? 'Analysis board' : 'Game review', result?.replace('1/2-1/2', '½–½')].filter(Boolean).join(' · ') : undefined}
+      >
         {line.length > 1 && (
-          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game">
+          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game" aria-label="Share game">
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
             </svg>
             <span className="page-header-label">Share</span>
           </button>
         )}
+        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
       </PageHeader>
 
       <main
@@ -696,6 +735,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       >
         <section className="board-column">
           {player(orientation === 'white' ? 'black' : 'white')}
+          {phone && <EvalBar horizontal score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />}
           <div className="board-row">
             <span
               className="board-resize"
@@ -705,7 +745,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               onPointerDown={startResize}
               onDoubleClick={() => saveBoardSize(setBoardSize, null)}
             />
-            <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />
+            {!phone && <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />}
             <Board
               fen={node.fen}
               orientation={orientation}
@@ -724,12 +764,19 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             {banner && <ShareBanner kind={banner} onLoadGame={() => setLoadOpen(true)} onClose={() => setBanner(null)} />}
             <div className="panel-card">
               <header className="panel-header">
-                {steppingThrough && (
+                {phone ? (
+                  <PhoneViews
+                    value={phoneView}
+                    reviewed={reviewed}
+                    score={engineOn && barScore ? chipText(barScore) : null}
+                    onSelect={pickPhoneView}
+                  />
+                ) : steppingThrough && (
                   <button className="icon-btn" onClick={() => setStepping(false)} aria-label="Back to summary" title="Back to summary">
                     <NavIcon name="back" />
                   </button>
                 )}
-                <Tabs
+                {!phone && <Tabs
                   value={tab}
                   onSelect={setTab}
                   items={[
@@ -737,7 +784,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                     { id: 'analysis', label: 'Analysis', icon: TAB_ICONS.analysis, tone: 'green' },
                     { id: 'info', label: 'Info', icon: TAB_ICONS.info, tone: 'violet' },
                   ]}
-                />
+                />}
               </header>
 
               <div className={`panel-body ${tab}`}>
@@ -813,13 +860,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 >
                   <NavIcon name={playing ? 'pause' : 'play'} />
                 </button>
-                <button className="ctrl" onClick={goNext} disabled={!node.children.length} aria-label="Next move" title="Next move (→)">
+                <button className="ctrl next" onClick={goNext} disabled={!node.children.length} aria-label="Next move" title="Next move (→)">
                   <NavIcon name="next" />
                 </button>
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
                   <NavIcon name="last" />
                 </button>
-                <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />
+                {!phone && <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
               </nav>
             </div>
           </aside>
@@ -908,6 +955,28 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         lichessUser={settings.lichessUser}
         onLichessUser={(lichessUser) => updateSettings({ lichessUser })}
       />
+    </div>
+  )
+}
+
+type PhoneView = 'coach' | 'engine' | 'summary' | 'info'
+
+/** Phones: the switch under the board between the review's parts. The engine's button carries its score. */
+function PhoneViews({ value, reviewed, score, onSelect }: { value: PhoneView; reviewed: boolean; score: string | null; onSelect: (v: PhoneView) => void }) {
+  const views: [PhoneView, string][] = [
+    ['coach', reviewed ? 'Coach' : 'Review'],
+    ['engine', 'Engine'],
+    ...(reviewed ? ([['summary', 'Summary']] as [PhoneView, string][]) : []),
+    ['info', 'Info'],
+  ]
+  return (
+    <div className="phone-views" role="tablist" aria-label="Under the board">
+      {views.map(([v, label]) => (
+        <button key={v} role="tab" aria-selected={value === v} className={value === v ? 'active' : ''} onClick={() => onSelect(v)}>
+          {label}
+          {v === 'engine' && score && <span className="phone-views-score">{score}</span>}
+        </button>
+      ))}
     </div>
   )
 }

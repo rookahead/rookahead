@@ -6,6 +6,7 @@ import { Board } from '../components/Board'
 import { BoardOptions } from '../components/BoardOptions'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { MoveList } from '../components/MoveList'
+import { MoveStrip } from '../components/MoveStrip'
 import { NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
@@ -14,11 +15,13 @@ import { ShareDialog } from '../components/ShareDialog'
 import { Gear } from '../components/UserCard'
 import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds } from '../hooks/useMoveSounds'
 import { bookMove, candidates, decide, isComplete, pickLapse, soundMove } from '../lib/botMove'
 import { CLOCK_GROUPS, clockLabel, flagged, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
 import { winPercent, type Color } from '../lib/evaluation'
 import { saveGame } from '../lib/games'
+import { useImmersive } from '../lib/immersive'
 import { ALL_MOVES, LEVELS, levelInfo, searchLimits } from '../lib/levels'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, type OpeningBook } from '../lib/openings'
@@ -35,7 +38,6 @@ interface Props {
   active: boolean
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
-  avatar?: ReactNode
   /** A game has been put in the session: show it in Analysis. */
   onOpenAnalysis: () => void
 }
@@ -64,7 +66,7 @@ function restoreGame(): LiveGame | null {
 }
 
 /** Play against the computer: pick a level, play with takebacks and hints, then review. */
-export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnalysis }: Props) {
+export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: Props) {
   const [boardSettings, setBoardSettings] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   // Board settings sit by the game's heading (and the setup card's), where your eyes are.
@@ -77,6 +79,9 @@ export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnaly
   const ready = status?.state === 'ready'
   const [setup, setSetup] = useState<PlaySetup>(loadSetup)
   const [game, setGame] = useState<LiveGame | null>(restoreGame)
+  // Phones play full screen: no tab bar while a game is on the board.
+  const phone = useMediaQuery('(max-width: 1000px)')
+  useImmersive(active && phone && Boolean(game))
   // Left the page after the game ended: it's saved in My recent games, so come back to a new setup.
   if (!active && game?.outcome) setGame(null)
   // Clicking Play again after the game ended does the same.
@@ -103,15 +108,21 @@ export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnaly
 
   return (
     <div className="play-page">
-      <PageHeader title="Play" avatar={avatar}>
+      <PageHeader
+        title="Play"
+        back={game ? '/' : undefined}
+        phoneTitle={game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
+        phoneSub={game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
+      >
         {game && game.moves.length > 0 && (
-          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game">
+          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game" aria-label="Share game">
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
             </svg>
             <span className="page-header-label">Share</span>
           </button>
         )}
+        {phone && game && gear}
       </PageHeader>
       {boardSettings && (
         <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
@@ -121,6 +132,7 @@ export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnaly
       {game ? (
         <GameView
           key={game.id}
+          phone={phone}
           active={active}
           gear={gear}
           sharing={shareOpen}
@@ -240,9 +252,11 @@ interface GameViewProps {
   /** The page header's Share was clicked: show the share dialog for this game. */
   sharing: boolean
   onCloseShare: () => void
+  /** Phones: the game's title and Board settings are in the page header, and the moves are a strip. */
+  phone: boolean
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onCloseShare }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onCloseShare, phone }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
@@ -489,7 +503,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const headers = playHeaders({ ...meta(game), date: new Date(game.startedAt) })
 
   return (
-    <main className="play-layout">
+    <main className="play-layout play-game">
       {confirming === 'abort' && (
         <ConfirmDialog title="Abort this game?" confirm="Abort game" cancel="Keep playing" onConfirm={onNewGame} onClose={() => setConfirming(null)}>
           It’s called off: not saved to My games and not counted as a loss.
@@ -552,7 +566,11 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
             {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Rookahead is thinking…' : 'Rookahead to move')}
           </p>
           <div className="panel-body">
-            <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} emptyText="Your moves and the computer’s appear here." />
+            {phone ? (
+              <MoveStrip tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} />
+            ) : (
+              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} emptyText="Your moves and the computer’s appear here." />
+            )}
           </div>
           <nav className="play-nav" aria-label="Move navigation">
             <button className="ctrl" onClick={() => showPly(0)} disabled={shownPly === 0} aria-label="First move" title="First move (↑)">

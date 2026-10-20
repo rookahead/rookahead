@@ -21,6 +21,12 @@ try {
   // Storage unavailable — nothing to migrate.
 }
 
+// Installable as an app, and quick to open from the home screen (public/sw.js). Not in development,
+// where a cached bundle would hide your edits.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}))
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

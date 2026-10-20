@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "Rookahead",
+  "short_name": "Rookahead",
+  "description": "Free chess game reviews, puzzles and play against the computer.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#09090a",
+  "theme_color": "#09090a",
+  "categories": ["games", "education"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Review a game", "url": "/games", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Puzzles", "url": "/puzzles", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Play the computer", "url": "/play", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

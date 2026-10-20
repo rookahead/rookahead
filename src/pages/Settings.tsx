@@ -14,7 +14,6 @@ import { ProfileSection } from './settings/Profile'
 interface Props {
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
-  avatar?: ReactNode
 }
 
 const icon = (d: string) => (
@@ -34,7 +33,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
 const CHEVRON = icon('M9 6l6 6-6 6')
 
 /** Settings: the sections listed at the left, the open one at the right. On phones the list is its own screen. */
-export function SettingsPage({ settings, updateSettings, avatar }: Props) {
+export function SettingsPage({ settings, updateSettings }: Props) {
   const phone = useMediaQuery('(max-width: 1000px)')
   const pathname = usePathname()
   const { status } = useAccount()
@@ -52,7 +51,7 @@ export function SettingsPage({ settings, updateSettings, avatar }: Props) {
 
   return (
     <div className="home-page">
-      <PageHeader phoneOnly avatar={avatar} />
+      <PageHeader phoneOnly />
       <main className="settings-page">
         {(!phone || !open) && <h1 className="settings-title">Settings</h1>}
         <div className="settings-layout">
@@ -70,9 +69,9 @@ export function SettingsPage({ settings, updateSettings, avatar }: Props) {
           {open && (
             <section className="settings-body" key={open}>
               {phone && (
-                <Link to="/settings" className="settings-back">
+                <Link to="/you" className="settings-back">
                   {icon('M15 6l-6 6 6 6')}
-                  Settings
+                  You
                 </Link>
               )}
               {body}

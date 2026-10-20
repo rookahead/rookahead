@@ -1,7 +1,7 @@
 // A tiny History-API router: pages switch without a reload, so the engine and the loaded game survive.
 import { useSyncExternalStore } from 'react'
 
-export type Route = 'home' | 'analysis' | 'board' | 'games' | 'play' | 'puzzles' | 'settings' | 'auth'
+export type Route = 'home' | 'analysis' | 'board' | 'games' | 'play' | 'puzzles' | 'settings' | 'you' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 export type SettingsSection = 'profile' | 'linked' | 'board' | 'appearance' | 'account'
 
@@ -12,17 +12,21 @@ export function routeFor(pathname: string): Route {
   if (/^\/play\/?$/.test(pathname)) return 'play'
   if (/^\/games\/?$/.test(pathname)) return 'games'
   if (/^\/board\/?$/.test(pathname)) return 'board'
-  if (/^\/puzzles(\/(sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
+  if (/^\/puzzles(\/(rated|sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
+  if (/^\/you\/?$/.test(pathname)) return 'you'
   if (new RegExp(`^/settings(/(${SECTIONS}))?/?$`).test(pathname)) return 'settings'
   if (/^\/(signup|login|reset-password|auth\/google)\/?$/.test(pathname)) return 'auth'
   return 'home'
 }
 
-/** The Puzzles page's tab: /puzzles, /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */
+/** The Puzzles page's tab: /puzzles (or /puzzles/rated), /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */
 export function puzzleTab(pathname: string): PuzzleTab {
-  const m = /^\/puzzles\/(sprint|daily|mistakes)\/?$/.exec(pathname)
+  const m = /^\/puzzles\/(rated|sprint|daily|mistakes)\/?$/.exec(pathname)
   return m ? (m[1] as PuzzleTab) : 'rated'
 }
+
+/** Plain /puzzles: on phones the list of modes, on desktop rated puzzles. */
+export const isPuzzleHub = (pathname: string) => /^\/puzzles\/?$/.test(pathname)
 
 /** The Settings page's section: /settings/board and so on; plain /settings is none (phones show the list). */
 export function settingsSection(pathname: string): SettingsSection | null {
@@ -56,10 +60,17 @@ export function navigate(path: string, { replace = false } = {}): void {
     reselectListeners.forEach((l) => l(path))
     return
   }
-  if (replace) history.replaceState(null, '', path)
-  else history.pushState(null, '', path)
+  // Pages reached inside the app are marked, so a Back button knows there's somewhere to go back to.
+  if (replace) history.replaceState(history.state, '', path)
+  else history.pushState({ inApp: true }, '', path)
   window.scrollTo(0, 0)
   notify()
+}
+
+/** Phones' Back button: the page you came from, or `fallback` when this page was opened directly. */
+export function goBack(fallback: string): void {
+  if ((history.state as { inApp?: boolean } | null)?.inApp) history.back()
+  else navigate(fallback, { replace: true })
 }
 
 /** The address's path; re-renders when it changes through `navigate` or Back/Forward. */

@@ -8,13 +8,15 @@ interface Props {
   orientation: Color
   /** When false (engine off and nothing reviewed) the bar rests at equal. */
   active: boolean
+  /** Phones: a thin bar across the top of the board, filling from the left with your side's colour. */
+  horizontal?: boolean
 }
 
 const sameScore = (a: Score | null, b: Score | null) =>
   a === b || (!!a && !!b && a.type === b.type && a.value === b.value && (a.type !== 'mate' || b.type !== 'mate' || a.mated === b.mated))
 
 /** Compact text for the chip: "+0.3", "−7.5", "M4", "1-0". Fits inside the bar. */
-function chipText(score: Score): string {
+export function chipText(score: Score): string {
   if (score.type === 'mate') {
     if (score.value === 0) return score.mated === 'white' ? '0-1' : score.mated === 'black' ? '1-0' : '#'
     return `${score.value < 0 ? '−' : ''}M${Math.abs(score.value)}`
@@ -25,7 +27,7 @@ function chipText(score: Score): string {
   return `${pawns > 0 ? '+' : '−'}${abs >= 10 ? abs.toFixed(0) : abs.toFixed(1)}`
 }
 
-export function EvalBar({ score, orientation, active }: Props) {
+export function EvalBar({ score, orientation, active, horizontal = false }: Props) {
   // Hold the last score while a new position is being analysed, so the bar glides
   // from the old value to the new one instead of snapping to the middle in between.
   const [held, setHeld] = useState<Score | null>(score)
@@ -38,10 +40,12 @@ export function EvalBar({ score, orientation, active }: Props) {
   // The chip marks the split, but stays whole inside the bar: at least half its height (plus a
   // little air) from either end, in pixels, so it fits however short the board makes the bar.
   const chipTop = `clamp(15px, ${100 - fill}%, calc(100% - 15px))`
+  // Across the board, the chip rides the split the same way, left to right.
+  const chipLeft = `clamp(22px, ${fill}%, calc(100% - 22px))`
 
   return (
     <div
-      className={`eval-bar ${orientation === 'white' ? 'white-bottom' : 'black-bottom'}`}
+      className={`eval-bar ${orientation === 'white' ? 'white-bottom' : 'black-bottom'} ${horizontal ? 'horizontal' : ''}`}
       role="meter"
       aria-label="Evaluation"
       aria-valuemin={0}
@@ -50,8 +54,8 @@ export function EvalBar({ score, orientation, active }: Props) {
       aria-valuetext={shown ? formatScore(shown) : 'No evaluation yet'}
       title={shown ? formatScore(shown) : undefined}
     >
-      <div className="eval-bar-fill" style={{ transform: `scaleY(${fill / 100})` }} />
-      <span className="eval-bar-chip" style={{ top: chipTop }}>
+      <div className="eval-bar-fill" style={{ transform: horizontal ? `scaleX(${fill / 100})` : `scaleY(${fill / 100})` }} />
+      <span className="eval-bar-chip" style={horizontal ? { left: chipLeft } : { top: chipTop }}>
         {shown ? chipText(shown) : '0.0'}
       </span>
     </div>

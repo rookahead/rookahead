@@ -10,6 +10,9 @@
   Cache-Control: public, max-age=31536000, immutable
 /engine/*
   Cache-Control: public, max-age=604800
+# The service worker is checked for updates on every visit.
+/sw.js
+  Cache-Control: no-cache
 # Puzzle shards change only when the data is rebuilt.
 /puzzle-data/*
   Cache-Control: public, max-age=86400
