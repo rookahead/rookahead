@@ -1,8 +1,10 @@
 import type { Appearance, Settings } from '../../lib/settings'
+import { PalettePicker } from '../../components/PalettePicker'
 import { Section } from './shared'
 
 const THEMES: [Appearance, string, string][] = [
   ['dark', 'Dark', 'Easy on the eyes, day or night.'],
+  ['dim', 'Dim', 'Dark, with softer greys.'],
   ['light', 'Light', 'Bright and crisp.'],
   ['system', 'System', 'Follows your device.'],
 ]
@@ -47,6 +49,11 @@ export function AppearanceSection({ settings, onChange }: { settings: Settings; 
           </button>
         ))}
       </div>
+      <header className="settings-section-head palette-head">
+        <h2>Colour</h2>
+        <p>The accent on buttons, your latest game and the tab you’re on, with backgrounds tinted to match.</p>
+      </header>
+      <PalettePicker value={settings.palette} onChange={(palette) => onChange({ palette })} />
     </Section>
   )
 }

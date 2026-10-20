@@ -2,7 +2,20 @@ import { useCallback, useState } from 'react'
 import { FULL_ENGINE_AVAILABLE, type EngineStrength } from '../engine/Engine'
 import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
 
-export type Appearance = 'dark' | 'light' | 'system'
+/** 'dim' is dark with softer, lighter greys. */
+export type Appearance = 'dark' | 'dim' | 'light' | 'system'
+
+/** The app's colour: its accent, and a tint to match in the backgrounds (index.css, :root[data-palette]). */
+export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'ivory'
+
+export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
+  { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
+  { id: 'gold', label: 'Gold', swatch: '#f2b33d' },
+  { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
+  { id: 'coral', label: 'Coral', swatch: '#ff7a59' },
+  { id: 'forest', label: 'Forest', swatch: '#34d399' },
+  { id: 'ivory', label: 'Ivory', swatch: '#ededed' },
+]
 
 export type BoardTheme = 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
 
@@ -14,6 +27,7 @@ export const ANIMATION_MS: Record<Animation, number> = { none: 0, fast: 120, nor
 export interface Settings {
   /** Interface colour scheme; 'system' follows the OS. */
   appearance: Appearance
+  palette: Palette
   engine: EngineStrength
   /** Number of engine lines shown in live analysis. */
   lines: number
@@ -44,6 +58,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: 'dark',
+  palette: 'sky',
   engine: 'lite',
   lines: 3,
   liveDepth: 30,
@@ -82,6 +97,7 @@ function load(): Settings {
       // Snap values saved by older versions to the options offered now.
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
+      if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
       return s
     }
   } catch {

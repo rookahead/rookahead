@@ -3,6 +3,7 @@ import { BOARD_THEMES } from '../components/Board'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
+import { PalettePicker } from '../components/PalettePicker'
 import { AvatarFace } from '../components/UserCard'
 import { ACCOUNTS_ENABLED, hasUnsynced, logOut, openAccountPage, useAccount } from '../lib/account'
 import { useInstall } from '../lib/install'
@@ -90,6 +91,7 @@ export function YouPage({ settings, updateSettings }: Props) {
               {(
                 [
                   ['dark', 'Dark'],
+                  ['dim', 'Dim'],
                   ['light', 'Light'],
                   ['system', 'Auto'],
                 ] as [Appearance, string][]
@@ -99,6 +101,10 @@ export function YouPage({ settings, updateSettings }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="you-row">
+            <span className="you-row-label">Colour</span>
+            <PalettePicker compact value={settings.palette} onChange={(palette) => updateSettings({ palette })} />
           </div>
           <label className="you-row">
             <span className="you-row-label">Move sounds</span>

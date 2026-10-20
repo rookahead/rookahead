@@ -57,7 +57,7 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
   const canSignUp = ACCOUNTS_ENABLED && status === 'guest'
   // Expanded, a guest gets real buttons: Sign up (the one coloured thing) and Log in, then quick toggles.
   if (canSignUp && !rail) {
-    const dark = prefs.appearance === 'system' ? !systemLight : prefs.appearance === 'dark'
+    const dark = prefs.appearance === 'system' ? !systemLight : prefs.appearance !== 'light'
     const muted = prefs.soundVolume === 0
     return (
       <div className="user-card guest-card">
