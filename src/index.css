@@ -310,6 +310,11 @@ svg {
   min-height: 100vh;
 }
 
+/* While the account page has the window (App.tsx): `hidden` alone loses to display: flex above. */
+.shell[hidden] {
+  display: none;
+}
+
 /* Pages size themselves from this box (container units), so the sidebar's width is already taken out. */
 .shell-page {
   flex: 1;
@@ -1317,9 +1322,30 @@ svg {
 
 /* One tab bar everywhere: equal columns, icon over label, each tab in its own colour. */
 .tabs-bar {
+  position: relative;
   flex-shrink: 0;
   display: grid;
   border-bottom: 1px solid var(--border);
+}
+
+/* The active tab's underline, sliding across to the tab picked (when the bar stays on screen). */
+.tabs-ink {
+  position: absolute;
+  bottom: -1px;
+  left: calc(100% / var(--n) * var(--i));
+  width: calc(100% / var(--n));
+  height: 2px;
+  background: var(--ink);
+  pointer-events: none;
+  transition:
+    left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs-ink {
+    transition: none;
+  }
 }
 
 .tabs-tab {
@@ -1366,7 +1392,6 @@ svg {
 .tabs-tab.active {
   color: var(--text);
   font-weight: 600;
-  border-bottom-color: var(--tone);
 }
 
 /* Label-only tabs (dialogs, sign-in) read at body size. */
@@ -4078,12 +4103,43 @@ button.user-avatar.guest:hover {
   .tour-note,
   .tour-phone,
   .tour-ladder span,
-  .tour-step span {
+  .tour-step span,
+  .auth-switch {
     animation: none !important;
   }
 
   .tour-step.is-active span {
     transform: none;
+  }
+}
+
+/* Switching Sign in ⇄ Register: the form comes in from the side of the tab picked. It wraps the
+   form and what follows it, laid out as if they sat in .auth-box directly. */
+.auth-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-switch.from-right {
+  animation: auth-switch-right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-switch.from-left {
+  animation: auth-switch-left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes auth-switch-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes auth-switch-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
   }
 }
 
@@ -4767,10 +4823,6 @@ button.user-avatar.guest:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-}
-
-.resign-confirm {
-  display: contents;
 }
 
 .result-card {
@@ -7156,6 +7208,25 @@ strong.settings-value {
   }
 }
 
+/* Asking before something final (aborting or resigning a game): a short message, then the choice. */
+.confirm-dialog {
+  width: min(400px, calc(100vw - 32px));
+}
+
+.confirm-body {
+  padding: 4px 20px 0;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 20px;
+}
+
 /* One height for every tab, so switching tabs doesn't make the dialog jump. */
 .options-dialog {
   width: min(560px, calc(100vw - 24px));
@@ -7478,5 +7549,74 @@ strong.settings-value {
 
   .board-swatches {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Into and out of the account page (App.tsx): the brand panel slides in from the left over the page you
+   were on, the rest of the window fades to the page colour, and the sign-in form rises in; back to the
+   app, the other way round. The real elements move (transform and opacity only), so the browser runs it
+   at the screen's own rate, with nothing to capture first. */
+.auth-layer.entering,
+.auth-layer.leaving {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.auth-layer.leaving {
+  pointer-events: none;
+}
+
+.auth-layer.entering::before,
+.auth-layer.leaving::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg);
+}
+
+.auth-layer.entering::before {
+  animation: auth-fade 0.3s ease both;
+}
+
+.auth-layer.entering .auth-brand {
+  will-change: transform;
+  animation: auth-from-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-layer.entering .auth-panel {
+  animation: auth-rise 0.45s 0.12s ease both;
+}
+
+.auth-layer.leaving::before {
+  animation: auth-fade-out 0.32s 0.06s ease both;
+}
+
+.auth-layer.leaving .auth-brand {
+  will-change: transform;
+  animation: auth-to-left 0.4s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+.auth-layer.leaving .auth-panel {
+  animation: auth-fade-out 0.2s ease both;
+}
+
+@keyframes auth-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes auth-to-left {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes auth-fade-out {
+  to {
+    opacity: 0;
   }
 }

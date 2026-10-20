@@ -30,9 +30,16 @@ export function takebackPlies(movesPlayed: number, playerColor: Color, startTurn
   return 0
 }
 
-/** The computer agrees to a draw only in a level position, and not in the opening. */
-export function acceptsDraw(scoreCp: number | null, mate: boolean, plies: number): boolean {
-  return !mate && scoreCp !== null && Math.abs(scoreCp) <= 30 && plies >= 30
+/** No draws before both sides have made this many moves (plies). */
+export const DRAW_AFTER_PLIES = 20
+
+/**
+ * Whether the computer takes a draw: like a person, when it isn't better (`botWin`, its own chance of
+ * winning, 0–100), and the weaker it is the more it's also happy to when only a little better. Not in
+ * the opening. (It used to need a dead-level position, so it turned draws down even when losing.)
+ */
+export function acceptsDraw(botWin: number, plies: number, level: number): boolean {
+  return plies >= DRAW_AFTER_PLIES && botWin <= 50 + (11 - level)
 }
 
 const REASON_TEXT: Record<Outcome['reason'], string> = {
@@ -46,25 +53,35 @@ const REASON_TEXT: Record<Outcome['reason'], string> = {
   agreement: 'agreement',
 }
 
-/** The finished (or unfinished) game as a PGN for the games list and for review. */
-export function playPgn(moves: string[], meta: { color: Color; level: number; clock: ClockSetting; outcome: Outcome | null; date: Date; startFen?: string }): string {
-  const chess = new Chess(meta.startFen)
+type PlayMeta = { color: Color; level: number; clock: ClockSetting; outcome: Outcome | null; date: Date; startFen?: string }
+
+/** The game's PGN tags: players, date, result and how it ended. */
+export function playHeaders(meta: PlayMeta): Record<string, string> {
   const computer = `Rookahead Level ${meta.level}`
   const white = meta.color === 'white' ? 'You' : computer
   const black = meta.color === 'black' ? 'You' : computer
   const d = meta.date
-  chess.setHeader('Event', 'Rookahead · vs computer')
-  chess.setHeader('Site', 'https://rookahead.com')
-  chess.setHeader('Date', `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`)
-  chess.setHeader('White', white)
-  chess.setHeader('Black', black)
-  chess.setHeader('Result', meta.outcome?.result ?? '*')
-  chess.setHeader('TimeControl', meta.clock === 'none' ? '-' : meta.clock)
+  const headers: Record<string, string> = {
+    Event: 'Rookahead · vs computer',
+    Site: 'https://rookahead.com',
+    Date: `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`,
+    White: white,
+    Black: black,
+    Result: meta.outcome?.result ?? '*',
+    TimeControl: meta.clock === 'none' ? '-' : meta.clock,
+  }
   if (meta.outcome) {
     const { result, reason } = meta.outcome
     const winner = result === '1-0' ? white : result === '0-1' ? black : null
-    chess.setHeader('Termination', winner ? `${winner} won by ${REASON_TEXT[reason]}` : `Game drawn by ${REASON_TEXT[reason]}`)
+    headers.Termination = winner ? `${winner} won by ${REASON_TEXT[reason]}` : `Game drawn by ${REASON_TEXT[reason]}`
   }
+  return headers
+}
+
+/** The finished (or unfinished) game as a PGN for the games list and for review. */
+export function playPgn(moves: string[], meta: PlayMeta): string {
+  const chess = new Chess(meta.startFen)
+  for (const [name, value] of Object.entries(playHeaders(meta))) chess.setHeader(name, value)
   for (const uci of moves) chess.move(uciToMove(uci))
   return chess.pgn()
 }

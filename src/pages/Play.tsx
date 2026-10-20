@@ -4,22 +4,28 @@ import { Chess, DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Board } from '../components/Board'
 import { BoardOptions } from '../components/BoardOptions'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { MoveList } from '../components/MoveList'
 import { NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
 import { SettingsDialog } from '../components/SettingsDialog'
+import { ShareDialog } from '../components/ShareDialog'
 import { Gear } from '../components/UserCard'
+import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
 import { useMoveSounds } from '../hooks/useMoveSounds'
+import { bookMove, candidates, decide, isComplete, pickLapse, soundMove } from '../lib/botMove'
 import { CLOCK_GROUPS, clockLabel, flagged, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
-import type { Color } from '../lib/evaluation'
+import { winPercent, type Color } from '../lib/evaluation'
 import { saveGame } from '../lib/games'
-import { LEVELS, levelInfo, searchLimits } from '../lib/levels'
+import { ALL_MOVES, LEVELS, levelInfo, searchLimits } from '../lib/levels'
 import { materialState } from '../lib/material'
-import { acceptsDraw, outcomeOf, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
+import { loadOpeningBook, type OpeningBook } from '../lib/openings'
+import { acceptsDraw, DRAW_AFTER_PLIES, outcomeOf, playHeaders, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
 import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type LiveGame, type PlaySetup } from '../lib/playStore'
 import { onReselect } from '../lib/router'
+import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
@@ -60,6 +66,7 @@ function restoreGame(): LiveGame | null {
 /** Play against the computer: pick a level, play with takebacks and hints, then review. */
 export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnalysis }: Props) {
   const [boardSettings, setBoardSettings] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   // Board settings sit by the game's heading (and the setup card's), where your eyes are.
   const gear = (
     <button className="icon-btn panel-gear" onClick={() => setBoardSettings(true)} aria-label="Board settings" title="Board settings">
@@ -96,7 +103,16 @@ export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnaly
 
   return (
     <div className="play-page">
-      <PageHeader title="Play" avatar={avatar} />
+      <PageHeader title="Play" avatar={avatar}>
+        {game && game.moves.length > 0 && (
+          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+            </svg>
+            <span className="page-header-label">Share</span>
+          </button>
+        )}
+      </PageHeader>
       {boardSettings && (
         <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
           <BoardOptions settings={settings} onChange={updateSettings} preview />
@@ -107,6 +123,8 @@ export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnaly
           key={game.id}
           active={active}
           gear={gear}
+          sharing={shareOpen}
+          onCloseShare={() => setShareOpen(false)}
           game={game}
           setGame={setGame}
           engine={ready ? engine : null}
@@ -219,9 +237,12 @@ interface GameViewProps {
   active: boolean
   /** Opens Board settings, in the panel's heading. */
   gear: ReactNode
+  /** The page header's Share was clicked: show the share dialog for this game. */
+  sharing: boolean
+  onCloseShare: () => void
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onCloseShare }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
@@ -234,7 +255,8 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const [hint, setHint] = useState<{ ply: number; uci: string } | null>(null)
   const [thinking, setThinking] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [confirmResign, setConfirmResign] = useState(false)
+  // Which ending is waiting for its confirmation dialog.
+  const [confirming, setConfirming] = useState<'abort' | 'resign' | null>(null)
   const busy = useRef<AbortController | null>(null)
 
   // Looking back through the game: the ply on show, or null for the live position. Any new move
@@ -329,22 +351,53 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     clockRef.current = game.clock
   }, [game.clock])
 
-  // The computer's move: search at the level's strength, then wait out a human-like pause.
+  // The opening book, for the computer's first moves.
+  const [book, setBook] = useState<OpeningBook | null>(null)
+  useEffect(() => {
+    void loadOpeningBook().then(setBook)
+  }, [])
+
+  // The computer's move: score every legal move, choose like a player of the level's rating would
+  // (botMove.ts), then wait out a human-like pause.
   useEffect(() => {
     if (!engine || game.outcome || turn === game.color) return
     const ctrl = new AbortController()
     busy.current = ctrl
     const fen = node.fen
+    const ply = game.moves.length
     const began = Date.now()
     void (async () => {
       setThinking(true)
       const clockMs = clockRef.current ? remaining(clockRef.current, turn, began) : null
-      const result = await engine.analyze({ fen, multiPv: 1, ...searchLimits(level, clockMs), strength: level.strength, signal: ctrl.signal })
-      if (ctrl.signal.aborted || !result?.bestMove) return
+      // Keep the last iteration that scored every move: the time limit can cut the next one off halfway.
+      const legal = new Chess(fen).moves().length
+      let complete: AnalysisResult['lines'] | null = null
+      const result = await engine.analyze({
+        fen,
+        multiPv: ALL_MOVES,
+        ...searchLimits(level, clockMs),
+        signal: ctrl.signal,
+        onUpdate: (r) => {
+          if (isComplete(r.lines, legal)) complete = r.lines
+        },
+      })
+      if (ctrl.signal.aborted || !result?.lines.length) return
+      const moves = candidates(complete ?? result.lines, turn)
+      let uci = book && ply < level.bookPlies ? bookMove(moves, fen, book.isBook) : null
+      if (!uci) {
+        const step = decide(moves, level.style)
+        if ('move' in step) uci = step.move
+        else {
+          // A lapse: of the bad moves, the one that looks fine at a glance.
+          const glance = await engine.analyze({ fen, multiPv: ALL_MOVES, depth: 1, signal: ctrl.signal })
+          if (ctrl.signal.aborted || !glance) return
+          uci = pickLapse(step.lapse, candidates(glance.lines, turn), level.style) ?? soundMove(moves, level.style)
+        }
+      }
       let wait = level.delay[0] + Math.random() * (level.delay[1] - level.delay[0])
       if (clockRef.current) wait = Math.min(wait, remaining(clockRef.current, turn, Date.now()) * 0.05)
       await sleep(Math.max(0, wait - (Date.now() - began)), ctrl.signal)
-      if (!ctrl.signal.aborted) play(result.bestMove)
+      if (!ctrl.signal.aborted) play(uci)
     })().finally(() => {
       if (busy.current === ctrl) {
         busy.current = null
@@ -352,7 +405,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       }
     })
     return () => ctrl.abort()
-  }, [engine, node.fen, turn, game.color, game.outcome, level, play])
+  }, [engine, node.fen, turn, game.color, game.outcome, game.moves.length, level, book, play])
 
   // Clocks: tick while a timed game runs, and end it on a flag.
   useEffect(() => {
@@ -385,14 +438,18 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const offerDraw = async () => {
     // Only on your turn: a search now would cut the computer's own search short.
     if (!engine || !yourTurn) return
-    const result = await engine.analyze({ fen: node.fen, multiPv: 1, depth: 14 })
-    const score = result?.lines[0]?.score
-    if (acceptsDraw(score?.type === 'cp' ? score.value : null, score?.type === 'mate', game.moves.length)) {
-      end({ result: '1/2-1/2', reason: 'agreement' })
-    } else {
-      setNotice('Rookahead declines the draw.')
+    const decline = (why: string) => {
+      setNotice(why)
       setTimeout(() => setNotice(null), 2500)
     }
+    if (game.moves.length < DRAW_AFTER_PLIES) return decline('Too early for a draw: play on a little.')
+    const result = await engine.analyze({ fen: node.fen, multiPv: 1, depth: 14 })
+    const score = result?.lines[0]?.score
+    if (!score) return
+    // The search scores for White; the computer plays the other colour from you.
+    const botWin = game.color === 'white' ? 100 - winPercent(score) : winPercent(score)
+    if (acceptsDraw(botWin, game.moves.length, game.setup.level)) end({ result: '1/2-1/2', reason: 'agreement' })
+    else decline('Rookahead declines the draw.')
   }
 
   const onMove = (move: { from: string; to: string; promotion?: string }) => {
@@ -426,9 +483,45 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   )
   const lastMove = shown.from && shown.to ? ([shown.from, shown.to] as [typeof shown.from, typeof shown.to]) : undefined
   const canTakeBack = !game.outcome && takebackPlies(game.moves.length, game.color, turnOf(game.startFen)) > 0
+  // Until both sides have moved, the game can be called off instead: not saved, not counted.
+  const canAbort = !game.outcome && game.moves.length < 2
+
+  const headers = playHeaders({ ...meta(game), date: new Date(game.startedAt) })
 
   return (
     <main className="play-layout">
+      {confirming === 'abort' && (
+        <ConfirmDialog title="Abort this game?" confirm="Abort game" cancel="Keep playing" onConfirm={onNewGame} onClose={() => setConfirming(null)}>
+          It’s called off: not saved to My games and not counted as a loss.
+        </ConfirmDialog>
+      )}
+      {confirming === 'resign' && (
+        <ConfirmDialog
+          title="Resign this game?"
+          confirm="Resign"
+          cancel="Keep playing"
+          danger
+          onConfirm={() => {
+            setConfirming(null)
+            end({ result: game.color === 'white' ? '0-1' : '1-0', reason: 'resignation' })
+          }}
+          onClose={() => setConfirming(null)}
+        >
+          {`Level ${game.setup.level} wins. The game is saved to My games, where you can review it.`}
+        </ConfirmDialog>
+      )}
+      {sharing && (
+        <ShareDialog
+          onClose={onCloseShare}
+          line={line}
+          currentNode={shown}
+          headers={headers}
+          orientation={orientation}
+          report={null}
+          boardTheme={settings.boardTheme}
+          getToken={() => encodeShare(toSharedGame(line, headers, orientation, null))}
+        />
+      )}
       <section className="play-board">
         {bar(other(orientation))}
         <Board
@@ -491,17 +584,12 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
               <button className="btn ghost" onClick={() => void offerDraw()} disabled={!engine || !yourTurn}>
                 Offer draw
               </button>
-              {confirmResign ? (
-                <span className="resign-confirm">
-                  <button className="btn ghost danger" onClick={() => end({ result: game.color === 'white' ? '0-1' : '1-0', reason: 'resignation' })}>
-                    Resign?
-                  </button>
-                  <button className="btn ghost" onClick={() => setConfirmResign(false)}>
-                    Keep playing
-                  </button>
-                </span>
+              {canAbort ? (
+                <button className="btn ghost" onClick={() => setConfirming('abort')} title="Call the game off: it isn't saved or counted">
+                  Abort
+                </button>
               ) : (
-                <button className="btn ghost" onClick={() => setConfirmResign(true)}>
+                <button className="btn ghost" onClick={() => setConfirming('resign')}>
                   Resign
                 </button>
               )}

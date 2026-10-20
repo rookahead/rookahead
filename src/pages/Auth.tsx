@@ -69,6 +69,10 @@ export function AuthPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [wait, setWait] = useState(0)
   const [passwordSaved, setPasswordSaved] = useState(false)
+  // Leaving for Google: only its button says so (the email form's button used to flash "Signing in…").
+  const [googling, setGoogling] = useState(false)
+  // Which way the form slides in after a Sign in ⇄ Register switch (none on arrival).
+  const [switchedTo, setSwitchedTo] = useState<'left' | 'right' | null>(null)
 
   useEffect(() => preloadAccounts(), [])
   const pickedName = name ?? suggestUsername(account?.name)
@@ -107,9 +111,10 @@ export function AuthPage() {
     return !err
   }
 
-  const google = () => {
+  const google = async () => {
     // On success the page is leaving for Google; only an error comes back here.
-    void run(signInWithGoogle)
+    setGoogling(true)
+    if (!(await run(signInWithGoogle))) setGoogling(false)
   }
 
   const submitForm = async (e: FormEvent) => {
@@ -301,42 +306,47 @@ export function AuthPage() {
             { id: 'login', label: 'Sign in', to: `/login${location.search}` },
             { id: 'signup', label: 'Register', to: `/signup${location.search}` },
           ]}
-          onSelect={() => go('form')}
+          onSelect={(id) => {
+            go('form')
+            setSwitchedTo(id === 'signup' ? 'right' : 'left')
+          }}
         />
-        <form className="auth-form" onSubmit={submitForm}>
-          <label className="auth-field">
-            <span className="auth-label">Email</span>
-            <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <PasswordField
-            value={password}
-            onChange={setPasswordValue}
-            fresh={register ? { min: PASSWORD_MIN } : undefined}
-            aside={
-              !register && (
-                <button type="button" className="link-btn auth-forgot" onClick={() => go('forgot')}>
-                  Forgot password?
-                </button>
-              )
-            }
-          />
-          <button className="btn big primary" disabled={pending || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
-            {pending ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
+        <div key={register ? 'signup' : 'login'} className={`auth-switch ${switchedTo ? `from-${switchedTo}` : ''}`}>
+          <form className="auth-form" onSubmit={submitForm}>
+            <label className="auth-field">
+              <span className="auth-label">Email</span>
+              <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <PasswordField
+              value={password}
+              onChange={setPasswordValue}
+              fresh={register ? { min: PASSWORD_MIN } : undefined}
+              aside={
+                !register && (
+                  <button type="button" className="link-btn auth-forgot" onClick={() => go('forgot')}>
+                    Forgot password?
+                  </button>
+                )
+              }
+            />
+            <button className="btn big primary" disabled={pending || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
+              {pending && !googling ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
+            </button>
+          </form>
+          <div className="auth-or" role="separator">
+            <span>or</span>
+          </div>
+          <button className="btn big ghost auth-google" onClick={() => void google()} disabled={pending}>
+            <GoogleG />
+            {googling ? 'Opening Google…' : 'Continue with Google'}
           </button>
-        </form>
-        <div className="auth-or" role="separator">
-          <span>or</span>
+          {register && (
+            <p className="auth-fine">
+              You’ll pick a username next. We use your email only for your account: confirming it, and resetting your password.{' '}
+              <a href="/privacy">Privacy</a>
+            </p>
+          )}
         </div>
-        <button className="btn big ghost auth-google" onClick={google} disabled={pending}>
-          <GoogleG />
-          Continue with Google
-        </button>
-        {register && (
-          <p className="auth-fine">
-            You’ll pick a username next. We use your email only for your account: confirming it, and resetting your password.{' '}
-            <a href="/privacy">Privacy</a>
-          </p>
-        )}
       </>
     )
   }

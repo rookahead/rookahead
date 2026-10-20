@@ -40,13 +40,17 @@ describe('takebackPlies', () => {
 })
 
 describe('acceptsDraw', () => {
-  it('accepts only level positions after 30 plies', () => {
-    expect(acceptsDraw(20, false, 30)).toBe(true)
-    expect(acceptsDraw(-30, false, 40)).toBe(true)
-    expect(acceptsDraw(31, false, 40)).toBe(false)
-    expect(acceptsDraw(0, false, 29)).toBe(false)
-    expect(acceptsDraw(0, true, 40)).toBe(false)
-    expect(acceptsDraw(null, false, 40)).toBe(false)
+  it('takes a draw when the computer isn’t better, not in the opening', () => {
+    expect(acceptsDraw(50, 20, 8)).toBe(true)
+    expect(acceptsDraw(20, 40, 8)).toBe(true) // losing: gladly
+    expect(acceptsDraw(50, 19, 1)).toBe(false) // too early
+  })
+
+  it('declines when better, the stronger the level the sooner', () => {
+    expect(acceptsDraw(54, 40, 8)).toBe(false)
+    expect(acceptsDraw(54, 40, 1)).toBe(true)
+    expect(acceptsDraw(62, 40, 1)).toBe(false)
+    expect(acceptsDraw(100, 40, 1)).toBe(false) // mating
   })
 })
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from './Link'
 
 export type Tone = 'sky' | 'amber' | 'violet' | 'rose' | 'green'
@@ -20,8 +20,16 @@ export interface TabItem<T extends string> {
 
 /** The app's one tab bar: equal columns across the full width, icon over label, a coloured underline on the active tab. */
 export function Tabs<T extends string>({ items, value, onSelect, label }: { items: TabItem<T>[]; value: T; onSelect?: (id: T) => void; label?: string }) {
+  const at = items.findIndex((item) => item.id === value)
   return (
     <nav className="tabs-bar" role="tablist" aria-label={label} style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+      {at >= 0 && (
+        <span
+          className="tabs-ink"
+          aria-hidden
+          style={{ '--i': at, '--n': items.length, '--ink': `var(--tone-${items[at].tone ?? 'sky'})` } as CSSProperties}
+        />
+      )}
       {items.map((item) => {
         const active = item.id === value
         const content = (
