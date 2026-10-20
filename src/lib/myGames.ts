@@ -186,13 +186,13 @@ export interface GameStats {
   accuracy: number | null
   /** Change against the 10 before them (needs at least 3 of those). */
   trend: number | null
-  /** Your Genius moves in games reviewed in the last 7 days. */
-  genius: number
+  /** Your Legendary moves in games reviewed in the last 7 days. */
+  legendary: number
   reviewed: number
   /** Your accuracy in your last 10 reviewed games, oldest first (for a trend line). */
   recent: number[]
-  /** The most recently reviewed game this week with a Genius move of yours. */
-  geniusKey?: string
+  /** The most recently reviewed game this week with a Legendary move of yours. */
+  legendaryKey?: string
 }
 
 export function gameStats(games: MyGame[], reviews: Record<string, CachedReview>, now = Date.now()): GameStats {
@@ -209,10 +209,10 @@ export function gameStats(games: MyGame[], reviews: Record<string, CachedReview>
   return {
     accuracy: last.length ? mean(last) : null,
     trend: last.length && before.length >= 3 ? mean(last) - mean(before) : null,
-    genius: thisWeek.reduce((s, m) => s + (m.review.brilliant[m.color] ?? 0), 0),
+    legendary: thisWeek.reduce((s, m) => s + (m.review.brilliant[m.color] ?? 0), 0),
     reviewed: mine.length,
     recent: [...last].reverse(),
-    geniusKey: thisWeek.filter((m) => m.review.brilliant[m.color]).sort((a, b) => b.review.at - a.review.at)[0]?.key,
+    legendaryKey: thisWeek.filter((m) => m.review.brilliant[m.color]).sort((a, b) => b.review.at - a.review.at)[0]?.key,
   }
 }
 

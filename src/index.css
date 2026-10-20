@@ -5600,7 +5600,7 @@ button.user-avatar.guest:hover {
   --tone: var(--brand);
 }
 
-.stat-card.genius {
+.stat-card.legendary {
   --tone: #a78bfa;
 }
 
@@ -5643,7 +5643,7 @@ button.stat-card:hover {
   line-height: 1;
 }
 
-.stat-card.genius .stat-value,
+.stat-card.legendary .stat-value,
 .stat-card.streak .stat-value {
   color: var(--tone);
 }

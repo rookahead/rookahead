@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { classifyGame, gameAccuracy, isSacrifice, materialBalance, moveAccuracy, withClasses, type ReviewedPosition } from './classify'
-import { moveHeadline } from './commentary'
+import { moveDetail, moveHeadline } from './commentary'
 import { materialState } from './material'
 import { makeBook, openingOf } from './openings'
 import { addLine, createTree, mainline, ROOT_ID } from './tree'
@@ -219,6 +219,44 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(report.moves[line[3].id].cls).toBe('miss')
   })
 
+  it('keeps it a blunder when we fall below where we were before the opponent erred', () => {
+    const { line, evals } = game(
+      ['e2e4', 'e7e5', 'g1f3'],
+      [{ score: cp(30), bestMove: 'e2e4' }, { score: cp(30), bestMove: 'c7c5' }, { score: cp(600), bestMove: 'd1h5' }, { score: cp(-250) }],
+    )
+    expect(classifyGame(line, evals).moves[line[3].id].cls).toBe('blunder')
+  })
+
+  it('calls a "miss" even when we were losing before the opponent erred', () => {
+    // Black was much better (-3); 1...e5?? hands White +2, and 2.Nf3 gives it all back.
+    const { line, evals } = game(
+      ['e2e4', 'e7e5', 'g1f3', 'b8c6'],
+      [{ score: cp(-300) }, { score: cp(-300), bestMove: 'd7d5' }, { score: cp(200), bestMove: 'd2d4' }, { score: cp(-290), bestMove: 'f8c5' }, { score: cp(-290) }],
+    )
+    const report = classifyGame(line, evals)
+    expect(report.moves[line[3].id].cls).toBe('miss')
+  })
+
+  it('calls a sacrifice that is nearly best "brilliant"', () => {
+    const start = '6k1/8/8/4p3/8/8/8/3R2K1 w - - 0 1'
+    // 1.5% short of the top move: "excellent" by the loss bands.
+    const { line, evals } = game(['d1d4'], [{ score: cp(150), bestMove: 'd1d5' }, { score: cp(130), pv: ['e5d4'] }], start)
+    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('brilliant')
+  })
+
+  it('calls the only move that holds a slightly worse position "great"', () => {
+    const { line, evals } = game(['e2e4'], [{ score: cp(-30), bestMove: 'e2e4', second: cp(-400) }, { score: cp(-30) }])
+    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('great')
+  })
+
+  it('notes a missed mate', () => {
+    const mate = (value: number): Score => ({ type: 'mate', value })
+    const { line, evals } = game(['e2e4'], [{ score: mate(2), bestMove: 'd2d4' }, { score: cp(900) }])
+    expect(classifyGame(line, evals).moves[line[1].id].missedMate).toBe(2)
+    const found = game(['e2e4'], [{ score: mate(2), bestMove: 'd2d4' }, { score: mate(2) }])
+    expect(classifyGame(found.line, found.evals).moves[found.line[1].id].missedMate).toBeUndefined()
+  })
+
   it('marks the only legal move as forced', () => {
     const { line, evals } = game(['g8h8'], [{ score: cp(0) }, { score: cp(0) }], '6k1/5Q2/6K1/8/8/8/8/8 b - - 0 1')
     expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('forced')
@@ -279,17 +317,24 @@ describe('openings', () => {
 })
 
 describe('commentary', () => {
+  it('points out a missed mate and a missed win', () => {
+    const base = { nodeId: 'x', ply: 1, color: 'white' as const, winBefore: 90, winAfter: 50, loss: 0.4, accuracy: 10, score: cp(0) }
+    expect(moveDetail({ ...base, cls: 'blunder', missedMate: 3 }, 'Qh7+')).toBe('Qh7+ had mate in 3.')
+    expect(moveDetail({ ...base, cls: 'blunder' }, 'Qh7+')).toBe('This lets the win slip. Qh7+ kept it.')
+    expect(moveDetail({ ...base, cls: 'excellent', winAfter: 99, missedMate: 7 }, 'Qh7+')).toBe('Qh7+ was slightly stronger.')
+  })
+
   it('writes natural headlines', () => {
     const base = { nodeId: 'x', ply: 1, color: 'white' as const, winBefore: 50, winAfter: 50, loss: 0, accuracy: 100, score: cp(0) }
     const headline = (cls: Parameters<typeof moveHeadline>[1]['cls']) => moveHeadline('Nf3', { ...base, cls })
-    expect(headline('brilliant')).toBe('Nf3 is genius!')
-    expect(headline('great')).toBe('Nf3 is the only move')
-    expect(headline('best')).toBe('Nf3 is precise')
-    expect(headline('excellent')).toBe('Nf3 is sharp')
+    expect(headline('brilliant')).toBe('Nf3 is legendary!')
+    expect(headline('great')).toBe('Nf3 is clutch!')
+    expect(headline('best')).toBe('Nf3 is best')
+    expect(headline('excellent')).toBe('Nf3 is strong')
     expect(headline('good')).toBe('Nf3 is solid')
     expect(headline('book')).toBe('Nf3 is theory')
     expect(headline('inaccuracy')).toBe('Nf3 is a slip')
-    expect(headline('mistake')).toBe('Nf3 is an error')
+    expect(headline('mistake')).toBe('Nf3 is a mistake')
     expect(headline('miss')).toBe('Nf3 is an oversight')
     expect(headline('blunder')).toBe('Nf3 is a blunder')
     expect(headline('forced')).toBe('Nf3 is forced')

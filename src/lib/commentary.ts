@@ -7,14 +7,14 @@ const article = (word: string) => (/^[aeiou]/i.test(word) ? 'an' : 'a')
 /** One-line verdict for a classified move, e.g. "Nxe5 is a blunder". */
 export function moveHeadline(san: string, review: MoveReview): string {
   const HEADLINES: Record<MoveReview['cls'], string> = {
-    brilliant: 'is genius!',
-    great: 'is the only move',
-    best: 'is precise',
-    excellent: 'is sharp',
+    brilliant: 'is legendary!',
+    great: 'is clutch!',
+    best: 'is best',
+    excellent: 'is strong',
     good: 'is solid',
     book: 'is theory',
     inaccuracy: 'is a slip',
-    mistake: 'is an error',
+    mistake: 'is a mistake',
     miss: 'is an oversight',
     blunder: 'is a blunder',
     forced: 'is forced',
@@ -24,6 +24,15 @@ export function moveHeadline(san: string, review: MoveReview): string {
 
 /** A second sentence giving context, when there's something useful to say. */
 export function moveDetail(review: MoveReview, bestSan?: string): string | undefined {
+  const bad = review.cls === 'inaccuracy' || review.cls === 'mistake' || review.cls === 'miss' || review.cls === 'blunder'
+  if (review.missedMate && (bad || review.missedMate <= 3)) {
+    const mate = `mate in ${review.missedMate}`
+    return bestSan ? `${bestSan} had ${mate}.` : `There was ${mate}.`
+  }
+  // A missed win: winning before, about level or worse after.
+  if (bad && review.winBefore >= 80 && review.winAfter <= 60) {
+    return bestSan ? `This lets the win slip. ${bestSan} kept it.` : 'This lets the win slip.'
+  }
   switch (review.cls) {
     case 'brilliant':
       return 'A sound sacrifice — the material comes back with interest.'
@@ -70,7 +79,7 @@ export function gameSummary(report: GameReport, tree: GameTree, headers: PgnHead
   }
 
   const brilliant = Object.values(report.moves).find((m) => m.cls === 'brilliant')
-  if (brilliant) parts.push(`Look out for ${moveNumberLabel(brilliant.ply)} ${tree.nodes[brilliant.nodeId]?.san} — genius!`)
+  if (brilliant) parts.push(`Look out for ${moveNumberLabel(brilliant.ply)} ${tree.nodes[brilliant.nodeId]?.san} — legendary!`)
 
   return parts.join(' ') || 'Here’s how the game went.'
 }

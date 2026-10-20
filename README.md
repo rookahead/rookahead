@@ -3,7 +3,7 @@
 A chess analysis board running **Stockfish 19** in the browser, multi-threaded, with the full NNUE network.
 
 - Live analysis of any position: up to 5 engine lines, best-move arrows, eval bar
-- Game review: every move graded with Rookahead's verdicts (Genius, Only move, Precise, Sharp, Solid, Theory, Slip, Error, Oversight, Blunder, Forced),
+- Game review: every move graded with Rookahead's verdicts (Legendary, Clutch, Best, Strong, Solid, Theory, Slip, Mistake, Oversight, Blunder, Forced),
   accuracy per player, an eval graph marking the key moments, and a step-through mode with commentary
 - Paste a PGN / FEN, or import recent games by username
 - Play your own moves on the board to explore side variations (promote or delete them later)
@@ -39,9 +39,12 @@ The loss bands follow Chess.com's published thresholds — excellent < 2%, good 
 blunder beyond that. On top of those (`src/lib/classify.ts`):
 
 - **Theory** (internally `book`) — the position is in the opening book (Lichess's CC0 opening list, `src/data/openings.json`)
-- **Only move** (internally `great`) — the engine's move, and the second-best move is at least 15% worse
-- **Genius** (internally `brilliant`) — a (near-)best move that gives up at least two pawns of material the engine's line doesn't win straight back
-- **Oversight** (internally `miss`) — your opponent just made a mistake, you were winning, and you let most of it go
+- **Clutch** (internally `great`) — the engine's move, it keeps you level or better (about −0.5 counts), and the second-best move
+  is at least 10% worse; also the only fast mate
+- **Legendary** (internally `brilliant`) — a best or nearly best move that gives up a piece the engine's line doesn't win straight back,
+  leaving you level or better, when you weren't already completely winning
+- **Oversight** (internally `miss`) — your opponent just made a mistake and you let it go, ending up about where you were before it;
+  falling further than that stays a mistake or blunder. The coach also points out a missed mate and a win that slipped to a draw or worse.
 - **Accuracy** — Lichess's open formula (volatility-weighted and harmonic means of per-move accuracy)
 
 To rebuild the opening book: `node scripts/build-openings.mjs <dir with a.tsv … e.tsv>` from

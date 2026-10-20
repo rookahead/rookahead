@@ -1,6 +1,6 @@
 import { CLASS_INFO } from '../lib/classify'
 
-/** A puzzle move's verdict: ✓ in the Precise green or ✗ in the Blunder red, on a rounded square like the verdict badges. */
+/** A puzzle move's verdict: ✓ in the Best green or ✗ in the Blunder red, on a rounded square like the verdict badges. */
 export function PuzzleMark({ kind, size = 18 }: { kind: 'correct' | 'wrong'; size?: number }) {
   return (
     <svg className="class-icon puzzle-mark" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={kind === 'correct' ? 'Right move' : 'Wrong move'}>

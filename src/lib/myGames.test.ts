@@ -130,12 +130,12 @@ describe('gameStats', () => {
     moves: 30,
     endedAt: 0,
   })
-  const review = (white: number, black: number, at: number, genius = 0): CachedReview => ({
+  const review = (white: number, black: number, at: number, legendary = 0): CachedReview => ({
     token: 't',
     white: 'a',
     black: 'b',
     accuracy: { white, black },
-    brilliant: { white: genius, black: 0 },
+    brilliant: { white: legendary, black: 0 },
     at,
   })
 
@@ -147,14 +147,14 @@ describe('gameStats', () => {
     expect(stats.accuracy).toBe(80)
     expect(stats.trend).toBe(10)
     expect(stats.reviewed).toBe(14)
-    expect(stats.genius).toBe(7) // reviewed within the last 7 days: days 0–6
+    expect(stats.legendary).toBe(7) // reviewed within the last 7 days: days 0–6
     expect(stats.recent).toHaveLength(10)
-    expect(stats.geniusKey).toBe('g0') // the most recently reviewed game with one
+    expect(stats.legendaryKey).toBe('g0') // the most recently reviewed game with one
   })
 
   it('reads the side you played and has nothing without reviews', () => {
     expect(gameStats([game('x', 'black')], { x: review(90, 60, 0) }).accuracy).toBe(60)
-    expect(gameStats([game('x', 'black')], {})).toEqual({ accuracy: null, trend: null, genius: 0, reviewed: 0, recent: [], geniusKey: undefined })
+    expect(gameStats([game('x', 'black')], {})).toEqual({ accuracy: null, trend: null, legendary: 0, reviewed: 0, recent: [], legendaryKey: undefined })
   })
 })
 

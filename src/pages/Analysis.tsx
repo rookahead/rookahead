@@ -558,7 +558,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           title={line.length > 1 ? 'Ready when you are' : 'Nothing to review yet'}
           detail={
             line.length > 1
-              ? `Stockfish 19 will grade every move — genius to blunder — and work out each side’s accuracy.`
+              ? `Stockfish 19 will grade every move — Legendary to Blunder — and work out each side’s accuracy.`
               : 'Load a game or play some moves on the board first.'
           }
         >

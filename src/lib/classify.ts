@@ -25,7 +25,7 @@ export type MoveClass =
   | 'forced'
 
 /** Display order, best first (used for the summary table). */
-export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder']
+export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder', 'forced']
 
 /**
  * Rookahead's own names and colours. Internal ids (and the share-link codes) keep the old names;
@@ -33,14 +33,14 @@ export const CLASS_ORDER: MoveClass[] = ['brilliant', 'great', 'best', 'excellen
  * and dark enough for white marks on the badges.
  */
 export const CLASS_INFO: Record<MoveClass, { label: string; color: string }> = {
-  brilliant: { label: 'Genius', color: '#8b5cf6' },
-  great: { label: 'Only move', color: '#2f80ed' },
-  best: { label: 'Precise', color: '#2e9e6a' },
-  excellent: { label: 'Sharp', color: '#4f9a3c' },
-  good: { label: 'Solid', color: '#6b7f6a' },
-  book: { label: 'Theory', color: '#8a7350' },
+  brilliant: { label: 'Legendary', color: '#8b5cf6' },
+  great: { label: 'Clutch', color: '#2f80ed' },
+  best: { label: 'Best', color: '#4f9a3c' },
+  excellent: { label: 'Strong', color: '#4f9a3c' },
+  good: { label: 'Solid', color: '#7a9a68' },
+  book: { label: 'Theory', color: '#a98a62' },
   inaccuracy: { label: 'Slip', color: '#c99a16' },
-  mistake: { label: 'Error', color: '#d9711f' },
+  mistake: { label: 'Mistake', color: '#d9711f' },
   miss: { label: 'Oversight', color: '#cf4b63' },
   blunder: { label: 'Blunder', color: '#c7372f' },
   forced: { label: 'Forced', color: '#5b5f68' },
@@ -54,6 +54,9 @@ export const NOTABLE: ReadonlySet<MoveClass> = new Set(['brilliant', 'great', 'i
  * move keeps the same eval as the engine's top move, so it's as good as best.
  */
 export const LOSS_BANDS = { best: 0.01, excellent: 0.02, good: 0.05, inaccuracy: 0.1, mistake: 0.2 } as const
+
+/** "Equal or better" for Great and Legendary: a draw, or a slightly worse position that holds (about -0.5). */
+const HOLDS = 45
 
 /** What the review engine reported for one position. */
 export interface ReviewedPosition {
@@ -80,6 +83,8 @@ export interface MoveReview {
   bestMove?: string
   /** Score after the move, White POV. */
   score: Score
+  /** The mover had mate in this many moves and the move let it go. */
+  missedMate?: number
 }
 
 export interface GameReport {
@@ -265,25 +270,26 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       let onlyMate = false
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
-        onlyGood = winAfter >= 50 && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
+        onlyGood = winAfter >= HOLDS && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)
         onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)
       }
 
-      // Brilliant: a best move that sacrifices a piece and leaves us equal or better, when we
-      // weren't already completely winning — not even with a mate on the board: at review depth
-      // the engine often misses a second, slightly longer mate. Leaving a piece that already
+      // Brilliant: a best or nearly best move that sacrifices a piece and leaves us equal or better,
+      // when we weren't already completely winning — not even with a mate on the board: at review
+      // depth the engine often misses a second, slightly longer mate. Leaving a piece that already
       // hung en prise again counts only when the move is also the only good one.
-      if (cls === 'best' && winAfter >= 50 && winBefore < 97 && isSacrifice(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood)) {
+      if ((cls === 'best' || cls === 'excellent') && winAfter >= HOLDS && winBefore < 97 && isSacrifice(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood)) {
         cls = 'brilliant'
       } else if ((onlyGood || onlyMate) && !isRecapture(parent, node)) {
         cls = 'great'
       }
 
-      // Miss: the opponent just erred, we were winning, and we let most of it slip without losing.
+      // Miss: the opponent just erred and we let it go, ending up about where we were before their
+      // error. Falling further than that is a mistake or blunder of our own.
       const prev = moves[parent.id]
-      if ((cls === 'mistake' || cls === 'blunder') && prev && (prev.cls === 'mistake' || prev.cls === 'blunder') && winBefore >= 65 && winAfter >= 35) {
+      if ((cls === 'mistake' || cls === 'blunder') && prev && (prev.cls === 'mistake' || prev.cls === 'blunder') && winAfter >= 100 - prev.winBefore - 5) {
         cls = 'miss'
       }
     }
@@ -300,6 +306,8 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       bestMove: playedBest || !before.bestMove ? undefined : before.bestMove,
       score: after.score,
     }
+    const mate = mateIn(before.score, color)
+    if (mate !== null && !playedBest && mateIn(after.score, color) === null && cls !== 'book' && cls !== 'forced') review.missedMate = mate
     moves[node.id] = review
     counts[color][cls]++
   }

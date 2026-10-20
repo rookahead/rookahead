@@ -45,7 +45,7 @@ function ReviewScene() {
       <div className="tour-note">
         <ClassIcon cls="brilliant" size={26} />
         <span>
-          <strong>16. Qb8+ is genius</strong>
+          <strong>16. Qb8+ is legendary</strong>
           <span>Gives the queen. Rd8 is mate next.</span>
         </span>
       </div>
@@ -157,7 +157,7 @@ function SyncScene() {
 }
 
 const SLIDES: { id: string; title: string; text: string; scene: ReactNode }[] = [
-  { id: 'review', title: 'Every move graded', text: 'Stockfish marks each move, from Genius to Blunder, so you see where the game turned.', scene: <ReviewScene /> },
+  { id: 'review', title: 'Every move graded', text: 'Stockfish marks each move, from Legendary to Blunder, so you see where the game turned.', scene: <ReviewScene /> },
   { id: 'mistakes', title: 'Your mistakes come back', text: 'Each blunder from your reviews returns as a puzzle, until you find the better move.', scene: <MistakesScene /> },
   { id: 'puzzles', title: 'Puzzles at your level', text: '185,000 rated puzzles, a daily puzzle, and Puzzle Sprint against the clock.', scene: <PuzzleScene /> },
   { id: 'play', title: 'Play the computer', text: 'Eight levels from 400 to 2600, at any time control, with takebacks and hints when you want them.', scene: <PlayScene /> },

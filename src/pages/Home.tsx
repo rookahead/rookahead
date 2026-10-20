@@ -63,11 +63,11 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
 
   const mistakes = useMistakes()
 
-  const open = async (game: MyGame, review?: CachedReview, genius = false) => {
-    await openMyGame(game, review, { genius })
+  const open = async (game: MyGame, review?: CachedReview, legendary = false) => {
+    await openMyGame(game, review, { legendary })
     onOpenAnalysis()
   }
-  const geniusGame = games.find((g) => g.key === stats.geniusKey)
+  const legendaryGame = games.find((g) => g.key === stats.legendaryKey)
   const loadGame = () => {
     requestLoadDialog()
     onOpenAnalysis()
@@ -142,7 +142,7 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
           {firstVisit ? (
             <section className="home-card accent-card hero-card" aria-labelledby="hero">
               <h2 id="hero">Review your games, free</h2>
-              <p>Stockfish 19 grades every move, from Genius to Blunder. No limits, no sign-up needed.</p>
+              <p>Stockfish 19 grades every move, from Legendary to Blunder. No limits, no sign-up needed.</p>
               <UsernameForm
                 key={importError ?? ''}
                 error={hasUsers ? importError : undefined}
@@ -174,13 +174,13 @@ export function HomePage({ avatar, settings, updateSettings, onOpenAnalysis }: P
               </StatCard>
               <StatCard
                 pending={waiting}
-                tone="genius"
-                label="Genius moves"
+                tone="legendary"
+                label="Legendary moves"
                 empty="None yet"
-                value={stats.genius ? String(stats.genius) : undefined}
-                onClick={geniusGame ? () => void open(geniusGame, reviews[geniusGame.key], true) : undefined}
+                value={stats.legendary ? String(stats.legendary) : undefined}
+                onClick={legendaryGame ? () => void open(legendaryGame, reviews[legendaryGame.key], true) : undefined}
               >
-                {geniusGame ? 'This week · see it ›' : 'This week'}
+                {legendaryGame ? 'This week · see it ›' : 'This week'}
               </StatCard>
               <StatCard
                 pending={waiting || mistakes === null}
@@ -280,7 +280,7 @@ function Sparkline({ values }: { values: number[] }) {
 interface StatCardProps {
   /** Still loading: a placeholder where the number goes; the number fades in when it comes. */
   pending?: boolean
-  tone: 'accuracy' | 'genius' | 'mistakes' | 'streak'
+  tone: 'accuracy' | 'legendary' | 'mistakes' | 'streak'
   label: string
   /** The number; left out, the card says `empty` in words instead of a lone "0". */
   value?: string
