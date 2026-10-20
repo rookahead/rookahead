@@ -1113,13 +1113,13 @@ svg {
   background-color: rgba(255, 214, 102, 0.6);
 }
 
-/* Last-move squares take the colour of the move's classification. */
+/* Last-move squares take the colour of the move's classification (CLASS_INFO in src/lib/classify.ts; a test keeps them in step). */
 .board cg-board square.cls-brilliant { background-color: rgba(139, 92, 246, 0.55); }
 .board cg-board square.cls-great { background-color: rgba(47, 128, 237, 0.5); }
-.board cg-board square.cls-best { background-color: rgba(46, 158, 106, 0.55); }
+.board cg-board square.cls-best { background-color: rgba(79, 154, 60, 0.55); }
 .board cg-board square.cls-excellent { background-color: rgba(79, 154, 60, 0.5); }
-.board cg-board square.cls-good { background-color: rgba(107, 127, 106, 0.5); }
-.board cg-board square.cls-book { background-color: rgba(138, 115, 80, 0.5); }
+.board cg-board square.cls-good { background-color: rgba(122, 154, 104, 0.5); }
+.board cg-board square.cls-book { background-color: rgba(169, 138, 98, 0.5); }
 .board cg-board square.cls-inaccuracy { background-color: rgba(201, 154, 22, 0.55); }
 .board cg-board square.cls-mistake { background-color: rgba(217, 113, 31, 0.55); }
 .board cg-board square.cls-miss { background-color: rgba(207, 75, 99, 0.55); }

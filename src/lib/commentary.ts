@@ -29,6 +29,7 @@ export function moveDetail(review: MoveReview, bestSan?: string): string | undef
     const mate = `mate in ${review.missedMate}`
     return bestSan ? `${bestSan} had ${mate}.` : `There was ${mate}.`
   }
+  if (review.fasterMate) return bestSan ? `${bestSan} mates in ${review.fasterMate}.` : `There was mate in ${review.fasterMate}.`
   // A missed win: winning before, about level or worse after.
   if (bad && review.winBefore >= 80 && review.winAfter <= 60) {
     return bestSan ? `This lets the win slip. ${bestSan} kept it.` : 'This lets the win slip.'

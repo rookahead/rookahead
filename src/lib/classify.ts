@@ -50,13 +50,22 @@ export const CLASS_INFO: Record<MoveClass, { label: string; color: string }> = {
 export const NOTABLE: ReadonlySet<MoveClass> = new Set(['brilliant', 'great', 'inaccuracy', 'mistake', 'miss', 'blunder'])
 
 /**
- * Expected-point loss bands (Chess.com's published thresholds). Under `best`, a
- * move keeps the same eval as the engine's top move, so it's as good as best.
+ * Expected-point loss bands for every move other than the engine's own (docs/rulebook.md):
+ * only the engine's move, or a checkmate, is Best.
  */
-export const LOSS_BANDS = { best: 0.01, excellent: 0.02, good: 0.05, inaccuracy: 0.1, mistake: 0.2 } as const
+export const LOSS_BANDS = { excellent: 0.02, good: 0.05, inaccuracy: 0.1, mistake: 0.2 } as const
 
 /** "Equal or better" for Great and Legendary: a draw, or a slightly worse position that holds (about -0.5). */
 const HOLDS = 45
+
+/** A Legendary sacrifice may fall this far short of the best move (expected points). */
+export const LEGENDARY_LOSS = 0.035
+
+/** As good as mated: 6 pawns or more behind (winning chance, 0–100). */
+const LOST = 10
+
+/** Clutch also counts holding a worse game that isn't lost: about −2.3 or better. */
+const HOLDING = 30
 
 /** What the review engine reported for one position. */
 export interface ReviewedPosition {
@@ -85,6 +94,8 @@ export interface MoveReview {
   score: Score
   /** The mover had mate in this many moves and the move let it go. */
   missedMate?: number
+  /** The mover had mate in this many moves and the move keeps a mate, but a longer one. */
+  fasterMate?: number
 }
 
 export interface GameReport {
@@ -132,33 +143,69 @@ export function moveAccuracy(before: number, after: number): number {
   return Math.max(0, Math.min(100, raw + 1)) // +1: uncertainty bonus for imperfect analysis
 }
 
+/** What a sacrifice gave up: material in general, or the exchange (a rook for a knight or bishop). */
+export type Sacrifice = 'material' | 'exchange'
+
 /**
- * Did the move sacrifice a piece? Either the engine's line takes it and the mover
- * doesn't win the material straight back, or the move leaves a piece en prise
- * that the opponent does better not to take.
+ * Did the move sacrifice material (docs/rulebook.md)? Either the engine's line takes it and the
+ * mover doesn't win it straight back, or the move leaves a piece en prise that the opponent does
+ * better not to take. Two pawns or more, pawns included.
  *
- * `expected` is the eval before the move in pawns, mover's POV. When it's below
- * the material count, the engine already counts some of that material as lost
+ * `expected` is the eval before the move in pawns, mover's POV. When it's two pawns or more
+ * below the material count, the engine already counts some of that material as lost
  * (a pinned or trapped piece), so giving it back isn't a sacrifice.
  *
  * `stillHanging`: also count a piece that was already en prise before the move and
  * is left there again. Off by default, or every move while it hangs would count.
+ *
+ * `olderFen`: the position before the opponent's last move. A piece that only became en prise
+ * with that move, and that the mover now ignores, is a sacrifice; one that hung even then is
+ * left hanging again. Without it, every piece en prise before the move counts as left hanging.
  */
+export function sacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected = Infinity, stillHanging = false, olderFen?: string): Sacrifice | null {
+  return sacrificeDetail(beforeFen, afterFen, pv, color, expected, stillHanging, olderFen)?.kind ?? null
+}
+
+/** `sacrifice`, also saying whether the opponent's best line declines it (it can't safely be taken). */
+function sacrificeDetail(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number, stillHanging: boolean, olderFen?: string): { kind: Sacrifice; declined: boolean } | null {
+  const us = color === 'white' ? 'w' : 'b'
+  const before = new Chess(beforeFen)
+  const older = olderFen ? new Chess(olderFen) : null
+  const hungAlready = (sq: Square, type: string) => !stillHanging && hanging(before, sq, type, us) && (!older || hanging(older, sq, type, us))
+  const accepted = acceptedSacrifice(beforeFen, afterFen, pv, color, expected, hungAlready)
+  if (accepted) return { kind: accepted, declined: false }
+  const offered = offeredSacrifice(beforeFen, afterFen, pv, color, hungAlready)
+  return offered ? { kind: offered, declined: true } : null
+}
+
+/** Is our piece of this type on `sq`, and can the opponent win it? */
+function hanging(chess: Chess, sq: Square, type: string, us: 'w' | 'b'): boolean {
+  const piece = chess.get(sq)
+  return Boolean(piece && piece.color === us && piece.type === type && enPrise(chess, sq, us, chess.attackers(sq, us === 'w' ? 'b' : 'w')))
+}
+
 export function isSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected = Infinity, stillHanging = false): boolean {
-  return acceptedSacrifice(beforeFen, afterFen, pv, color, expected) || offeredSacrifice(beforeFen, afterFen, pv, color, stillHanging)
+  return sacrifice(beforeFen, afterFen, pv, color, expected, stillHanging) !== null
 }
 
 /**
- * Walks the engine's expected continuation a few plies: the opponent takes one of
- * the mover's pieces (not just pawns), leaving the mover down at least two pawns'
- * worth compared with before the move, and the mover's next move doesn't win it
- * straight back. Winning it back later through a tactic still counts, as in
- * 18…Nxe4 19.dxe4 d3, which only regains the piece two moves on.
+ * Walks the engine's expected continuation a few plies: the opponent takes the mover's
+ * material, leaving the mover down at least two pawns' worth compared with before the move,
+ * and the mover's next move doesn't win it straight back. Winning it back later through a
+ * tactic still counts, as in 18…Nxe4 19.dxe4 d3, which only regains the piece two moves on.
+ * A piece that was left hanging again (`hungAlready`) counts as lost already.
  */
-function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number): boolean {
-  const baseline = Math.min(materialBalance(beforeFen, color), expected)
+function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number, hungAlready: (sq: Square, type: string) => boolean): Sacrifice | null {
+  const material = materialBalance(beforeFen, color)
+  // Only an eval two pawns or more below the material count means material is already lost
+  // (a pinned or trapped piece); less is just compensation.
+  let baseline = material - expected >= 2 ? expected : material
   const chess = new Chess(afterFen)
-  const down = () => materialBalance(chess.fen(), color) <= baseline - 2
+  const balance = () => materialBalance(chess.fen(), color)
+  const down = () => balance() <= baseline - 2
+  const taken: string[] = [] // the mover's material the opponent took
+  // Only a rook lost, for less than a minor piece's worth: the exchange.
+  const kind = (): Sacrifice => (taken.length === 1 && taken[0] === 'r' && material - balance() < 3 ? 'exchange' : 'material')
   let pieceTaken = false
   for (const uci of pv.slice(0, 4)) {
     let move
@@ -168,14 +215,19 @@ function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], co
       break
     }
     const ours = (move.color === 'w' ? 'white' : 'black') === color
-    if (ours && pieceTaken) {
-      if (down()) return true
-      pieceTaken = false // taken straight back: a trade
-    } else if (!ours && move.captured && move.captured !== 'p' && down()) {
-      pieceTaken = true
+    if (!ours && move.captured && hungAlready(move.to, move.captured)) {
+      baseline -= VALUES[move.captured] // it was left hanging again: taking it now isn't a sacrifice
+      continue
     }
+    if (!ours && move.captured) taken.push(move.captured)
+    // Our next move doesn't take back as much (still a pawn or more behind): a sacrifice. All of it: a trade.
+    if (ours && pieceTaken) return balance() <= baseline - 1 ? kind() : null
+    // Once the mover captures something itself, a new exchange begins: what's lost after it
+    // belongs to that move, not this one (8…Bxc3 9.Bxc3 Nxe4 10.Qxe4: the knight is 9…Nxe4's).
+    if (ours && move.captured) return null
+    if (!ours && move.captured && down()) pieceTaken = true
   }
-  return pieceTaken
+  return pieceTaken ? kind() : null
 }
 
 /** The cheapest piece on `squares`, by value; the king can only take an undefended piece, so it counts as dearest. */
@@ -190,34 +242,63 @@ function enPrise(chess: Chess, square: Square, us: 'w' | 'b', takers: Square[]):
 }
 
 /**
- * Does the move leave a piece (knight or better) en prise that wasn't before
- * (or, with `stillHanging`, that already was), where the engine's reply declines
- * it? Taking it back for something worth as much (a trade) doesn't count.
+ * Does the move leave a piece (knight or better) en prise, other than one left hanging
+ * again (`hungAlready`), where the engine's reply declines it? Taking it back for something
+ * worth as much (a trade) doesn't count. A rook that only a knight or bishop can win is the exchange.
  */
-function offeredSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, stillHanging: boolean): boolean {
+function offeredSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, hungAlready: (sq: Square, type: string) => boolean): Sacrifice | null {
   const us = color === 'white' ? 'w' : 'b'
-  const them = us === 'w' ? 'b' : 'w'
-  const before = new Chess(beforeFen)
   const after = new Chess(afterFen)
   const gained = materialBalance(afterFen, color) - materialBalance(beforeFen, color)
   const captures = after.moves({ verbose: true }).filter((m) => m.captured)
   const reply = pv[0]
-  return after.board().some((row) =>
-    row.some((piece) => {
-      if (!piece || piece.color !== us || VALUES[piece.type] < 3 || gained >= VALUES[piece.type]) return false
-      const sq = piece.square
-      if (reply?.slice(2, 4) === sq) return false // taken at once: acceptedSacrifice decides
-      const takers = captures.filter((m) => m.to === sq).map((m) => m.from)
-      if (!enPrise(after, sq, us, takers)) return false
-      if (stillHanging) return true
-      const was = before.get(sq)
-      return !(was && was.color === us && was.type === piece.type && enPrise(before, sq, us, before.attackers(sq, them)))
-    }),
-  )
+  let found: Sacrifice | null = null
+  for (const piece of after.board().flat()) {
+    if (!piece || piece.color !== us || VALUES[piece.type] < 3 || gained >= VALUES[piece.type]) continue
+    const sq = piece.square
+    if (reply?.slice(2, 4) === sq) continue // taken at once: acceptedSacrifice decides
+    const takers = captures.filter((m) => m.to === sq).map((m) => m.from)
+    if (!enPrise(after, sq, us, takers)) continue
+    if (hungAlready(sq, piece.type)) continue
+    // A defended rook that only a knight or bishop can win is the exchange; anything else is material.
+    const exchange = piece.type === 'r' && after.attackers(sq, us).length > 0 && cheapest(after, takers) === 3
+    if (!exchange) return 'material'
+    found = 'exchange'
+  }
+  return found
 }
 
-function isRecapture(prev: MoveNode, node: MoveNode) {
-  return Boolean(prev.san?.includes('x') && node.san?.includes('x') && prev.to === node.to)
+/**
+ * Is this one of the moves everyone looks at first (docs/rulebook.md, "hard to find")? Mate in 1,
+ * promoting, a capture that doesn't lose the capturing piece (taking something worth as much, or
+ * something the opponent can't win back), or moving an attacked piece away to a square where it's safe.
+ */
+export function naturalMove(beforeFen: string, afterFen: string, uci: string): boolean {
+  const before = new Chess(beforeFen)
+  const after = new Chess(afterFen)
+  if (after.isCheckmate() || uci.length > 4) return true
+  const from = uci.slice(0, 2) as Square
+  const to = uci.slice(2, 4) as Square
+  const moved = before.get(from)
+  if (!moved) return false
+  const us = moved.color
+  const safe = !hanging(after, to, moved.type, us)
+  // En passant takes a pawn from a square the pawn doesn't land on.
+  const captured = before.get(to)?.type ?? (moved.type === 'p' && from[0] !== to[0] ? 'p' : undefined)
+  if (captured !== undefined && (VALUES[captured] >= VALUES[moved.type] || safe)) return true
+  // In check, choosing the way out is a decision: only taking the checker safely (above) is natural.
+  if (before.inCheck()) return false
+  // An attacked piece moved away to safety.
+  return safe && hanging(before, from, moved.type, us)
+}
+
+/**
+ * Does the move take back what the opponent just took: a recapture on the same square, or a
+ * capture anywhere that only brings the material back to where it was before their capture?
+ */
+function takesBack(older: MoveNode | undefined, prev: MoveNode, node: MoveNode, color: Color) {
+  if (!prev.san?.includes('x') || !node.san?.includes('x')) return false
+  return prev.to === node.to || (older !== undefined && materialBalance(node.fen, color) <= materialBalance(older.fen, color))
 }
 
 function emptyCounts(): Record<MoveClass, number> {
@@ -252,37 +333,53 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
     const legalMoves = new Chess(parent.fen).moves().length
 
     let cls: MoveClass
-    if (stillInBook && isBook(node.fen)) {
+    // A book move that would be a Mistake or worse gets graded instead, and theory ends there.
+    if (stillInBook && isBook(node.fen) && (playedBest || loss < LOSS_BANDS.inaccuracy)) {
       cls = 'book'
     } else {
       stillInBook = false
       if (legalMoves === 1) cls = 'forced'
-      else if (playedBest || loss < LOSS_BANDS.best) cls = 'best'
+      else if (playedBest || (after.score.type === 'mate' && after.score.value === 0)) cls = 'best'
       else if (loss < LOSS_BANDS.excellent) cls = 'excellent'
       else if (loss < LOSS_BANDS.good) cls = 'good'
       else if (loss < LOSS_BANDS.inaccuracy) cls = 'inaccuracy'
       else if (loss < LOSS_BANDS.mistake) cls = 'mistake'
       else cls = 'blunder'
 
-      // The only move that works: it keeps us equal or better and every alternative would be a
-      // mistake or worse, or it's the only fast mate (the next-best move doesn't mate, or takes 3+ moves longer).
+      // The only move that works: it keeps us level or better, or holds a worse game that isn't lost,
+      // and every alternative would be a mistake or worse; or it's the only fast mate (the next-best
+      // move doesn't mate, or takes 3+ moves longer). A mating sacrifice only needs the fastest mate,
+      // 2+ moves ahead of the next-best. An only move that avoids getting mated is Clutch even when obvious.
       let onlyGood = false
       let onlyMate = false
+      let fastestMate = false
+      let avoidsMate = false
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
-        onlyGood = winAfter >= HOLDS && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
+        onlyGood = winAfter >= HOLDING && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)
         onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)
+        fastestMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 2)
+        // Mated, or as good as: a review rarely searches deep enough to see the mate itself. Only in
+        // defence: delivering a mate of our own isn't escaping one.
+        avoidsMate = onlyGood && mate === null && (mateIn(before.second, color === 'white' ? 'black' : 'white') !== null || secondWin <= LOST)
       }
 
-      // Brilliant: a best or nearly best move that sacrifices a piece and leaves us equal or better,
-      // when we weren't already completely winning — not even with a mate on the board: at review
-      // depth the engine often misses a second, slightly longer mate. Leaving a piece that already
-      // hung en prise again counts only when the move is also the only good one.
-      if ((cls === 'best' || cls === 'excellent') && winAfter >= HOLDS && winBefore < 97 && isSacrifice(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood)) {
+      // Legendary (docs/rulebook.md): a sacrifice at most 3.5% short of the best move that leaves us level
+      // or better, when we weren't already completely winning — not even with a mate on the board: at
+      // review depth the engine often misses a second, slightly longer mate. A sacrifice the opponent does
+      // best to decline (it can't safely be taken) counts even then. Giving up the exchange must also be
+      // the only good move. Or a sacrifice that is the fastest mate. Leaving a piece that already hung en
+      // prise again counts only when the move is the only good one.
+      const gradable = cls === 'best' || cls === 'excellent' || cls === 'good'
+      const sac = gradable ? sacrificeDetail(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood, line[i - 2]?.fen) : null
+      // Hard to find: a sacrifice, or not one of the moves everyone looks at first.
+      const hard = sac !== null || !naturalMove(parent.fen, node.fen, node.uci)
+      const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
+      if (soundSac || (sac !== null && fastestMate)) {
         cls = 'brilliant'
-      } else if ((onlyGood || onlyMate) && !isRecapture(parent, node)) {
+      } else if ((onlyGood || onlyMate) && (hard || avoidsMate) && !takesBack(line[i - 2], parent, node, color)) {
         cls = 'great'
       }
 
@@ -307,7 +404,12 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       score: after.score,
     }
     const mate = mateIn(before.score, color)
-    if (mate !== null && !playedBest && mateIn(after.score, color) === null && cls !== 'book' && cls !== 'forced') review.missedMate = mate
+    const mateAfter = mateIn(after.score, color)
+    if (mate !== null && !playedBest && cls !== 'book' && cls !== 'forced') {
+      // The best line leaves mate in one move fewer; anything more is a slower mate.
+      if (mateAfter === null) review.missedMate = mate
+      else if (mateAfter > mate - 1) review.fasterMate = mate
+    }
     moves[node.id] = review
     counts[color][cls]++
   }

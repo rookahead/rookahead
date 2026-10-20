@@ -34,17 +34,9 @@ If you host the built `dist/` elsewhere, send those two headers too, or the app 
 
 ## How moves are classified
 
-Each move is measured in *expected points*: the mover's win chance before (with the engine's best move) and after.
-The loss bands follow Chess.com's published thresholds — excellent < 2%, good < 5%, inaccuracy < 10%, mistake < 20%,
-blunder beyond that. On top of those (`src/lib/classify.ts`):
+Rookahead's own rules for every verdict live in [`docs/rulebook.md`](docs/rulebook.md); `src/lib/classify.ts` follows them.
+The opening book is Lichess's CC0 opening list (`src/data/openings.json`).
 
-- **Theory** (internally `book`) — the position is in the opening book (Lichess's CC0 opening list, `src/data/openings.json`)
-- **Clutch** (internally `great`) — the engine's move, it keeps you level or better (about −0.5 counts), and the second-best move
-  is at least 10% worse; also the only fast mate
-- **Legendary** (internally `brilliant`) — a best or nearly best move that gives up a piece the engine's line doesn't win straight back,
-  leaving you level or better, when you weren't already completely winning
-- **Oversight** (internally `miss`) — your opponent just made a mistake and you let it go, ending up about where you were before it;
-  falling further than that stays a mistake or blunder. The coach also points out a missed mate and a win that slipped to a draw or worse.
 - **Accuracy** — Lichess's open formula (volatility-weighted and harmonic means of per-move accuracy)
 
 To rebuild the opening book: `node scripts/build-openings.mjs <dir with a.tsv … e.tsv>` from
