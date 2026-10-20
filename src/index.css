@@ -1169,7 +1169,23 @@ svg {
   transform: translate(35%, -35%);
   filter: drop-shadow(0 0 0 var(--bg)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   /* Pops in as the piece lands, not while it's still sliding over. */
-  animation: badge-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--slide-ms) - 40ms) backwards;
+  animation: badge-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--slide-ms) * 0.6) backwards;
+}
+
+/* The verdict came in after the move (nothing is sliding): pop in now. */
+.board-badge.late .class-icon {
+  animation-delay: 0s;
+}
+
+/* Tapping through the moves: show each verdict at once, or quick taps would skip it. */
+.board-badge.quick .class-icon {
+  animation: badge-quick 0.1s ease-out;
+}
+
+@keyframes badge-quick {
+  from {
+    opacity: 0;
+  }
 }
 
 @keyframes badge-in {
@@ -7619,4 +7635,82 @@ strong.settings-value {
   to {
     opacity: 0;
   }
+}
+
+/* ═══════════════ Report this verdict ═══════════════ */
+/* "Disagree?" at the end of the coach's actions: there when wanted, quieter than Next move. */
+.coach-report {
+  margin-left: auto;
+  padding: 0 12px;
+  background: transparent !important;
+  color: var(--text-2);
+}
+
+.coach-report:hover:not(:disabled) {
+  background: var(--btn) !important;
+  color: var(--text);
+}
+
+.coach-report svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.coach-report:disabled {
+  opacity: 1;
+  background: transparent;
+  color: var(--muted);
+}
+
+.coach-report:disabled svg {
+  fill: currentColor;
+}
+
+.report-move {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 20px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.report-move-name {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-verdict {
+  font-size: 14px;
+}
+
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.report-note {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 12px;
+  resize: vertical;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.confirm-actions.single {
+  grid-template-columns: 1fr;
 }

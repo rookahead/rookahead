@@ -157,7 +157,7 @@ export const clearAccountError = () => state.error && setState({ error: null })
 let finishingSignIn = false
 
 let clientPromise: Promise<SupabaseClient> | null = null
-function client(): Promise<SupabaseClient> {
+export function client(): Promise<SupabaseClient> {
   clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) => {
     const c = createClient(SUPABASE_URL!, SUPABASE_KEY!, {
       auth: { flowType: 'pkce', storageKey: AUTH_KEY, detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },

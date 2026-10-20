@@ -9,7 +9,7 @@ interface Props {
   currentId: string
   onSelect: (id: string) => void
   result?: string
-  /** When the game has been reviewed, moves get their classification icon. */
+  /** When the game has been reviewed, moves get their classification icon (side-line moves too, once graded). */
   report?: GameReport | null
   /** What an empty list says. */
   emptyText?: string
@@ -48,7 +48,7 @@ function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
 }
 
 /** A side line rendered inline: "3… Nf6 4. d3 (4. Ng5 d5) 4… Bc5". */
-function Variation({ tree, startId, currentId, onSelect }: { tree: GameTree; startId: string; currentId: string; onSelect: (id: string) => void }) {
+function Variation({ tree, startId, currentId, onSelect, report }: { tree: GameTree; startId: string; currentId: string; onSelect: (id: string) => void; report?: GameReport | null }) {
   const parts: ReactNode[] = []
   const push = (node: MoveNode, forceNumber: boolean) => {
     const white = isWhiteMove(node.ply)
@@ -60,7 +60,7 @@ function Variation({ tree, startId, currentId, onSelect }: { tree: GameTree; sta
         </span>,
       )
     }
-    parts.push(<MoveButton key={node.id} node={node} current={node.id === currentId} onSelect={onSelect} />)
+    parts.push(<MoveButton key={node.id} node={node} current={node.id === currentId} onSelect={onSelect} report={report} />)
   }
 
   let node = tree.nodes[startId]
@@ -74,7 +74,7 @@ function Variation({ tree, startId, currentId, onSelect }: { tree: GameTree; sta
     for (const alt of alternatives) {
       parts.push(
         <span key={`v${alt}`} className="subvariation">
-          (<Variation tree={tree} startId={alt} currentId={currentId} onSelect={onSelect} />)
+          (<Variation tree={tree} startId={alt} currentId={currentId} onSelect={onSelect} report={report} />)
         </span>,
       )
     }
@@ -161,7 +161,7 @@ export const MoveList = memo(function MoveList({ tree, currentId, onSelect, resu
             <div className="variations">
               {row.variations.map((id) => (
                 <div key={id} className="variation">
-                  <Variation tree={tree} startId={id} currentId={currentId} onSelect={onSelect} />
+                  <Variation tree={tree} startId={id} currentId={currentId} onSelect={onSelect} report={report} />
                 </div>
               ))}
             </div>

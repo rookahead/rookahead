@@ -167,6 +167,40 @@ export function extraReviewEngines(): number {
 }
 
 /**
+ * One position as the review sees it: a fresh single-thread search of a fixed size, to a fixed
+ * depth or node count, so the same position gets the same verdict on every run.
+ */
+async function reviewSearch(eng: StockfishEngine, fen: string, depth: number, signal: AbortSignal, live: () => boolean): Promise<PositionEval | undefined> {
+  const terminal = terminalState(fen)
+  if (terminal) return { score: terminal.score, bestMove: null, pv: [], depth }
+  // A search can be bumped (or its worker restarted); retry a couple of times before skipping.
+  for (let attempt = 0; attempt < 3 && live(); attempt++) {
+    const result = await eng.analyze({
+      fen,
+      multiPv: Math.min(2, legalMoveCount(fen)),
+      depth,
+      nodes: reviewNodeCap(depth),
+      threads: 1,
+      hashMb: REVIEW_HASH_MB,
+      fresh: true,
+      signal,
+    })
+    const [top, second] = result?.lines ?? []
+    if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score }
+  }
+  return undefined
+}
+
+/** The depth a finished review ran at: most positions reach it exactly (the rest hit the node cap first). */
+export function depthOfReview(evals: Record<string, PositionEval>): number | null {
+  const tally = new Map<number, number>()
+  for (const e of Object.values(evals)) if (e.pv.length) tally.set(e.depth, (tally.get(e.depth) ?? 0) + 1)
+  let best: number | null = null
+  for (const [d, n] of tally) if (best === null || n > tally.get(best)! || (n === tally.get(best) && d > best)) best = d
+  return best
+}
+
+/**
  * Analyses every main-line position at a fixed depth. Positions are handed out
  * in order from one queue to a small pool of single-threaded searches: the main
  * engine plus a few short-lived helpers that are shut down when the review ends.
@@ -214,29 +248,6 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
       const live = () => runId.current === id
       let next = 0
 
-      const evaluate = async (eng: StockfishEngine, fen: string): Promise<PositionEval | undefined> => {
-        const terminal = terminalState(fen)
-        if (terminal) return { score: terminal.score, bestMove: null, pv: [], depth }
-        // A search can be bumped (or its worker restarted); retry a couple of times before skipping.
-        for (let attempt = 0; attempt < 3 && live(); attempt++) {
-          const multiPv = Math.min(2, legalMoveCount(fen))
-          // A fresh single-thread search of a fixed size, to a fixed depth or node count: the same verdict on every run.
-          const result = await eng.analyze({
-            fen,
-            multiPv,
-            depth,
-            nodes: reviewNodeCap(depth),
-            threads: 1,
-            hashMb: REVIEW_HASH_MB,
-            fresh: true,
-            signal: ctrl.signal,
-          })
-          const [top, second] = result?.lines ?? []
-          if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score }
-        }
-        return undefined
-      }
-
       const work = async (eng: StockfishEngine) => {
         try {
           await eng.ready
@@ -245,7 +256,7 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
         }
         while (live() && next < line.length) {
           const { fen } = line[next++]
-          const entry = await evaluate(eng, fen)
+          const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
           if (!live()) return
           setState((s) => ({ ...s, progress: s.progress + 1, evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
         }
@@ -265,3 +276,53 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
 }
 
 export type { Color }
+
+interface SideLineOptions {
+  engine: StockfishEngine | null
+  ready: boolean
+  /** The positions the review already has. */
+  evals: Record<string, PositionEval>
+  /** Positions to grade moves into: the side line on the board, from where it leaves the game. */
+  fens: string[]
+  depth: number
+  enabled: boolean
+}
+
+/**
+ * Moves tried off the main line get the same verdicts as the game's own: their positions are
+ * searched exactly as the review searches, one at a time on the main engine (live analysis
+ * pauses meanwhile). Results are kept, keyed by FEN, until the review is reset.
+ */
+export function useSideLineReview({ engine, ready, evals, fens, depth, enabled }: SideLineOptions) {
+  const [extra, setExtra] = useState<Record<string, PositionEval>>({})
+  const [pending, setPending] = useState(false)
+  const missing = enabled ? fens.filter((f) => !evals[f] && !extra[f]) : []
+  const wanted = missing.join(',')
+
+  // A new game or review starts over (positions repeat between games, but the depth may not).
+  useEffect(() => setExtra({}), [evals, depth])
+
+  useEffect(() => {
+    if (!engine || !ready || !wanted) {
+      setPending(false)
+      return
+    }
+    let cancelled = false
+    const controller = new AbortController()
+    setPending(true)
+    void (async () => {
+      for (const fen of wanted.split(',')) {
+        const entry = await reviewSearch(engine, fen, depth, controller.signal, () => !cancelled)
+        if (cancelled) return
+        if (entry) setExtra((x) => ({ ...x, [fen]: entry }))
+      }
+      if (!cancelled) setPending(false)
+    })()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [engine, ready, wanted, depth])
+
+  return { evals: extra, pending: pending || missing.length > 0 }
+}

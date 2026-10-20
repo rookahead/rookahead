@@ -93,3 +93,51 @@ create policy "Avatars: delete own" on storage.objects for delete to authenticat
 
 -- Settings → Profile: an account may rename itself (the same rules and uniqueness apply).
 grant update (username) on public.profiles to authenticated;
+
+-- "Report this verdict": anyone, signed in or not, may send one. Nobody can read them back through
+-- the API; read them in the dashboard (Table Editor → verdict_reports).
+create table if not exists public.verdict_reports (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  user_id uuid default auth.uid() references auth.users (id) on delete set null,
+  fen text not null check (length(fen) < 100),
+  move text not null check (move ~ '^[a-h][1-8][a-h][1-8][qrbn]?$'),
+  san text not null check (length(san) < 10),
+  verdict text not null check (length(verdict) < 20),
+  opinion text not null check (opinion in ('harsh', 'generous', 'other')),
+  note text not null default '' check (length(note) <= 500),
+  start_fen text not null check (length(start_fen) < 100),
+  moves text not null check (length(moves) < 4000),
+  side_line boolean not null default false,
+  depth smallint not null check (depth between 1 and 40),
+  engine text not null check (engine in ('full', 'lite')),
+  review jsonb not null default '{}' check (pg_column_size(review) < 2000),
+  build text check (length(build) < 20)
+);
+create index if not exists verdict_reports_created_at on public.verdict_reports (created_at);
+
+alter table public.verdict_reports enable row level security;
+
+drop policy if exists "Anyone: send" on public.verdict_reports;
+create policy "Anyone: send" on public.verdict_reports for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));
+
+revoke all on public.verdict_reports from anon, authenticated;
+grant insert on public.verdict_reports to anon, authenticated;
+
+-- A ceiling on reports per hour, so a script can't fill the database.
+create or replace function public.verdict_reports_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select count(*) from public.verdict_reports where created_at > now() - interval '1 hour') >= 300 then
+    raise exception 'Too many reports right now' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists verdict_reports_limit on public.verdict_reports;
+create trigger verdict_reports_limit before insert on public.verdict_reports for each row execute function public.verdict_reports_limit();

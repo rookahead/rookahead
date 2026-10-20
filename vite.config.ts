@@ -56,6 +56,8 @@ export default defineConfig(({ mode }) => ({
   build: { rollupOptions: { input: { main: 'index.html', embed: 'embed.html' } } },
   server: { headers: isolationHeaders },
   preview: { headers: isolationHeaders },
+  // The commit a build came from (Cloudflare Pages sets it), so a verdict report says which rules graded the move.
+  define: { __BUILD__: JSON.stringify((process.env.CF_PAGES_COMMIT_SHA ?? 'dev').slice(0, 7)) },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],

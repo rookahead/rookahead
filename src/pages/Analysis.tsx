@@ -23,16 +23,19 @@ import { ShareBanner } from '../components/ShareBanner'
 import { ShareDialog } from '../components/ShareDialog'
 import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
+import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
-import { terminalState, useGameReview, useLiveAnalysis, type PositionEval } from '../hooks/useAnalysis'
+import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
 import { useMoveSounds } from '../hooks/useMoveSounds'
 import { openingFromEcoUrl } from '../lib/chesscom'
-import { classifyGame, withClasses, type MoveClass } from '../lib/classify'
+import { classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { gameKey, saveReview } from '../lib/reviewCache'
+import { ACCOUNTS_ENABLED } from '../lib/account'
+import { sendVerdictReport } from '../lib/reports'
 import { navigate } from '../lib/router'
 import { clearLoadRequest, loadDialogRequested, readSession, writeSession, type Session } from '../lib/session'
 import type { Settings } from '../lib/settings'
@@ -133,6 +136,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [banner, setBanner] = useState<'shared' | ShareError | null>(null)
   const [shareLink] = useState(() => parseShareHash(location.pathname, location.hash))
   const [shareOpen, setShareOpen] = useState(false)
+  // "Report this verdict": the move whose verdict is being reported, and those sent this visit.
+  const [reporting, setReporting] = useState<string | null>(null)
+  const [reported, setReported] = useState<ReadonlySet<string>>(() => new Set())
 
   useEffect(() => {
     void loadOpeningBook().then(setBook, () => {})
@@ -164,7 +170,43 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     },
     [line, review.evals, book, sharedClasses],
   )
-  const currentReview = report?.moves[node.id]
+
+  const inVariation = !isMainline(tree, node.id)
+  // Moves tried in a side line after the review get verdicts too, from the same kind of search.
+  const sideLine = useMemo(() => {
+    if (!inVariation) return []
+    const off = path.filter((n) => !isMainline(tree, n.id))
+    // The move on the board first, then the rest of the line from where it leaves the game.
+    return [node.fen, path[path.length - 2]?.fen, ...off.map((n) => n.fen)].filter((f): f is string => Boolean(f))
+  }, [inVariation, path, tree, node.fen])
+  const reviewDepth = depthOfReview(review.evals) ?? settings.reviewDepth
+  const side = useSideLineReview({
+    engine,
+    ready,
+    evals: review.evals,
+    fens: sideLine,
+    depth: reviewDepth,
+    enabled: review.status === 'done' && Boolean(report) && active,
+  })
+  const sideMoves = useMemo(() => {
+    const moves: Record<string, MoveReview> = {}
+    if (!report || !Object.keys(side.evals).length) return moves
+    const evals = { ...review.evals, ...side.evals }
+    // Each side line is graded as a game of its own, from the start, so book and "miss" work as usual.
+    for (const n of Object.values(tree.nodes)) {
+      if (n.children.length || isMainline(tree, n.id)) continue
+      for (const [id, m] of Object.entries(classifyGame(pathTo(tree, n.id), evals, book?.isBook).moves)) {
+        if (!report.moves[id] && !isMainline(tree, id)) moves[id] = m
+      }
+    }
+    return moves
+  }, [report, review.evals, side.evals, tree, book])
+  // The move list's icons: the game's moves and any side-line moves graded since.
+  const listReport = useMemo<GameReport | null>(
+    () => (report && Object.keys(sideMoves).length ? { ...report, moves: { ...report.moves, ...sideMoves } } : report),
+    [report, sideMoves],
+  )
+  const currentReview = report?.moves[node.id] ?? sideMoves[node.id]
 
   const live = useLiveAnalysis({
     engine,
@@ -174,11 +216,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     multiPv: settings.lines,
     depth: settings.liveDepth,
     // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
-    paused: reviewing || loadOpen || shareOpen || !active,
+    paused: reviewing || side.pending || loadOpen || shareOpen || !active,
   })
 
   // During a review, fall back to the review's verdict for positions it has reached.
-  const reviewEval = review.evals[node.fen]
+  const reviewEval = review.evals[node.fen] ?? side.evals[node.fen]
   const shown: AnalysisResult | null = useMemo(() => {
     if (live.result?.lines.length) return live.result
     if (!reviewEval) return null
@@ -454,7 +496,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const gameOpening = useMemo(() => (book ? openingOf(book, line) : undefined), [book, line])
   const hasGame = Boolean(headers.White || headers.Black)
   const currentIndex = isMainline(tree, node.id) ? node.ply - line[0].ply : null
-  const inVariation = !isMainline(tree, node.id)
   const lastMove = node.from && node.to ? ([node.from, node.to] as [typeof node.from, typeof node.to]) : undefined
   const summaryText = useMemo(() => (report ? gameSummary(report, tree, headers) : ''), [report, tree, headers])
 
@@ -477,7 +518,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           key={node.id}
           kicker={moveNumberLabel(node.ply)}
           title={<San san={node.san} />}
-          detail={inVariation ? 'You’re exploring a side line. The Analysis tab has the live engine.' : 'Not reviewed yet.'}
+          detail={inVariation ? (side.pending ? 'Checking this move…' : 'You’re exploring a side line. The Analysis tab has the live engine.') : 'Not reviewed yet.'}
           score={score}
         />
       )
@@ -491,6 +532,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         title={moveHeadline(node.san, currentReview)}
         detail={moveDetail(currentReview, bestSan)}
         score={currentReview.score}
+        // A forced move has nothing to disagree with.
+        onReport={ACCOUNTS_ENABLED && currentReview.cls !== 'forced' ? () => setReporting(node.id) : undefined}
+        reported={reported.has(`${node.id}:${currentReview.cls}`)}
       >
         {currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls) && (
           <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
@@ -524,7 +568,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           </div>
         </CoachCard>
         <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={104} />
-        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={report} />
+        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
       </>
     )
   } else if (review.status === 'done' && report) {
@@ -532,7 +576,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       <>
         {stepCoach()}
         <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
-        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={report} />
+        <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
       </>
     ) : (
       <>
@@ -728,7 +772,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                       onPlayLine={playLine}
                       onOpenSettings={() => setOptionsOpen(true)}
                     />
-                    <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={report} />
+                    <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
                     {inVariation && (
                       <div className="variation-actions">
                         <span className="muted small">Side line</span>
@@ -815,6 +859,36 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           report={review.status === 'done' ? report : null}
           boardTheme={settings.boardTheme}
           getToken={makeShareToken}
+        />
+      )}
+
+      {reporting && tree.nodes[reporting] && (report?.moves[reporting] ?? sideMoves[reporting]) && (
+        <ReportDialog
+          moveNumber={moveNumberLabel(tree.nodes[reporting].ply)}
+          san={tree.nodes[reporting].san!}
+          verdict={(report?.moves[reporting] ?? sideMoves[reporting]).cls}
+          onSend={async (opinion, note) => {
+            const reportPath = pathTo(tree, reporting)
+            const moved = reportPath[reportPath.length - 1]
+            const verdict = report?.moves[reporting] ?? sideMoves[reporting]
+            const problem = await sendVerdictReport({
+              fen: reportPath[reportPath.length - 2].fen,
+              move: moved.uci!,
+              san: moved.san!,
+              verdict: verdict.cls,
+              opinion,
+              note,
+              startFen: reportPath[0].fen,
+              moves: reportPath.slice(1).map((n) => n.uci!),
+              sideLine: !isMainline(tree, reporting),
+              depth: reviewDepth,
+              engine: settings.engine,
+              review: { winBefore: verdict.winBefore, winAfter: verdict.winAfter, loss: verdict.loss, bestMove: verdict.bestMove, score: verdict.score },
+            })
+            if (!problem) setReported((r) => new Set(r).add(`${reporting}:${verdict.cls}`))
+            return problem
+          }}
+          onClose={() => setReporting(null)}
         />
       )}
 

@@ -47,6 +47,16 @@ interface Props {
   mark?: 'correct' | 'wrong'
 }
 
+/** Positions arriving closer together than this are someone tapping through the moves. */
+const QUICK_STEP_MS = 350
+
+/**
+ * How the classification badge comes in: after the piece lands (one move at a time), straight
+ * away when stepping through quickly (or it would never get to show), or straight away when the
+ * verdict arrives for the position already on the board (nothing is sliding).
+ */
+type BadgeTiming = 'land' | 'quick' | 'late'
+
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const PROMOTION_PIECES = ['q', 'n', 'r', 'b'] as const
@@ -171,13 +181,27 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   const fromTop = promotion ? (promotion.to[1] === '8') === (orientation === 'white') : true
 
   const badge = (annotation || mark) && lastMove ? squarePosition(lastMove[1], orientation) : null
+  const badgeKey = badge ? `${lastMove!.join('')}-${annotation ?? mark}` : ''
+  // Each badge's timing is worked out when it first appears, from when the position before came in.
+  // The badge itself waits for that (a re-render before the frame is painted), so it never starts with the wrong one.
+  const shownAt = useRef({ fen, at: -Infinity })
+  const [badgeShown, setBadgeShown] = useState<{ key: string; timing: BadgeTiming } | null>(null)
+  useLayoutEffect(() => {
+    const now = performance.now()
+    const last = shownAt.current
+    const moved = last.fen !== fen
+    if (moved) shownAt.current = { fen, at: now }
+    if (!badgeKey) return
+    const timing: BadgeTiming = !moved ? 'late' : now - last.at < QUICK_STEP_MS ? 'quick' : 'land'
+    setBadgeShown((b) => (b?.key === badgeKey ? b : { key: badgeKey, timing }))
+  }, [fen, badgeKey])
 
   return (
     <div className="board" style={style}>
       <div ref={el} className="board-cg" />
-      {badge && (annotation || mark) && (
+      {badge && badgeShown?.key === badgeKey && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
-        <div key={`${lastMove!.join('')}-${annotation ?? mark}`} className="board-badge" style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
+        <div key={badgeKey} className={`board-badge ${badgeShown.timing}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
           {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
         </div>
       )}
