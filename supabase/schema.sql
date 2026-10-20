@@ -36,7 +36,7 @@ $$;
 revoke execute on function public.delete_account() from public, anon;
 grant execute on function public.delete_account() to authenticated;
 
--- Usernames: one per account, unique ignoring case, fixed once chosen.
+-- Usernames: one per account, unique ignoring case; changeable in Settings (see the grant below).
 create table if not exists public.profiles (
   id uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   username text not null check (
@@ -90,3 +90,6 @@ create policy "Avatars: read own" on storage.objects for select to authenticated
 create policy "Avatars: upload own" on storage.objects for insert to authenticated with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy "Avatars: replace own" on storage.objects for update to authenticated using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy "Avatars: delete own" on storage.objects for delete to authenticated using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- Settings → Profile: an account may rename itself (the same rules and uniqueness apply).
+grant update (username) on public.profiles to authenticated;

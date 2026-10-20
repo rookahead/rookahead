@@ -6,6 +6,8 @@ import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
 import { NavIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
+import { Segmented, SwitchRow } from '../components/controls'
+import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
 import { EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
@@ -118,6 +120,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
   const [loadOpen, setLoadOpen] = useState(loadDialogRequested)
+  const [optionsOpen, setOptionsOpen] = useState(false)
   useEffect(clearLoadRequest, [])
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
@@ -569,6 +572,30 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             </button>
           )}
         </CoachCard>
+        <div className="review-options">
+          <div className="setting">
+            <div className="setting-label">
+              Review depth
+              <span className="hint">How hard Stockfish looks at each move. Deeper is more exact, and slower.</span>
+            </div>
+            <Segmented
+              label="Review depth"
+              value={settings.reviewDepth}
+              options={[
+                [12, 'Fast · 12'],
+                [16, 'Standard · 16'],
+                [20, 'Deep · 20'],
+              ]}
+              onChange={(reviewDepth) => updateSettings({ reviewDepth })}
+            />
+          </div>
+          <SwitchRow
+            label="Review games automatically"
+            hint="Start as soon as a game is loaded."
+            checked={settings.autoReview}
+            onChange={(autoReview) => updateSettings({ autoReview })}
+          />
+        </div>
       </>
     )
   }
@@ -643,7 +670,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               theme={settings.boardTheme}
               coordinates={settings.coordinates}
               onMove={playMove}
-              annotation={currentReview?.cls}
+              annotation={settings.classOnBoard ? currentReview?.cls : undefined}
             />
           </div>
           {player(orientation)}
@@ -699,6 +726,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                       terminal={terminal}
                       reviewing={reviewing}
                       onPlayLine={playLine}
+                      onOpenSettings={() => setOptionsOpen(true)}
                     />
                     <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={report} />
                     {inVariation && (
@@ -747,7 +775,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
                   <NavIcon name="last" />
                 </button>
-                <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} />
+                <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />
               </nav>
             </div>
           </aside>
@@ -789,6 +817,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           getToken={makeShareToken}
         />
       )}
+
+      {optionsOpen && <AnalysisSettings settings={settings} status={status} onChange={updateSettings} onClose={() => setOptionsOpen(false)} />}
 
       <LoadGameDialog
         open={loadOpen}

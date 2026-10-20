@@ -6,6 +6,11 @@ export type Appearance = 'dark' | 'light' | 'system'
 
 export type BoardTheme = 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
 
+export type Animation = 'none' | 'fast' | 'normal' | 'slow'
+
+/** How long a piece takes to slide to its square, per animation setting. */
+export const ANIMATION_MS: Record<Animation, number> = { none: 0, fast: 120, normal: 240, slow: 400 }
+
 export interface Settings {
   /** Interface colour scheme; 'system' follows the OS. */
   appearance: Appearance
@@ -25,6 +30,16 @@ export interface Settings {
   lichessUser: string
   /** Move sounds, 0 (off) to 1. */
   soundVolume: number
+  /** Engine threads; 0 picks for you (all cores but one). */
+  threads: number
+  /** A reviewed move's classification badge on its square. */
+  classOnBoard: boolean
+  /** Moves written with piece figurines (♞f3) or letters (Nf3). */
+  notation: 'figurine' | 'letter'
+  highlightLastMove: boolean
+  /** Dots on the squares a picked-up piece can go to. */
+  showLegalMoves: boolean
+  animation: Animation
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -40,6 +55,12 @@ export const DEFAULT_SETTINGS: Settings = {
   chesscomUser: '',
   lichessUser: '',
   soundVolume: 0.7,
+  threads: 0,
+  classOnBoard: true,
+  notation: 'figurine',
+  highlightLastMove: true,
+  showLegalMoves: true,
+  animation: 'normal',
 }
 
 const KEY = STORE_KEYS.settings

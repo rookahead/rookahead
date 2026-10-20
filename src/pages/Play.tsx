@@ -3,10 +3,13 @@ import type { Key } from '@lichess-org/chessground/types'
 import { Chess, DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Board } from '../components/Board'
+import { BoardOptions } from '../components/BoardOptions'
 import { MoveList } from '../components/MoveList'
 import { NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
+import { SettingsDialog } from '../components/SettingsDialog'
+import { Gear } from '../components/UserCard'
 import { useEngine } from '../hooks/useEngine'
 import { useMoveSounds } from '../hooks/useMoveSounds'
 import { CLOCK_GROUPS, clockLabel, flagged, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
@@ -25,6 +28,7 @@ interface Props {
   /** Play is the page showing. Leaving it after a game has ended clears the board for the next one. */
   active: boolean
   settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
   avatar?: ReactNode
   /** A game has been put in the session: show it in Analysis. */
   onOpenAnalysis: () => void
@@ -54,7 +58,14 @@ function restoreGame(): LiveGame | null {
 }
 
 /** Play against the computer: pick a level, play with takebacks and hints, then review. */
-export function PlayPage({ active, settings, avatar, onOpenAnalysis }: Props) {
+export function PlayPage({ active, settings, updateSettings, avatar, onOpenAnalysis }: Props) {
+  const [boardSettings, setBoardSettings] = useState(false)
+  // Board settings sit by the game's heading (and the setup card's), where your eyes are.
+  const gear = (
+    <button className="icon-btn panel-gear" onClick={() => setBoardSettings(true)} aria-label="Board settings" title="Board settings">
+      <Gear />
+    </button>
+  )
   const { engine, status } = useEngine('lite', { threads: 1, hashMb: 32 })
   const ready = status?.state === 'ready'
   const [setup, setSetup] = useState<PlaySetup>(loadSetup)
@@ -86,10 +97,16 @@ export function PlayPage({ active, settings, avatar, onOpenAnalysis }: Props) {
   return (
     <div className="play-page">
       <PageHeader title="Play" avatar={avatar} />
+      {boardSettings && (
+        <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
+          <BoardOptions settings={settings} onChange={updateSettings} preview />
+        </SettingsDialog>
+      )}
       {game ? (
         <GameView
           key={game.id}
           active={active}
+          gear={gear}
           game={game}
           setGame={setGame}
           engine={ready ? engine : null}
@@ -105,7 +122,7 @@ export function PlayPage({ active, settings, avatar, onOpenAnalysis }: Props) {
           }}
         />
       ) : (
-        <SetupView setup={setup} onChange={setSetup} onStart={() => start(setup)} />
+        <SetupView setup={setup} onChange={setSetup} onStart={() => start(setup)} gear={gear} />
       )}
     </div>
   )
@@ -113,11 +130,14 @@ export function PlayPage({ active, settings, avatar, onOpenAnalysis }: Props) {
 
 const meta = (g: LiveGame) => ({ color: g.color, level: g.setup.level, clock: g.setup.clock, outcome: g.outcome, startFen: g.startFen })
 
-function SetupView({ setup, onChange, onStart }: { setup: PlaySetup; onChange: (s: PlaySetup) => void; onStart: () => void }) {
+function SetupView({ setup, onChange, onStart, gear }: { setup: PlaySetup; onChange: (s: PlaySetup) => void; onStart: () => void; gear: ReactNode }) {
   return (
     <main className="play-setup">
       <section className="home-card setup-card" aria-labelledby="setup-title">
-        <h2 id="setup-title">Play the computer</h2>
+        <div className="setup-head">
+          <h2 id="setup-title">Play the computer</h2>
+          {gear}
+        </div>
         <p className="muted">Takebacks and hints allowed. Your game is saved to My recent games when it ends.</p>
 
         <div className="level-pick">
@@ -197,9 +217,11 @@ interface GameViewProps {
   onReview: () => void
   /** Play is the page showing: the arrow keys step through the moves. */
   active: boolean
+  /** Opens Board settings, in the panel's heading. */
+  gear: ReactNode
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
@@ -425,16 +447,19 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       <aside className="panel play-panel">
         <div className="panel-card">
           <header className="play-panel-head">
-            <strong>{computerName}</strong>
-            <span className="muted">
-              {level.rating} · You play {game.color} · {clockLabel(game.setup.clock)}
-            </span>
+            <div className="play-panel-title">
+              <strong>{computerName}</strong>
+              <span className="muted">
+                {level.rating} · You play {game.color} · {clockLabel(game.setup.clock)}
+              </span>
+            </div>
+            {gear}
           </header>
           <p className={`play-status ${game.outcome ? 'over' : ''}`} role="status">
             {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Rookahead is thinking…' : 'Rookahead to move')}
           </p>
           <div className="panel-body">
-            <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} />
+            <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} emptyText="Your moves and the computer’s appear here." />
           </div>
           <nav className="play-nav" aria-label="Move navigation">
             <button className="ctrl" onClick={() => showPly(0)} disabled={shownPly === 0} aria-label="First move" title="First move (↑)">

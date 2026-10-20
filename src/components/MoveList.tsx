@@ -11,6 +11,8 @@ interface Props {
   result?: string
   /** When the game has been reviewed, moves get their classification icon. */
   report?: GameReport | null
+  /** What an empty list says. */
+  emptyText?: string
 }
 
 const moveNo = (ply: number) => Math.ceil(ply / 2)
@@ -116,7 +118,7 @@ function buildRows(tree: GameTree): Row[] {
 }
 
 // Memoised: the parent re-renders with every engine update, which leaves the list unchanged.
-export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report }: Props) {
+export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report, emptyText = 'Make a move on the board, or load a game to analyse.' }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const rows = buildRows(tree)
 
@@ -133,7 +135,7 @@ export const MoveList = memo(function MoveList({ tree, currentId, onSelect, resu
   if (!rows.length) {
     return (
       <div className="move-list empty" ref={container}>
-        <p>Make a move on the board, or load a game to analyse.</p>
+        <p>{emptyText}</p>
       </div>
     )
   }

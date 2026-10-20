@@ -3,6 +3,7 @@ import type { AnalysisResult, EngineLine, EngineStatus } from '../engine/Engine'
 import type { TerminalState } from '../hooks/useAnalysis'
 import { favoured, formatScore } from '../lib/evaluation'
 import { pvToSan } from '../lib/tree'
+import { Gear } from './UserCard'
 
 interface Props {
   fen: string
@@ -16,6 +17,8 @@ interface Props {
   reviewing: boolean
   /** Play the first `count` moves of a line on the board. */
   onPlayLine: (pv: string[], count: number) => void
+  /** Opens the analysis settings (the gear in the header). */
+  onOpenSettings: () => void
 }
 
 function formatNps(nps?: number) {
@@ -69,7 +72,7 @@ const Line = memo(function Line({ fen, line, onPlayLine }: LineProps) {
   )
 }, sameLine)
 
-export function EngineLines({ fen, status, enabled, onToggle, result, searching, maxLines, terminal, reviewing, onPlayLine }: Props) {
+export function EngineLines({ fen, status, enabled, onToggle, result, searching, maxLines, terminal, reviewing, onPlayLine, onOpenSettings }: Props) {
   const loading = status?.state === 'loading'
   const name = status?.name?.replace(/\s*(WASM|Lite|Multithreaded).*$/i, '') || 'Stockfish 19'
   let body: React.ReactNode
@@ -133,6 +136,9 @@ export function EngineLines({ fen, status, enabled, onToggle, result, searching,
             </>
           )}
         </div>
+        <button className="icon-btn engine-gear" onClick={onOpenSettings} aria-label="Analysis settings" title="Analysis settings">
+          <Gear />
+        </button>
       </header>
       {body}
     </section>

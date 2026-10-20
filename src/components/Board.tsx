@@ -5,7 +5,8 @@ import type { Key } from '@lichess-org/chessground/types'
 import { Chess, SQUARES, type Square } from 'chess.js'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Color } from '../lib/evaluation'
-import type { BoardTheme } from '../lib/settings'
+import { useBoardPrefs } from '../lib/boardPrefs'
+import { ANIMATION_MS, type BoardTheme } from '../lib/settings'
 import type { MoveClass } from '../lib/classify'
 import { ClassIcon } from './ClassIcon'
 import { PuzzleMark } from './PuzzleIcons'
@@ -46,8 +47,7 @@ interface Props {
   mark?: 'correct' | 'wrong'
 }
 
-/** How long a piece takes to slide to its square. The classification badge waits for it to land. */
-const SLIDE_MS = 240
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const PROMOTION_PIECES = ['q', 'n', 'r', 'b'] as const
 const ROLE: Record<string, string> = { q: 'queen', n: 'knight', r: 'rook', b: 'bishop' }
@@ -64,6 +64,9 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color } | null>(null)
+  const { highlightLastMove, showLegalMoves, animation } = useBoardPrefs()
+  // How long a piece takes to slide to its square. The classification badge waits for it to land.
+  const slideMs = reducedMotion() ? 0 : ANIMATION_MS[animation]
 
   useEffect(() => {
     onMoveRef.current = onMove
@@ -83,9 +86,8 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   useLayoutEffect(() => {
     if (!el.current) return
     api.current = Chessground(el.current, {
-      animation: { enabled: !matchMedia('(prefers-reduced-motion: reduce)').matches, duration: SLIDE_MS },
-      highlight: { lastMove: true, check: true },
-      movable: { free: false, showDests: true },
+      // Animation, highlights and move dots follow the settings: the update below sets them, before the first paint.
+      movable: { free: false },
       premovable: { enabled: false },
       draggable: { showGhost: true },
       ranksPosition: 'left',
@@ -124,12 +126,14 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       check: position.check,
       lastMove,
       coordinates,
+      animation: { enabled: slideMs > 0, duration: slideMs },
       highlight: {
-        lastMove: true,
+        lastMove: highlightLastMove,
         check: true,
         custom: annotation && lastMove ? new Map(lastMove.map((sq) => [sq as Key, `cls-${annotation}`])) : new Map(),
       },
       movable: {
+        showDests: showLegalMoves,
         color: locked ? undefined : position.turn,
         dests: locked ? new Map() : position.dests,
         events: {
@@ -146,7 +150,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       },
     })
     setPromotion(null)
-  }, [fen, viewOnly, locked, orientation, position, lastMove, coordinates, annotation])
+  }, [fen, viewOnly, locked, orientation, position, lastMove, coordinates, annotation, highlightLastMove, showLegalMoves, slideMs])
 
   useEffect(() => {
     api.current?.setAutoShapes(shapes)
@@ -158,7 +162,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     '--sq-light': colors.light,
     '--sq-dark': colors.dark,
     '--last-move': colors.lastMove ?? 'rgba(255, 255, 51, 0.42)',
-    '--slide-ms': `${SLIDE_MS}ms`,
+    '--slide-ms': `${slideMs}ms`,
   } as CSSProperties
 
   // The picker drops down from the promotion square, toward the centre of the board.

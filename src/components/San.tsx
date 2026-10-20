@@ -1,11 +1,13 @@
+import { useBoardPrefs } from '../lib/boardPrefs'
 import { PieceIcon } from './PieceIcon'
 
 const ROLE: Record<string, string> = { K: 'king', Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' }
 
-/** SAN with a piece figurine instead of the letter: "Nxe5" → [knight]xe5. */
+/** SAN with a piece figurine instead of the letter: "Nxe5" → [knight]xe5 (unless letters are chosen). */
 export function San({ san }: { san: string }) {
+  const { notation } = useBoardPrefs()
   const role = ROLE[san[0]]
-  if (!role) return <>{san}</>
+  if (!role || notation === 'letter') return <>{san}</>
   return (
     <span className="san">
       <span className="figurine">

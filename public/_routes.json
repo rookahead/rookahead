@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/engine/stockfish-19.wasm", "/engine/stockfish-19-single.wasm"],
+  "exclude": []
+}

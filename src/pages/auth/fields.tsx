@@ -15,11 +15,24 @@ export const GoogleG = () => (
 type Availability = 'checking' | 'free' | 'taken' | 'unknown' | null
 
 /** A username box that checks the rules as you type and asks the server whether it's free. */
-export function UsernameField({ value, onChange, onStatus }: { value: string; onChange: (v: string) => void; onStatus: (ok: boolean) => void }) {
+export function UsernameField({
+  value,
+  onChange,
+  onStatus,
+  current,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onStatus: (ok: boolean) => void
+  /** Renaming: the name you have now, which counts as yours (only a change of case passes as free). */
+  current?: string
+}) {
   const [available, setAvailable] = useState<Availability>(null)
   const problem = value ? usernameProblem(value) : null
+  const unchanged = current !== undefined && value === current
+  const ownName = current !== undefined && value.toLowerCase() === current.toLowerCase()
   useEffect(() => {
-    if (!value || problem) return
+    if (!value || problem || ownName) return
     let stale = false
     const t = setTimeout(() => {
       setAvailable('checking')
@@ -30,14 +43,16 @@ export function UsernameField({ value, onChange, onStatus }: { value: string; on
       clearTimeout(t)
       setAvailable(null)
     }
-  }, [value, problem])
+  }, [value, problem, ownName])
   // 'unknown' (couldn't ask) lets you go on: the database has the final say.
-  const ok = Boolean(value) && !problem && (available === 'free' || available === 'unknown')
+  const ok = Boolean(value) && !problem && !unchanged && (ownName || available === 'free' || available === 'unknown')
   useEffect(() => onStatus(ok), [ok, onStatus])
 
-  let hint: ReactNode = 'Letters, digits, _ and -, 3 to 20 long. Other players will see it, and it can’t be changed later.'
+  let hint: ReactNode = 'Letters, digits, _ and -, 3 to 20 long. Other players will see it.'
   let tone = ''
   if (value && problem) [hint, tone] = [problem, 'bad']
+  else if (unchanged) hint = 'That’s your username now.'
+  else if (ownName) [hint, tone] = [`“${value}” is free.`, 'good']
   else if (available === 'taken') [hint, tone] = [`“${value}” is taken. Try another.`, 'bad']
   else if (available === 'free') [hint, tone] = [`“${value}” is free.`, 'good']
   else if (available === 'checking') hint = 'Checking…'

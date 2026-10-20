@@ -3,11 +3,11 @@
    so the only colour on screen carries meaning (classifications, the eval). */
 :root {
   color-scheme: dark;
-  --bg: #0b0b0c;
-  --surface: #111113;
-  --surface-2: #161618;
-  --surface-3: #1c1c1f;
-  --surface-4: #26262b;
+  --bg: #09090a;
+  --surface: #1a1a1e;
+  --surface-2: #222227;
+  --surface-3: #2a2a30;
+  --surface-4: #35353c;
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.13);
   --text: #ededed;
@@ -23,9 +23,10 @@
   --brand-ink: #04202e;
   --brand-card: #0f3446;
   --brand-card-text: #ededed;
-  /* Home cards: a shade off the page, no borders. */
-  --card: #161618;
-  --card-hover: #1c1c1f;
+  /* Home cards and the sidebar: a clear step up from the page, with a hairline edge to lift them. */
+  --card: #1f1f24;
+  --card-hover: #27272d;
+  --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
   --danger: #ef6b5f;
@@ -83,7 +84,7 @@
 /* Light: the same near-monochrome idea, inverted. Ink is near-black; colour still only carries meaning. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f7f7f8;
+  --bg: #f1f1f3;
   --surface: #ffffff;
   --surface-2: #f4f4f5;
   --surface-3: #ededef;
@@ -103,6 +104,7 @@
   --brand-card-text: #082f45;
   --card: #ffffff;
   --card-hover: #f4f4f5;
+  --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
   --danger: #d4433a;
@@ -344,6 +346,7 @@ svg {
   padding: 16px 12px 12px;
   border-radius: 22px;
   background: var(--surface);
+  box-shadow: var(--card-edge);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -655,20 +658,6 @@ svg {
   visibility: hidden;
   pointer-events: none;
   overflow: hidden;
-}
-
-/* Settings open from the sidebar (or the phone header) as a floating panel. */
-.settings-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-}
-
-.settings-layer {
-  position: fixed;
-  z-index: 60;
-  left: calc(var(--side-w) + 8px);
-  bottom: 12px;
 }
 
 .layout {
@@ -1649,11 +1638,6 @@ svg {
 .summary .grades .faceoff-row:nth-child(9) { animation-delay: 0.34s; }
 .summary .grades .faceoff-row:nth-child(10) { animation-delay: 0.37s; }
 .summary .grades .faceoff-row:nth-child(n + 11) { animation-delay: 0.4s; }
-
-.settings-popover {
-  transform-origin: bottom left;
-  animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
-}
 
 /* Dialogs rise and scale in, and fade out on close. Only opacity and transform animate, so the
    GPU does the work; `overlay`/`display` keep a closing dialog on screen until it has faded. */
@@ -2657,33 +2641,6 @@ svg {
   margin-top: 6px;
 }
 
-.settings-popover {
-  position: relative;
-  width: 360px;
-  max-height: calc(100vh - 24px);
-  overflow-y: auto;
-  padding: 14px 16px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  box-shadow: var(--shadow-pop);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.settings-header h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
 .setting {
   display: flex;
   flex-direction: column;
@@ -2706,20 +2663,6 @@ svg {
 .hint.warn {
   margin: -6px 0 0;
   color: var(--warn);
-}
-
-.setting.check {
-  flex-direction: row;
-  align-items: center;
-  gap: 9px;
-  cursor: pointer;
-  color: var(--text-2);
-}
-
-.setting.check input {
-  accent-color: var(--text);
-  width: 15px;
-  height: 15px;
 }
 
 .segmented {
@@ -2750,23 +2693,6 @@ svg {
   background: var(--surface-4);
   color: var(--text);
   font-weight: 600;
-}
-
-.theme-swatches {
-  display: flex;
-  gap: 8px;
-}
-
-.swatch {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-}
-
-.swatch.active {
-  border-color: var(--text);
 }
 
 /* ═══════════════ Narrow screens: one column ═══════════════ */
@@ -3283,6 +3209,7 @@ svg {
   border: 0;
   border-radius: 18px;
   background: var(--card);
+  box-shadow: var(--card-edge);
   color: var(--text);
   font: inherit;
   text-align: left;
@@ -4412,55 +4339,6 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* Settings → Account. */
-.account {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.account-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.settings-popover > .account-row {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.account-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  line-height: 1.35;
-}
-
-.account-text strong {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.account-text span {
-  font-size: 12px;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.account-delete {
-  align-self: flex-start;
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .account-confirm {
   display: flex;
   flex-direction: column;
@@ -4816,10 +4694,40 @@ button.user-avatar.guest:hover {
 .play-panel-head {
   flex-shrink: 0;
   display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.play-panel-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
+}
+
+.setup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.setup-head h2 {
+  margin: 0;
+}
+
+/* Board settings, beside the game's (or the setup card's) heading. */
+.panel-gear svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .play-panel-head .muted {
@@ -6247,21 +6155,6 @@ button.chip:hover {
   font-size: 13px;
 }
 
-/* Settings: your usernames. */
-.username-field {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.username-field .input {
-  height: 36px;
-}
-
 /* The Games page. */
 .games-page {
   max-width: 1000px;
@@ -6640,7 +6533,7 @@ h2 {
   color: var(--brand);
 }
 
-/* Settings: your photo is the button that changes it. */
+/* Settings → Profile: your photo is the button that changes it. */
 .account-photo {
   position: relative;
   padding: 0;
@@ -6673,8 +6566,917 @@ h2 {
   stroke-linejoin: round;
 }
 
-.account-photo-links {
+
+/* ═══════════════ Settings page ═══════════════ */
+.settings-page {
+  max-width: 1080px;
+  box-sizing: border-box;
+  padding: 26px var(--pad-x) 48px 12px;
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+/* The section list: a card like the sidebar's, items like its links. */
+.settings-nav {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-top: 2px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 11px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 550;
+  transition: background 0.12s, color 0.12s;
+}
+
+.settings-nav-item:hover,
+.settings-nav-item.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.settings-nav-item svg,
+.settings-back svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-nav-chevron {
+  display: grid;
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.settings-nav-chevron svg {
+  width: 16px;
+  height: 16px;
+}
+
+.settings-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px 28px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  animation: fade-in 0.18s ease-out;
+}
+
+.settings-section-head {
+  padding-bottom: 18px;
+}
+
+.settings-section-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.settings-section-head p {
+  margin: 4px 0 0;
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+/* A setting: name and a line about it on the left, its control on the right; rows divided by hairlines. */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.settings-row.wide {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-row-label {
+  font-weight: 600;
+}
+
+.settings-row.danger .settings-row-label {
+  color: var(--danger);
+}
+
+.settings-row-control {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-row.wide .settings-row-control {
+  display: block;
+}
+
+.settings-value {
+  color: var(--text-2);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+strong.settings-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.settings-photo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-photo .user-avatar {
+  width: 56px;
+  height: 56px;
+  margin-right: 6px;
+  border-radius: 16px;
+  font-size: 22px;
+}
+
+.settings-inline-form {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.settings-loading {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings-danger {
+  margin-top: 20px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.settings-danger .settings-row {
+  border-top: 0;
+}
+
+.settings-danger .account-confirm {
+  margin-bottom: 16px;
+}
+
+.btn.ghost.danger {
+  color: var(--danger);
+}
+
+.danger-btn {
+  background: var(--danger);
+  color: #fff;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 85%, #000);
+}
+
+/* Guests: what an account gives you. */
+.settings-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px 24px;
+  border-radius: 16px;
+  background: var(--surface-3);
+}
+
+.settings-guest h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.settings-perks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-perks li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+}
+
+.settings-perks svg {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-guest-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.settings-guest-actions .btn {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 10px;
+}
+
+.signup-btn {
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.signup-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* The account menu: from your name at the sidebar's foot (up), or the phone header's avatar (down). */
+.user-card-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 -4px -3px;
+  padding: 4px 6px 4px 3px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.user-card-who:hover,
+.user-card-who.active {
+  background: var(--btn);
+}
+
+/* The rail is only as wide as the avatar: so is the button, or focusing it would scroll the rail sideways. */
+.sidebar .user-card-who {
+  max-width: 200px;
+  overflow: hidden;
+  transition: background 0.12s, max-width var(--side-t) var(--side-ease);
+}
+
+.sidebar.rail .user-card-who {
+  max-width: 44px;
+}
+
+.sidebar.rail .user-card-who:hover,
+.sidebar.rail .user-card-who.active {
+  background: transparent;
+}
+
+.account-menu {
+  position: fixed;
+  z-index: 70;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-pop);
+  animation: pop-in 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.account-menu.up {
+  transform-origin: bottom left;
+}
+
+.account-menu.down {
+  transform-origin: top right;
+}
+
+.account-menu-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 10px;
+}
+
+.account-menu-who .user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.account-menu-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.account-menu-text strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-text span {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-menu-item:hover:not(:disabled) {
+  background: var(--btn-hover);
+}
+
+.account-menu-item svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--text-2);
+}
+
+.account-menu-item.danger,
+.account-menu-item.danger svg {
+  color: var(--danger);
+}
+
+.account-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.account-menu-confirm p {
+  margin: 4px 10px 6px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* On/off rows, shared with the engine and review options. */
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.switch-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+/* Linked accounts: one tile per site, its colour from the Games page's tabs. */
+.linked-sites {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.linked-site {
+  --site: var(--tone-green);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface-3);
+}
+
+.linked-site.lichess {
+  --site: var(--tone-amber);
+}
+
+.linked-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.linked-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--site);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--site) 20%, transparent);
+}
+
+.linked-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.linked-text span {
+  color: var(--muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linked-text b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.linked-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.linked-form {
+  display: flex;
+  gap: 8px;
+}
+
+.linked-form .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Board options (Settings → Board and the analysis dialog's Board tab). */
+.board-options {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* The dialogs' preview: the board's top three ranks, as wide as the dialog. */
+.board-strip {
+  flex-shrink: 0;
+  /* Chessground draws boards in multiples of 8px: so is the strip, or a sliver shows at its edge. */
+  width: round(down, 100%, 8px);
+  align-self: center;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.board-strip .board {
+  --board-size: 100cqw;
+  margin-bottom: calc(-100cqw * 5 / 8);
+}
+
+/* A setting with its control at the right; the control drops under the name when there's no room. */
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.option-row-text {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+.option-row-control {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.option-row .segmented {
+  min-width: 220px;
+}
+
+/* The analysis settings dialog: tabs, then the open tab's options, scrolling on their own. */
+/* Settings dialogs hold a live board, which measures itself the moment it appears: they slide in
+   without the zoom, so it's measured at full size from the first frame. */
+.dialog.options-dialog:not([open]) {
+  transform: translateY(10px);
+}
+
+@starting-style {
+  .dialog.options-dialog[open] {
+    transform: translateY(10px);
+  }
+}
+
+/* One height for every tab, so switching tabs doesn't make the dialog jump. */
+.options-dialog {
+  width: min(560px, calc(100vw - 24px));
+  height: min(700px, calc(100vh - 48px));
+}
+
+.options-dialog .dialog-inner {
+  height: 100%;
+}
+
+.options-dialog .options-body {
+  flex: 1;
+}
+
+.options-dialog .tabs-bar {
+  flex-shrink: 0;
+}
+
+.options-body {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 20px 20px;
+  scrollbar-width: thin;
+}
+
+.options-heading {
+  margin: 6px 0 -4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.options-heading:first-child {
+  margin-top: 0;
+}
+
+.options-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.options-body .hint.warn {
+  margin: 0;
+}
+
+.options-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Board: options at the left, a board that shows them at the right. */
+.board-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.board-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.board-swatch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+}
+
+.board-swatch:hover {
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.board-swatch.active {
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+.board-swatch-squares {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+
+.board-preview {
+  --board-size: 300px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* Appearance: a little sketch of the app in each theme. */
+.theme-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.theme-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, box-shadow 0.12s;
+}
+
+.theme-tile:hover {
+  background: var(--surface-4);
+}
+
+.theme-tile.active {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+.theme-tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 4px;
+}
+
+.theme-tile-text span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.theme-sketch {
+  --s-bg: #09090a;
+  --s-card: #1f1f24;
+  --s-ink: #3a3a42;
+  display: flex;
+  gap: 6px;
+  aspect-ratio: 16 / 10;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--s-bg);
+}
+
+.theme-sketch.light {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --s-bg: #f1f1f3;
+  --s-card: #ffffff;
+  --s-ink: #d9d9de;
+}
+
+/* System: the dark sketch, with the light one laid over its right half. */
+.theme-sketch.system {
+  position: relative;
+  padding: 0;
+}
+
+.theme-sketch.system > .theme-sketch {
+  position: absolute;
+  inset: 0;
+}
+
+.theme-sketch.system > .theme-sketch.light {
+  clip-path: inset(0 0 0 50%);
+}
+
+.theme-sketch-side {
+  width: 22%;
+  border-radius: 5px;
+  background: var(--s-card);
+}
+
+.theme-sketch-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.theme-sketch-title {
+  width: 50%;
+  height: 8%;
+  border-radius: 3px;
+  background: var(--s-ink);
+}
+
+.theme-sketch-cards {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.theme-sketch-cards span,
+.theme-sketch-wide {
+  border-radius: 5px;
+  background: var(--s-card);
+}
+
+.theme-sketch-cards span:first-child {
+  background: color-mix(in srgb, var(--brand) 70%, var(--s-card));
+}
+
+.theme-sketch-wide {
+  flex: 1.3;
+}
+
+/* Analysis: the gear in the engine's header opens the settings dialog; the review's options sit under its card. */
+.engine-gear {
+  margin-right: -6px;
+}
+
+.engine-gear svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.panel-body > .review-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px;
+}
+
+@media (max-width: 1000px) {
+  .settings-page {
+    padding: 16px 16px calc(var(--tabbar-h) + 24px);
+  }
+
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-nav {
+    position: static;
+  }
+
+  .settings-nav-item {
+    height: 50px;
+  }
+
+  .settings-body {
+    padding: 18px 18px 22px;
+  }
+
+  .settings-back {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: -4px 0 12px -6px;
+    padding: 4px 8px 4px 2px;
+    border-radius: 8px;
+    color: var(--text-2);
+    text-decoration: none;
+    font-weight: 550;
+  }
+
+  .board-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .board-preview {
+    --board-size: min(320px, calc(100vw - 68px));
+    justify-self: center;
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-row:not(.wide) {
+    flex-wrap: wrap;
+  }
+
+  .theme-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-tile {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .theme-sketch {
+    width: 120px;
+    flex-shrink: 0;
+  }
+
+  .board-swatches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

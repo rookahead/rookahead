@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount, type Account } from '../lib/account'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
+import { AccountMenu } from './AccountMenu'
 
 interface Props {
   rail: boolean
@@ -44,6 +45,9 @@ export function AvatarFace({ account }: { account: Account | null }) {
 export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onChange }: Props) {
   const { status, account, username, needsUsername, sync } = useAccount()
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
+  // The account menu is open against this button.
+  const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
+  const closeMenu = useCallback(() => setMenuAt(null), [])
   const guest = status !== 'signed-in'
   const settings = (
     <button className={`icon-btn user-card-gear ${settingsOpen ? 'active' : ''}`} onClick={onSettings} aria-label="Settings" title="Settings">
@@ -100,6 +104,34 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
       {face}
     </span>
   )
+  // Signed in: you (avatar and name) are the button for the account menu, with Log out one click away.
+  if (status === 'signed-in' && account && !needsUsername && username) {
+    return (
+      <div className="user-card">
+        <button
+          className={`user-card-who ${menuAt ? 'active' : ''}`}
+          onClick={(e) => {
+            const at = e.currentTarget
+            setMenuAt((open) => (open ? null : at))
+          }}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(menuAt)}
+          title="Account"
+        >
+          <span className="user-avatar" aria-hidden>
+            <AvatarFace account={account} />
+          </span>
+          <span className="user-card-text">
+            <strong>{username}</strong>
+            {/* Syncing is normally invisible; only changes stuck on this device are worth a line. */}
+            {sync === 'offline' && <span className="user-card-sync offline">Offline · will sync later</span>}
+          </span>
+        </button>
+        {settings}
+        {menuAt && <AccountMenu anchor={menuAt} placement="up" onClose={closeMenu} />}
+      </div>
+    )
+  }
   return (
     <div className="user-card">
       {avatar}

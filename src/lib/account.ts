@@ -74,6 +74,8 @@ export interface Account {
   name: string
   /** The username given when registering by email, until it's claimed. */
   requestedUsername?: string
+  /** Signs in with a password (registered by email, or set one later); Google-only accounts don't. */
+  hasPassword: boolean
 }
 
 export interface AccountState {
@@ -173,13 +175,15 @@ function client(): Promise<SupabaseClient> {
 export const preloadAccounts = () => void (ACCOUNTS_ENABLED && client())
 
 function accountFrom(session: Session): Account {
-  const { id, email = '', user_metadata: meta = {} } = session.user
+  const { id, email = '', user_metadata: meta = {}, app_metadata: app = {} } = session.user
   const name: unknown = meta.full_name ?? meta.name
+  const providers: unknown = app.providers
   return {
     id,
     email,
     name: typeof name === 'string' && name.trim() ? name.trim() : email.split('@')[0],
     requestedUsername: typeof meta.username === 'string' ? meta.username : undefined,
+    hasPassword: meta.has_password === true || (Array.isArray(providers) ? providers.includes('email') : app.provider === 'email'),
   }
 }
 
@@ -253,6 +257,21 @@ export async function chooseUsername(name: string): Promise<string | null> {
   if (error) return error.message
   cacheProfile(state.account?.id, { username: name, avatarUrl: state.avatarUrl })
   setState({ username: name, needsUsername: false })
+  return null
+}
+
+/** Renames the signed-in account. Returns an error message, or null. */
+export async function changeUsername(name: string): Promise<string | null> {
+  const id = state.account?.id
+  if (!id) return 'Sign in to change your username.'
+  const c = await client()
+  const { error } = await c.from('profiles').update({ username: name }).eq('id', id)
+  if (error?.code === '23505') return `“${name}” is taken. Try another.`
+  if (error?.code === '23514') return 'That username isn’t allowed.'
+  if (error?.code === '42501') return 'Usernames can’t be changed yet. Try again soon.'
+  if (error) return error.message
+  cacheProfile(id, { username: name, avatarUrl: state.avatarUrl })
+  setState({ username: name })
   return null
 }
 
@@ -498,8 +517,12 @@ export async function resetPasswordWithCode(email: string, code: string, passwor
 /** Sets the signed-in account's password (after a reset link, or a reset code). */
 export async function setPassword(password: string): Promise<string | null> {
   const c = await client()
-  const { error } = await c.auth.updateUser({ password })
-  return error ? authMessage(error) : null
+  // The flag remembers it for a Google account, whose providers list stays just Google.
+  const { error } = await c.auth.updateUser({ password, data: { has_password: true } })
+  if (error) return authMessage(error)
+  // A Google account that just set one can now sign in with its email too.
+  if (state.account && !state.account.hasPassword) setState({ account: { ...state.account, hasPassword: true } })
+  return null
 }
 
 /** Whether this device has changes the account doesn't have yet. */

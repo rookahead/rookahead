@@ -4,6 +4,7 @@ interface Props {
   onFlip: () => void
   onNewBoard: () => void
   onLoadGame: () => void
+  onSettings: () => void
 }
 
 const ITEMS = [
@@ -28,10 +29,20 @@ const ITEMS = [
     label: 'Load game',
     icon: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
   },
+  {
+    id: 'settings',
+    label: 'Analysis settings',
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+      </>
+    ),
+  },
 ] as const
 
 /** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
-export function BoardMenu({ onFlip, onNewBoard, onLoadGame }: Props) {
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings }: Props) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -47,10 +58,10 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame }: Props) {
     }
   }, [open])
 
-  const actions = { flip: onFlip, new: onNewBoard, load: onLoadGame }
+  const actions = { flip: onFlip, new: onNewBoard, load: onLoadGame, settings: onSettings }
   return (
     <div className="board-menu" ref={root}>
-      <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game">
+      <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game, settings">
         <svg viewBox="0 0 24 24" aria-hidden>
           <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
         </svg>

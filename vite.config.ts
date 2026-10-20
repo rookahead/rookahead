@@ -11,11 +11,13 @@ const isolationHeaders = {
   'Cross-Origin-Embedder-Policy': 'require-corp',
 }
 
-// The Full network builds are ~100 MB each, over the host's per-file limit, so
-// the Lite-only web build (`npm run build:web`) leaves them out of dist/.
-const FULL_ENGINE_FILES = ['stockfish-19.js', 'stockfish-19.wasm', 'stockfish-19-single.js', 'stockfish-19-single.wasm']
+// The Full networks are ~100 MB each, over the host's per-file limit, so the web build
+// (`npm run build:web`) leaves them out of dist/: they're served from R2 instead
+// (functions/engine/[file].ts). Lite-only, the Full loaders go too.
+const FULL_ENGINE_NETS = ['stockfish-19.wasm', 'stockfish-19-single.wasm']
+const FULL_ENGINE_LOADERS = ['stockfish-19.js', 'stockfish-19-single.js']
 
-function dropFullEngine(): Plugin {
+function dropFullEngine(liteOnly: boolean): Plugin {
   let outDir = 'dist'
   return {
     name: 'drop-full-engine',
@@ -24,7 +26,7 @@ function dropFullEngine(): Plugin {
       outDir = path.resolve(config.root, config.build.outDir)
     },
     closeBundle() {
-      for (const file of FULL_ENGINE_FILES) fs.rmSync(path.join(outDir, 'engine', file), { force: true })
+      for (const file of [...FULL_ENGINE_NETS, ...(liteOnly ? FULL_ENGINE_LOADERS : [])]) fs.rmSync(path.join(outDir, 'engine', file), { force: true })
     },
   }
 }
@@ -49,7 +51,7 @@ function preloadFonts(): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), preloadFonts(), loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true' && dropFullEngine()],
+  plugins: [react(), preloadFonts(), mode === 'web' && dropFullEngine(loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true')],
   // Two pages: the app, and the engine-free viewer other sites embed (rookahead.com/embed).
   build: { rollupOptions: { input: { main: 'index.html', embed: 'embed.html' } } },
   server: { headers: isolationHeaders },

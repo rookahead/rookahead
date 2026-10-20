@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { afterSignIn, navigate, onReselect, puzzleTab, routeFor } from './router'
+import { afterSignIn, navigate, onReselect, puzzleTab, routeFor, settingsSection } from './router'
 
 describe('routeFor', () => {
   it('maps paths to pages', () => {
@@ -25,6 +25,15 @@ describe('routeFor', () => {
     expect(puzzleTab('/puzzles/sprint')).toBe('sprint')
     expect(routeFor('/puzzles/sprint')).toBe('puzzles')
     expect(puzzleTab('/puzzles/mistakes/')).toBe('mistakes')
+  })
+
+  it('reads the settings section', () => {
+    expect(routeFor('/settings')).toBe('settings')
+    expect(routeFor('/settings/board/')).toBe('settings')
+    expect(routeFor('/settings/nope')).toBe('home')
+    expect(settingsSection('/settings')).toBe(null)
+    expect(settingsSection('/settings/linked')).toBe('linked')
+    expect(settingsSection('/settings/account/')).toBe('account')
   })
 
   it('sends unknown paths home', () => {
