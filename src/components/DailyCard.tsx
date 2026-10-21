@@ -43,7 +43,11 @@ export function DailyCard({ theme }: { theme: BoardTheme }) {
         <p>
           <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
           <span className="muted">
-            {done === 'solved' ? 'Solved · next one tomorrow' : done === 'failed' ? 'Missed · next one tomorrow' : `Rated ${puzzle.rating}`}
+            {done === 'solved'
+              ? 'Solved · next one tomorrow'
+              : done === 'failed'
+                ? 'Missed · next one tomorrow'
+                : `Rated ${puzzle.rating} · ${days ? `keeps your ${days}-day streak` : 'starts a streak'}`}
           </span>
         </p>
         <button className={`btn small ${done ? 'ghost' : 'primary'}`} onClick={open}>

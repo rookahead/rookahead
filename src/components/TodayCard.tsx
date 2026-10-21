@@ -49,21 +49,3 @@ export function TodayCard({ settings }: { settings: Settings }) {
     </section>
   )
 }
-
-/** Phones: the same three things as tiles across the top of Home. */
-export function TodayTiles({ settings }: { settings: Settings }) {
-  const rows = useToday(settings)
-  return (
-    <nav className="today-tiles" aria-label="Today">
-      {rows.map((r) => (
-        <button key={r.id} className={`today-tile ${r.id} ${r.done ? 'done' : ''}`} onClick={() => navigate(r.to)}>
-          <span className="today-tile-label">
-            <span className="today-dot" aria-hidden />
-            {r.short ?? r.label}
-          </span>
-          <strong>{r.tile ?? r.value}</strong>
-        </button>
-      ))}
-    </nav>
-  )
-}

@@ -5,8 +5,8 @@ import { GameList } from '../components/GameList'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
-import { TodayTiles } from '../components/TodayCard'
 import { UsernameForm } from '../components/UsernameForm'
+import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
@@ -14,7 +14,8 @@ import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
 import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
 import { currentGame, greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
-import { finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
+import { sinceFor } from '../lib/legendary'
+import { dayLabel, finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
 import { localDayNumber } from '../lib/puzzles'
 import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
@@ -25,6 +26,8 @@ import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from './puzzles/shared'
 
 const SHOWN = 6
+/** Legendary moves in Home's row on a phone; the rest are a tap away. */
+const STRIP = 8
 
 interface Props {
   settings: Settings
@@ -185,8 +188,9 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   )
 
   if (phone) {
-    // Phones: who you are and what's waiting, your latest game, then the ways in. The full games
-    // list lives in the Review tab and the daily puzzle in Puzzles.
+    // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
+    // how you're playing, your mistakes to fix, then the daily puzzle that keeps your streak. Playing,
+    // loading a game and the analysis board are the tab bar's job.
     return (
       <div className="home-page">
         <PageHeader phoneOnly>
@@ -207,24 +211,12 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             {!firstVisit && <p>{line}</p>}
           </div>
           {guestNudge}
-          <TodayTiles settings={settings} />
-          {latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
           {firstVisit && heroOrStats}
-          <nav className="quick-grid" aria-label="More to do">
-            <QuickTile to="/play" tone="sky" title="Play the computer" sub="8 levels, any time control" d="M7 4.5l12.5 7.5L7 19.5z" />
-            <QuickTile to="/puzzles/sprint" tone="amber" title="Puzzle Sprint" sub="Race the clock" d="M13 2 4 14h7l-1 8 9-12h-7z" />
-            <QuickTile
-              to={current ? '/analysis' : '/board'}
-              tone="green"
-              title={current ? 'Continue on the board' : 'Analysis board'}
-              sub={current ? current.title : 'Any position, PGN or FEN'}
-              d="M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6"
-              fill="M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z"
-            />
-            <QuickTile onClick={loadGame} tone="violet" title="Load a game" sub="PGN, Chess.com, Lichess" d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-          </nav>
-          {!firstVisit && heroOrStats}
+          {latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
+          {!firstVisit && <LegendaryStrip games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
+          {!firstVisit && <FormCard pending={waiting} games={games} accuracy={stats.accuracy} trend={stats.trend} recent={stats.recent} />}
           {mistakes && mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />}
+          <DailyCard theme={settings.boardTheme} />
         </main>
       </div>
     )
@@ -308,28 +300,126 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   )
 }
 
-/** Phones: one of Home's four ways in, a tinted icon over its name. */
-function QuickTile({ to, onClick, tone, title, sub, d, fill }: { to?: string; onClick?: () => void; tone: string; title: string; sub: string; d: string; fill?: string }) {
-  const body = (
-    <>
-      <span className="quick-tile-icon" aria-hidden>
-        <svg viewBox="0 0 24 24">
-          <path d={d} />
-          {fill && <path className="icon-fill" d={fill} />}
-        </svg>
-      </span>
-      <strong>{title}</strong>
-      <small>{sub}</small>
-    </>
+/** Phones: your Legendary moves as a row of small boards to swipe through, or what they are when there are none yet. */
+function LegendaryStrip({ games, reviews, theme, onOpenAnalysis }: { games: MyGame[]; reviews: Record<string, CachedReview>; theme: BoardTheme; onOpenAnalysis: () => void }) {
+  const { moves, loading } = useLegendaryMoves(games, reviews)
+  if (loading && !moves.length) return null
+  if (!moves.length)
+    return (
+      <section className="home-card legendary-teaser" aria-labelledby="legendary-strip">
+        <ClassIcon cls="brilliant" size={36} />
+        <div>
+          <h2 id="legendary-strip">Find your Legendary moves</h2>
+          <p>The rare sacrifice that only works because you saw further. Review a game and any you played collect here.</p>
+        </div>
+      </section>
+    )
+  const week = moves.filter((m) => m.game.endedAt >= sinceFor('7d')).length
+  return (
+    <section className="home-card legendary-strip" aria-labelledby="legendary-strip">
+      <header className="home-card-head">
+        <h2 id="legendary-strip">
+          <ClassIcon cls="brilliant" size={20} /> Legendary moves
+        </h2>
+        <Link to="/legendary" className="link-btn see-all">
+          {week ? `${week} this week` : `${moves.length} in all`} ›
+        </Link>
+      </header>
+      <ul className="legendary-row">
+        {moves.slice(0, STRIP).map((m) => {
+          const them = m.game.color === 'white' ? m.game.black : m.game.white
+          return (
+            <li key={m.id}>
+              <button
+                className="legendary-card"
+                onClick={async () => {
+                  await openMyGame(m.game, m.review, { ply: m.ply })
+                  onOpenAnalysis()
+                }}
+              >
+                <MiniBoard fen={m.fen} orientation={m.game.color} theme={theme} lastMove={[m.from, m.to]} grade="brilliant" label={`${m.label} against ${them.name}`} />
+                <span className="legendary-meta">
+                  <strong>{m.label}</strong>
+                </span>
+                <span className="legendary-vs">
+                  vs {them.name} · {dayLabel(m.game.endedAt)}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
-  return to ? (
-    <Link to={to} className={`home-card quick-tile ${tone}`}>
-      {body}
+}
+
+/** Phones: how you're playing. Your accuracy and where it's heading, beside today's games and how they went. */
+function FormCard({ pending, games, accuracy, trend, recent }: { pending: boolean; games: MyGame[]; accuracy: number | null; trend: number | null; recent: number[] }) {
+  const today = games.filter((g) => g.endedAt > Date.now() - 86400000)
+  const count = (r: MyGame['result']) => today.filter((g) => g.result === r).length
+  return (
+    <Link to="/games" className="home-card form-card" aria-busy={pending}>
+      <div className="stat-card accuracy">
+        <span className="stat-head">Accuracy</span>
+        {pending ? (
+          <span className="stat-row">
+            <span className="stat-skeleton" aria-label="Loading" />
+          </span>
+        ) : (
+          <>
+            <span className="stat-row">
+              {accuracy != null ? <b className="stat-value">{accuracy.toFixed(1)}</b> : <b className="stat-empty">Not yet</b>}
+              {accuracy != null && <Sparkline values={recent} />}
+            </span>
+            <span className="stat-sub">
+              {accuracy == null ? (
+                'Review a game to see it'
+              ) : trend != null ? (
+                <>
+                  <span className={trend >= 0 ? 'up' : 'down'}>
+                    {trend >= 0 ? '+' : ''}
+                    {trend.toFixed(1)}
+                  </span>{' '}
+                  over your last 10
+                </>
+              ) : (
+                'Your last 10 reviewed'
+              )}
+            </span>
+          </>
+        )}
+      </div>
+      <div className="stat-card today">
+        <span className="stat-head">Today</span>
+        {pending ? (
+          <span className="stat-row">
+            <span className="stat-skeleton" aria-label="Loading" />
+          </span>
+        ) : (
+          <>
+            <span className="stat-row">
+              {today.length ? (
+                <b className="stat-value">
+                  {today.length} <small>{today.length === 1 ? 'game' : 'games'}</small>
+                </b>
+              ) : (
+                <b className="stat-empty">No games yet</b>
+              )}
+            </span>
+            <span className="stat-sub">
+              {today.length ? (
+                <>
+                  <span className="up">{count('win')} won</span> · <span className="down">{count('loss')} lost</span>
+                  {count('draw') ? ` · ${count('draw')} drawn` : ''}
+                </>
+              ) : (
+                'Play one to see it here'
+              )}
+            </span>
+          </>
+        )}
+      </div>
     </Link>
-  ) : (
-    <button className={`home-card quick-tile ${tone}`} onClick={onClick}>
-      {body}
-    </button>
   )
 }
 

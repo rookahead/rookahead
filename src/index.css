@@ -1426,6 +1426,8 @@ svg {
 }
 
 .board-badge {
+  /* How far a badge overhangs its square's right edge. */
+  --badge-x: 35%;
   position: absolute;
   width: 12.5%;
   height: 12.5%;
@@ -1439,7 +1441,7 @@ svg {
   right: 0;
   width: 40%;
   height: 40%;
-  transform: translate(35%, -35%);
+  transform: translate(var(--badge-x), -35%);
   filter: drop-shadow(0 0 0 var(--bg)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   /* Pops in as the piece lands, not while it's still sliding over. */
   animation: badge-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--slide-ms) * 0.6) backwards;
@@ -1463,7 +1465,7 @@ svg {
 
 @keyframes badge-in {
   from {
-    transform: translate(35%, -35%) scale(0.4);
+    transform: translate(var(--badge-x), -35%) scale(0.4);
     opacity: 0;
   }
 }
@@ -1475,11 +1477,11 @@ svg {
 
 @keyframes badge-legendary {
   0% {
-    transform: translate(35%, -35%) scale(0.4);
+    transform: translate(var(--badge-x), -35%) scale(0.4);
     opacity: 0;
   }
   50% {
-    transform: translate(35%, -35%) scale(1.45);
+    transform: translate(var(--badge-x), -35%) scale(1.45);
   }
 }
 
@@ -1591,6 +1593,7 @@ svg {
 
 /* How the game ended, on a king's square: a badge on the corner and a label above it. */
 .board-end {
+  --badge-x: 35%;
   position: absolute;
   width: 12.5%;
   height: 12.5%;
@@ -1637,6 +1640,15 @@ svg {
   translate: 0 6%;
 }
 
+/* A phone's board reaches the screen's edge, which would cut a badge on the right-hand file in half:
+   there it sits just inside the board instead. */
+@media (max-width: 1000px) {
+  .board-badge.edge-right,
+  .board-end.edge-right {
+    --badge-x: 0%;
+  }
+}
+
 /* On the right-hand edge, the label stays on the board. */
 .board-end-chip.pill.edge-right {
   left: auto;
@@ -1648,7 +1660,7 @@ svg {
   right: 0;
   width: 40%;
   height: 40%;
-  translate: 35% -35%;
+  translate: var(--badge-x) -35%;
   border-radius: 30%;
   background: var(--tone);
   overflow: hidden;
@@ -8522,136 +8534,143 @@ a.you-row:active {
   text-decoration: none;
 }
 
-.today-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+/* Home's Legendary moves on a phone: small boards in a row you swipe through, running off the card's edge. */
+.legendary-strip {
+  padding: 16px 0 14px;
 }
 
-.today-tile {
-  min-height: 74px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px;
-  border: 0;
-  border-radius: 16px;
-  background: var(--card);
-  box-shadow: var(--card-edge);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+.legendary-strip .home-card-head {
+  padding: 0 16px 12px;
 }
 
-.today-tile-label {
+.legendary-strip h2 {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-2);
-  font-size: 12px;
-  white-space: nowrap;
+  gap: 8px;
+  font-size: 17px;
 }
 
-.today-tile strong {
-  font-size: 15px;
-  font-weight: 650;
-  color: var(--brand);
-}
-
-.today-tile .today-dot {
-  width: 7px;
-  height: 7px;
-}
-
-.today-tile.daily .today-dot {
-  background: var(--streak);
-}
-
-.today-tile.daily strong {
-  color: var(--streak);
-}
-
-.today-tile.mistakes .today-dot {
-  background: var(--tone-rose);
-}
-
-.today-tile.mistakes strong {
-  color: var(--tone-rose);
-}
-
-.today-tile.done .today-dot {
-  background: var(--win);
-}
-
-.today-tile.done strong {
-  color: var(--win);
-}
-
-.quick-grid {
+.legendary-row {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-auto-flow: column;
+  grid-auto-columns: 136px;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+  scrollbar-width: none;
 }
 
-.quick-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 13px 14px;
-  text-decoration: none;
-  cursor: pointer;
+.legendary-row::-webkit-scrollbar {
+  display: none;
 }
 
-.quick-tile strong {
-  margin-top: 8px;
-  font-size: 15px;
-  font-weight: 650;
-  line-height: 1.25;
+.legendary-row > li {
+  scroll-snap-align: start;
+  min-width: 0;
 }
 
-.quick-tile small {
-  font-size: 12px;
+.legendary-row .legendary-card {
+  gap: 4px;
+}
+
+.legendary-row .legendary-meta {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.legendary-vs {
   color: var(--muted);
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
 }
 
-.quick-tile-icon {
-  --tone: var(--brand);
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+/* No Legendary moves yet: what they are, in the same violet. */
+.legendary-teaser {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  background: color-mix(in srgb, #8b5cf6 12%, var(--card));
+}
+
+.legendary-teaser h2 {
+  font-size: 17px;
+}
+
+.legendary-teaser p {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.legendary-teaser .class-icon {
+  flex: none;
+}
+
+/* Home's form card on a phone: accuracy and today, two halves of one card. */
+.form-card {
   display: grid;
-  place-items: center;
-  color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
+  text-decoration: none;
+  transition: background 0.12s;
 }
 
-.quick-tile.amber .quick-tile-icon {
-  --tone: var(--tone-amber);
+.form-card:hover {
+  background: var(--card-hover);
 }
 
-.quick-tile.green .quick-tile-icon {
-  --tone: var(--tone-green);
+.form-card .stat-card {
+  min-width: 0;
 }
 
-.quick-tile.violet .quick-tile-icon {
-  --tone: var(--tone-violet);
+.form-card .stat-card + .stat-card {
+  border-left: 1px solid var(--border);
 }
 
-.quick-tile-icon svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.form-card .stat-value small {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 550;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.form-card .stat-empty {
+  font-size: 17px;
+}
+
+.legendary-strip .see-all {
+  text-decoration: none;
+}
+
+/* Home's daily puzzle on a phone: a small board beside what it is, like the latest game. */
+.phone-home .daily-card {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 14px;
+  padding: 16px;
+}
+
+.phone-home .daily-head {
+  grid-column: 1 / -1;
+}
+
+.phone-home .daily-head h2 {
+  font-size: 17px;
+}
+
+.phone-home .daily-foot {
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 /* Home's latest game on a phone: a compact card, the board beside the result. */

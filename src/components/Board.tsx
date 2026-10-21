@@ -378,7 +378,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       {endList.map((m) => {
         const at = squarePosition(m.square, orientation)
         return (
-          <div key={m.square} className="board-end" style={{ left: `${at.left}%`, top: `${at.top}%` }}>
+          <div key={m.square} className={`board-end ${at.left === 87.5 ? 'edge-right' : ''}`} style={{ left: `${at.left}%`, top: `${at.top}%` }}>
             {/* Keyed by the showing, so each one starts again from the label. */}
             <EndChip key={endsAt} mark={m} topRow={at.top === 0} rightEdge={at.left === 87.5} settleAfter={slideMs + END_INTRO_MS} />
           </div>
@@ -386,7 +386,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       })}
       {badge && badgeShown?.key === badgeKey && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
-        <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
+        <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''} ${badge.left === 87.5 ? 'edge-right' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
           {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
         </div>
       )}
