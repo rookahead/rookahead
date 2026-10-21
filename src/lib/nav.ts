@@ -46,7 +46,7 @@ export interface PhoneTab {
 }
 
 export const PHONE_TABS: PhoneTab[] = [
-  { id: 'home', label: 'Home', path: '/', icon: 'M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5', routes: ['home'] },
+  { id: 'home', label: 'Home', path: '/', icon: 'M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5', routes: ['home', 'legendary'] },
   { id: 'review', label: 'Review', path: '/games', icon: 'M4 20V10M10 20V4M16 20v-8M22 20H2', routes: ['games', 'analysis', 'board'] },
   {
     id: 'puzzles',

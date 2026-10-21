@@ -149,12 +149,12 @@ describe('gameStats', () => {
     expect(stats.reviewed).toBe(14)
     expect(stats.legendary).toBe(7) // reviewed within the last 7 days: days 0–6
     expect(stats.recent).toHaveLength(10)
-    expect(stats.legendaryKey).toBe('g0') // the most recently reviewed game with one
+    expect(stats.legendaryAll).toBe(14) // in every reviewed game, for the Legendary moves page
   })
 
   it('reads the side you played and has nothing without reviews', () => {
     expect(gameStats([game('x', 'black')], { x: review(90, 60, 0) }).accuracy).toBe(60)
-    expect(gameStats([game('x', 'black')], {})).toEqual({ accuracy: null, trend: null, legendary: 0, reviewed: 0, recent: [], legendaryKey: undefined })
+    expect(gameStats([game('x', 'black')], {})).toEqual({ accuracy: null, trend: null, legendary: 0, legendaryAll: 0, reviewed: 0, recent: [] })
   })
 })
 

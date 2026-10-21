@@ -13,6 +13,7 @@ import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
 import { GamesPage } from './pages/Games'
 import { HomePage } from './pages/Home'
+import { LegendaryPage } from './pages/Legendary'
 import { PlayPage } from './pages/Play'
 import { PuzzlesPage } from './pages/Puzzles'
 import { SettingsPage } from './pages/Settings'
@@ -38,8 +39,11 @@ export default function App() {
   // A thread count synced from a bigger computer is capped at this device's cores.
   const threads = settings.threads ? Math.min(settings.threads, navigator.hardwareConcurrency || 4) : undefined
   const { engine, status } = useEngine(settings.engine, { threads })
-  const { highlightLastMove, showLegalMoves, animation, notation } = settings
-  const boardPrefs = useMemo(() => ({ highlightLastMove, showLegalMoves, animation, notation }), [highlightLastMove, showLegalMoves, animation, notation])
+  const { highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume } = settings
+  const boardPrefs = useMemo(
+    () => ({ highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume }),
+    [highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume],
+  )
   const route = useRoute()
   const phone = useMediaQuery('(max-width: 1000px)')
   const { status: accountStatus, needsUsername } = useAccount()
@@ -148,6 +152,7 @@ export default function App() {
           {appRoute === 'games' && (
             <GamesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
           )}
+          {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'puzzles' && <PuzzlesPage settings={settings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
           {appRoute === 'you' && phone && <YouPage settings={settings} updateSettings={updateSettings} />}

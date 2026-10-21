@@ -57,19 +57,14 @@ export function useMyGames(users: Usernames) {
   return { games, reviews, loading: busy, errors, reload: () => setCacheVersion((v) => v + 1) }
 }
 
-/** Puts a game in the session for Analysis: with its saved review if it has one, else reviewing it on arrival. */
-export async function openMyGame(game: MyGame, review?: CachedReview, { legendary = false } = {}): Promise<void> {
+/**
+ * Puts a game in the session for Analysis: with its saved review if it has one (opening at move `ply`,
+ * e.g. a Legendary move), else reviewing it on arrival.
+ */
+export async function openMyGame(game: MyGame, review?: CachedReview, { ply = 0 } = {}): Promise<void> {
   const shared = review ? await decodeShare(review.token) : null
   if (shared && !('error' in shared) && shared.review) {
     const classes = shared.review.classes
-    let ply = 0
-    if (legendary) {
-      // Land on your first Legendary move: move i is White's when i is even (from the usual start).
-      const whiteFirst = shared.startFen.split(' ')[1] !== 'b'
-      const mover = (i: number) => ((i % 2 === 0) === whiteFirst ? 'white' : 'black')
-      const i = classes.findIndex((c, i) => c === 'brilliant' && mover(i) === game.color)
-      if (i >= 0) ply = i + 1
-    }
     writeSession({ pgn: game.pgn, orientation: game.color, currentPly: ply, evals: fromSharedGame(shared).evals, classes })
   } else {
     writeSession({ pgn: game.pgn, orientation: game.color, currentPly: 0, evals: {}, review: true })

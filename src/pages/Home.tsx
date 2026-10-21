@@ -67,11 +67,10 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 
   const mistakes = useMistakes()
 
-  const open = async (game: MyGame, review?: CachedReview, legendary = false) => {
-    await openMyGame(game, review, { legendary })
+  const open = async (game: MyGame, review?: CachedReview) => {
+    await openMyGame(game, review)
     onOpenAnalysis()
   }
-  const legendaryGame = games.find((g) => g.key === stats.legendaryKey)
   const loadGame = () => {
     requestLoadDialog()
     onOpenAnalysis()
@@ -165,9 +164,9 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         label="Legendary moves"
         empty="None yet"
         value={stats.legendary ? String(stats.legendary) : undefined}
-        onClick={legendaryGame ? () => void open(legendaryGame, reviews[legendaryGame.key], true) : undefined}
+        onClick={stats.legendaryAll ? () => navigate('/legendary') : undefined}
       >
-        {legendaryGame ? 'This week · see it ›' : 'This week'}
+        {stats.legendaryAll ? 'This week · see all ›' : 'This week'}
       </StatCard>
       <StatCard
         pending={waiting || mistakes === null}

@@ -42,6 +42,7 @@ export function BoardOptions({ settings, onChange, preview }: Props) {
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
       <SwitchRow label="Highlight last move" checked={settings.highlightLastMove} onChange={(highlightLastMove) => onChange({ highlightLastMove })} />
       <SwitchRow label="Show legal moves" hint="Dots on the squares a piece you pick up can go to." checked={settings.showLegalMoves} onChange={(showLegalMoves) => onChange({ showLegalMoves })} />
+      <SwitchRow label="Move effects" hint="The board shakes when you step onto a Legendary move." checked={settings.moveEffects} onChange={(moveEffects) => onChange({ moveEffects })} />
 
       <OptionRow label="Piece animation">
         <Segmented

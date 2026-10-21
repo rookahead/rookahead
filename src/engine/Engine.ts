@@ -101,6 +101,16 @@ export function engineFile(strength: EngineStrength, multiThreaded: boolean) {
   return `${base}${strength === 'lite' ? '-lite' : ''}${multiThreaded ? '' : '-single'}.js`
 }
 
+/**
+ * Threads for "Auto": two thirds of the cores. Taking all but one starves the browser's own
+ * rendering, and the board drops frames while the engine runs (measured on 12 cores: 0 dropped
+ * frames at 8 threads, dozens at 11, for ~10% fewer nodes per second).
+ */
+export function autoThreads() {
+  const cores = navigator.hardwareConcurrency || 4
+  return Math.max(1, cores - Math.ceil(cores / 3))
+}
+
 export class StockfishEngine {
   ready: Promise<void>
   status: EngineStatus
@@ -126,8 +136,7 @@ export class StockfishEngine {
 
   constructor(strength: EngineStrength, opts: { hashMb?: number; threads?: number } = {}) {
     const multiThreaded = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated
-    const cores = navigator.hardwareConcurrency || 4
-    const threads = multiThreaded ? Math.max(1, Math.min(opts.threads ?? cores - 1, 32)) : 1
+    const threads = multiThreaded ? Math.max(1, Math.min(opts.threads ?? autoThreads(), 32)) : 1
     this.strength = strength
     this.hashMb = opts.hashMb ?? 128
     this.status = { state: 'loading', threads, multiThreaded, progress: 0, restarts: 0 }

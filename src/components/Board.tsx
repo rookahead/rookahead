@@ -1,4 +1,5 @@
 import { Chessground } from '@lichess-org/chessground'
+import type { AnimCurrent } from '@lichess-org/chessground/anim'
 import type { Api } from '@lichess-org/chessground/api'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
@@ -8,7 +9,10 @@ import type { Color } from '../lib/evaluation'
 import { useBoardPrefs } from '../lib/boardPrefs'
 import { ANIMATION_MS, type BoardTheme } from '../lib/settings'
 import type { MoveClass } from '../lib/classify'
+import type { EndKind, EndMark } from '../lib/gameEnd'
+import { playSound } from '../lib/sound'
 import { ClassIcon } from './ClassIcon'
+import { EndChip } from './EndIcon'
 import { PuzzleMark } from './PuzzleIcons'
 import { PieceIcon } from './PieceIcon'
 
@@ -45,6 +49,10 @@ interface Props {
   locked?: boolean
   /** A puzzle's verdict on the last move: a ✓ or ✗ badge on its square. */
   mark?: 'correct' | 'wrong'
+  /** How the game ended, marked on the kings (see endMarks). */
+  ends?: EndMark[]
+  /** Arrived by stepping forward onto a Legendary move: the board shakes as the piece lands. */
+  legendary?: boolean
 }
 
 /** Positions arriving closer together than this are someone tapping through the moves. */
@@ -59,6 +67,37 @@ type BadgeTiming = 'land' | 'quick' | 'late'
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
+/** The square colour under a king, by how its game ended. */
+const END_TINT: Record<EndKind, string> = { mate: 'end-loss', resign: 'end-loss', timeout: 'end-loss', winner: 'end-win', draw: 'end-draw' }
+
+/** The board shaking for a Legendary move: a hard jolt that settles over 0.6 s. */
+const QUAKE: Keyframe[] = [
+  { translate: '0 0', rotate: '0deg' },
+  { translate: '-8px 5px', rotate: '-0.6deg', offset: 0.08 },
+  { translate: '7px -6px', rotate: '0.5deg', offset: 0.16 },
+  { translate: '-6px -3px', rotate: '-0.4deg', offset: 0.26 },
+  { translate: '5px 4px', rotate: '0.3deg', offset: 0.38 },
+  { translate: '-3px 2px', rotate: '-0.15deg', offset: 0.52 },
+  { translate: '2px -1px', rotate: '0deg', offset: 0.68 },
+  { translate: '-1px 0', rotate: '0deg', offset: 0.84 },
+  { translate: '0 0', rotate: '0deg' },
+]
+const QUAKE_MS = 600
+
+/** A Legendary move begins in slow motion: the piece rises a little off its square before it sets off. */
+const LIFT_MS = 550
+/** Restarts a Chessground slide's clock from where it is now, at `pace` (a tiny pace all but stops it). */
+function runClock(anim: AnimCurrent, pace: number) {
+  anim.start = performance.now()
+  anim.frequency = pace
+}
+
+/** How it looks raised: a touch bigger and higher, a shadow under it and a violet glow. */
+const LIFTED = { scale: '1.12', translate: '0 -6%', filter: 'drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 10px rgba(167, 139, 250, 0.85))' }
+
+/** How long a game's end is spelled out (coloured square, label on its corner) before it settles to a badge. */
+const END_INTRO_MS = 1800
+
 const PROMOTION_PIECES = ['q', 'n', 'r', 'b'] as const
 const ROLE: Record<string, string> = { q: 'queen', n: 'knight', r: 'rook', b: 'bishop' }
 
@@ -69,12 +108,13 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, mark }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, mark, ends, legendary = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
+  const root = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color } | null>(null)
-  const { highlightLastMove, showLegalMoves, animation } = useBoardPrefs()
+  const { highlightLastMove, showLegalMoves, animation, moveEffects, soundVolume } = useBoardPrefs()
   // How long a piece takes to slide to its square. The classification badge waits for it to land.
   const slideMs = reducedMotion() ? 0 : ANIMATION_MS[animation]
 
@@ -82,8 +122,25 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     onMoveRef.current = onMove
   })
 
+  // Pages build a fresh lastMove array on every render: key it by its squares, so a re-render
+  // with the same move (e.g. an engine update) doesn't reconfigure the board mid-slide.
+  const lastMoveKey = lastMove ? lastMove.join('') : ''
+  const move = useMemo(() => (lastMoveKey ? ([lastMoveKey.slice(0, 2), lastMoveKey.slice(2, 4)] as [Square, Square]) : undefined), [lastMoveKey])
+  // Likewise the arrows, which pages rebuild on every engine update, and the end-of-game marks.
+  const shapesKey = JSON.stringify(shapes)
+  const endsKey = JSON.stringify(ends ?? [])
+  const endList = useMemo(() => JSON.parse(endsKey) as EndMark[], [endsKey])
+  // A game's end is spelled out each time its final position comes up, then settles to the badges.
+  const endsAt = `${fen}|${endsKey}`
+  const [endIntro, setEndIntro] = useState({ at: endsAt, done: false })
+  if (endIntro.at !== endsAt) setEndIntro({ at: endsAt, done: false })
+  const introducing = endList.length > 0 && !endIntro.done
+  // The first position, for building the board: it starts there rather than sliding in from the opening position.
+  const initial = useRef({ fen, orientation, coordinates })
+
   const position = useMemo(() => {
-    const chess = new Chess(fen)
+    // Pages pass legal positions; skipping the check also allows a bare board (no kings) while loading.
+    const chess = new Chess(fen, { skipValidation: true })
     const dests = new Map<Key, Key[]>()
     for (const sq of SQUARES) {
       const moves = chess.moves({ square: sq, verbose: true })
@@ -96,6 +153,9 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   useLayoutEffect(() => {
     if (!el.current) return
     api.current = Chessground(el.current, {
+      fen: initial.current.fen,
+      orientation: initial.current.orientation,
+      coordinates: initial.current.coordinates,
       // Animation, highlights and move dots follow the settings: the update below sets them, before the first paint.
       movable: { free: false },
       premovable: { enabled: false },
@@ -114,17 +174,46 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
         },
       },
     })
-    // Skip redraws while the board is collapsed (e.g. mid-layout): Chessground would compute NaN coordinates.
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry.contentRect.width > 0) api.current?.redrawAll()
-    })
-    observer.observe(el.current)
+    // Chessground watches its own size and repositions the pieces in place.
     return () => {
-      observer.disconnect()
       api.current?.destroy()
       api.current = null
     }
   }, [])
+
+  // A king's end-of-game badge takes the corner over the move's badge, should they share a square.
+  const endOnLanding = Boolean(lastMove && endList.some((m) => m.square === lastMove[1]))
+  const badge = (annotation || mark) && lastMove && !endOnLanding ? squarePosition(lastMove[1], orientation) : null
+  const badgeKey = badge ? `${lastMove!.join('')}-${annotation ?? mark}` : ''
+  const celebrate = legendary && moveEffects && annotation === 'brilliant'
+  // Each badge's timing is worked out when it first appears, from when the position before came in.
+  // The badge itself waits for that (a re-render before the frame is painted), so it never starts with the wrong one.
+  const shownAt = useRef({ fen, at: -Infinity })
+  const [badgeShown, setBadgeShown] = useState<{ key: string; timing: BadgeTiming } | null>(null)
+  // The position a Legendary move is shaking the board for.
+  const [quake, setQuake] = useState<string | null>(null)
+  // The lift, then the usual slide.
+  const landing = LIFT_MS + slideMs
+  const quaking = quake === fen && !reducedMotion()
+  // The position whose Legendary move has landed: until then its squares keep the plain last-move colour,
+  // so the violet doesn't give it away.
+  const [landed, setLanded] = useState<string | null>(null)
+  const holdVerdict = quaking && landed !== fen
+  useLayoutEffect(() => {
+    const now = performance.now()
+    const last = shownAt.current
+    const moved = last.fen !== fen
+    if (moved) shownAt.current = { fen, at: now }
+    const timing: BadgeTiming = !moved ? 'late' : now - last.at < QUICK_STEP_MS ? 'quick' : 'land'
+    // Only a move played out at normal speed shakes the board: not a quick tap through, not a late verdict.
+    if (moved) {
+      const legendaryArrival = Boolean(badgeKey && celebrate && timing === 'land')
+      setQuake(legendaryArrival ? fen : null)
+      setLanded(null)
+    }
+    if (!badgeKey) return
+    setBadgeShown((b) => (b?.key === badgeKey ? b : { key: badgeKey, timing }))
+  }, [fen, badgeKey, celebrate])
 
   // Before paint (as is the mount above), so a new board's first frame already shows its position.
   useLayoutEffect(() => {
@@ -134,13 +223,16 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       orientation,
       turnColor: position.turn,
       check: position.check,
-      lastMove,
+      lastMove: move,
       coordinates,
       animation: { enabled: slideMs > 0, duration: slideMs },
       highlight: {
         lastMove: highlightLastMove,
         check: true,
-        custom: annotation && lastMove ? new Map(lastMove.map((sq) => [sq as Key, `cls-${annotation}`])) : new Map(),
+        custom: new Map<Key, string>([
+          ...(annotation && move && !holdVerdict ? move.map((sq) => [sq as Key, `cls-${annotation}`] as const) : []),
+          ...(introducing ? endList.map((m) => [m.square as Key, END_TINT[m.kind]] as const) : []),
+        ]),
       },
       movable: {
         showDests: showLegalMoves,
@@ -160,11 +252,20 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       },
     })
     setPromotion(null)
-  }, [fen, viewOnly, locked, orientation, position, lastMove, coordinates, annotation, highlightLastMove, showLegalMoves, slideMs])
+  }, [fen, viewOnly, locked, orientation, position, move, coordinates, annotation, highlightLastMove, showLegalMoves, slideMs, endList, introducing, holdVerdict])
+
+  // Chessground draws the file and rank labels only when it builds the board: rebuild it when they're
+  // switched on or off (the update above has just told it which).
+  const drawnCoordinates = useRef(coordinates)
+  useLayoutEffect(() => {
+    if (drawnCoordinates.current === coordinates) return
+    drawnCoordinates.current = coordinates
+    api.current?.redrawAll()
+  }, [coordinates])
 
   useEffect(() => {
-    api.current?.setAutoShapes(shapes)
-  }, [shapes])
+    api.current?.setAutoShapes(JSON.parse(shapesKey))
+  }, [shapesKey])
 
   const colors = BOARD_THEMES[theme]
   const style = {
@@ -172,7 +273,10 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     '--sq-light': colors.light,
     '--sq-dark': colors.dark,
     '--last-move': colors.lastMove ?? 'rgba(255, 255, 51, 0.42)',
-    '--slide-ms': `${slideMs}ms`,
+    // The badge and end marks wait for the piece to land, which a Legendary move takes its time over.
+    '--slide-ms': `${quaking && slideMs > 0 ? landing : slideMs}ms`,
+    '--slow-ms': `${landing}ms`,
+    '--end-intro': `${END_INTRO_MS}ms`,
   } as CSSProperties
 
   // The picker drops down from the promotion square, toward the centre of the board.
@@ -180,28 +284,109 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   const column = orientation === 'white' ? pickerFile : 7 - pickerFile
   const fromTop = promotion ? (promotion.to[1] === '8') === (orientation === 'white') : true
 
-  const badge = (annotation || mark) && lastMove ? squarePosition(lastMove[1], orientation) : null
-  const badgeKey = badge ? `${lastMove!.join('')}-${annotation ?? mark}` : ''
-  // Each badge's timing is worked out when it first appears, from when the position before came in.
-  // The badge itself waits for that (a re-render before the frame is painted), so it never starts with the wrong one.
-  const shownAt = useRef({ fen, at: -Infinity })
-  const [badgeShown, setBadgeShown] = useState<{ key: string; timing: BadgeTiming } | null>(null)
+
+  useEffect(() => {
+    if (!endList.length) return
+    const t = setTimeout(() => setEndIntro((e) => (e.at === endsAt ? { ...e, done: true } : e)), slideMs + END_INTRO_MS)
+    return () => clearTimeout(t)
+  }, [endsAt, endList.length, slideMs])
+
+  // The lift. Chessground's clock for the slide (the board update above started it) is stopped while the
+  // piece rises, then restarted to run at its usual pace. Before paint, so the piece never sets off early.
   useLayoutEffect(() => {
-    const now = performance.now()
-    const last = shownAt.current
-    const moved = last.fen !== fen
-    if (moved) shownAt.current = { fen, at: now }
-    if (!badgeKey) return
-    const timing: BadgeTiming = !moved ? 'late' : now - last.at < QUICK_STEP_MS ? 'quick' : 'land'
-    setBadgeShown((b) => (b?.key === badgeKey ? b : { key: badgeKey, timing }))
-  }, [fen, badgeKey])
+    const anim = api.current?.state.animation.current
+    if (!quake || !anim || slideMs === 0 || reducedMotion()) return
+    const pace = anim.frequency
+    runClock(anim, 1e-9)
+    const go = setTimeout(() => runClock(anim, pace), LIFT_MS)
+    const piece = el.current?.querySelector<HTMLElement>('cg-board piece.anim')
+    // The browser scales a piece after Chessground has moved it into place (the scale property composes
+    // with its transform), so the scale's anchor has to follow the piece: its centre, every frame.
+    let frame = 0
+    const anchor = () => {
+      const m = piece?.style.transform.match(/translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)/)
+      if (piece && m) piece.style.transformOrigin = `calc(${m[1]}px + 50%) calc(${m[2]}px + 50%)`
+      frame = requestAnimationFrame(anchor)
+    }
+    anchor()
+    const rise = piece?.animate(
+      [
+        { scale: '1', translate: '0 0', filter: 'none', easing: 'cubic-bezier(0.25, 0.6, 0.3, 1)' },
+        { ...LIFTED, offset: LIFT_MS / landing },
+        { ...LIFTED, offset: Math.max(LIFT_MS, landing - 60) / landing },
+        { scale: '1', translate: '0 0', filter: 'none' },
+      ],
+      { duration: landing },
+    )
+    if (rise)
+      rise.onfinish = () => {
+        cancelAnimationFrame(frame)
+        if (piece) piece.style.transformOrigin = ''
+      }
+    return () => {
+      clearTimeout(go)
+      cancelAnimationFrame(frame)
+      rise?.cancel()
+      if (piece) piece.style.transformOrigin = ''
+    }
+  }, [quake, slideMs, landing])
+
+  // A Legendary move starts in slow motion, before the badge has said why: the board dims and the sound
+  // swells as the piece lifts and travels, then the landing hits and shakes the board.
+  useEffect(() => {
+    if (!quake) return
+    if (reducedMotion() || slideMs === 0) {
+      playSound('legendary', soundVolume)
+      return
+    }
+    playSound('swell', soundVolume, landing)
+    const impact = setTimeout(() => {
+      playSound('legendary', soundVolume)
+      setLanded(quake)
+    }, landing)
+    const motion = root.current?.animate(QUAKE, { duration: QUAKE_MS, delay: landing, easing: 'cubic-bezier(0.3, 0.6, 0.4, 1)' })
+    return () => {
+      clearTimeout(impact)
+      motion?.cancel()
+    }
+  }, [quake, soundVolume, slideMs, landing])
 
   return (
-    <div className="board" style={style}>
+    <div ref={root} className={`board ${quaking ? 'legendary' : ''}`} style={style}>
       <div ref={el} className="board-cg" />
+      {quake && quaking && lastMove && (
+        // The board dims slowly as the piece lifts; on impact the square flashes, a bubble rolls out and the dark lifts.
+        <div
+          key={quake}
+          className="board-quake"
+          style={
+            {
+              '--x': `${squarePosition(lastMove[1], orientation).left + 6.25}%`,
+              '--y': `${squarePosition(lastMove[1], orientation).top + 6.25}%`,
+              '--fx': `${squarePosition(lastMove[0], orientation).left + 6.25}%`,
+              '--fy': `${squarePosition(lastMove[0], orientation).top + 6.25}%`,
+              '--lift': `${LIFT_MS}ms`,
+            } as CSSProperties
+          }
+          aria-hidden
+        >
+          <span className="quake-dim" />
+          <span className="quake-flash" />
+          <span className="quake-bubble" />
+        </div>
+      )}
+      {endList.map((m) => {
+        const at = squarePosition(m.square, orientation)
+        return (
+          <div key={m.square} className="board-end" style={{ left: `${at.left}%`, top: `${at.top}%` }}>
+            {/* Keyed by the showing, so each one starts again from the label. */}
+            <EndChip key={endsAt} mark={m} topRow={at.top === 0} rightEdge={at.left === 87.5} settleAfter={slideMs + END_INTRO_MS} />
+          </div>
+        )
+      })}
       {badge && badgeShown?.key === badgeKey && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
-        <div key={badgeKey} className={`board-badge ${badgeShown.timing}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
+        <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
           {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
         </div>
       )}

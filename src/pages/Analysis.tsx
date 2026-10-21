@@ -28,7 +28,8 @@ import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
 import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
 import { useMediaQuery } from '../hooks/useMediaQuery'
-import { useMoveSounds } from '../hooks/useMoveSounds'
+import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
+import { endMarks } from '../lib/gameEnd'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
@@ -498,6 +499,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const result = headers.Result && headers.Result !== '*' ? headers.Result : undefined
   const gameOver = Boolean(terminal) || Boolean(result && !node.children.length && isMainline(tree, node.id))
   useMoveSounds(tree, node, settings.soundVolume, gameOver)
+  const steppedForward = useSteppedForward(tree, node)
+  // Checkmate and stalemate show wherever they happen; resignations, time and draws only on the game's last move.
+  const atGameEnd = Boolean(result && !node.children.length && isMainline(tree, node.id))
+  const ends = useMemo(() => endMarks(node.fen, atGameEnd ? { result, termination: headers.Termination } : {}), [node.fen, atGameEnd, result, headers.Termination])
   const resultFor = (c: Color) => (result && node.children.length === 0 && isMainline(tree, node.id) ? (c === 'white' ? result.split('-')[0] : result.split('-')[1]) : undefined)
   const player = (c: Color) => (
     <PlayerBar
@@ -755,6 +760,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               coordinates={settings.coordinates}
               onMove={playMove}
               annotation={settings.classOnBoard ? currentReview?.cls : undefined}
+              ends={ends}
+              legendary={steppedForward}
             />
           </div>
           {player(orientation)}

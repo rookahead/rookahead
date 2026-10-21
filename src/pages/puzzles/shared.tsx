@@ -56,14 +56,18 @@ export function PuzzleLayout({ board, tabs, below, children }: { board: ReactNod
   )
 }
 
-export function EmptyBoard({ settings }: { settings: Settings }) {
-  return <Board fen={DEFAULT_POSITION} orientation="white" shapes={[]} theme={settings.boardTheme} coordinates={settings.coordinates} onMove={() => {}} locked />
+/** No pieces, for a board waiting on a puzzle: its position then appears on a bare board instead of replacing the starting one. */
+const NO_PIECES = '8/8/8/8/8/8/8/8 w - - 0 1'
+
+/** A locked board in the starting position, or `bare` (no pieces) while a puzzle loads. */
+export function EmptyBoard({ settings, bare = false }: { settings: Settings; bare?: boolean }) {
+  return <Board fen={bare ? NO_PIECES : DEFAULT_POSITION} orientation="white" shapes={[]} theme={settings.boardTheme} coordinates={settings.coordinates} onMove={() => {}} locked />
 }
 
 /** While a puzzle loads, or when it can't: an empty, locked board and a message. */
 export function Placeholder({ tabs, settings, error, onRetry }: { tabs: ReactNode; settings: Settings; error?: boolean; onRetry?: () => void }) {
   return (
-    <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} />}>
+    <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} bare />}>
       <div className="panel-body puzzle-body">
         {error ? (
           <div className="puzzle-message">

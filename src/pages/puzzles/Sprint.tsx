@@ -230,7 +230,7 @@ function SprintRun({ mode, settings, tabs, onEnd }: { mode: SprintMode; settings
 
   if (!puzzle) {
     return (
-      <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} />}>
+      <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} bare />}>
         {head}
         <div className="panel-body puzzle-body">
           <p className="puzzle-message muted">Getting the first puzzle…</p>

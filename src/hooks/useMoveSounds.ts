@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { moveSoundKind, playSound, stepSound, type Step } from '../lib/sound'
 import type { GameTree, MoveNode } from '../lib/tree'
 
@@ -21,4 +21,16 @@ export function useMoveSounds(tree: GameTree, node: MoveNode, volume: number, ga
     playSound(moveSoundKind(sound.san), volume)
     if (sound.forward && gameOver) setTimeout(() => playSound('end', volume), 160)
   }, [tree, node, volume, gameOver])
+}
+
+/** Whether the board came to `node` by one step forward along the moves: not a jump, not a step back. */
+export function useSteppedForward(tree: GameTree, node: MoveNode): boolean {
+  const step: Step = { ...node, parentFen: node.parentId ? tree.nodes[node.parentId]?.fen : undefined }
+  const [last, setLast] = useState({ step, forward: false })
+  if (last.step.id !== step.id || last.step.fen !== step.fen) {
+    const forward = Boolean(stepSound(last.step, step)?.forward)
+    setLast({ step, forward })
+    return forward
+  }
+  return last.forward
 }

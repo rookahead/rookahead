@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { FULL_ENGINE_AVAILABLE, type EngineStatus } from '../engine/Engine'
+import { autoThreads, FULL_ENGINE_AVAILABLE, type EngineStatus } from '../engine/Engine'
 import type { Settings } from '../lib/settings'
 import { BoardOptions } from './BoardOptions'
 import { OptionRow, Segmented, SwitchRow } from './controls'
@@ -53,7 +53,7 @@ function EngineStatusRow({ status, strength }: { status: EngineStatus | null; st
 function threadOptions(): [number, string][] {
   const cores = navigator.hardwareConcurrency || 4
   const counts = [1, 2, 4, 8, 16, 32].filter((n) => n < cores)
-  return [[0, `Auto · ${Math.max(1, cores - 1)}`], ...counts.map((n) => [n, String(n)] as [number, string]), [cores, String(cores)]]
+  return [[0, `Auto · ${autoThreads()}`], ...counts.map((n) => [n, String(n)] as [number, string]), [cores, String(cores)]]
 }
 
 function EngineTab({ settings, status, onChange }: Omit<Props, 'onClose' | 'initialTab'>) {

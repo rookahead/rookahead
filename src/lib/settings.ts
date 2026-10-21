@@ -44,10 +44,12 @@ export interface Settings {
   lichessUser: string
   /** Move sounds, 0 (off) to 1. */
   soundVolume: number
-  /** Engine threads; 0 picks for you (all cores but one). */
+  /** Engine threads; 0 picks for you (two thirds of the cores, see autoThreads). */
   threads: number
   /** A reviewed move's classification badge on its square. */
   classOnBoard: boolean
+  /** The board shakes for a Legendary move. */
+  moveEffects: boolean
   /** Moves written with piece figurines (♞f3) or letters (Nf3). */
   notation: 'figurine' | 'letter'
   highlightLastMove: boolean
@@ -72,6 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.7,
   threads: 0,
   classOnBoard: true,
+  moveEffects: true,
   notation: 'figurine',
   highlightLastMove: true,
   showLegalMoves: true,

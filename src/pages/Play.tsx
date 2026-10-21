@@ -17,6 +17,7 @@ import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds } from '../hooks/useMoveSounds'
+import { endMarks } from '../lib/gameEnd'
 import { bookMove, candidates, decide, isComplete, pickLapse, soundMove } from '../lib/botMove'
 import { CLOCK_GROUPS, clockLabel, flagged, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
 import { winPercent, type Color } from '../lib/evaluation'
@@ -496,6 +497,8 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     />
   )
   const lastMove = shown.from && shown.to ? ([shown.from, shown.to] as [typeof shown.from, typeof shown.to]) : undefined
+  // How the game ended, on the kings, once it's over and the final position is on the board.
+  const ends = game.outcome && viewPly === null ? endMarks(shown.fen, { result: game.outcome.result, termination: game.outcome.reason }) : undefined
   const canTakeBack = !game.outcome && takebackPlies(game.moves.length, game.color, turnOf(game.startFen)) > 0
   // Until both sides have moved, the game can be called off instead: not saved, not counted.
   const canAbort = !game.outcome && game.moves.length < 2
@@ -547,6 +550,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           coordinates={settings.coordinates}
           onMove={onMove}
           locked={!yourTurn || viewPly !== null}
+          ends={ends}
         />
         {bar(orientation)}
       </section>
