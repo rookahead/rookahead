@@ -36,11 +36,15 @@ just because it gives material away.
     left the b5 bishop, 12…Rxb5 took it, and that's a sacrifice of a bishop for a pawn.
   - Otherwise it's a sacrifice when the move gives up material worth at least two pawns (pawns 1,
     knight and bishop 3, rook 5, queen 9) and doesn't win it straight back. Either the opponent's best
-    line takes it and your next move doesn't take back as much (you're still a pawn or more behind: 9.Rxf5
+    line takes it at once and your next move doesn't take back as much (you're still a pawn or more behind: 9.Rxf5
     exf5 10.Nxf7 gives a rook for a bishop and a pawn), or the move leaves it hanging (free to
     take, or takeable by something cheaper) and the opponent does best not to take it. Winning it back a
     few moves later through a tactic still counts. So does ignoring a piece the opponent has just
     attacked and playing something else.
+  - Taken at once means the opponent's line goes straight for it, capturing from its first move. If they
+    play a quiet move first, the move didn't offer anything: they had to set up the attack, and you chose
+    not to answer it. 23.g4 (Rudra_Yagami vs MelonLord-009) isn't a sacrifice of the g5 knight, which
+    Black could only win with 23…Be7 and 24…Bxg5.
   - Also not a sacrifice: giving back material the engine already counted as lost (a pinned or trapped
     piece: the evaluation is two pawns or more below the material count; less than that is just
     compensation, as in 12.dxe5, a bishop given for a pawn while a pawn up at 0.00); a check that leaves

@@ -412,6 +412,20 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('brilliant')
   })
 
+  it('does not count material the opponent only wins after a quiet move of their own as a sacrifice', () => {
+    // Rudra_Yagami vs MelonLord-009, 23.g4: Black needs 23…Be7 before 24…Bxg5 wins the knight, so g4 offered nothing.
+    const chess = new Chess()
+    'e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nxc6 bxc6 e5 Qe7 Qe2 Nd5 c4 Nb6 Nc3 Ba6 b3 O-O-O Bb2 Qg5 Ne4 Qg6 O-O-O Bb4 f4 Rhe8 Qf3 f5 Ng5 h6 Nh3 Qf7 Bd3 g5 fxg5 hxg5 Nxg5 Qg6 h4 Rf8 Qe2 Bc5'
+      .split(' ')
+      .forEach((san) => chess.move(san))
+    const before = chess.fen()
+    chess.move('g4')
+    const pv = ['c5e7', 'c1b1', 'e7g5', 'g4f5', 'f8f5', 'h1g1']
+    expect(isSacrifice(before, chess.fen(), pv, 'white', 5.53)).toBe(false)
+    const { line, evals } = game(['g2g4'], [{ score: cp(553), bestMove: 'g2g4', second: cp(526) }, { score: cp(559), pv }], before)
+    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('best')
+  })
+
   it('counts a piece won back only after a quiet move as a sacrifice', () => {
     // 18…Nxe4!: 19.dxe4 d3 leaves Black a knight down for a move before 20.Bf4 Bxc4 wins it back.
     const before = '1r1qrbk1/1p3pp1/p1n1bn1p/2p5/2NpP3/PP1P1N1P/3BBPP1/R2Q1RK1 b - - 3 18'

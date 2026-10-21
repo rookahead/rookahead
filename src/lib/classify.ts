@@ -58,6 +58,12 @@ export const LOSS_BANDS = { excellent: 0.02, good: 0.05, inaccuracy: 0.1, mistak
 /** "Equal or better" for Great and Legendary: a draw, or a slightly worse position that holds (about -0.5). */
 const HOLDS = 45
 
+/**
+ * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
+ * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
+ */
+export const RULES_VERSION = 2
+
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
 
@@ -190,7 +196,7 @@ export function isSacrifice(beforeFen: string, afterFen: string, pv: string[], c
 
 /**
  * Walks the engine's expected continuation a few plies: the opponent takes the mover's
- * material, leaving the mover down at least two pawns' worth compared with before the move,
+ * material at once (capturing from their first move), leaving the mover down at least two pawns' worth compared with before the move,
  * and the mover's next move doesn't win it straight back. Winning it back later through a
  * tactic still counts, as in 18…Nxe4 19.dxe4 d3, which only regains the piece two moves on.
  * A piece that was left hanging again (`hungAlready`) counts as lost already.
@@ -219,6 +225,9 @@ function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], co
       baseline -= VALUES[move.captured] // it was left hanging again: taking it now isn't a sacrifice
       continue
     }
+    // The opponent has to go straight for it: a quiet move first means they had to set up the attack,
+    // so whatever they win later, this move didn't offer it (23.g4 Be7 24.Kb1 Bxg5).
+    if (!ours && !move.captured && !pieceTaken) return null
     if (!ours && move.captured) taken.push(move.captured)
     // Our next move doesn't take back as much (still a pawn or more behind): a sacrifice. All of it: a trade.
     if (ours && pieceTaken) return balance() <= baseline - 1 ? kind() : null

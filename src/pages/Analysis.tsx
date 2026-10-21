@@ -31,7 +31,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
 import { openingFromEcoUrl } from '../lib/chesscom'
-import { classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
+import { classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
@@ -306,6 +306,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         accuracy: report.accuracy,
         brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
         at: Date.now(),
+        rules: RULES_VERSION,
       }),
     )
   }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])

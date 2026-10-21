@@ -15,6 +15,8 @@ export interface CachedReview {
   brilliant: Record<Color, number>
   /** When it was saved (ms). */
   at: number
+  /** The RULES_VERSION that graded it; missing on reviews saved before the rules had versions. */
+  rules?: number
 }
 
 const KEY = STORE_KEYS.reviews

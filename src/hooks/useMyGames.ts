@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { RULES_VERSION } from '../lib/classify'
 import { cachedFor, importGames, isFresh, loadImportCache, myGames, type ImportSite, type MyGame, type Usernames } from '../lib/myGames'
 import { loadReviews, type CachedReview } from '../lib/reviewCache'
 import { writeSession } from '../lib/session'
@@ -59,10 +60,10 @@ export function useMyGames(users: Usernames) {
 
 /**
  * Puts a game in the session for Analysis: with its saved review if it has one (opening at move `ply`,
- * e.g. a Legendary move), else reviewing it on arrival.
+ * e.g. a Legendary move), else reviewing it on arrival. So is a review graded under older rules.
  */
 export async function openMyGame(game: MyGame, review?: CachedReview, { ply = 0 } = {}): Promise<void> {
-  const shared = review ? await decodeShare(review.token) : null
+  const shared = review && review.rules === RULES_VERSION ? await decodeShare(review.token) : null
   if (shared && !('error' in shared) && shared.review) {
     const classes = shared.review.classes
     writeSession({ pgn: game.pgn, orientation: game.color, currentPly: ply, evals: fromSharedGame(shared).evals, classes })
