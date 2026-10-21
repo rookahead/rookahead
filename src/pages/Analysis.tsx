@@ -36,6 +36,7 @@ import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
+import { reviewLines } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
 import { useImmersive } from '../lib/immersive'
@@ -307,6 +308,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
         at: Date.now(),
         rules: RULES_VERSION,
+        lines: reviewLines(line, review.evals),
       }),
     )
   }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])

@@ -573,6 +573,38 @@ svg {
   container: page / inline-size;
 }
 
+/* Offline: a slim strip across the top of the page, gone again when the connection's back. */
+.offline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 16px;
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+  animation: offline-in 0.25s ease-out;
+}
+
+.offline-bar svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@keyframes offline-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
 .brand-logo {
   flex-shrink: 0;
   width: 30px;
@@ -6177,30 +6209,245 @@ button.stat-card:hover {
   font-size: 12.5px;
 }
 
-/* A number on its way: a soft pulsing bar where it goes, then the number rises in. */
-.stat-skeleton,
-.stat-skeleton-line {
+/* ═══════════════ Placeholders while content is on its way (Skeleton.tsx) ═══════════════
+   Shaped like what's coming, in a faint tint of the text colour (so they suit every theme), with a soft
+   highlight sweeping across each. The highlight is its own layer moved by transform, so it runs on the
+   compositor at the screen's full refresh rate (moving the background repainted every frame and
+   stuttered on 120 Hz phones). They fade in after a moment, so a quick load never flashes them. */
+.skel {
+  --skel-ink: var(--text);
+  position: relative;
   display: block;
-  border-radius: 8px;
-  background: var(--btn);
-  animation: stat-pulse 1.4s ease-in-out infinite;
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--skel-ink) 8%, transparent);
+  animation: skel-in 0.3s ease-out 0.15s backwards;
 }
 
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--skel-ink) 8%, transparent) 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: skel-shine 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform;
+}
+
+/* On the coloured cards, a tint of their own text. */
+.accent-card .skel {
+  --skel-ink: var(--brand-card-text);
+}
+
+@keyframes skel-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes skel-shine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* The page's shape before the app is up (index.html): a sidebar and cards, or on a phone a header,
+   cards and the tab bar. */
+.boot {
+  display: flex;
+  gap: 24px;
+  min-height: 100vh;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.boot-side {
+  flex: 0 0 248px;
+  height: calc(100vh - 24px);
+  box-sizing: border-box;
+  padding: 20px 18px;
+  border-radius: 22px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.boot-main {
+  flex: 1;
+  max-width: 1100px;
+  padding: 36px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.boot-head,
+.boot-tabs {
+  display: none;
+}
+
+.boot-card {
+  height: 180px;
+  margin-top: 10px;
+  border-radius: 18px;
+}
+
+.boot-card.tall {
+  height: 260px;
+}
+
+@media (max-width: 1000px) {
+  .boot {
+    padding: 0 16px;
+  }
+
+  .boot-side {
+    display: none;
+  }
+
+  .boot-main {
+    padding: 0;
+  }
+
+  .boot-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--nav-h);
+    margin-bottom: 12px;
+  }
+
+  .boot-tabs {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--tabbar-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* A board: a square with a faint checkerboard. */
+.skel-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.skel-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--skel-ink) 5%, transparent) 0 25%, transparent 0 50%) 0 0 / 25% 25%;
+}
+
+.skel-gap {
+  margin-top: 8px;
+}
+
+.skel-pill {
+  border-radius: 999px;
+}
+
+.skel-button {
+  border-radius: 12px;
+}
+
+/* A placeholder card isn't something to press. */
+.skel-group {
+  pointer-events: none;
+}
+
+.skel-group .latest-text,
+.skel-group .game-card-text {
+  flex: 1;
+  gap: 8px;
+}
+
+.skel-day {
+  margin: 0 12px 10px;
+}
+
+.skel-group .daily-foot p {
+  gap: 8px;
+}
+
+.skel-group .game-card-accuracy {
+  align-self: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* When what was loading arrives (useSettled), each placeholder morphs into the card that takes its place,
+   sharing its name, and the cards around slide to where they now sit, while the contents crossfade. */
+.latest-card {
+  view-transition-name: latest-card;
+}
+
+.legendary-strip,
+.legendary-teaser {
+  view-transition-name: legendary-strip;
+}
+
+.mistakes-card {
+  view-transition-name: mistakes-card;
+}
+
+.form-card {
+  view-transition-name: form-card;
+}
+
+.daily-card {
+  view-transition-name: daily-card;
+}
+
+.home-main > .games-card {
+  view-transition-name: home-games;
+}
+
+.latest-card,
+.legendary-strip,
+.legendary-teaser,
+.mistakes-card,
+.form-card,
+.daily-card,
+.home-main > .games-card {
+  view-transition-class: card;
+}
+
+::view-transition-group(*) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* A card changing height clips its contents to its own rounded edge on the way. */
+::view-transition-group(.card) {
+  overflow: clip;
+  border-radius: 18px;
+}
+
+/* A number on its way: a placeholder where it goes, then the number rises in. */
 .stat-skeleton {
   width: 58%;
   height: 30px;
+  border-radius: 8px;
 }
 
 .stat-skeleton-line {
   width: 78%;
   height: 12px;
   margin-top: 2px;
-}
-
-@keyframes stat-pulse {
-  50% {
-    opacity: 0.45;
-  }
 }
 
 .stat-row.arrive,
@@ -6220,8 +6467,6 @@ button.stat-card:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stat-skeleton,
-  .stat-skeleton-line,
   .stat-row.arrive,
   .stat-sub.arrive {
     animation: none;
@@ -8349,6 +8594,7 @@ strong.settings-value {
 .you-guest .you-guest-actions .btn {
   flex: 1;
   height: 48px;
+  margin: 0;
   padding: 0 12px;
 }
 
@@ -8536,11 +8782,11 @@ a.you-row:active {
 
 /* Home's Legendary moves on a phone: small boards in a row you swipe through, running off the card's edge. */
 .legendary-strip {
-  padding: 16px 0 14px;
+  padding: 16px 0 10px;
 }
 
 .legendary-strip .home-card-head {
-  padding: 0 16px 12px;
+  padding: 0 16px 8px;
 }
 
 .legendary-strip h2 {
@@ -8550,13 +8796,15 @@ a.you-row:active {
   font-size: 17px;
 }
 
+/* Three boards fit inside the card's margins exactly; more are a swipe away. The room above and below
+   keeps a lifted board's ring from being cut off by the scrolling row. */
 .legendary-row {
   list-style: none;
   margin: 0;
-  padding: 0 16px;
+  padding: 4px 16px;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 136px;
+  grid-auto-columns: calc((100% - 2 * 12px) / 3);
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -8619,28 +8867,26 @@ a.you-row:active {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 0;
-  text-decoration: none;
-  transition: background 0.12s;
-}
-
-.form-card:hover {
-  background: var(--card-hover);
+  overflow: hidden;
 }
 
 .form-card .stat-card {
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.form-card .stat-card:hover {
+  background: var(--card-hover);
+}
+
+.form-card .stat-card.mistakes .stat-value {
+  color: var(--tone);
 }
 
 .form-card .stat-card + .stat-card {
   border-left: 1px solid var(--border);
-}
-
-.form-card .stat-value small {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 550;
-  letter-spacing: 0;
-  color: var(--text-2);
 }
 
 .form-card .stat-empty {
@@ -9317,12 +9563,25 @@ a.you-row:active {
   opacity: 0.8;
 }
 
+/* About half a square, centred on the square's top-right corner like Chess.com's: it covers the corner,
+   not the piece, and sits above the pieces. */
 .mini-board .mini-badge {
+  --badge-x: -50%;
+  --badge-y: -50%;
   position: absolute;
+  z-index: 2;
   width: 6%;
   aspect-ratio: 1;
-  translate: -65% -35%;
+  translate: var(--badge-x) var(--badge-y);
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.mini-board .mini-badge.edge-right {
+  --badge-x: -100%;
+}
+
+.mini-board .mini-badge.edge-top {
+  --badge-y: 0%;
 }
 
 .mini-badge .class-icon {
@@ -9386,10 +9645,18 @@ a.you-row:active {
   transition: translate 0.15s ease, box-shadow 0.15s ease;
 }
 
-.legendary-card:hover .mini-board,
+/* Lifted with a ring under a mouse, or for the keyboard. Not on touch, where a tapped card stays
+   "hovered" after you've moved on. */
 .legendary-card:focus-visible .mini-board {
   translate: 0 -2px;
   box-shadow: 0 0 0 2px #8b5cf6, 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+@media (hover: hover) {
+  .legendary-card:hover .mini-board {
+    translate: 0 -2px;
+    box-shadow: 0 0 0 2px #8b5cf6, 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
 }
 
 .legendary-player {

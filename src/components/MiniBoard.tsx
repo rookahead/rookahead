@@ -63,7 +63,12 @@ export function MiniBoard({ fen, orientation, theme, lastMove, grade, label = 'P
               stroke={CLASS_INFO[grade!].color}
             />
           </svg>
-          <span className="mini-badge" style={{ left: `${(to.x + 0.5) * 12.5}%`, top: `${(to.y - 0.5) * 12.5}%` }} aria-hidden>
+          {/* On the right-hand file or the top rank it tucks inside: the board's rounded clip would cut it. */}
+          <span
+            className={`mini-badge ${to.x > 7 ? 'edge-right' : ''} ${to.y < 1 ? 'edge-top' : ''}`}
+            style={{ left: `${(to.x + 0.5) * 12.5}%`, top: `${(to.y - 0.5) * 12.5}%` }}
+            aria-hidden
+          >
             <ClassIcon cls={grade!} size={18} />
           </span>
         </>

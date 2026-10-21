@@ -3,6 +3,7 @@
 import type { Color } from './evaluation'
 import { isChesscomUrl } from './chesscom'
 import { isLichessUrl } from './lichess'
+import type { ReviewLines } from './regrade'
 import { markChanged, STORE_KEYS } from './syncBus'
 import type { MoveNode, PgnHeaders } from './tree'
 
@@ -17,6 +18,8 @@ export interface CachedReview {
   at: number
   /** The RULES_VERSION that graded it; missing on reviews saved before the rules had versions. */
   rules?: number
+  /** What a new set of rules needs to grade it again without the engine (regrade.ts); missing on older reviews. */
+  lines?: ReviewLines
 }
 
 const KEY = STORE_KEYS.reviews
@@ -46,8 +49,13 @@ export function loadReviews(storage = defaultStorage()): Record<string, CachedRe
 }
 
 export function saveReview(key: string, entry: CachedReview, storage = defaultStorage()): void {
+  saveReviews({ [key]: entry }, storage)
+}
+
+/** Saves several reviews at once (one change for the sync to pick up). */
+export function saveReviews(entries: Record<string, CachedReview>, storage = defaultStorage()): void {
   try {
-    const all = { ...loadReviews(storage), [key]: entry }
+    const all = { ...loadReviews(storage), ...entries }
     const keys = Object.keys(all).sort((a, b) => all[b].at - all[a].at)
     const kept = Object.fromEntries(keys.slice(0, REVIEWS_LIMIT).map((k) => [k, all[k]]))
     storage?.setItem(KEY, JSON.stringify(kept))

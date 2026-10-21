@@ -5,10 +5,13 @@ import { TodayCard } from './components/TodayCard'
 import { UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
+import { useOnline } from './hooks/useOnline'
 import { openAccountPage, startAccounts, useAccount } from './lib/account'
 import { BoardPrefsContext } from './lib/boardPrefs'
+import { regradeStale } from './lib/regrade'
 import { navigate, useRoute, type Route } from './lib/router'
 import { useSettings } from './lib/settings'
+import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
 import { GamesPage } from './pages/Games'
@@ -89,6 +92,7 @@ export default function App() {
   // The app page on screen: none once the account page has fully arrived.
   const appRoute = auth ? under : route
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
+  const online = useOnline()
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance === 'dim' ? 'dark' : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
   useLayoutEffect(() => {
@@ -103,6 +107,10 @@ export default function App() {
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 
   useEffect(() => void startAccounts(), [])
+
+  // Saved reviews follow the verdict rules: any graded under older ones (here, or synced in) are graded again.
+  const reviewsVersion = useStoreVersion('reviews')
+  useEffect(() => void regradeStale(), [reviewsVersion])
 
   // Signed in without a username (a new Google account lands on the page it was headed for): choose one first.
   useEffect(() => {
@@ -148,6 +156,14 @@ export default function App() {
             today={<TodayCard key={appRoute} settings={settings} />}
           />}
         <div className="shell-page">
+          {!online && (
+            <p className="offline-bar" role="status">
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01M3 3l18 18" />
+              </svg>
+              You’re offline. Saved games still work.
+            </p>
+          )}
           {appRoute === 'home' && <HomePage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'games' && (
             <GamesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />

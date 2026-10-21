@@ -3,8 +3,10 @@ import { ClassIcon } from '../components/ClassIcon'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
+import { LegendaryGridSkeleton } from '../components/Skeleton'
 import { useLegendaryMoves, type LegendaryEntry } from '../hooks/useLegendaryMoves'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
+import { useSettled } from '../hooks/useSettled'
 import { KIND_LABEL, sinceFor, type LegendaryKind, type Period } from '../lib/legendary'
 import { dayLabel } from '../lib/myGames'
 import type { Settings } from '../lib/settings'
@@ -47,7 +49,7 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
     onOpenAnalysis()
   }
 
-  const busy = (loading || gamesLoading) && !moves.length
+  const busy = useSettled((loading || gamesLoading) && !moves.length)
   return (
     <div className="home-page">
       <PageHeader back="/" phoneTitle="Legendary moves" />
@@ -90,7 +92,7 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
           </div>
         )}
 
-        {busy && <p className="games-loading">Finding your Legendary moves…</p>}
+        {busy && <LegendaryGridSkeleton />}
         {!busy && moves.length === 0 && (
           <section className="home-card legendary-empty">
             <h2>No Legendary moves yet</h2>
@@ -100,7 +102,17 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
             </Link>
           </section>
         )}
-        {!busy && moves.length > 0 && shown.length === 0 && <p className="games-loading">None in this range.</p>}
+        {!busy && moves.length > 0 && shown.length === 0 && (
+          <div className="home-card games-empty">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M8 3v3M16 3v3M4 9h16M5 5h14v15H5z" />
+            </svg>
+            <p>
+              <strong>None in this range</strong>
+              <span>Try a longer stretch of time, or All time.</span>
+            </p>
+          </div>
+        )}
 
         <ul className="legendary-grid">
           {shown.map((m) => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSettled } from '../hooks/useSettled'
 import { formatDay } from '../lib/home'
 import { dailyLine } from '../lib/puzzleData'
 import { dayNumber, localDayNumber, parsePuzzleLine, playerColor, positionAfter, type Puzzle } from '../lib/puzzles'
@@ -8,14 +9,16 @@ import type { BoardTheme } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from '../pages/puzzles/shared'
 import { MiniBoard } from './MiniBoard'
+import { DailyCardSkeleton } from './Skeleton'
 
 /** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). */
 export function DailyCard({ theme }: { theme: BoardTheme }) {
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
+  // Undefined while it loads; null if it couldn't (offline, say), and the card stays away.
+  const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(undefined)
   useEffect(() => {
     dailyLine().then(
       (l) => setPuzzle(parsePuzzleLine(l)),
-      () => {},
+      () => setPuzzle(null),
     )
   }, [])
   const version = useStoreVersion('puzzles')
@@ -24,6 +27,8 @@ export function DailyCard({ theme }: { theme: BoardTheme }) {
     const now = new Date()
     return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)) }
   }, [version])
+  const loading = useSettled(puzzle === undefined)
+  if (loading) return <DailyCardSkeleton />
   if (!puzzle) return null
   const color = playerColor(puzzle)
   const first = puzzle.moves[0]

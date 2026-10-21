@@ -5,9 +5,11 @@ import { GameList } from '../components/GameList'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
+import { GameListSkeleton, LatestCardSkeleton, LegendaryRowSkeleton, Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
 import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useSettled } from '../hooks/useSettled'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
@@ -56,8 +58,10 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   // rather than showing the empty welcome for a moment.
   const restoring = !games.length && (account.status === 'loading' || (account.status === 'signed-in' && account.sync === 'syncing'))
   const loading = importing || restoring
-  // The numbers wait for your games, so they don't show "Not yet" and then change a moment later.
-  const waiting = loading && !games.length
+  // The numbers wait for your games, so they don't show "Not yet" and then change a moment later. When
+  // they come, the placeholders turn into them (useSettled).
+  const arriving = loading && !games.length
+  const waiting = useSettled(arriving)
   // Only the Rookahead username: the Google name would show first and then swap on every reload.
   const name = account.status === 'guest' ? null : account.username
   const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
@@ -80,7 +84,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   }
 
   const hasUsers = !!(users.chesscom || users.lichess)
-  const firstVisit = games.length === 0 && !loading
+  const firstVisit = games.length === 0 && !loading && !waiting
   const importError = Object.values(errors).find(Boolean)
   const latest = games[0]
   const streak = dayStreak(progress, today)
@@ -189,8 +193,8 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 
   if (phone) {
     // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
-    // how you're playing, your mistakes to fix, then the daily puzzle that keeps your streak. Playing,
-    // loading a game and the analysis board are the tab bar's job.
+    // your accuracy beside your mistakes to fix, the mistakes themselves, then the daily puzzle that keeps
+    // your streak. Playing, loading a game and the analysis board are the tab bar's job.
     return (
       <div className="home-page">
         <PageHeader phoneOnly>
@@ -208,13 +212,17 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             ) : (
               <h1>{firstVisit ? 'Welcome to Rookahead' : greeting(hour)}</h1>
             )}
-            {!firstVisit && <p>{line}</p>}
+            {waiting ? <Skel w="72%" h="15px" className="skel-gap" /> : !firstVisit && <p>{line}</p>}
           </div>
           {guestNudge}
           {firstVisit && heroOrStats}
-          {latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
-          {!firstVisit && <LegendaryStrip games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
-          {!firstVisit && <FormCard pending={waiting} games={games} accuracy={stats.accuracy} trend={stats.trend} recent={stats.recent} />}
+          {waiting ? (
+            <LatestCardSkeleton />
+          ) : (
+            latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
+          )}
+          {!firstVisit && <LegendaryStrip pending={arriving} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
+          {!firstVisit && <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={stats.recent} mistakes={mistakes ? mistakes.length : null} />}
           {mistakes && mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />}
           <DailyCard theme={settings.boardTheme} />
         </main>
@@ -229,7 +237,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         <div className="home-main">
           <div className="home-welcome">
             <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
-            {!firstVisit && <span>{line}</span>}
+            {waiting ? <Skel w="320px" h="14px" className="skel-gap" /> : !firstVisit && <span>{line}</span>}
           </div>
 
           {guestNudge}
@@ -246,10 +254,12 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
               )}
             </header>
             {importError && hasUsers && !firstVisit && <p className="games-error">{importError}</p>}
-            {games.length ? (
+            {waiting ? (
+              <GameListSkeleton rows={SHOWN} />
+            ) : games.length ? (
               <GameList games={games.slice(0, SHOWN)} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} />
             ) : loading ? (
-              <p className="games-loading">Loading your games…</p>
+              <GameListSkeleton rows={SHOWN} />
             ) : (
               <div className="games-empty">
                 <svg viewBox="0 0 24 24" aria-hidden>
@@ -267,7 +277,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         </div>
 
         <aside className="home-side" aria-label="Start">
-          {latest && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
+          {waiting ? <LatestCardSkeleton /> : latest && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
           <button className="home-card quick-card" onClick={() => navigate('/play')}>
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M6 4l14 8-14 8z" />
@@ -301,9 +311,23 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 }
 
 /** Phones: your Legendary moves as a row of small boards to swipe through, or what they are when there are none yet. */
-function LegendaryStrip({ games, reviews, theme, onOpenAnalysis }: { games: MyGame[]; reviews: Record<string, CachedReview>; theme: BoardTheme; onOpenAnalysis: () => void }) {
+function LegendaryStrip({
+  pending,
+  games,
+  reviews,
+  theme,
+  onOpenAnalysis,
+}: {
+  /** Your games are still on their way (not waiting for Home's placeholders to settle, so both settle together). */
+  pending: boolean
+  games: MyGame[]
+  reviews: Record<string, CachedReview>
+  theme: BoardTheme
+  onOpenAnalysis: () => void
+}) {
   const { moves, loading } = useLegendaryMoves(games, reviews)
-  if (loading && !moves.length) return null
+  const busy = useSettled((pending || loading) && !moves.length)
+  if (busy) return <LegendaryRowSkeleton />
   if (!moves.length)
     return (
       <section className="home-card legendary-teaser" aria-labelledby="legendary-strip">
@@ -353,17 +377,15 @@ function LegendaryStrip({ games, reviews, theme, onOpenAnalysis }: { games: MyGa
   )
 }
 
-/** Phones: how you're playing. Your accuracy and where it's heading, beside today's games and how they went. */
-function FormCard({ pending, games, accuracy, trend, recent }: { pending: boolean; games: MyGame[]; accuracy: number | null; trend: number | null; recent: number[] }) {
-  const today = games.filter((g) => g.endedAt > Date.now() - 86400000)
-  const count = (r: MyGame['result']) => today.filter((g) => g.result === r).length
+/** Phones: how you're playing. Your accuracy and where it's heading, beside the mistakes waiting to be fixed. */
+function FormCard({ pending, accuracy, trend, recent, mistakes }: { pending: boolean; accuracy: number | null; trend: number | null; recent: number[]; mistakes: number | null }) {
   return (
-    <Link to="/games" className="home-card form-card" aria-busy={pending}>
-      <div className="stat-card accuracy">
+    <section className="home-card form-card" aria-label="Your form" aria-busy={pending || mistakes === null}>
+      <Link to="/games" className="stat-card accuracy">
         <span className="stat-head">Accuracy</span>
         {pending ? (
           <span className="stat-row">
-            <span className="stat-skeleton" aria-label="Loading" />
+            <span className="skel stat-skeleton" aria-label="Loading" />
           </span>
         ) : (
           <>
@@ -388,38 +410,21 @@ function FormCard({ pending, games, accuracy, trend, recent }: { pending: boolea
             </span>
           </>
         )}
-      </div>
-      <div className="stat-card today">
-        <span className="stat-head">Today</span>
-        {pending ? (
+      </Link>
+      <Link to="/puzzles/mistakes" className="stat-card mistakes">
+        <span className="stat-head">Mistakes to fix</span>
+        {pending || mistakes === null ? (
           <span className="stat-row">
-            <span className="stat-skeleton" aria-label="Loading" />
+            <span className="skel stat-skeleton" aria-label="Loading" />
           </span>
         ) : (
           <>
-            <span className="stat-row">
-              {today.length ? (
-                <b className="stat-value">
-                  {today.length} <small>{today.length === 1 ? 'game' : 'games'}</small>
-                </b>
-              ) : (
-                <b className="stat-empty">No games yet</b>
-              )}
-            </span>
-            <span className="stat-sub">
-              {today.length ? (
-                <>
-                  <span className="up">{count('win')} won</span> · <span className="down">{count('loss')} lost</span>
-                  {count('draw') ? ` · ${count('draw')} drawn` : ''}
-                </>
-              ) : (
-                'Play one to see it here'
-              )}
-            </span>
+            <span className="stat-row">{mistakes ? <b className="stat-value">{mistakes}</b> : <b className="stat-empty">All clear</b>}</span>
+            <span className="stat-sub">{mistakes ? 'Practise them ›' : 'From your games'}</span>
           </>
         )}
-      </div>
-    </Link>
+      </Link>
+    </section>
   )
 }
 
@@ -463,9 +468,9 @@ function StatCard({ pending = false, tone, label, value, empty, spark, onClick, 
       {pending ? (
         <>
           <span className="stat-row">
-            <span className="stat-skeleton" aria-label="Loading" />
+            <span className="skel stat-skeleton" aria-label="Loading" />
           </span>
-          <span className="stat-sub stat-skeleton-line" aria-hidden />
+          <span className="skel stat-sub stat-skeleton-line" aria-hidden />
         </>
       ) : (
         <>

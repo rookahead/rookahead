@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { RULES_VERSION } from '../lib/classify'
 import { cachedFor, importGames, isFresh, loadImportCache, myGames, type ImportSite, type MyGame, type Usernames } from '../lib/myGames'
-import { loadReviews, type CachedReview } from '../lib/reviewCache'
+import { loadOpeningBook } from '../lib/openings'
+import { isStale, regrade } from '../lib/regrade'
+import { loadReviews, saveReview, type CachedReview } from '../lib/reviewCache'
 import { writeSession } from '../lib/session'
 import { decodeShare, fromSharedGame } from '../lib/share'
 import { useStoreVersion } from '../lib/syncBus'
@@ -60,10 +61,16 @@ export function useMyGames(users: Usernames) {
 
 /**
  * Puts a game in the session for Analysis: with its saved review if it has one (opening at move `ply`,
- * e.g. a Legendary move), else reviewing it on arrival. So is a review graded under older rules.
+ * e.g. a Legendary move), else reviewing it on arrival. A review graded under older rules is graded
+ * again first, from what it saved; one too old for that is reviewed again on arrival.
  */
 export async function openMyGame(game: MyGame, review?: CachedReview, { ply = 0 } = {}): Promise<void> {
-  const shared = review && review.rules === RULES_VERSION ? await decodeShare(review.token) : null
+  if (review && isStale(review)) {
+    const regraded = await regrade(review, (await loadOpeningBook()).isBook)
+    if (regraded) saveReview(game.key, regraded.review)
+    review = regraded?.review
+  }
+  const shared = review ? await decodeShare(review.token) : null
   if (shared && !('error' in shared) && shared.review) {
     const classes = shared.review.classes
     writeSession({ pgn: game.pgn, orientation: game.color, currentPly: ply, evals: fromSharedGame(shared).evals, classes })

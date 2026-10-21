@@ -27,7 +27,40 @@
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Your theme before the first paint (App.tsx keeps it up to date after), so the page doesn't flash dark. -->
+    <script>
+      try {
+        var s = JSON.parse(localStorage.getItem('rookahead.settings.v2') || '{}')
+        var a = s.appearance || 'dark'
+        var r = document.documentElement
+        r.dataset.theme = a === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : a === 'dim' ? 'dark' : a
+        if (s.palette) r.dataset.palette = s.palette
+        if (a === 'dim') r.setAttribute('data-dim', '')
+      } catch (e) {}
+    </script>
+    <!-- Until the app is up: the page's shape in placeholders (index.css, .boot). React replaces it. -->
+    <div id="root">
+      <div class="boot" aria-busy="true" aria-label="Loading Rookahead">
+        <div class="boot-side">
+          <img src="/favicon.svg" alt="" width="30" height="30" />
+          <span class="skel" style="width: 70%; height: 14px"></span>
+          <span class="skel" style="width: 55%; height: 14px"></span>
+          <span class="skel" style="width: 62%; height: 14px"></span>
+          <span class="skel" style="width: 48%; height: 14px"></span>
+        </div>
+        <div class="boot-main">
+          <div class="boot-head">
+            <img src="/favicon.svg" alt="" width="30" height="30" />
+            <span class="skel" style="width: 110px; height: 18px"></span>
+          </div>
+          <span class="skel" style="width: 46%; height: 28px"></span>
+          <span class="skel" style="width: 64%; height: 14px"></span>
+          <span class="skel boot-card tall"></span>
+          <span class="skel boot-card"></span>
+        </div>
+        <div class="boot-tabs"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

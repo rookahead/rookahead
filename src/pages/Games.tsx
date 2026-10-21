@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import { GameList } from '../components/GameList'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
+import { GameListSkeleton, Skel } from '../components/Skeleton'
 import { Tabs } from '../components/Tabs'
 import { UsernameForm } from '../components/UsernameForm'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
+import { useSettled } from '../hooks/useSettled'
 import { dayLabel, gameStats, SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import type { CachedReview } from '../lib/reviewCache'
 import { requestLoadDialog } from '../lib/session'
@@ -47,6 +49,8 @@ function Chips<T extends string>({ label, value, options, onChange }: { label: s
 export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSettings }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading, errors } = useMyGames(users)
+  // Placeholder rows until the games come, then they turn into them (useSettled).
+  const busy = useSettled(loading && !games.length)
   const [source, setSource] = useState<SourceFilter>('all')
   const [result, setResult] = useState<ResultFilter>('all')
   const [shown, setShown] = useState(PAGE)
@@ -137,7 +141,7 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
 
         {importError && <p className="games-error">{importError}</p>}
 
-        {games.length === 0 && !loading ? (
+        {games.length === 0 && !loading && !busy ? (
           <section className="home-card accent-card hero-card" aria-labelledby="games-hero">
             <h2 id="games-hero">Bring in your games</h2>
             <p>Add your Chess.com or Lichess username and your recent games show up here, ready to review.</p>
@@ -145,52 +149,73 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
           </section>
         ) : (
           <>
-            <Tabs
-              label="Where from"
-              value={source}
-              onSelect={(v) => {
-                setSource(v)
-                setShown(PAGE)
-              }}
-              items={[
-                { id: 'all', label: 'All games', count: games.length },
-                { id: 'chesscom', label: 'Chess.com', count: bySource('chesscom'), tone: 'green' },
-                { id: 'lichess', label: 'Lichess', count: bySource('lichess'), tone: 'amber' },
-                { id: 'rookahead', label: 'Rookahead', count: bySource('rookahead'), tone: 'violet' },
-              ]}
-            />
-            <div className="games-filters">
-              <Chips
-                label="Result"
-                value={result}
-                options={[
-                  ['all', 'All results', fromSource.length],
-                  ['win', 'Wins', byResult('win')],
-                  ['loss', 'Losses', byResult('loss')],
-                  ['draw', 'Draws', byResult('draw')],
-                ]}
-                onChange={(v) => {
-                  setResult(v)
-                  setShown(PAGE)
-                }}
-              />
-              {!phone && (
-                <button className="btn ghost games-load" onClick={loadGame}>
-                  {LOAD_ICON}
-                  Load a game
-                </button>
-              )}
-            </div>
+            {/* Before the games arrive, placeholder rows stand alone: no tabs or filters counting zeros. */}
+            {!busy && games.length > 0 && (
+              <>
+                <Tabs
+                  label="Where from"
+                  value={source}
+                  onSelect={(v) => {
+                    setSource(v)
+                    setShown(PAGE)
+                  }}
+                  items={[
+                    { id: 'all', label: 'All games', count: games.length },
+                    { id: 'chesscom', label: 'Chess.com', count: bySource('chesscom'), tone: 'green' },
+                    { id: 'lichess', label: 'Lichess', count: bySource('lichess'), tone: 'amber' },
+                    { id: 'rookahead', label: 'Rookahead', count: bySource('rookahead'), tone: 'violet' },
+                  ]}
+                />
+                <div className="games-filters">
+                  <Chips
+                    label="Result"
+                    value={result}
+                    options={[
+                      ['all', 'All results', fromSource.length],
+                      ['win', 'Wins', byResult('win')],
+                      ['loss', 'Losses', byResult('loss')],
+                      ['draw', 'Draws', byResult('draw')],
+                    ]}
+                    onChange={(v) => {
+                      setResult(v)
+                      setShown(PAGE)
+                    }}
+                  />
+                  {!phone && (
+                    <button className="btn ghost games-load" onClick={loadGame}>
+                      {LOAD_ICON}
+                      Load a game
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
-            {loading && !games.length && <p className="games-loading">Loading your games…</p>}
-            {games.length > 0 && filtered.length === 0 && <p className="games-loading">No games match these filters.</p>}
-
-            {days.map((day) => (
-              <section key={day.label} className="home-card games-card games-day" aria-label={day.label}>
-                <h2 className="games-day-label">{day.label}</h2>
-                <GameList games={day.games} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} showDate={false} />
+            {busy && (
+              <section className="home-card games-card games-day">
+                <Skel w="96px" h="13px" className="skel-day" />
+                <GameListSkeleton rows={5} />
               </section>
-            ))}
+            )}
+            {!busy && games.length > 0 && filtered.length === 0 && (
+              <div className="home-card games-empty">
+                <svg viewBox="0 0 24 24" aria-hidden>
+                  <path d="M4 5h16l-6 7.5V19l-4-2v-4.5z" />
+                </svg>
+                <p>
+                  <strong>No games match these filters</strong>
+                  <span>Try another result, or All games.</span>
+                </p>
+              </div>
+            )}
+
+            {!busy &&
+              days.map((day) => (
+                <section key={day.label} className="home-card games-card games-day" aria-label={day.label}>
+                  <h2 className="games-day-label">{day.label}</h2>
+                  <GameList games={day.games} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} showDate={false} />
+                </section>
+              ))}
 
             {filtered.length > shown && (
               <button className="btn ghost games-older" onClick={() => setShown((n) => n + PAGE)}>

@@ -5,6 +5,7 @@ import '@fontsource/dm-mono/500.css'
 import '@lichess-org/chessground/assets/chessground.base.css'
 import '@lichess-org/chessground/assets/chessground.cburnett.css'
 import { StrictMode } from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './index.css'
@@ -27,8 +28,14 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}))
 }
 
-createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')!
+const root = createRoot(container)
+const app = (
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 )
+// The placeholder page from index.html fades into the app rather than cutting to it.
+const fade = container.querySelector('.boot') && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches
+if (fade) document.startViewTransition(() => flushSync(() => root.render(app)))
+else root.render(app)

@@ -9,7 +9,7 @@ import { useStoreVersion } from '../lib/syncBus'
 
 /** What's left to do today: the daily puzzle, mistakes waiting, games played. */
 function useToday(settings: Settings) {
-  const { games } = useMyGames({ chesscom: settings.chesscomUser, lichess: settings.lichessUser })
+  const { games, loading } = useMyGames({ chesscom: settings.chesscomUser, lichess: settings.lichessUser })
   const mistakes = useMistakes()
   const puzzlesVersion = useStoreVersion('puzzles')
   const daily = useMemo(() => {
@@ -29,7 +29,7 @@ function useToday(settings: Settings) {
       done: mistakes?.length === 0,
       to: '/puzzles/mistakes',
     },
-    { id: 'games', label: 'Games today', value: today ? String(today) : 'None yet', tile: today ? `${today} played` : undefined, done: false, to: '/games' },
+    { id: 'games', label: 'Games today', value: today ? String(today) : loading ? '–' : 'None yet', tile: today ? `${today} played` : undefined, done: false, to: '/games' },
   ]
 }
 
