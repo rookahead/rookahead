@@ -9,6 +9,19 @@ let queue: (() => void)[] = []
 let scheduled = false
 let running: Promise<unknown> | null = null
 
+/**
+ * A view transition that gives way to scrolling. While one runs, its named cards are drawn against the
+ * window, not the page, so a scroll would slide the rest of the page under them: scrolling ends it at
+ * once instead. Listening starts once the animation does, so the update's own layout shift can't end it.
+ */
+export function startViewTransition(update: () => void): ViewTransition {
+  const transition = document.startViewTransition(update)
+  const skip = () => transition.skipTransition()
+  transition.ready.then(() => addEventListener('scroll', skip, { once: true, passive: true }), () => {})
+  transition.finished.finally(() => removeEventListener('scroll', skip))
+  return transition
+}
+
 function settleSmoothly(update: () => void) {
   queue.push(update)
   if (scheduled) return
@@ -18,7 +31,7 @@ function settleSmoothly(update: () => void) {
     scheduled = false
     const updates = queue
     queue = []
-    const transition = document.startViewTransition(() => flushSync(() => updates.forEach((u) => u())))
+    const transition = startViewTransition(() => flushSync(() => updates.forEach((u) => u())))
     running = transition.finished.finally(() => (running = null))
   }, BATCH_MS)
 }

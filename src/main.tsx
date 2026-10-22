@@ -8,6 +8,7 @@ import { StrictMode } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { startViewTransition } from './hooks/useSettled'
 import './index.css'
 
 // The app used to be called Outpost: carry its saved settings and game over to the new keys.
@@ -37,5 +38,5 @@ const app = (
 )
 // The placeholder page from index.html fades into the app rather than cutting to it.
 const fade = container.querySelector('.boot') && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches
-if (fade) document.startViewTransition(() => flushSync(() => root.render(app)))
+if (fade) startViewTransition(() => flushSync(() => root.render(app)))
 else root.render(app)
