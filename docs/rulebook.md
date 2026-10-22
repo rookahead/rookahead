@@ -4,9 +4,9 @@ This is how Rookahead grades a move. These are our rules, not a copy of any othe
 site disagrees, this page decides. The code in `src/lib/classify.ts` follows it, and any change to how
 moves are graded starts here.
 
-**The principle:** a verdict says what the move did to your chances, with credit for finding a move that
-was hard to find. Captures and checks aren't marked down for being natural, and a sacrifice isn't "hard"
-just because it gives material away.
+**The principle:** a verdict says what the move did to your chances, with credit for finding the only
+move and for a sound sacrifice. Captures and checks aren't marked down for being natural: an only move
+counts however obvious it is.
 
 ## Words used below
 
@@ -14,14 +14,6 @@ just because it gives material away.
   about +1 is 59%, +3 is 75%, a forced mate is 100%. Lichess's open curve, the same one as the eval bar.
 - **Loss**: how much winning chance a move gives up compared with the engine's best move in that position.
   A move the engine rates as good as its own (or better) loses nothing.
-- **Hard to find**: judged the way a person plays, not an engine. A move is easy to find when it's one
-  of the moves everyone looks at first: mate in 1; promoting; a capture that doesn't lose the capturing
-  piece (taking something worth as much, or something the opponent can't win back); moving an attacked
-  piece away to a square where it's safe. Every other move is hard to find: quiet moves (13.d4 opening a
-  bishop onto the queen, 25…Bc5 pinning a rook to the king), every sacrifice (14.Qxh3, where a bishop can
-  take the queen), and choosing a way out of check: in check, only taking the checking piece safely is
-  automatic (5.Bd2, blocking 4…Qb4+ with the bishop it attacked, is a choice among several ways out). An engine sees capture sequences at a glance, so how deep
-  it has to search says little about how hard a move is for a person.
 - **Only good move**: the second-best move gives up at least 10% winning chance, and doesn't still leave
   you clearly winning (85% or more).
 - **Only fast mate**: the move starts a forced mate in 2 or more, and the next-best move doesn't mate or
@@ -84,40 +76,38 @@ Then three verdicts can replace the one from the scale.
 First of all, Legendary is always a sacrifice. A move that only trades evenly, however strong, is never
 Legendary. Replaces Best, Strong or Solid. Either of two ways:
 
-**A sound, hard sacrifice.** All of:
+**A sound sacrifice.** All of:
 1. The loss is under 3.5% (from a level game, about 0.4 of a pawn), or it's the engine's own move, which
    always passes: any gap there is the engine's evaluations wobbling (19…Bxh3 read −4.53 before and −3.74
    after). It doesn't have to be the engine's move, or any move the engine considered: a sacrifice the
    engine missed counts, as long as it doesn't make your position worse than that.
-2. It's hard to find.
-3. It's a sacrifice. Giving up the exchange (a rook for a knight or bishop) also has to be the only good move.
-4. Afterwards you're level or better (45%, about −0.5, counts as level).
-5. Before it you weren't already completely winning (under 97%): giving away material in a game that's
+2. It's a sacrifice. Giving up the exchange (a rook for a knight or bishop) also has to be the only good move.
+3. Afterwards you're level or better (45%, about −0.5, counts as level).
+4. Before it you weren't already completely winning (under 97%): giving away material in a game that's
    already won isn't a feat. Except when the sacrifice can't be taken: the opponent's best line declines
    it, because taking loses. 21…Qf2 at −23.89 offers the queen, and 22.Rxf2 runs into a back-rank mate.
 
-**A mating sacrifice.** All of: it's the engine's top move and the fastest mate, it's hard to find, and
-it's a sacrifice. (Rule 5 doesn't apply: you were winning, but only through this move.) Example:
+**A mating sacrifice.** All of: it's the engine's top move and the fastest mate, and it's a sacrifice.
+(Rule 4 doesn't apply: you were winning, but only through this move.) Example:
 29.Rc4+ dxc4 30.Qd8#, giving up a rook to mate in 2 where anything else takes 4 or more.
 
 ### Clutch
-Replaces Best, when the move isn't Legendary. Either of two ways:
+The only move. Replaces Best, when the move isn't Legendary. It doesn't have to be hard to find: a free
+capture, or an attacked piece moved to its one safe square, counts when nothing else works (10.cxb4
+taking a knight left on b4; 9.Bb3, the bishop's only safe square after 8…b5; 54.Rxb1, taking a queen
+that promoted with check, where everything else is mated). Either of two ways:
 
 **The only good move.** All of:
 1. It's the engine's top move.
-2. It's hard to find, unless every other move gets you mated or leaves you as good as mated (6 pawns
-   or more behind: a review rarely searches deep enough to see the mate itself). Then finding the one
-   move that survives is the feat, however obvious it looks: 54.Rxb1, taking a queen that promoted with
-   check, where everything else is mated in 6 or less. This is for defence only; delivering a mate of
-   your own isn't escaping one.
-3. It's the only good move.
-4. Afterwards you're level or better, or holding a worse game that isn't lost: 30% or more (about −2.3).
+2. It's the only good move.
+3. Afterwards you're level or better, or holding a worse game that isn't lost: 30% or more (about −2.3).
    Below that, it only loses more slowly.
 
-**The only fast mate.** It's the only fast mate and it's hard to find.
+**The only fast mate.** It's the only fast mate.
 
-Taking back what the opponent just took is never Clutch: a recapture on the same square, or a capture
-anywhere that only brings the material back to where it was before their capture.
+Never Clutch: taking back what the opponent just took (a recapture on the same square, or a capture
+anywhere that only brings the material back to where it was before their capture), and the mating move
+itself, which is Best.
 
 ### Oversight
 Replaces a Mistake or Blunder. All of:
@@ -146,7 +136,6 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | …and doesn't still leave you at | 85% or more |
 | Level or better | 45% (about −0.5) |
 | Holding, not lost (Clutch) | 30% (about −2.3) |
-| As good as mated (Clutch) | 10% (about −6) |
 | Legendary: loss at most | 3.5% |
 | Already completely winning (Legendary) | 97% |
 | Sacrifice: material given up | 2 pawns or more |
@@ -155,4 +144,5 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | Oversight: back to where you were, within | 5% |
 | Missed win | from 80%+ to 60% or less |
 
-Reviews and share links made before a rule changed keep the verdicts they were made with.
+When a rule changes, saved reviews are graded again with it (RULES_VERSION in classify.ts). Share links
+keep the verdicts they were made with.

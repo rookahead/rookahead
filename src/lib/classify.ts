@@ -62,13 +62,10 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 2
+export const RULES_VERSION = 3
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
-
-/** As good as mated: 6 pawns or more behind (winning chance, 0–100). */
-const LOST = 10
 
 /** Clutch also counts holding a worse game that isn't lost: about −2.3 or better. */
 const HOLDING = 30
@@ -278,30 +275,6 @@ function offeredSacrifice(beforeFen: string, afterFen: string, pv: string[], col
 }
 
 /**
- * Is this one of the moves everyone looks at first (docs/rulebook.md, "hard to find")? Mate in 1,
- * promoting, a capture that doesn't lose the capturing piece (taking something worth as much, or
- * something the opponent can't win back), or moving an attacked piece away to a square where it's safe.
- */
-export function naturalMove(beforeFen: string, afterFen: string, uci: string): boolean {
-  const before = new Chess(beforeFen)
-  const after = new Chess(afterFen)
-  if (after.isCheckmate() || uci.length > 4) return true
-  const from = uci.slice(0, 2) as Square
-  const to = uci.slice(2, 4) as Square
-  const moved = before.get(from)
-  if (!moved) return false
-  const us = moved.color
-  const safe = !hanging(after, to, moved.type, us)
-  // En passant takes a pawn from a square the pawn doesn't land on.
-  const captured = before.get(to)?.type ?? (moved.type === 'p' && from[0] !== to[0] ? 'p' : undefined)
-  if (captured !== undefined && (VALUES[captured] >= VALUES[moved.type] || safe)) return true
-  // In check, choosing the way out is a decision: only taking the checker safely (above) is natural.
-  if (before.inCheck()) return false
-  // An attacked piece moved away to safety.
-  return safe && hanging(before, from, moved.type, us)
-}
-
-/**
  * Does the move take back what the opponent just took: a recapture on the same square, or a
  * capture anywhere that only brings the material back to where it was before their capture?
  */
@@ -358,11 +331,10 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // The only move that works: it keeps us level or better, or holds a worse game that isn't lost,
       // and every alternative would be a mistake or worse; or it's the only fast mate (the next-best
       // move doesn't mate, or takes 3+ moves longer). A mating sacrifice only needs the fastest mate,
-      // 2+ moves ahead of the next-best. An only move that avoids getting mated is Clutch even when obvious.
+      // 2+ moves ahead of the next-best.
       let onlyGood = false
       let onlyMate = false
       let fastestMate = false
-      let avoidsMate = false
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
         onlyGood = winAfter >= HOLDING && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
@@ -370,9 +342,6 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
         const secondMate = mateIn(before.second, color)
         onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)
         fastestMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 2)
-        // Mated, or as good as: a review rarely searches deep enough to see the mate itself. Only in
-        // defence: delivering a mate of our own isn't escaping one.
-        avoidsMate = onlyGood && mate === null && (mateIn(before.second, color === 'white' ? 'black' : 'white') !== null || secondWin <= LOST)
       }
 
       // Legendary (docs/rulebook.md): a sacrifice at most 3.5% short of the best move that leaves us level
@@ -383,12 +352,13 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // prise again counts only when the move is the only good one.
       const gradable = cls === 'best' || cls === 'excellent' || cls === 'good'
       const sac = gradable ? sacrificeDetail(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood, line[i - 2]?.fen) : null
-      // Hard to find: a sacrifice, or not one of the moves everyone looks at first.
-      const hard = sac !== null || !naturalMove(parent.fen, node.fen, node.uci)
+      const mates = after.score.type === 'mate' && after.score.value === 0
       const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
       if (soundSac || (sac !== null && fastestMate)) {
         cls = 'brilliant'
-      } else if ((onlyGood || onlyMate) && (hard || avoidsMate) && !takesBack(line[i - 2], parent, node, color)) {
+      } else if ((onlyGood || onlyMate) && !mates && !takesBack(line[i - 2], parent, node, color)) {
+        // Clutch: the only move, however obvious (a free capture, an attacked piece to its one safe
+        // square), but not taking back what the opponent just took, and not the mating move itself.
         cls = 'great'
       }
 

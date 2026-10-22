@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { Chess } from 'chess.js'
-import { CLASS_INFO, classifyGame, gameAccuracy, isSacrifice, materialBalance, moveAccuracy, naturalMove, sacrifice, withClasses, type ReviewedPosition } from './classify'
+import { CLASS_INFO, classifyGame, gameAccuracy, isSacrifice, materialBalance, moveAccuracy, sacrifice, withClasses, type ReviewedPosition } from './classify'
 import { moveDetail, moveHeadline } from './commentary'
 import { materialState } from './material'
 import { makeBook, openingOf } from './openings'
@@ -127,32 +127,6 @@ describe('only the engine\'s move is best', () => {
   })
 })
 
-describe('hard to find', () => {
-  /** Plays `uci` from `fen` and asks whether it's one of the moves everyone looks at first. */
-  const natural = (fen: string, uci: string) => {
-    const chess = new Chess(fen)
-    chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] })
-    return naturalMove(fen, chess.fen(), uci)
-  }
-
-  it('treats the moves everyone looks at first as natural', () => {
-    expect(natural('6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1', 'a1a8')).toBe(true) // mate in 1
-    expect(natural('4k3/8/8/3q4/8/8/8/3QK3 w - - 0 1', 'd1d5')).toBe(true) // taking a free queen
-    expect(natural('4k3/8/8/8/8/8/4r3/4K3 w - - 0 1', 'e1e2')).toBe(true) // out of check by taking the checker
-    expect(natural('4k3/8/8/8/8/1b6/8/3QK3 w - - 0 1', 'd1d4')).toBe(true) // the attacked queen to safety
-  })
-
-  it('treats choosing a way out of check as hard', () => {
-    expect(natural('4k3/8/8/8/4r3/8/8/4K3 w - - 0 1', 'e1d1')).toBe(false)
-  })
-
-  it('treats quiet moves and captures that lose the capturer as hard', () => {
-    expect(natural(itachiAfter(24), 'd2d4')).toBe(false) // 13.d4, opening the c1 bishop onto the queen
-    expect(natural(itachiAfter(26), 'f3h3')).toBe(false) // 14.Qxh3, where the c8 bishop can take the queen
-    expect(natural(itachiAfter(49), 'f8c5')).toBe(false) // 25…Bc5, pinning the rook to the king
-  })
-})
-
 describe('book, great, brilliant, miss, forced', () => {
   it('marks a contiguous book prefix', () => {
     const { line, evals } = game(['e2e4', 'e7e5', 'g1f3', 'b8c6'], [cp(30), cp(30), cp(30), cp(30), cp(30)].map((score, i) => ({ score, bestMove: ['e2e4', 'e7e5', 'g1f3', 'b8c6'][i] ?? null })))
@@ -193,18 +167,18 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('great')
   })
 
-  it('calls the only move that avoids getting mated "great", even an obvious one', () => {
+  it('calls the only move that avoids getting mated "great"', () => {
     // 54.Rxb1: taking the queen that promoted with check holds 0.00; every other move gets mated in 6 or less.
     const at = (second: Score) => (({ line, evals }) => classifyGame(line, evals).moves[line[1].id].cls)(game(['g1b1'], [{ score: cp(-3), bestMove: 'g1b1', second }, { score: cp(0) }], '8/2r5/6P1/8/8/3K4/k7/1q4R1 w - - 0 54'))
     expect(at(mate(-6))).toBe('great')
     expect(at(cp(-1161))).toBe('great') // what a depth-16 review sees: lost by 11 pawns, the mate further on
-    expect(at(cp(-300))).toBe('best') // only worse, not lost: an obvious move stays Best
+    expect(at(cp(-300))).toBe('great') // only worse, not lost: still the only move
   })
 
-  it('does not call an obvious only move "great"', () => {
-    // Taking a free queen is the only good move, and everyone sees it.
+  it('calls an obvious only move "great" too', () => {
+    // Taking a free queen is the only good move: Clutch, however obvious (chess.com calls these Great).
     const { line, evals } = game(['d1d5'], [{ score: cp(900), bestMove: 'd1d5', second: cp(-100) }, { score: cp(900) }], '4k3/8/8/3q4/8/8/8/3QK3 w - - 0 1')
-    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('best')
+    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('great')
   })
 
   it('does not call a move "great" when it only loses less', () => {
@@ -468,7 +442,7 @@ describe('book, great, brilliant, miss, forced', () => {
     it('is not "brilliant" when the engine line takes the piece that already hung', () => {
       const take = (before: Partial<ReviewedPosition> & { score: Score }, after: Score) =>
         (({ line, evals }) => classifyGame(line, evals).moves[line[1].id].cls)(game(['h5h3'], [{ bestMove: 'h5h3', ...before }, { score: after, pv: ['d4c6', 'h3h1'] }], start))
-      expect(take({ score: mate(-3), second: cp(-518) }, mate(-2))).toBe('best') // taking a free pawn: natural
+      expect(take({ score: mate(-3), second: cp(-518) }, mate(-2))).toBe('great') // the only fast mate: Clutch, not Legendary
       expect(take({ score: cp(-300), second: cp(-280) }, cp(-300))).toBe('best')
     })
 
