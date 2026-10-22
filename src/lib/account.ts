@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react'
 import { avatarBlob } from './avatar'
 import { googleAuthUrl, randomHex, readGoogleReturn, sha256Hex } from './googleSignIn'
 import { afterSignIn, navigate } from './router'
+import { deviceLook, restoreLook } from './settings'
 import { forgetLocal, syncOnce, type Remote } from './sync'
 import { readMeta, setChangeHook, storesReplaced, SYNCED } from './syncBus'
 import type { StoreKey } from './syncMerge'
@@ -551,7 +552,10 @@ export async function deleteAccount(): Promise<string | null> {
 function leave() {
   setChangeHook(undefined)
   cacheProfile(undefined)
+  // Everything of the account's goes, except how the app looks here: logging out shouldn't repaint it.
+  const look = deviceLook()
   forgetLocal()
+  restoreLook(look)
   storesReplaced(SYNCED)
   setState({ status: 'guest', account: null, username: null, avatarUrl: null, needsUsername: false, sync: 'synced' })
 }

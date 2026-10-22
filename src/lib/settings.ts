@@ -124,6 +124,32 @@ function load(): Settings {
   return DEFAULT_SETTINGS
 }
 
+/** How the app looks on this device: its theme, colour and board. */
+const LOOK = ['appearance', 'palette', 'boardTheme', 'themes'] as const
+
+/** This device's look, to keep through a log out (account.ts): your games go, your colours stay. */
+export function deviceLook(storage: Storage = localStorage): Partial<Settings> {
+  try {
+    const saved = JSON.parse(storage.getItem(KEY) ?? '{}') as Partial<Settings>
+    return Object.fromEntries(LOOK.filter((k) => saved[k] !== undefined).map((k) => [k, saved[k]]))
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Puts the look back after the account's settings are cleared. Not marked as a change: signing in to an
+ * account that has settings, its own look wins (sync.ts); a new account starts from this one.
+ */
+export function restoreLook(look: Partial<Settings>, storage: Storage = localStorage): void {
+  if (!Object.keys(look).length) return
+  try {
+    storage.setItem(KEY, JSON.stringify(look))
+  } catch {
+    // No room: the defaults it is.
+  }
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(load)
   // A sync pass brought the account's settings: show them.

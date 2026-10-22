@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { deviceLook, restoreLook } from './settings'
 import { forgetLocal, syncOnce, type Remote, type RemoteRow } from './sync'
 import { markChanged, readMeta, STORE_KEYS } from './syncBus'
 import type { StoreKey } from './syncMerge'
@@ -183,5 +184,22 @@ describe('forgetLocal', () => {
     forgetLocal(s)
     expect(s.length).toBe(1)
     expect(s.getItem('rookahead.sidebar')).toBe('rail')
+  })
+})
+
+describe('logging out', () => {
+  it('keeps how the app looks on the device, and an account with settings still brings its own', async () => {
+    const s = memoryStorage()
+    put(s, 'settings', { appearance: 'light', palette: 'sky', boardTheme: 'green', themes: 2, chesscomUser: 'someone' })
+    put(s, 'games', [{ id: 'g1' }])
+    const look = deviceLook(s)
+    forgetLocal(s)
+    restoreLook(look, s)
+    expect(get(s, 'settings')).toEqual({ appearance: 'light', palette: 'sky', boardTheme: 'green', themes: 2 })
+    expect(get(s, 'games')).toBeNull()
+
+    const { remote } = fakeRemote({ settings: { data: { appearance: 'dark', palette: 'gold', boardTheme: 'theme' }, rev: 3, updatedAt: 5 } })
+    await syncOnce(remote, 'user-2', s)
+    expect(get(s, 'settings')).toMatchObject({ appearance: 'dark', palette: 'gold', boardTheme: 'theme' })
   })
 })
