@@ -1,24 +1,29 @@
-/* About and Privacy: plain reading pages in Rookahead's Graphite colours. */
+/* About and Privacy: plain reading pages in your colour theme, as the app and the blog. The tones (--t-*) come
+   from blog/theme.css, which the blog's build cuts from the app; light, dark or black follows your app setting,
+   else the device's. */
 :root {
-  --bg: #0b0b0c;
-  --surface: #111113;
+  --bg: var(--t-surface);
+  --surface: var(--t-cont);
   --border: rgba(255, 255, 255, 0.08);
-  --text: #ededed;
-  --text-2: #a1a1aa;
-  --muted: #8a8a94;
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 72%, var(--t-surface));
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f7f7f8;
-    --surface: #ffffff;
-    --border: rgba(0, 0, 0, 0.08);
-    --text: #17171a;
-    --text-2: #4e4e56;
-    --muted: #74747d;
-    color-scheme: light;
-  }
+:root[data-theme='light'] {
+  --bg: var(--t-cont);
+  --surface: var(--t-lowest);
+  --border: rgba(0, 0, 0, 0.08);
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 82%, var(--t-lowest));
+  color-scheme: light;
+}
+
+:root[data-black] {
+  --bg: #000000;
+  --surface: var(--t-low);
 }
 
 body {
