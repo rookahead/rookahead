@@ -4197,8 +4197,9 @@ button.user-avatar.guest:hover {
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 24px;
   padding: 32px var(--pad);
-  background: var(--brand-card);
-  color: var(--brand-card-text);
+  /* The sidebar's tone, so the mark and the boards are what's in your colour on it. */
+  background: var(--side);
+  color: var(--text);
 }
 
 /* The logo and wordmark: big in the middle at first, then in the corner as the home link. */
@@ -4367,7 +4368,7 @@ button.user-avatar.guest:hover {
   max-width: 300px;
   padding: 10px 16px 10px 10px;
   border-radius: 12px;
-  background: var(--surface-2);
+  background: var(--card);
   color: var(--text);
   box-shadow: var(--shadow-pop);
 }
@@ -4505,7 +4506,7 @@ button.user-avatar.guest:hover {
   display: grid;
   place-items: center;
   border: 3px solid color-mix(in srgb, currentColor 55%, transparent);
-  background: color-mix(in srgb, currentColor 6%, var(--brand-card));
+  background: color-mix(in srgb, currentColor 6%, var(--side));
 }
 
 .tour-laptop {
@@ -4535,7 +4536,7 @@ button.user-avatar.guest:hover {
   aspect-ratio: 9 / 18;
   border-radius: 18px;
   font-size: 9px;
-  background: var(--brand-card);
+  background: var(--side);
 }
 
 .tour-profile {
@@ -4647,7 +4648,7 @@ button.user-avatar.guest:hover {
 }
 
 .tour-step span {
-  background: currentColor;
+  background: var(--brand);
   transform: scaleX(0);
   transform-origin: left;
 }

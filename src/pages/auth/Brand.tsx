@@ -27,7 +27,7 @@ function squareAt(square: string, orientation: Color): CSSProperties {
 function BoardWithBadge({ fen, orientation, move, cls }: { fen: string; orientation: Color; move: [string, string]; cls?: MoveClass }) {
   return (
     <div className="tour-board">
-      <MiniBoard fen={fen} orientation={orientation} theme="graphite" lastMove={move} />
+      <MiniBoard fen={fen} orientation={orientation} theme="theme" lastMove={move} />
       {cls && (
         <span className="tour-badge" style={squareAt(move[1], orientation)}>
           <ClassIcon cls={cls} size={34} />
