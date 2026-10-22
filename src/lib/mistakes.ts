@@ -4,7 +4,7 @@ import { Chess } from 'chess.js'
 import { LOSS_BANDS, type MoveClass } from './classify'
 import { winPercent, type Color } from './evaluation'
 import { loadReviews, type CachedReview } from './reviewCache'
-import { decodeShare, type SharedGame } from './share'
+import { decodeSaved, type SharedGame } from './share'
 import type { Score } from './uci'
 
 export interface MistakePuzzle {
@@ -81,15 +81,16 @@ export function mistakesFromGame(key: string, entry: CachedReview, shared: Share
 export async function loadMistakes(solved: string[]): Promise<MistakePuzzle[]> {
   const done = new Set(solved)
   const entries = Object.entries(loadReviews()).sort(([, a], [, b]) => b.at - a.at)
-  const games = await Promise.all(
-    entries.map(async ([key, entry]) => {
-      try {
-        const shared = await decodeShare(entry.token)
-        return 'error' in shared ? [] : mistakesFromGame(key, entry, shared)
-      } catch {
-        return []
-      }
-    }),
-  )
-  return games.flat().filter((m) => !done.has(m.id))
+  const found: MistakePuzzle[] = []
+  for (const [key, entry] of entries) {
+    try {
+      const shared = await decodeSaved(entry.token)
+      if (shared) found.push(...mistakesFromGame(key, entry, shared))
+    } catch {
+      // A game that won't replay has no puzzles to give.
+    }
+    // A turn for the page between games: a long list would otherwise hold up scrolling and drawing for seconds.
+    await new Promise((go) => setTimeout(go))
+  }
+  return found.filter((m) => !done.has(m.id))
 }

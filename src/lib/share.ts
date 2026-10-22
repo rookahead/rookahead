@@ -249,6 +249,31 @@ export async function decodeShare(token: string): Promise<SharedGame | { error: 
   }
 }
 
+// Saved reviews decoded once a session: Home's mistakes and its Legendary moves read the same games.
+const savedGames = new Map<string, SharedGame | null>()
+const decoding = new Map<string, Promise<SharedGame | null>>()
+
+/** A saved review's game, decoded once a session (null if it can't be). */
+export function decodeSaved(token: string): Promise<SharedGame | null> {
+  if (savedGames.has(token)) return Promise.resolve(savedGames.get(token)!)
+  let pending = decoding.get(token)
+  if (!pending) {
+    pending = decodeShare(token)
+      .then((shared) => ('error' in shared ? null : shared))
+      .catch(() => null)
+      .then((game) => {
+        savedGames.set(token, game)
+        decoding.delete(token)
+        return game
+      })
+    decoding.set(token, pending)
+  }
+  return pending
+}
+
+/** That game straight away when it has been decoded already; undefined when not yet. */
+export const decodedSaved = (token: string): SharedGame | null | undefined => savedGames.get(token)
+
 function parseTokenHash(hash: string): { token: string; ply: number | null } | null {
   const match = /^#(\d+)\.([A-Za-z0-9_-]+)(?:&m=(\d+))?/.exec(hash)
   if (!match) return null
