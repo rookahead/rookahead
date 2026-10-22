@@ -28,7 +28,15 @@ const union = (a: string[], b: string[]) => [...new Set([...a, ...b])]
 function mergeDays(a: PuzzleProgress['days'], b: PuzzleProgress['days']): PuzzleProgress['days'] {
   if (!a || !b) return a ?? b
   const later = a.last > b.last || (a.last === b.last && a.count >= b.count) ? a : b
-  return { ...later, best: Math.max(a.best, b.best) }
+  const recent = [...new Set([...(a.recent ?? []), ...(b.recent ?? [])])].sort((x, y) => x - y)
+  return { ...later, best: Math.max(a.best, b.best), recent: recent.length ? recent : undefined }
+}
+
+/** Today's count: the later day's, or on the same day the higher. */
+function mergeToday(a: PuzzleProgress['today'], b: PuzzleProgress['today']): PuzzleProgress['today'] {
+  if (!a || !b) return a ?? b
+  if (a.day !== b.day) return a.day > b.day ? a : b
+  return a.mistakes >= b.mistakes ? a : b
 }
 
 /**
@@ -53,6 +61,7 @@ export function mergePuzzles(local: PuzzleProgress, remote: PuzzleProgress): Puz
     current: local.current,
     daily,
     mistakesSolved: union(remote.mistakesSolved, local.mistakesSolved),
+    today: mergeToday(local.today, remote.today),
   }
 }
 

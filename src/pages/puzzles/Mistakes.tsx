@@ -12,7 +12,7 @@ import { CLASS_INFO } from '../../lib/classify'
 import { formatDay } from '../../lib/home'
 import { acceptable, loadMistakes, type MistakePuzzle } from '../../lib/mistakes'
 import { localDayNumber } from '../../lib/puzzles'
-import { dayStreak, recordDay } from '../../lib/puzzleStore'
+import { dayStreak, recordMistakeSolved } from '../../lib/puzzleStore'
 import { requestLoadDialog, writeSession } from '../../lib/session'
 import type { Settings } from '../../lib/settings'
 import { decodeShare, fromSharedGame } from '../../lib/share'
@@ -73,7 +73,7 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
       settings={settings}
       tabs={tabs}
       streak={<DayStreak days={dayStreak(progress, day)} />}
-      onSolved={() => update((p) => recordDay({ ...p, mistakesSolved: [...p.mistakesSolved.filter((id) => id !== mistake.id), mistake.id] }, day))}
+      onSolved={() => update((p) => recordMistakeSolved(p, mistake.id, day))}
       onNext={(solved) => {
         setRound((r) => r + 1)
         setQueue((q) => (q ? (solved ? q.slice(1) : [...q.slice(1), q[0]]) : q))

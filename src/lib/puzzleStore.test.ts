@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayStreak, loadProgress, recordDay, recordRated, recordSprint, saveProgress, startRated, SEEN_LIMIT } from './puzzleStore'
+import { dayStreak, loadProgress, parseProgress, recordDay, recordMistakeSolved, recordRated, recordSprint, saveProgress, solvedOn, startRated, SEEN_LIMIT } from './puzzleStore'
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>()
@@ -62,13 +62,44 @@ describe('streaks', () => {
 
   it('counts days in a row with a solve', () => {
     let p = recordDay(fresh(), 10)
-    expect(p.days).toEqual({ last: 10, count: 1, best: 1 })
+    expect(p.days).toMatchObject({ last: 10, count: 1, best: 1 })
     p = recordDay(p, 10)
-    expect(p.days).toEqual({ last: 10, count: 1, best: 1 })
+    expect(p.days).toMatchObject({ last: 10, count: 1, best: 1 })
     p = recordDay(recordDay(p, 11), 12)
-    expect(p.days).toEqual({ last: 12, count: 3, best: 3 })
+    expect(p.days).toMatchObject({ last: 12, count: 3, best: 3 })
     p = recordDay(p, 15)
-    expect(p.days).toEqual({ last: 15, count: 1, best: 3 })
+    expect(p.days).toMatchObject({ last: 15, count: 1, best: 3 })
+  })
+
+  it('remembers the last fortnight of days with a solve', () => {
+    let p = fresh()
+    for (const day of [1, 2, 5, 9, 16]) p = recordDay(p, day)
+    expect(p.days?.recent).toEqual([5, 9, 16])
+    expect([3, 5, 9, 15, 16].map((d) => solvedOn(p, d))).toEqual([false, true, true, false, true])
+    expect(solvedOn(fresh(), 16)).toBe(false)
+  })
+
+  it('knows the days of the current run without the list (saved before it was kept)', () => {
+    const p = parseProgress({ days: { last: 20, count: 3, best: 3 } })
+    expect([17, 18, 19, 20, 21].map((d) => solvedOn(p, d))).toEqual([false, true, true, true, false])
+  })
+
+  it('counts mistake puzzles solved today, starting again each day', () => {
+    let p = recordMistakeSolved(fresh(), 'm1', 30)
+    p = recordMistakeSolved(p, 'm2', 30)
+    expect(p.today).toEqual({ day: 30, mistakes: 2 })
+    expect(p.mistakesSolved).toEqual(['m1', 'm2'])
+    expect(p.days?.last).toBe(30)
+    p = recordMistakeSolved(p, 'm3', 31)
+    expect(p.today).toEqual({ day: 31, mistakes: 1 })
+  })
+
+  it('reads back what it saves', () => {
+    const storage = memoryStorage()
+    saveProgress(recordMistakeSolved(fresh(), 'm1', 30), storage)
+    const p = loadProgress(storage)
+    expect(p.today).toEqual({ day: 30, mistakes: 1 })
+    expect(p.days).toEqual({ last: 30, count: 1, best: 1, recent: [30] })
   })
 
   it('shows a day streak until a whole day is missed', () => {

@@ -10,8 +10,11 @@ export interface PuzzleProgress {
   streak: number
   /** The longest run of rated puzzles solved in a row. */
   bestStreak: number
-  /** Days (UTC day numbers) in a row with at least one puzzle solved, in any mode. */
-  days?: { last: number; count: number; best: number }
+  /** Days (UTC day numbers) in a row with at least one puzzle solved, in any mode; `recent` lists the last
+   * fortnight's days with a solve, oldest first, for Home's week of dots. */
+  days?: { last: number; count: number; best: number; recent?: number[] }
+  /** Mistake puzzles solved today, for Home's plan. */
+  today?: { day: number; mistakes: number }
   /** Best Puzzle Sprint score per mode. */
   sprintBest: Partial<Record<SprintMode, number>>
   prefs: { autoNext: boolean; difficulty: Difficulty }
@@ -47,6 +50,7 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
   const current = raw.current as PuzzleProgress['current']
   const daily = raw.daily as PuzzleProgress['daily']
   const days = raw.days as PuzzleProgress['days']
+  const today = raw.today as PuzzleProgress['today']
   const prefs = (raw.prefs ?? {}) as Partial<PuzzleProgress['prefs']>
   const sprintBest = (raw.sprintBest ?? {}) as Record<string, unknown>
   return {
@@ -55,13 +59,17 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
     solved: count(raw.solved),
     streak: count(raw.streak),
     bestStreak: count(raw.bestStreak),
-    days: days && typeof days.last === 'number' && typeof days.count === 'number' ? { last: days.last, count: days.count, best: count(days.best, days.count) } : undefined,
+    days:
+      days && typeof days.last === 'number' && typeof days.count === 'number'
+        ? { last: days.last, count: days.count, best: count(days.best, days.count), recent: Array.isArray(days.recent) ? days.recent.filter((d) => typeof d === 'number') : undefined }
+        : undefined,
     sprintBest: Object.fromEntries(Object.keys(SPRINT_MODES).flatMap((m) => (typeof sprintBest[m] === 'number' ? [[m, sprintBest[m]]] : []))),
     prefs: { autoNext: prefs.autoNext === true, difficulty: prefs.difficulty && prefs.difficulty in DIFFICULTY ? prefs.difficulty : 'normal' },
     seen: strings(raw.seen),
     current: current && typeof current.line === 'string' ? current : undefined,
     daily: daily && typeof daily.day === 'number' ? daily : undefined,
     mistakesSolved: strings(raw.mistakesSolved),
+    today: today && typeof today.day === 'number' ? { day: today.day, mistakes: count(today.mistakes) } : undefined,
   }
 }
 
@@ -80,12 +88,27 @@ export function startRated(progress: PuzzleProgress, line: string): PuzzleProgre
   return { ...progress, current: { line }, seen: [...progress.seen.filter((s) => s !== id), id].slice(-SEEN_LIMIT) }
 }
 
+const RECENT_DAYS = 14
+
 /** A puzzle was solved on `day` (a local day): the puzzle streak goes on (or starts again). */
 export function recordDay(progress: PuzzleProgress, day: number): PuzzleProgress {
   const d = progress.days
   if (d?.last === day) return progress
   const count = d && d.last === day - 1 ? d.count + 1 : 1
-  return { ...progress, days: { last: day, count, best: Math.max(count, d?.best ?? 0) } }
+  const recent = [...(d?.recent ?? []), day].filter((x) => x > day - RECENT_DAYS)
+  return { ...progress, days: { last: day, count, best: Math.max(count, d?.best ?? 0), recent } }
+}
+
+/** A mistake puzzle solved on `day`: it leaves the queue, counts for today's plan and keeps the streak. */
+export function recordMistakeSolved(progress: PuzzleProgress, id: string, day: number): PuzzleProgress {
+  const mistakes = (progress.today?.day === day ? progress.today.mistakes : 0) + 1
+  return recordDay({ ...progress, mistakesSolved: [...progress.mistakesSolved.filter((x) => x !== id), id], today: { day, mistakes } }, day)
+}
+
+/** Whether a puzzle was solved on `day`: inside the current run, or among the fortnight's days. */
+export function solvedOn(progress: PuzzleProgress, day: number): boolean {
+  const d = progress.days
+  return !!d && ((day <= d.last && day > d.last - d.count) || !!d.recent?.includes(day))
 }
 
 /** The puzzle streak as of `today` (a local day): still alive until a whole day goes by without a solve. */

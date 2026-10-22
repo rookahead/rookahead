@@ -84,6 +84,17 @@ describe('mergePuzzles', () => {
     expect(mergePuzzles(progress({}), progress({ days: { last: 1, count: 1, best: 1 } })).days).toEqual({ last: 1, count: 1, best: 1 })
   })
 
+  it('unions the recent days with a solve', () => {
+    const m = mergePuzzles(progress({ days: { last: 12, count: 2, best: 2, recent: [11, 12] } }), progress({ days: { last: 9, count: 1, best: 3, recent: [5, 9] } }))
+    expect(m.days).toEqual({ last: 12, count: 2, best: 3, recent: [5, 9, 11, 12] })
+  })
+
+  it("keeps today's mistake count from the later day, or the higher count", () => {
+    expect(mergePuzzles(progress({ today: { day: 4, mistakes: 3 } }), progress({ today: { day: 5, mistakes: 1 } })).today).toEqual({ day: 5, mistakes: 1 })
+    expect(mergePuzzles(progress({ today: { day: 5, mistakes: 1 } }), progress({ today: { day: 5, mistakes: 2 } })).today).toEqual({ day: 5, mistakes: 2 })
+    expect(mergePuzzles(progress({}), progress({ today: { day: 5, mistakes: 2 } })).today).toEqual({ day: 5, mistakes: 2 })
+  })
+
   it('keeps the later daily result and the local puzzle on the board', () => {
     const local = progress({ daily: { day: 5, result: 'failed' }, current: { line: 'local' } })
     const remote = progress({ played: 50, daily: { day: 6, result: 'solved' }, current: { line: 'remote' } })
