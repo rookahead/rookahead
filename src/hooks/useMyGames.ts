@@ -27,7 +27,12 @@ export function useMyGames(users: Usernames) {
   const gamesVersion = useStoreVersion('games')
   const reviewsVersion = useStoreVersion('reviews')
   const [cacheVersion, setCacheVersion] = useState(0)
-  const [loading, setLoading] = useState<Partial<Record<ImportSite, boolean>>>({})
+  // Loading from the first frame for each site the effect below will fetch, so Home never takes an empty
+  // cache for a first visit before the fetch starts.
+  const [loading, setLoading] = useState<Partial<Record<ImportSite, boolean>>>(() => {
+    const cache = loadImportCache()
+    return Object.fromEntries(SITES.map((site) => [site, !!users[site].trim() && !isFresh(cachedFor(cache, site, users[site].trim()))]))
+  })
   const [errors, setErrors] = useState<Partial<Record<ImportSite, string>>>({})
 
   useEffect(() => {
