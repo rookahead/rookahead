@@ -33,6 +33,14 @@
         var s = JSON.parse(localStorage.getItem('rookahead.settings.v2') || '{}')
         var a = s.appearance || 'dark'
         var r = document.documentElement
+        // Home's loading screen is Home's own shape (.boot-home): the sidebar as it was left, and the greeting
+        // a signed-in visitor gets.
+        if (location.pathname === '/') r.dataset.boot = 'home'
+        if (localStorage.getItem('rookahead.sidebar') === 'rail') r.dataset.bootRail = ''
+        var sync = JSON.parse(localStorage.getItem('rookahead.sync.v1') || 'null')
+        if (sync && sync.user) r.dataset.bootUser = ''
+        var saved = JSON.parse(localStorage.getItem('rookahead.reviews.v1') || '{}')
+        for (var k in saved) if (saved[k].brilliant && saved[k].brilliant.white + saved[k].brilliant.black > 0) r.dataset.bootLegendary = ''
         r.dataset.theme = a === 'light' ? 'light' : a === 'system' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
         // Gold was everyone's colour for a day, as the default: those settings read as Sky (settings.ts).
         if (s.palette && !(s.palette === 'gold' && (s.themes || 0) < 3)) r.dataset.palette = s.palette
@@ -68,6 +76,62 @@
           <span class="skel boot-card"></span>
         </div>
         <div class="boot-tabs"></div>
+      </div>
+      <!-- Home: its cards where they'll be, each as tall as the placeholder that takes its place. -->
+      <div class="boot boot-home" aria-busy="true" aria-label="Loading Rookahead">
+        <div class="boot-desk">
+          <div class="sidebar boot-sidebar">
+            <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z" /></svg></span>
+            <span class="skel" style="width: 70%; height: 14px"></span>
+            <span class="skel" style="width: 55%; height: 14px"></span>
+            <span class="skel" style="width: 62%; height: 14px"></span>
+            <span class="skel" style="width: 48%; height: 14px"></span>
+          </div>
+          <div class="shell-page">
+            <div class="home">
+              <div class="home-main">
+                <div class="home-welcome boot-welcome">
+                  <span class="skel" style="width: 300px; height: 22px"></span>
+                  <span class="skel" style="width: 340px; height: 12px"></span>
+                </div>
+                <div class="home-card boot-fill" style="--h: 274px"><span class="skel boot-title"></span></div>
+                <div class="home-pair">
+                  <div class="home-card accuracy-card boot-fill" style="--h: 351px"><span class="skel boot-title"></span></div>
+                  <div class="home-card streak-card boot-fill" style="--h: 327px"><span class="skel boot-title"></span></div>
+                </div>
+                <div class="home-card boot-fill" style="--h: 467px"><span class="skel boot-title"></span></div>
+              </div>
+              <div class="home-side">
+                <div class="home-card accent-card boot-fill" style="--h: 330px"><span class="skel boot-title"></span></div>
+                <div class="home-card boot-fill boot-quick"><span class="skel boot-title"></span></div>
+                <div class="home-card daily-card">
+                  <span class="skel boot-daily-head"></span>
+                  <span class="skel boot-board"></span>
+                  <span class="boot-daily-foot"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="boot-phone">
+          <div class="boot-phone-head">
+            <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z" /></svg></span>
+            <span class="skel" style="width: 110px; height: 18px"></span>
+          </div>
+          <div class="phone-home">
+            <div class="phone-welcome boot-fill boot-phone-welcome">
+              <span class="skel" style="width: 60%; height: 26px"></span>
+              <span class="skel" style="width: 85%; height: 13px"></span>
+            </div>
+            <div class="home-card accent-card boot-fill" style="--h: 154px"></div>
+            <div class="home-card boot-fill" style="--h: 64px"></div>
+            <div class="home-card boot-fill boot-legendary"></div>
+            <div class="home-card boot-fill" style="--h: 126px"></div>
+            <div class="home-card boot-fill" style="--h: 155px"></div>
+            <div class="home-card boot-fill" style="--h: 154px"></div>
+          </div>
+          <div class="boot-tabs"></div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

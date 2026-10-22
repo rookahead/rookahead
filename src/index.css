@@ -7103,6 +7103,120 @@ button.user-avatar.guest:hover {
   }
 }
 
+/* Home's loading screen (index.html), when Home is the page opening: Home's own layout classes, so columns,
+   gaps and wrapping come out as the app's, and each card as tall as the placeholder that takes its place
+   (fixed numbers, as the fonts aren't in yet). */
+.boot-home,
+.boot-phone {
+  display: none;
+}
+
+:root[data-boot='home'] .boot:not(.boot-home) {
+  display: none;
+}
+
+:root[data-boot='home'] .boot-home {
+  display: block;
+  padding: 0;
+}
+
+.boot-desk {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.boot-sidebar {
+  gap: 22px;
+  padding: 20px 18px;
+}
+
+:root[data-boot-rail] .boot-sidebar {
+  flex-basis: 72px;
+}
+
+:root[data-boot-rail] .boot-sidebar .skel {
+  display: none;
+}
+
+.boot-fill {
+  box-sizing: border-box;
+  min-height: var(--h);
+}
+
+.boot-title {
+  width: 40%;
+  height: 18px;
+}
+
+.boot-welcome {
+  height: 53.5px;
+  gap: 12px;
+}
+
+/* Play the computer: its second line wraps while the right column is narrow. */
+.boot-quick {
+  --h: 81.3px;
+}
+
+@container page (min-width: 920px) and (max-width: 1048px) {
+  .boot-quick {
+    --h: 100.2px;
+  }
+}
+
+.boot-daily-head {
+  width: 50%;
+  height: 28.3px;
+}
+
+.boot-board {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+}
+
+.boot-daily-foot {
+  height: 41.1px;
+}
+
+@media (max-width: 1000px) {
+  .boot-desk {
+    display: none;
+  }
+
+  .boot-phone {
+    display: block;
+  }
+
+  .boot-phone-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: var(--nav-h);
+    padding: 0 16px;
+  }
+
+  .boot-phone-welcome {
+    --h: 86.5px;
+    justify-content: flex-end;
+    gap: 14px;
+  }
+
+  :root[data-boot-user] .boot-phone-welcome {
+    --h: 108.3px;
+  }
+
+  /* Your Legendary moves in a row, or the card that says what they are. */
+  .boot-legendary {
+    --h: 119px;
+  }
+
+  :root[data-boot-legendary] .boot-legendary {
+    --h: 199px;
+  }
+}
+
 /* A board: a square with a faint checkerboard. */
 .skel-board {
   position: relative;
