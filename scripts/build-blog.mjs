@@ -21,10 +21,7 @@ const SITE = 'https://rookahead.com'
 const POSTS = path.join(root, 'blog')
 const PUBLIC = path.join(root, 'public')
 
-// The app's Graphite board and verdict colours (src/components/Board.tsx, src/lib/classify.ts).
-const LIGHT = '#d9dce1'
-const DARK = '#8e96a1'
-const LAST_MOVE = 'rgba(255, 214, 102, 0.55)'
+// The verdict colours (src/lib/classify.ts). The boards' own colours come from the app (themeCss below).
 const VERDICTS = {
   brilliant: ['Legendary', '#8b5cf6'],
   great: ['Clutch', '#2f80ed'],
@@ -134,18 +131,18 @@ function boardSvg(spec, used, inline, { bare = false } = {}) {
   }
   const parts = []
   for (let r = 0; r < 8; r++)
-    for (let f = 0; f < 8; f++) if ((r + f) % 2 === 1) parts.push(`<rect x="${f * S}" y="${r * S}" width="${S}" height="${S}" fill="${DARK}"/>`)
+    for (let f = 0; f < 8; f++) if ((r + f) % 2 === 1) parts.push(`<rect class="sq-d" x="${f * S}" y="${r * S}" width="${S}" height="${S}"/>`)
   if (opts.last)
     for (const sq of [opts.last.slice(0, 2), opts.last.slice(2, 4)]) {
       const [x, y] = xy(sq)
-      parts.push(`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${LAST_MOVE}"/>`)
+      parts.push(`<rect class="sq-last" x="${x}" y="${y}" width="${S}" height="${S}"/>`)
     }
   // Coordinates inside the edge squares, in the other square colour, as the app draws them.
   for (let i = 0; i < 8 && !bare; i++) {
     const file = String.fromCharCode(97 + (opts.flip ? 7 - i : i))
     const rank = opts.flip ? i + 1 : 8 - i
-    parts.push(`<text x="${i * S + S - 6}" y="${8 * S - 7}" text-anchor="end" fill="${i % 2 === 0 ? LIGHT : DARK}" class="coord">${file}</text>`)
-    parts.push(`<text x="6" y="${i * S + 22}" fill="${i % 2 === 0 ? DARK : LIGHT}" class="coord">${rank}</text>`)
+    parts.push(`<text x="${i * S + S - 6}" y="${8 * S - 7}" text-anchor="end" class="coord ${i % 2 === 0 ? 'on-d' : 'on-l'}">${file}</text>`)
+    parts.push(`<text x="6" y="${i * S + 22}" class="coord ${i % 2 === 0 ? 'on-l' : 'on-d'}">${rank}</text>`)
   }
   for (const row of chess.board())
     for (const p of row) {
@@ -180,7 +177,7 @@ function boardSvg(spec, used, inline, { bare = false } = {}) {
 
   const toMove = chess.turn() === 'w' ? 'White' : 'Black'
   const label = opts.caption ? opts.caption.replace(/[*_`]/g, '') : `${toMove} to move`
-  const svg = `<svg class="board" viewBox="0 0 800 800" role="img" aria-label="${escape(label)}"><rect width="800" height="800" fill="${LIGHT}"/>${parts.join('')}</svg>`
+  const svg = `<svg class="board" viewBox="0 0 800 800" role="img" aria-label="${escape(label)}"><rect class="sq-l" width="800" height="800"/>${parts.join('')}</svg>`
   if (bare) return svg
   return `<figure class="diagram">${svg}${opts.caption ? `<figcaption>${inline(opts.caption)}</figcaption>` : ''}</figure>`
 }
@@ -270,8 +267,10 @@ const GITHUB =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
 
-// The theme you picked in the app (Settings → Appearance), before the first paint; otherwise the device's.
-const THEME = `<script>try{var a=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}').appearance;document.documentElement.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch(e){}</script>`
+// The look you picked in the app (Settings → Appearance and Board), before the first paint: light, dark or
+// black (else the device's), your colour and your board. Settings from before the tonal themes read as the
+// app reads them (src/lib/settings.ts): their Sky and Graphite were only the old defaults.
+const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='sky'&&v<1))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
 // Copy link, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
@@ -308,6 +307,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/blog/fonts/syne.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/blog/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/blog/theme.css" />
     <link rel="stylesheet" href="/blog.css" />
     <link rel="canonical" href="${canonical}" />
     <link rel="alternate" type="application/atom+xml" title="Rookahead blog" href="/blog/feed.xml" />
@@ -472,6 +472,33 @@ ${entries}
 `
 }
 
+/**
+ * The app's colours for the blog (blog/theme.css), so it follows the theme you picked there: the colour
+ * themes' tones, cut from src/index.css, and every board's squares, read from src/components/Board.tsx.
+ * blog.css builds on these the way index.css does.
+ */
+function themeCss() {
+  const css = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8')
+  const start = css.indexOf('/* ═══════════════ Colour themes')
+  const end = css.indexOf('/* ═══════════════ Black')
+  if (start < 0 || end < start) throw new Error('theme: the colour themes are missing from src/index.css')
+  const tsx = fs.readFileSync(path.join(root, 'src/components/Board.tsx'), 'utf8')
+  const boards = (name) => {
+    const block = tsx.slice(tsx.indexOf(`const ${name}`), tsx.indexOf('\n}\n', tsx.indexOf(`const ${name}`)))
+    const found = [...block.matchAll(/^\s*(\w+): \{ light: '(#\w+)', dark: '(#\w+)', label: '[^']*'(?:, lastMove: '([^']+)')?/gm)]
+    if (!found.length) throw new Error(`theme: no boards in ${name} (src/components/Board.tsx)`)
+    return found.map(([, id, light, dark, last]) => ({ id, light, dark, last: last ?? 'rgba(255, 255, 51, 0.42)' }))
+  }
+  const squares = (b) => `--sq-light: ${b.light};\n  --sq-dark: ${b.dark};\n  --sq-last: ${b.last};`
+  const fixed = boards('BOARD_THEMES').map((b) => `:root[data-board='${b.id}'] {\n  ${squares(b)}\n}`)
+  // The Theme board, the default: Gold's unless your colour theme says otherwise.
+  const themed = boards('THEME_BOARDS').map((b) => {
+    const sel = `:root[data-palette='${b.id}']:is(:not([data-board]), [data-board='theme'])`
+    return `${b.id === 'gold' ? ":root:is(:not([data-board]), [data-board='theme']),\n" : ''}${sel} {\n  ${squares(b)}\n}`
+  })
+  return `/* Made by scripts/build-blog.mjs from the app's own colours: don't edit, it's rebuilt. */\n${css.slice(start, end).trim()}\n\n${[...themed, ...fixed].join('\n\n')}\n`
+}
+
 // The app's own pages that are worth finding from a search, then the blog.
 const APP_PAGES = ['/', '/games', '/puzzles', '/puzzles/daily', '/play', '/legendary', '/about', '/privacy']
 
@@ -499,5 +526,6 @@ fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/dm-sans/files
 for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), postPage(post, posts))
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
+fs.writeFileSync(path.join(out, 'theme.css'), themeCss())
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), sitemap(posts))
 console.log(`blog: ${posts.length} posts`)

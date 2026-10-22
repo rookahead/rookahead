@@ -1,5 +1,7 @@
-/* The blog (rookahead.com/blog): the app's Graphite greys, tonal cards, Syne and DM Sans.
-   Pages are built by scripts/build-blog.mjs; the theme follows your app setting, else the device's. */
+/* The blog (rookahead.com/blog): the app's look, tonal cards, Syne and DM Sans. Pages are built by
+   scripts/build-blog.mjs, along with blog/theme.css: the app's colour themes (the --t-* tones) and boards
+   (--sq-*), which the colours below take, as src/index.css does. Light, dark or black, your colour and
+   your board follow your app settings, else the device's light or dark. */
 @font-face {
   font-family: 'Syne';
   src: url('/blog/fonts/syne.woff2') format('woff2');
@@ -16,18 +18,18 @@
 
 :root {
   color-scheme: dark;
-  --bg: #09090a;
-  --card: #1f1f24;
-  --card-hover: #27272d;
+  --bg: var(--t-surface);
+  --card: var(--t-cont);
+  --card-hover: var(--t-high);
   --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --line: rgba(255, 255, 255, 0.07);
-  --text: #ededed;
-  --text-2: #a1a1aa;
-  --muted: #8a8a94;
-  --brand: #38bdf8;
-  --brand-ink: #04202e;
-  --brand-card: #0f3446;
-  --brand-card-text: #ededed;
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 72%, var(--t-surface));
+  --brand: var(--t-primary);
+  --brand-ink: var(--t-on-primary);
+  --brand-card: var(--t-pc);
+  --brand-card-text: var(--t-opc);
   --btn: rgba(255, 255, 255, 0.085);
   --btn-hover: rgba(255, 255, 255, 0.14);
   --font-display: 'Syne', 'DM Sans', sans-serif;
@@ -36,20 +38,49 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f1f1f3;
-  --card: #ffffff;
-  --card-hover: #f7f7f8;
+  --bg: var(--t-cont);
+  --card: var(--t-lowest);
+  --card-hover: var(--t-low);
   --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   --line: rgba(0, 0, 0, 0.08);
-  --text: #17171a;
-  --text-2: #4e4e56;
-  --muted: #74747d;
-  --brand: #0284c7;
-  --brand-ink: #ffffff;
-  --brand-card: #dbeffa;
-  --brand-card-text: #082f45;
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 82%, var(--t-lowest));
+  --brand: var(--t-primary);
+  --brand-ink: var(--t-on-primary);
+  --brand-card: var(--t-pc);
+  --brand-card-text: var(--t-opc);
   --btn: rgba(0, 0, 0, 0.06);
   --btn-hover: rgba(0, 0, 0, 0.1);
+}
+
+/* Black: a true black page, the cards just lifted off it. */
+:root[data-black] {
+  --bg: #000000;
+  --card: var(--t-low);
+  --card-hover: var(--t-cont);
+  --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
+}
+
+/* A board's squares, its last move and its coordinates (each in the other square's colour). */
+.board .sq-l {
+  fill: var(--sq-light);
+}
+
+.board .sq-d {
+  fill: var(--sq-dark);
+}
+
+.board .sq-last {
+  fill: var(--sq-last);
+}
+
+.board .on-l {
+  fill: var(--sq-light);
+}
+
+.board .on-d {
+  fill: var(--sq-dark);
 }
 
 * {
@@ -99,13 +130,14 @@ h3 {
   text-decoration: none;
 }
 
+/* The mark in your colour, as in the app. */
 .brand svg {
   width: 34px;
   height: 34px;
   padding: 6px;
   border-radius: 10px;
-  background: var(--text);
-  fill: var(--bg);
+  background: var(--brand);
+  fill: var(--brand-ink);
 }
 
 .wordmark {
@@ -117,7 +149,7 @@ h3 {
 
 .wordmark span {
   font-weight: 500;
-  color: var(--muted);
+  color: var(--brand);
 }
 
 .top-nav {
