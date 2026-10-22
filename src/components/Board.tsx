@@ -48,11 +48,11 @@ export const BOARD_THEMES: Record<Exclude<BoardTheme, 'theme'>, BoardColors> = {
 
 /** The Theme board for each colour theme: its seed colour's hue at tone 90 and 60 (Material's HCT, as index.css's
  * --t-* tones). Gold's last move goes yellow-green, as plain yellow would vanish on its squares; Gold and Coral
- * take blue arrows for the same reason. */
+ * take blue arrows for the same reason. Indigo's is the Iris board, whose violets suit it better. */
 const THEME_BOARDS: Record<Palette, BoardColors> = {
   gold: { light: '#f8dfbb', dark: '#b38a43', label: 'Theme', lastMove: 'rgba(214, 210, 0, 0.6)', arrow: '#3b82f6' },
   sky: { light: '#d1e5f4', dark: '#5e97b8', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
-  indigo: { light: '#e1e0f9', dark: '#888dc4', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  indigo: { light: '#d3cff3', dark: '#7d70dc', label: 'Theme', lastMove: 'rgba(238, 150, 232, 0.62)' },
   coral: { light: '#ffdad2', dark: '#c97d6a', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)', arrow: '#3b82f6' },
   forest: { light: '#cfe9d9', dark: '#5d9d7f', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
   ivory: { light: '#e2e2e2', dark: '#919191', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.55)' },
