@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { faviconUrl } from './components/RookLogo'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { TodayCard } from './components/TodayCard'
@@ -102,8 +103,10 @@ export default function App() {
     // Black is the dark theme on a true black page (index.css, :root[data-black]).
     root.toggleAttribute('data-black', settings.appearance === 'black')
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
-    // The browser's (and an installed app's) bars take the page's own background.
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim())
+    // The browser's (and an installed app's) bars take the page's own background, and the tab's icon your colour.
+    const css = getComputedStyle(root)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', css.getPropertyValue('--bg').trim())
+    document.querySelector('link[rel="icon"]')?.setAttribute('href', faviconUrl(css.getPropertyValue('--brand').trim(), css.getPropertyValue('--brand-ink').trim()))
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 
   useEffect(() => void startAccounts(), [])

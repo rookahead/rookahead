@@ -597,13 +597,14 @@ svg {
   }
 }
 
+/* The mark in your colour: the rook on a tile of it (and "ahead" in it, .wordmark-tail). */
 .brand-logo {
   flex-shrink: 0;
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: var(--text);
-  color: var(--bg);
+  background: var(--brand);
+  color: var(--brand-ink);
   display: grid;
   place-items: center;
 }
@@ -4216,11 +4217,6 @@ button.user-avatar.guest:hover {
   animation: auth-fade 0.6s ease both;
 }
 
-.auth-mark .brand-logo {
-  background: var(--brand-card-text);
-  color: var(--brand-card);
-}
-
 .auth-brand[data-phase='intro'] .auth-mark {
   transform: translateY(calc(50dvh - 32px - 30px * var(--intro-scale) - 12px)) scale(var(--intro-scale));
 }
@@ -7299,12 +7295,7 @@ h2 {
 
 .wordmark-tail {
   font-weight: 500;
-  color: var(--muted);
-}
-
-.auth-brand .wordmark-tail {
-  color: inherit;
-  opacity: 0.6;
+  color: var(--brand);
 }
 
 .page-header-home .wordmark {
