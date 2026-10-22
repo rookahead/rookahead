@@ -5714,14 +5714,16 @@ button.user-avatar.guest:hover {
   padding: 0;
   border: 0;
   background: none;
-  border-radius: 10px;
-  overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s;
 }
 
-.daily-board:hover {
-  transform: scale(1.01);
+.daily-board .mini-board {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.daily-board .skel-board {
+  border-radius: 10px;
 }
 
 .mini-board {
