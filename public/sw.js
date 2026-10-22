@@ -2,7 +2,8 @@
 // Pages come from the network first (so a new version shows at once) and from the cache when offline;
 // the hashed bundles in /assets never change, so they're served from the cache once fetched.
 // Everything else (the engine, puzzles, accounts) goes straight to the network.
-const CACHE = 'rookahead-v1'
+// v2: a blog page reached through v1 could be stored as the app's own page.
+const CACHE = 'rookahead-v2'
 
 self.addEventListener('install', () => self.skipWaiting())
 
@@ -21,8 +22,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== location.origin) return
 
-  // The plain pages (About, Privacy, the embed viewer) aren't the app: leave them to the network.
-  if (/^\/(about|privacy|embed)/.test(url.pathname)) return
+  // The plain pages (About, Privacy, the blog, the embed viewer) aren't the app: leave them to the network.
+  if (/^\/(about|privacy|blog|embed)/.test(url.pathname)) return
 
   if (request.mode === 'navigate') {
     // The app is one page: any address opens it, and the router takes over.

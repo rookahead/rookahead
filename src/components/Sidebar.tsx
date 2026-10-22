@@ -73,6 +73,7 @@ export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
         {footer}
         <div className="sidebar-bottom">
           <div className="sidebar-links" inert={rail}>
+            <a href="/blog">Blog</a>
             <a href="/about">About</a>
             <a href="/privacy">Privacy</a>
             {/* Logos rather than words: four words don't fit beside the collapse button. Simple Icons, CC0. */}

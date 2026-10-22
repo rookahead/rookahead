@@ -169,6 +169,7 @@ export function YouPage({ settings, updateSettings }: Props) {
         )}
 
         <nav className="you-links" aria-label="Site">
+          <a href="/blog">Blog</a>
           <a href="/about">About</a>
           <a href="/privacy">Privacy</a>
           <a href={DISCORD_URL}>Discord</a>

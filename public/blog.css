@@ -1,0 +1,883 @@
+/* The blog (rookahead.com/blog): the app's Graphite greys, tonal cards, Syne and DM Sans.
+   Pages are built by scripts/build-blog.mjs; the theme follows your app setting, else the device's. */
+@font-face {
+  font-family: 'Syne';
+  src: url('/blog/fonts/syne.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/blog/fonts/dm-sans.woff2') format('woff2');
+  font-weight: 100 1000;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #09090a;
+  --card: #1f1f24;
+  --card-hover: #27272d;
+  --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.07);
+  --text: #ededed;
+  --text-2: #a1a1aa;
+  --muted: #8a8a94;
+  --brand: #38bdf8;
+  --brand-ink: #04202e;
+  --brand-card: #0f3446;
+  --brand-card-text: #ededed;
+  --btn: rgba(255, 255, 255, 0.085);
+  --btn-hover: rgba(255, 255, 255, 0.14);
+  --font-display: 'Syne', 'DM Sans', sans-serif;
+  --font-ui: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f1f1f3;
+  --card: #ffffff;
+  --card-hover: #f7f7f8;
+  --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --line: rgba(0, 0, 0, 0.08);
+  --text: #17171a;
+  --text-2: #4e4e56;
+  --muted: #74747d;
+  --brand: #0284c7;
+  --brand-ink: #ffffff;
+  --brand-card: #dbeffa;
+  --brand-card-text: #082f45;
+  --btn: rgba(0, 0, 0, 0.06);
+  --btn-hover: rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16.5px/1.7 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 18px 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand svg {
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--text);
+  fill: var(--bg);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.wordmark span {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.top-nav {
+  display: flex;
+  gap: 22px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.top-nav a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.top-nav a:hover,
+.top-nav a[aria-current] {
+  color: var(--text);
+}
+
+.top-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.icon-link {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: var(--text-2);
+}
+
+.icon-link:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+.icon-link svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
+.app-btn {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-btn:hover {
+  filter: brightness(1.08);
+}
+
+/* ── Blog index ──────────────────────────────────────────── */
+.index {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+
+.intro {
+  display: flex;
+  align-items: baseline;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.intro p {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-2);
+}
+
+/* The newest post: the page's one coloured card, its position breaking out of the corner. */
+.hero {
+  position: relative;
+  display: block;
+  min-height: 400px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+  text-decoration: none;
+}
+
+.hero-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 56%;
+  padding: 56px 0 56px 56px;
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.hero-desc {
+  max-width: 48ch;
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.hero .meta {
+  opacity: 0.7;
+}
+
+.hero-cta {
+  margin-top: 10px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.hero-board {
+  position: absolute;
+  right: -40px;
+  bottom: -90px;
+  width: 470px;
+  transform: rotate(-8deg);
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hero-board .board {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+}
+
+.hero:hover .hero-board {
+  transform: rotate(-5deg) translateY(-10px);
+}
+
+.more-title {
+  margin: 56px 0 18px;
+  font-size: 24px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  gap: 22px;
+  height: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  text-decoration: none;
+}
+
+.card:hover {
+  background: var(--card-hover);
+}
+
+.card-board {
+  flex: none;
+  width: 116px;
+}
+
+.card-board .board {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.card h3 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+
+.card-desc {
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── A post ──────────────────────────────────────────────── */
+.post-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 720px) 200px;
+  justify-content: center;
+  gap: 56px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+
+.side,
+.toc-rail {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.side-title,
+.toc-title {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.side-title:hover {
+  color: var(--text);
+}
+
+.side ul,
+.drop ul,
+.toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.side a,
+.posts-menu a {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.side a:hover,
+.posts-menu a:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+.side a[aria-current],
+.posts-menu a[aria-current] {
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.toc a {
+  display: block;
+  padding: 5px 12px;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.toc a:hover {
+  color: var(--text);
+}
+
+.toc a[aria-current] {
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.post h1 {
+  margin: 8px 0 14px;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
+}
+
+.lede {
+  margin: 0 0 26px;
+  color: var(--text-2);
+  font-size: 19px;
+  line-height: 1.55;
+}
+
+.byline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--line);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.avatar svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--bg);
+}
+
+.byline-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.copy {
+  margin-left: auto;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--btn);
+  color: var(--text);
+  font: 600 14px var(--font-ui);
+  cursor: pointer;
+}
+
+.copy:hover {
+  background: var(--btn-hover);
+}
+
+/* Phones and narrow windows: the post list and the contents fold into menus. */
+.drop {
+  display: none;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+}
+
+.drop summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.drop summary::-webkit-details-marker {
+  display: none;
+}
+
+.drop summary::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform 0.2s ease;
+}
+
+.drop[open] summary::after {
+  transform: rotate(225deg);
+}
+
+.drop ul {
+  padding: 0 8px 10px;
+}
+
+.drop .toc a {
+  border-left: 0;
+}
+
+.toc-inline {
+  margin-top: 20px;
+}
+
+/* ── Prose ───────────────────────────────────────────────── */
+.prose {
+  padding-top: 8px;
+}
+
+.prose h2 {
+  margin: 44px 0 10px;
+  font-size: 27px;
+  scroll-margin-top: 24px;
+}
+
+.prose h3 {
+  margin: 30px 0 6px;
+  font-size: 19px;
+}
+
+.prose p,
+.prose li {
+  color: var(--text-2);
+}
+
+.prose strong {
+  color: var(--text);
+}
+
+.prose a {
+  color: var(--text);
+  text-decoration-color: var(--brand);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.prose a:hover {
+  color: var(--brand);
+}
+
+.prose blockquote {
+  margin: 20px 0;
+  padding: 2px 18px;
+  border-left: 3px solid var(--brand);
+}
+
+.prose code {
+  font: 14.5px ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.prose table {
+  width: 100%;
+  margin: 18px 0;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.prose th,
+.prose td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.badge {
+  margin-right: 2px;
+  vertical-align: -3px;
+}
+
+.diagram {
+  max-width: 460px;
+  margin: 30px auto;
+  padding: 14px;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+}
+
+.diagram .board {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.diagram .coord {
+  font: 600 20px var(--font-ui);
+}
+
+.diagram figcaption {
+  margin: 12px 4px 2px;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.try {
+  margin-top: 56px;
+  padding: 30px 32px;
+  border-radius: 24px;
+  background: var(--brand-card);
+  color: var(--brand-card-text);
+}
+
+.try h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.try p {
+  margin: 0 0 18px;
+  opacity: 0.85;
+}
+
+.try .try-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin: 0;
+  opacity: 1;
+}
+
+.try .app-btn {
+  margin: 0;
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  text-decoration: none;
+}
+
+.pager-link:hover {
+  background: var(--card-hover);
+}
+
+.pager-link:only-child {
+  grid-column: 1 / -1;
+}
+
+.pager-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.pager-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 24px 44px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.foot nav {
+  display: flex;
+  gap: 20px;
+}
+
+.foot a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.foot a:hover {
+  color: var(--text);
+}
+
+/* ── Smaller screens ─────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .post-layout {
+    grid-template-columns: 220px minmax(0, 720px);
+  }
+
+  .toc-rail {
+    display: none;
+  }
+
+  .toc-inline {
+    display: block;
+  }
+}
+
+@media (max-width: 900px) {
+  .post-layout {
+    grid-template-columns: minmax(0, 720px);
+    padding-top: 8px;
+  }
+
+  .side {
+    display: none;
+  }
+
+  .posts-menu {
+    display: block;
+  }
+
+  .top-nav {
+    display: none;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-text {
+    max-width: none;
+    padding: 36px 32px 300px;
+  }
+
+  .hero-board {
+    right: 50%;
+    bottom: -150px;
+    width: 400px;
+    margin-right: -200px;
+  }
+
+  .intro {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 16px;
+  }
+
+  .top {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .top-end .icon-link {
+    display: none;
+  }
+
+  .index,
+  .post-layout {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .intro h1 {
+    font-size: 40px;
+  }
+
+  .hero {
+    border-radius: 22px;
+  }
+
+  .hero-text {
+    padding: 28px 22px 250px;
+  }
+
+  .hero h2 {
+    font-size: 29px;
+  }
+
+  .hero-board {
+    bottom: -140px;
+    width: 330px;
+    margin-right: -165px;
+  }
+
+  .card {
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .card-board {
+    width: 84px;
+  }
+
+  .card h3 {
+    font-size: 18px;
+  }
+
+  .post h1 {
+    font-size: 31px;
+  }
+
+  .lede {
+    font-size: 17.5px;
+  }
+
+  .prose h2 {
+    font-size: 23px;
+  }
+
+  .try {
+    padding: 24px 22px;
+  }
+
+  .pager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .diagram {
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-board,
+  .hero:hover .hero-board {
+    transition: none;
+    transform: rotate(-8deg);
+  }
+}

@@ -1,0 +1,58 @@
+---
+title: What's new in Rookahead
+description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
+date: 2026-10-22
+cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
+order: 1
+---
+
+This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 22 October 2026
+
+**Rules:** Clutch is the only move, however obvious. A free capture, or an attacked piece moved to its one safe square, now counts when nothing else works. Taking back what your opponent just took, and the checkmating move itself, stay Best. We tested the change on purpose-built positions and on real games before making it.
+
+
+- This blog, with posts on [how Rookahead grades a move](/blog/how-rookahead-grades-a-move) and [what counts as a sacrifice](/blog/what-counts-as-a-sacrifice).
+- A [Discord server](https://discord.gg/ebm3NZNHZH) for chess talk, questions about verdicts, bug reports and ideas. It's linked from the sidebar, the You tab and the About page.
+
+## 21 October 2026
+
+**Rules:** a sacrifice has to be taken at once. If your opponent can only win the material after a quiet move first, your move didn't offer it, so it isn't a sacrifice and can't be Legendary. The game behind this is in [What counts as a sacrifice](/blog/what-counts-as-a-sacrifice).
+
+Saved reviews now keep the engine's work, so a rule change regrades them in the background without running the engine again. Reviews saved before this change are reviewed once more the next time you open them.
+
+- Board sounds for moves, captures, checks and the end of the game.
+- Legendary moves lift off the board when they're played, and the end of a game is marked on the board.
+- A page of every Legendary move from your reviewed games.
+- A new Home on phones: your latest game first, then your Legendary moves, accuracy, mistakes to fix and the daily puzzle.
+- Pages load with placeholders in place of empty space, and Rookahead tells you when you're offline.
+
+## 20 October 2026
+
+**Rules:** Rookahead's verdicts became our own [written rules](https://github.com/rookahead/rookahead/blob/main/docs/rulebook.md). The main changes from before:
+
+- Only the engine's own move is Best. A different move that comes out almost as good is Strong.
+- "Hard to find" is judged the way a person plays, not by how deep the engine had to look. Mate in one, promotions, safe captures and moving an attacked piece to safety are easy to find; quiet moves and sacrifices are hard.
+- A sacrifice that wins the material back a few moves later through a tactic still counts as a sacrifice.
+- A sacrifice your opponent should decline, because taking it loses, can be Legendary even when you were already winning.
+- In defence, finding the one move that doesn't get mated is Clutch however obvious it looks. Taking back material your opponent just took is never Clutch.
+
+Also new:
+
+- Rookahead works as a phone app: add it to your home screen, and it opens full screen with a tab bar.
+- Colour themes (Sky, Gold, Indigo, Coral, Forest and Ivory) and a Dim mode between dark and light.
+- The computer plays more like a person: at the lower levels it makes the mistakes people at that rating make.
+- Settings got their own page, and the engine's options moved beside the board.
+- The Full version of Stockfish 19, with its full-size network.
+
+## 18 and 19 October 2026
+
+Rookahead went online at rookahead.com, with:
+
+- Game reviews with our own verdicts, from Legendary to Blunder.
+- Your games from Chess.com and Lichess, by username.
+- Share links for a game or a single move, plus images, GIFs and an embeddable board.
+- Puzzles: rated, daily, sprint, and puzzles made from your own mistakes.
+- Play the computer at eight levels, with every time control.
+- Accounts, to keep your games and progress on more than one device.
