@@ -9,6 +9,9 @@ let queue: (() => void)[] = []
 let scheduled = false
 let running: Promise<unknown> | null = null
 
+// The transition on screen, if any.
+let current: ViewTransition | null = null
+
 type Kind = 'settling' | 'page-change'
 const kinds: Record<Kind, number> = { settling: 0, 'page-change': 0 }
 
@@ -35,6 +38,7 @@ export function startViewTransition(update: () => void, kind?: Kind): ViewTransi
     root.classList.add(kind)
   }
   const transition = document.startViewTransition(update)
+  current = transition
   const skip = () => transition.skipTransition()
   const key = (e: KeyboardEvent) => SCROLL_KEYS.has(e.key) && skip()
   const wheel = (e: WheelEvent) => {
@@ -53,7 +57,28 @@ export function startViewTransition(update: () => void, kind?: Kind): ViewTransi
       }, WHEEL_BEAT_MS),
     )
   }
+  // A press ends it at once. Chrome then hands that click to the page as a whole (<html>), the press having
+  // landed on the transition's pictures, and only once it has ended: so the press waits for its click, however
+  // late, and gives it to what's really under the pointer (Settings, pressed as Home loads), once no transition
+  // is in the way (one waiting behind this may have started by then: it ends too).
+  const press = () => {
+    skip()
+    addEventListener(
+      'click',
+      async (e) => {
+        if (e.target !== document.documentElement) return
+        const { clientX: x, clientY: y } = e
+        while (current) {
+          current.skipTransition()
+          await running
+        }
+        document.elementFromPoint(x, y)?.closest<HTMLElement>('a, button, [role="button"], label, summary')?.click()
+      },
+      { capture: true, once: true },
+    )
+  }
   const input = { capture: true, passive: true }
+  addEventListener('pointerdown', press, input)
   addEventListener('wheel', wheel, input)
   addEventListener('touchstart', skip, input)
   addEventListener('keydown', key, input)
@@ -62,12 +87,14 @@ export function startViewTransition(update: () => void, kind?: Kind): ViewTransi
     .catch(() => {})
     .finally(() => {
       removeEventListener('scroll', skip)
+      removeEventListener('pointerdown', press, input)
       removeEventListener('wheel', wheel, input)
       removeEventListener('touchstart', skip, input)
       removeEventListener('keydown', key, input)
       // A quick second click starts the next one before this has wound up: its names stay.
       if (kind && --kinds[kind] === 0) root.classList.remove(kind)
       if (running === done) running = null
+      if (current === transition) current = null
     })
   running = done
   return transition

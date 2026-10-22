@@ -6564,6 +6564,12 @@ button.stat-card:hover {
   view-transition-class: card;
 }
 
+/* A view transition's pictures sit over the page while it runs: clicks go through them to the page itself,
+   already as it's becoming, so a button pressed mid-transition (Settings, as Home loads) still works. */
+::view-transition {
+  pointer-events: none;
+}
+
 ::view-transition-group(*) {
   animation-duration: 0.45s;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
