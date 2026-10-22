@@ -5720,6 +5720,23 @@ button.user-avatar.guest:hover {
 .daily-board .mini-board {
   border-radius: 10px;
   overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+/* A ring in your colour, a gap of the card between, under a mouse or for the keyboard; the board itself
+   stays put. Not on touch, where a tapped board would stay "hovered". */
+.daily-board:focus-visible {
+  outline: none;
+}
+
+.daily-board:focus-visible .mini-board {
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--brand);
+}
+
+@media (hover: hover) {
+  .daily-board:hover .mini-board {
+    box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--brand);
+  }
 }
 
 .daily-board .skel-board {
