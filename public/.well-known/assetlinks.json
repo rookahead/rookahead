@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.rookahead.app",
+      "sha256_cert_fingerprints": [
+        "7E:E7:F7:24:6C:8D:92:2C:68:CE:FC:C6:02:68:0C:9C:12:2A:9C:22:1A:D7:1D:B3:50:DC:0F:72:5B:A9:6E:80",
+        "EE:14:A3:9E:94:A3:BA:28:DA:65:08:B6:26:65:2F:F0:C6:B2:82:B0:D7:C7:A8:70:3C:46:05:0E:B5:D0:7A:0E"
+      ]
+    }
+  }
+]
