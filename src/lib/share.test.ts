@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PositionEval } from '../hooks/useAnalysis'
 import { classifyGame, withClasses, type MoveClass } from './classify'
 import { checkmatedScore } from './evaluation'
-import { clampPly, CLASS_CODES, decodeShare, embedUrl, encodeShare, fromSharedGame, gameShareText, iframeSnippet, momentShareText, moveLabel, parseEmbedHash, parseShareHash, shareUrl, toSharedGame, type SharedGame } from './share'
+import { clampPly, CLASS_CODES, decodeShare, embedUrl, encodeShare, fromSharedGame, gameShareText, iframeSnippet, momentShareText, moveLabel, parseEmbedHash, parseShareHash, shareUrl, sortedMoves, toSharedGame, type SharedGame } from './share'
 import { mainline, treeFromPgn } from './tree'
 import type { Score } from './uci'
 
@@ -285,5 +285,26 @@ describe('embed', () => {
     expect(clampPly(19, 34)).toBe(19)
     expect(clampPly(99, 34)).toBe(33)
     expect(clampPly(null, 34)).toBeNull()
+  })
+})
+
+describe('sortedMoves', () => {
+  it('lists exactly the moves chess.js writes out in full, promotions, castling and en passant included', () => {
+    const fens = [
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      'r3k2r/pppq1ppp/2n2n2/3pp3/1b1PP3/2N2N2/PPPQ1PPP/R3KB1R w KQkq - 0 8',
+      'rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3',
+      '8/P5k1/8/8/8/8/6Kp/8 w - - 0 1',
+      '4k3/8/8/8/8/8/4q3/4K3 w - - 0 1',
+    ]
+    const game = new Chess()
+    for (const san of 'e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6 c3 O-O h3 Nb8 d4 Nbd7'.split(' ')) {
+      fens.push(game.fen())
+      game.move(san)
+    }
+    for (const fen of fens) {
+      const chess = new Chess(fen)
+      expect(sortedMoves(chess)).toEqual(chess.moves({ verbose: true }).map((m) => m.lan).sort())
+    }
   })
 })

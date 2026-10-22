@@ -54,8 +54,21 @@ const NO_MOVE = 255
 
 class Damaged extends Error {}
 
-/** Legal moves in UCI, sorted, so indices don't depend on chess.js's generation order. */
-const sortedMoves = (chess: Chess) => chess.moves({ verbose: true }).map((m) => m.lan).sort()
+/** The moves chess.js works out before it dresses them up: squares as 0x88 indices. */
+type RawMoves = { _moves?: (options: { legal: boolean }) => { from: number; to: number; promotion?: string }[] }
+const squareName = (i: number) => 'abcdefgh'[i & 15] + (8 - (i >> 4))
+
+/**
+ * Legal moves in UCI, sorted, so indices don't depend on chess.js's generation order. Read from chess.js's
+ * own move list: its `moves({ verbose: true })` writes each one out in full (its SAN and the position before
+ * and after), some 26 times slower, and every saved review is decoded move by move with this. Should a
+ * chess.js update take that list away, the verbose way gives the very same moves (share.test.ts checks).
+ */
+export function sortedMoves(chess: Chess): string[] {
+  const raw = (chess as unknown as RawMoves)._moves
+  if (typeof raw !== 'function') return chess.moves({ verbose: true }).map((m) => m.lan).sort()
+  return raw.call(chess, { legal: true }).map((m) => squareName(m.from) + squareName(m.to) + (m.promotion ?? '')).sort()
+}
 
 function encodeScore(s: Score): number {
   if (s.type === 'cp') return Math.max(-MAX_CP, Math.min(MAX_CP, Math.round(s.value)))
