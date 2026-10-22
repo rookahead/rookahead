@@ -374,6 +374,12 @@ body {
   overflow-x: clip;
 }
 
+/* The scrollbar's room is kept on every page, so going from one that fits (Settings) to one that scrolls
+   (Home) doesn't narrow the page mid-transition and squeeze the one fading out. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
