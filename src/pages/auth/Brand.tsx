@@ -14,25 +14,11 @@ const INTRO_MS = 1900
 /** Then the logo's trip to the corner (its CSS transition, 0.95s); the first slide waits until it's nearly there. */
 const DOCK_MS = 800
 
-/** Where a square sits on a board drawn from `orientation`'s side, as percentages from the top left. */
-function squareAt(square: string, orientation: Color): CSSProperties {
-  const file = square.charCodeAt(0) - 97
-  const rank = Number(square[1]) - 1
-  const col = orientation === 'white' ? file : 7 - file
-  const row = orientation === 'white' ? 7 - rank : rank
-  return { left: `${(col + 1) * 12.5}%`, top: `${row * 12.5}%` }
-}
-
-/** A position with a verdict badge on the moved piece's square, as in a review. */
+/** A position with a verdict badge on the moved piece's square, the way the app's small boards show one. */
 function BoardWithBadge({ fen, orientation, move, cls }: { fen: string; orientation: Color; move: [string, string]; cls?: MoveClass }) {
   return (
     <div className="tour-board">
-      <MiniBoard fen={fen} orientation={orientation} theme="theme" lastMove={move} />
-      {cls && (
-        <span className="tour-badge" style={squareAt(move[1], orientation)}>
-          <ClassIcon cls={cls} size={34} />
-        </span>
-      )}
+      <MiniBoard fen={fen} orientation={orientation} theme="theme" lastMove={move} grade={cls} />
     </div>
   )
 }

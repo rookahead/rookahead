@@ -4339,20 +4339,18 @@ button.user-avatar.guest:hover {
   position: relative;
 }
 
-.tour-badge {
-  position: absolute;
-  display: flex;
-  transform: translate(-62%, -38%);
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+/* The verdict badge is the small boards' own (MiniBoard), a little larger on these big boards, and it pops in. */
+.tour-board .mini-badge {
+  width: 8%;
 }
 
-.is-active .tour-badge {
+.is-active .tour-board .mini-badge {
   animation: tour-pop 0.5s 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both;
 }
 
 @keyframes tour-pop {
   from {
-    transform: translate(-62%, -38%) scale(0);
+    scale: 0;
   }
 }
 
@@ -4700,7 +4698,7 @@ button.user-avatar.guest:hover {
   .auth-mark,
   .auth-intro,
   .tour-slide.is-active,
-  .tour-badge,
+  .tour-board .mini-badge,
   .tour-note,
   .tour-phone,
   .tour-ladder span,
