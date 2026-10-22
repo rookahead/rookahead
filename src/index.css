@@ -27,6 +27,8 @@
   /* Home cards and the sidebar: a clear step up from the page, with a hairline edge to lift them. */
   --card: var(--t-cont);
   --card-hover: var(--t-high);
+  /* The sidebar and the phone's tab bar: a step tinted off the page, with the cards on it a step further. */
+  --side: var(--t-low);
   --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
@@ -108,6 +110,7 @@
   --brand-card-text: var(--t-opc);
   --card: var(--t-lowest);
   --card-hover: var(--t-low);
+  --side: var(--t-low);
   --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
@@ -352,6 +355,7 @@
   --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
   --card: var(--t-low);
   --card-hover: var(--t-cont);
+  --side: var(--t-lowest);
   --bar-dark: var(--t-cont);
   --float-bg: rgba(0, 0, 0, 0.95);
 }
@@ -621,7 +625,7 @@ svg {
   margin: 12px 0 12px 12px;
   padding: 16px 12px 12px;
   border-radius: 22px;
-  background: var(--surface);
+  background: var(--side);
   box-shadow: var(--card-edge);
   display: flex;
   flex-direction: column;
@@ -904,7 +908,7 @@ svg {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  background: var(--surface);
+  background: var(--side);
   border-top: 1px solid var(--border);
 }
 
@@ -4001,7 +4005,7 @@ svg {
   /* 5px in: the avatar lands on the rail's centre line. */
   padding: 8px 6px 8px 5px;
   border-radius: 16px;
-  background: var(--surface-2);
+  background: var(--card);
   transition: background-color var(--side-t) var(--side-ease);
 }
 
@@ -7295,7 +7299,7 @@ h2 {
   gap: 2px;
   padding: 12px 8px 8px;
   border-radius: 16px;
-  background: var(--surface-2);
+  background: var(--card);
 }
 
 .today-card h2 {
@@ -7364,12 +7368,12 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Game review: set apart under a thin line, tinted in the brand colour. */
+/* Game review: set apart under a thin line, filled in your colour (the latest-game card's colours). */
 .sidebar-item.featured {
   position: relative;
   margin-top: 13px;
-  background: color-mix(in srgb, var(--brand) 13%, transparent);
-  color: var(--text);
+  background: var(--brand-card);
+  color: var(--brand-card-text);
 }
 
 .sidebar-item.featured::before {
@@ -7383,12 +7387,13 @@ h2 {
 }
 
 .sidebar-item.featured svg {
-  color: var(--brand);
+  color: var(--brand-card-text);
 }
 
 .sidebar-item.featured:hover,
 .sidebar-item.featured.active {
-  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  background: color-mix(in srgb, var(--brand-card-text) 10%, var(--brand-card));
+  color: var(--brand-card-text);
 }
 
 .sidebar-item.featured::before {
