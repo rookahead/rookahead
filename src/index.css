@@ -6593,7 +6593,7 @@ button.stat-card:hover {
   padding: 0 4px 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .game-card {
@@ -6601,7 +6601,7 @@ button.stat-card:hover {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 8px 16px 8px 8px;
+  padding: 6px 16px 6px 6px;
   border: 0;
   border-radius: 12px;
   background: var(--surface-3);
