@@ -8,6 +8,7 @@ import { navigate } from '../lib/router'
 import type { BoardTheme } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from '../pages/puzzles/shared'
+import { IconTile } from './IconTile'
 import { MiniBoard } from './MiniBoard'
 import { DailyCardSkeleton } from './Skeleton'
 
@@ -36,6 +37,7 @@ export function DailyCard({ theme }: { theme: BoardTheme }) {
   return (
     <section className="home-card daily-card" aria-labelledby="daily-puzzle">
       <header className="daily-head">
+        <IconTile tone="puzzles" />
         <h2 id="daily-puzzle">
           Daily puzzle <span className="muted">{formatDay(Date.now() / 1000)}</span>
         </h2>

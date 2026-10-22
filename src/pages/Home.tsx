@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { GameList } from '../components/GameList'
+import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
@@ -168,7 +169,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
       <StatCard
         pending={waiting}
         tone="legendary"
-        label="Legendary moves"
+        label="Legendary"
         empty="None yet"
         value={stats.legendary ? String(stats.legendary) : undefined}
         onClick={stats.legendaryAll ? () => navigate('/legendary') : undefined}
@@ -246,6 +247,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 
           <section className="home-card games-card" aria-labelledby="my-games">
             <header className="home-card-head">
+              <IconTile tone="games" />
               <h2 id="my-games">My games</h2>
               {games.length > 0 && (
                 <button className="link-btn see-all" onClick={() => navigate('/games')}>
@@ -279,9 +281,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         <aside className="home-side" aria-label="Start">
           {waiting ? <LatestCardSkeleton /> : latest && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
           <button className="home-card quick-card" onClick={() => navigate('/play')}>
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M6 4l14 8-14 8z" />
-            </svg>
+            <IconTile tone="play" size="big" />
             <span>
               <strong>Play the computer</strong>
               <small>8 levels, 400 to 2600, any time control</small>
@@ -293,9 +293,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           <DailyCard theme={settings.boardTheme} />
           <PuzzlesCard rating={progress.rating} />
           <button className="home-card quick-card" onClick={() => navigate(current ? '/analysis' : '/board')}>
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
-            </svg>
+            <IconTile tone="analyze" size="big" />
             <span>
               <strong>{current ? 'Continue on the board' : 'Analysis board'}</strong>
               <small>{current ? `${current.title} · ${current.moves} ${current.moves === 1 ? 'move' : 'moves'}` : 'Any position, PGN or FEN'}</small>
@@ -382,7 +380,10 @@ function FormCard({ pending, accuracy, trend, recent, mistakes }: { pending: boo
   return (
     <section className="home-card form-card" aria-label="Your form" aria-busy={pending || mistakes === null}>
       <Link to="/games" className="stat-card accuracy">
-        <span className="stat-head">Accuracy</span>
+        <span className="stat-head">
+          <IconTile tone="accuracy" size="small" />
+          Accuracy
+        </span>
         {pending ? (
           <span className="stat-row">
             <span className="skel stat-skeleton" aria-label="Loading" />
@@ -412,7 +413,10 @@ function FormCard({ pending, accuracy, trend, recent, mistakes }: { pending: boo
         )}
       </Link>
       <Link to="/puzzles/mistakes" className="stat-card mistakes">
-        <span className="stat-head">Mistakes to fix</span>
+        <span className="stat-head">
+          <IconTile tone="mistakes" size="small" />
+          Mistakes to fix
+        </span>
         {pending || mistakes === null ? (
           <span className="stat-row">
             <span className="skel stat-skeleton" aria-label="Loading" />
@@ -456,6 +460,8 @@ interface StatCardProps {
   children: ReactNode
 }
 
+const TILES = { accuracy: 'accuracy', legendary: 'legendary', mistakes: 'mistakes', streak: 'streak' } as const
+
 /** One of the four numbers: its label, the number (or words when there's nothing yet), a line of context. */
 function StatCard({ pending = false, tone, label, value, empty, spark, onClick, children }: StatCardProps) {
   // Only a number that was waited for fades in; one that's there from the start just shows.
@@ -464,7 +470,10 @@ function StatCard({ pending = false, tone, label, value, empty, spark, onClick, 
   const arrive = waited && !pending ? 'arrive' : ''
   const body = (
     <>
-      <span className="stat-head">{label}</span>
+      <span className="stat-head">
+        <IconTile tone={TILES[tone]} size="small" />
+        <span className="stat-label">{label}</span>
+      </span>
       {pending ? (
         <>
           <span className="stat-row">
@@ -577,6 +586,7 @@ function PuzzlesCard({ rating }: { rating: number }) {
   return (
     <section className="home-card puzzles-card" aria-labelledby="puzzles-card">
       <header>
+        <IconTile tone="puzzles" />
         <h2 id="puzzles-card">Puzzles</h2>
         <span className="muted">Rating {Math.round(rating)}</span>
       </header>

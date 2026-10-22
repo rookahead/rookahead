@@ -45,6 +45,9 @@
   --tone-violet: #a78bfa;
   --tone-rose: #fb7185;
   --tone-green: #4ade80;
+  /* Section colours with no other job: My games and Analyze on their icon tiles. */
+  --tone-blue: #38bdf8;
+  --tone-pink: #f472b6;
   /* Faint banding (alternate move rows) and graph guide lines. */
   --tint: rgba(255, 255, 255, 0.025);
   --guide: rgba(255, 255, 255, 0.14);
@@ -116,6 +119,8 @@
   --tone-violet: #7c3aed;
   --tone-rose: #e11d48;
   --tone-green: #16a34a;
+  --tone-blue: #0284c7;
+  --tone-pink: #db2777;
   --tint: rgba(0, 0, 0, 0.022);
   --guide: rgba(0, 0, 0, 0.14);
   --guide-strong: rgba(0, 0, 0, 0.3);
@@ -3825,15 +3830,88 @@ svg {
   background: var(--card-hover);
 }
 
-.quick-card svg {
+/* A section's icon on a soft square of its colour (IconTile.tsx). */
+.icon-tile {
+  --tile: var(--text-2);
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tile) 16%, transparent);
+  color: var(--tile);
+}
+
+:root[data-theme='light'] .icon-tile {
+  background: color-mix(in srgb, var(--tile) 13%, transparent);
+}
+
+.icon-tile svg {
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.icon-tile .filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+.icon-tile.small {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+
+.icon-tile.small svg {
+  width: 13px;
+  height: 13px;
+}
+
+.icon-tile.big {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.icon-tile.big svg {
+  width: 19px;
+  height: 19px;
+}
+
+.icon-tile.play {
+  --tile: var(--tone-green);
+}
+
+.icon-tile.puzzles,
+.icon-tile.streak {
+  --tile: var(--streak);
+}
+
+.icon-tile.games {
+  --tile: var(--tone-blue);
+}
+
+.icon-tile.analyze {
+  --tile: var(--tone-pink);
+}
+
+.icon-tile.accuracy {
+  --tile: var(--brand);
+}
+
+.icon-tile.legendary {
+  --tile: var(--tone-violet);
+}
+
+.icon-tile.mistakes {
+  --tile: var(--danger);
 }
 
 .quick-card strong {
@@ -5578,12 +5656,17 @@ button.user-avatar.guest:hover {
 .daily-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 
 .daily-head h2 {
+  flex: 1;
   margin: 0;
   font-size: 16px;
+}
+
+.daily-head > :last-child {
+  margin-left: auto;
 }
 
 .daily-head h2 .muted {
@@ -6113,7 +6196,7 @@ button.user-avatar.guest:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 18px;
+  padding: 16px 15px;
   text-align: left;
   --tone: var(--text-2);
 }
@@ -6144,9 +6227,19 @@ button.stat-card:hover {
 }
 
 .stat-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
   color: var(--text-2);
   font-size: 13px;
   font-weight: 550;
+}
+
+.stat-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-row {
@@ -6934,8 +7027,12 @@ button.chip:hover {
 
 .puzzles-card header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.puzzles-card header h2 {
+  flex: 1;
 }
 
 .puzzles-card .muted {

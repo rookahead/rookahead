@@ -109,6 +109,7 @@ export function DailyCardSkeleton() {
   return (
     <section className="home-card daily-card skel-group" aria-busy aria-label="Loading the daily puzzle">
       <header className="daily-head">
+        <Skel w="28px" h="28px" />
         <Skel w="44%" h="18px" />
         <Skel w="64px" h="26px" className="skel-pill" />
       </header>
