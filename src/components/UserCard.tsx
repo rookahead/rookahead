@@ -49,8 +49,10 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
   const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
   const closeMenu = useCallback(() => setMenuAt(null), [])
   const guest = status !== 'signed-in'
+  // Keyed: the card's layout changes as a saved sign-in comes back (signing in, then you), and the gear moves
+  // among its siblings; without a key it would be a new button each time, and a click landing then is lost.
   const settings = (
-    <button className={`icon-btn user-card-gear ${settingsOpen ? 'active' : ''}`} onClick={onSettings} aria-label="Settings" title="Settings">
+    <button key="settings" className={`icon-btn user-card-gear ${settingsOpen ? 'active' : ''}`} onClick={onSettings} aria-label="Settings" title="Settings">
       <Gear />
     </button>
   )
