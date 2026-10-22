@@ -271,7 +271,7 @@ const GITHUB =
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
 
 // The theme you picked in the app (Settings → Appearance), before the first paint; otherwise the device's.
-const THEME = `<script>try{var a=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}').appearance;document.documentElement.dataset.theme=a==='light'?'light':a==='dark'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch(e){}</script>`
+const THEME = `<script>try{var a=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}').appearance;document.documentElement.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}catch(e){}</script>`
 
 // Copy link, and the table of contents following the section you're reading.
 const SCRIPT = `<script>

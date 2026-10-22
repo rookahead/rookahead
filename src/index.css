@@ -1,31 +1,32 @@
-/* ═══════════════ Graphite ═══════════════
-   A near-monochrome interface: greys and white do all the structural work,
-   so the only colour on screen carries meaning (classifications, the eval). */
+/* ═══════════════ Tonal ═══════════════
+   Every surface is a tone of your colour theme (Android's Material You, worked out from one seed colour:
+   the --t-* tones below). Greys and white still do the structural work, tinted; the strong colours on
+   screen carry meaning (classifications, the eval, sections). */
 :root {
   color-scheme: dark;
-  --bg: #09090a;
-  --surface: #1a1a1e;
-  --surface-2: #222227;
-  --surface-3: #2a2a30;
-  --surface-4: #35353c;
+  --bg: var(--t-surface);
+  --surface: var(--t-low);
+  --surface-2: var(--t-cont);
+  --surface-3: var(--t-high);
+  --surface-4: var(--t-highest);
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.13);
-  --text: #ededed;
-  --text-2: #a1a1aa;
-  --muted: #8a8a94;
-  /* The "accent" is simply ink-on-paper inverted: white. */
-  --accent: #ededed;
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 72%, var(--t-surface));
+  /* The "accent" is simply ink-on-paper inverted: the near-white text colour. */
+  --accent: var(--t-on);
   --accent-hover: #ffffff;
   --accent-ink: #0b0b0c;
   --accent-soft: rgba(255, 255, 255, 0.08);
-  /* Rookahead's one colour (sky): the home page's main card, Play's slider and Start button. */
-  --brand: #38bdf8;
-  --brand-ink: #04202e;
-  --brand-card: #0f3446;
-  --brand-card-text: #ededed;
+  /* Rookahead's colour: the home page's main card, Play's slider and Start button. */
+  --brand: var(--t-primary);
+  --brand-ink: var(--t-on-primary);
+  --brand-card: var(--t-pc);
+  --brand-card-text: var(--t-opc);
   /* Home cards and the sidebar: a clear step up from the page, with a hairline edge to lift them. */
-  --card: #1f1f24;
-  --card-hover: #27272d;
+  --card: var(--t-cont);
+  --card-hover: var(--t-high);
   --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
@@ -33,7 +34,7 @@
   --white-piece: #f2f2f3;
   --black-piece: #111113;
   --bar-light: #ececee;
-  --bar-dark: #2a2a2f;
+  --bar-dark: var(--t-high);
   --warn: #e0b25b;
   --streak: #ff8f3f;
   /* Secondary buttons: a tonal fill a step lighter than whatever they sit on. */
@@ -49,7 +50,7 @@
   --guide: rgba(255, 255, 255, 0.14);
   --guide-strong: rgba(255, 255, 255, 0.3);
   /* Floating things: tooltips, popovers, dialogs and the dim layer behind them. */
-  --float-bg: rgba(8, 8, 9, 0.95);
+  --float-bg: color-mix(in srgb, var(--t-surface) 95%, transparent);
   --scrim: rgba(0, 0, 0, 0.66);
   --shadow-pop: 0 18px 60px rgba(0, 0, 0, 0.6);
   --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.4);
@@ -81,29 +82,29 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Light: the same near-monochrome idea, inverted. Ink is near-black; colour still only carries meaning. */
+/* Light: the same idea, inverted. The page is a tint of your colour, cards are white on it. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f1f1f3;
-  --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --surface-3: #ededef;
-  --surface-4: #e2e2e6;
+  --bg: var(--t-cont);
+  --surface: var(--t-lowest);
+  --surface-2: var(--t-low);
+  --surface-3: var(--t-high);
+  --surface-4: var(--t-highest);
   --border: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(0, 0, 0, 0.15);
-  --text: #17171a;
-  --text-2: #4e4e56;
-  --muted: #74747d;
-  --accent: #17171a;
+  --text: var(--t-on);
+  --text-2: var(--t-on-var);
+  --muted: color-mix(in srgb, var(--t-on-var) 82%, var(--t-lowest));
+  --accent: var(--t-on);
   --accent-hover: #000000;
   --accent-ink: #ffffff;
   --accent-soft: rgba(0, 0, 0, 0.05);
-  --brand: #0284c7;
-  --brand-ink: #ffffff;
-  --brand-card: #dbeffa;
-  --brand-card-text: #082f45;
-  --card: #ffffff;
-  --card-hover: #f4f4f5;
+  --brand: var(--t-primary);
+  --brand-ink: var(--t-on-primary);
+  --brand-card: var(--t-pc);
+  --brand-card-text: var(--t-opc);
+  --card: var(--t-lowest);
+  --card-hover: var(--t-low);
   --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
@@ -118,254 +119,236 @@
   --tint: rgba(0, 0, 0, 0.022);
   --guide: rgba(0, 0, 0, 0.14);
   --guide-strong: rgba(0, 0, 0, 0.3);
-  --float-bg: rgba(255, 255, 255, 0.97);
+  --float-bg: color-mix(in srgb, var(--t-lowest) 97%, transparent);
   --scrim: rgba(20, 20, 26, 0.32);
   --shadow-pop: 0 18px 50px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.18);
   --dark-piece-glow: none;
 }
 
-/* ═══════════════ Colour themes (Settings → Appearance; Sky is the default above) ═══════════════
-   Each changes the accent and gives the greys a tint to match, in dark and in light. Verdict,
-   result and mode colours stay the same in every theme: they mean something. */
-:root[data-palette='gold']:not([data-theme='light']) {
-  --bg: #0c0b09;
-  --surface: #1c1a16;
-  --surface-2: #24211c;
-  --surface-3: #2d2a23;
-  --surface-4: #39352d;
-  --card: #211e19;
-  --card-hover: #2a2620;
-  --text: #ece6da;
-  --text-2: #aaa395;
-  --muted: #8f887b;
-  --accent: #ece6da;
-  --brand: #f2b33d;
-  --brand-ink: #241800;
-  --brand-card: #3a2b0e;
-  --brand-card-text: #f5ecd8;
-  --bar-dark: #2d2a23;
-  --float-bg: rgba(12, 11, 9, 0.95);
+/* ═══════════════ Colour themes (Settings → Appearance; Gold is the default) ═══════════════
+   Each theme is one seed colour worked out into tones the way Android's Material You does it
+   (material-color-utilities: backgrounds from its Vibrant scheme, so the tint shows; the containers
+   from Tonal Spot, as Vibrant turns some neon). Ivory is its Monochrome scheme: no colour at all.
+   Verdict, result and section colours stay the same in every theme: they mean something. */
+:root,
+:root[data-palette='gold'] {
+  --t-surface: #1a1206;
+  --t-lowest: #140d03;
+  --t-low: #221a0d;
+  --t-cont: #271e11;
+  --t-high: #32291a;
+  --t-highest: #3d3324;
+  --t-on: #f1e0ca;
+  --t-on-var: #d6c4aa;
+  --t-primary: #ffba34;
+  --t-on-primary: #422c00;
+  --t-pc: #5f4100;
+  --t-opc: #ffdeac;
+  --t-sc: #55442a;
+  --t-osc: #f8dfbb;
 }
 
+:root[data-theme='light'],
 :root[data-palette='gold'][data-theme='light'] {
-  --bg: #f4f0e8;
-  --surface: #fffdf8;
-  --surface-2: #f7f3eb;
-  --surface-3: #efe9de;
-  --surface-4: #e4dccd;
-  --card: #fffdf8;
-  --card-hover: #f7f3eb;
-  --text: #1f1b14;
-  --text-2: #5a5244;
-  --muted: #7b7262;
-  --accent: #1f1b14;
-  --brand: #9a6410;
-  --brand-ink: #ffffff;
-  --brand-card: #f6e6c3;
-  --brand-card-text: #3b2905;
-  --float-bg: rgba(255, 253, 248, 0.97);
+  --t-surface: #fff8f3;
+  --t-lowest: #ffffff;
+  --t-low: #fff2e2;
+  --t-cont: #fdebd5;
+  --t-high: #f7e6d0;
+  --t-highest: #f1e0ca;
+  --t-on: #221a0d;
+  --t-on-var: #514531;
+  --t-primary: #7e5700;
+  --t-on-primary: #ffffff;
+  --t-pc: #ffdeac;
+  --t-opc: #5f4100;
+  --t-sc: #f8dfbb;
+  --t-osc: #55442a;
 }
 
-:root[data-palette='indigo']:not([data-theme='light']) {
-  --bg: #090a10;
-  --surface: #191a25;
-  --surface-2: #20222f;
-  --surface-3: #282a39;
-  --surface-4: #333647;
-  --card: #1d1f2b;
-  --card-hover: #252836;
-  --text: #eceefa;
-  --text-2: #a3a6bd;
-  --muted: #8a8da5;
-  --accent: #eceefa;
-  --brand: #818cf8;
-  --brand-ink: #0d0f33;
-  --brand-card: #252a5c;
-  --brand-card-text: #eef0ff;
-  --bar-dark: #282a39;
-  --float-bg: rgba(9, 10, 16, 0.95);
+:root[data-palette='sky'] {
+  --t-surface: #0b151a;
+  --t-lowest: #060f15;
+  --t-low: #131d23;
+  --t-cont: #172127;
+  --t-high: #222b31;
+  --t-highest: #2c363c;
+  --t-on: #dae4ec;
+  --t-on-var: #bbc8d2;
+  --t-primary: #7bd0ff;
+  --t-on-primary: #00354a;
+  --t-pc: #004c69;
+  --t-opc: #c4e7ff;
+  --t-sc: #374955;
+  --t-osc: #d1e5f4;
+}
+
+:root[data-palette='sky'][data-theme='light'] {
+  --t-surface: #f5faff;
+  --t-lowest: #ffffff;
+  --t-low: #ebf5fd;
+  --t-cont: #e5eff7;
+  --t-high: #e0e9f2;
+  --t-highest: #dae4ec;
+  --t-on: #131d23;
+  --t-on-var: #3c4851;
+  --t-primary: #00668a;
+  --t-on-primary: #ffffff;
+  --t-pc: #c4e7ff;
+  --t-opc: #004c69;
+  --t-sc: #d1e5f4;
+  --t-osc: #374955;
+}
+
+:root[data-palette='indigo'] {
+  --t-surface: #12131c;
+  --t-lowest: #0d0d17;
+  --t-low: #1a1b25;
+  --t-cont: #1e1f29;
+  --t-high: #292934;
+  --t-highest: #33343f;
+  --t-on: #e3e1ef;
+  --t-on-var: #c6c5d6;
+  --t-primary: #bdc2ff;
+  --t-on-primary: #0010a2;
+  --t-pc: #3c4279;
+  --t-opc: #e0e0ff;
+  --t-sc: #444559;
+  --t-osc: #e1e0f9;
 }
 
 :root[data-palette='indigo'][data-theme='light'] {
-  --bg: #eff0f8;
-  --surface: #ffffff;
-  --surface-2: #f3f4fb;
-  --surface-3: #e9ebf6;
-  --surface-4: #dde0f0;
-  --card: #ffffff;
-  --card-hover: #f3f4fb;
-  --text: #15172b;
-  --text-2: #4b4f6b;
-  --muted: #71758f;
-  --accent: #15172b;
-  --brand: #4f46e5;
-  --brand-ink: #ffffff;
-  --brand-card: #e2e4ff;
-  --brand-card-text: #1d1a5e;
+  --t-surface: #fbf8ff;
+  --t-lowest: #ffffff;
+  --t-low: #f4f2ff;
+  --t-cont: #eeecfb;
+  --t-high: #e8e7f5;
+  --t-highest: #e3e1ef;
+  --t-on: #1a1b25;
+  --t-on-var: #454654;
+  --t-primary: #2c3fff;
+  --t-on-primary: #ffffff;
+  --t-pc: #e0e0ff;
+  --t-opc: #3c4279;
+  --t-sc: #e1e0f9;
+  --t-osc: #444559;
 }
 
-:root[data-palette='coral']:not([data-theme='light']) {
-  --bg: #0c0909;
-  --surface: #1e1918;
-  --surface-2: #26201f;
-  --surface-3: #2f2827;
-  --surface-4: #3b3331;
-  --card: #231d1c;
-  --card-hover: #2c2524;
-  --text: #f0e8e6;
-  --text-2: #b0a3a0;
-  --muted: #958985;
-  --accent: #f0e8e6;
-  --brand: #ff7a59;
-  --brand-ink: #2b0b02;
-  --brand-card: #4a2118;
-  --brand-card-text: #ffede8;
-  --bar-dark: #2f2827;
-  --float-bg: rgba(12, 9, 9, 0.95);
+:root[data-palette='coral'] {
+  --t-surface: #1e100c;
+  --t-lowest: #180b08;
+  --t-low: #271814;
+  --t-cont: #2b1c18;
+  --t-high: #372622;
+  --t-highest: #42312c;
+  --t-on: #f9dcd6;
+  --t-on-var: #e0bfb8;
+  --t-primary: #ffb4a2;
+  --t-on-primary: #621100;
+  --t-pc: #723425;
+  --t-opc: #ffdad2;
+  --t-sc: #5d4038;
+  --t-osc: #ffdad2;
 }
 
 :root[data-palette='coral'][data-theme='light'] {
-  --bg: #f6f0ee;
-  --surface: #fffcfb;
-  --surface-2: #f8f2f0;
-  --surface-3: #f0e7e4;
-  --surface-4: #e6dad6;
-  --card: #fffcfb;
-  --card-hover: #f8f2f0;
-  --text: #241614;
-  --text-2: #5e4a46;
-  --muted: #806b67;
-  --accent: #241614;
-  --brand: #c43c1f;
-  --brand-ink: #ffffff;
-  --brand-card: #ffe0d6;
-  --brand-card-text: #4a1508;
+  --t-surface: #fff8f6;
+  --t-lowest: #ffffff;
+  --t-low: #fff1ed;
+  --t-cont: #ffe9e4;
+  --t-high: #ffe2db;
+  --t-highest: #f9dcd6;
+  --t-on: #271814;
+  --t-on-var: #58413c;
+  --t-primary: #b42800;
+  --t-on-primary: #ffffff;
+  --t-pc: #ffdad2;
+  --t-opc: #723425;
+  --t-sc: #ffdad2;
+  --t-osc: #5d4038;
 }
 
-:root[data-palette='forest']:not([data-theme='light']) {
-  --bg: #080a09;
-  --surface: #171c1a;
-  --surface-2: #1e2421;
-  --surface-3: #262d2a;
-  --surface-4: #313935;
-  --card: #1b211e;
-  --card-hover: #232a27;
-  --text: #e7efea;
-  --text-2: #9eaba4;
-  --muted: #84928a;
-  --accent: #e7efea;
-  --brand: #34d399;
-  --brand-ink: #022c1d;
-  --brand-card: #10392b;
-  --brand-card-text: #e3fbef;
-  --bar-dark: #262d2a;
-  --float-bg: rgba(8, 10, 9, 0.95);
+:root[data-palette='forest'] {
+  --t-surface: #0b1610;
+  --t-lowest: #06100b;
+  --t-low: #131e18;
+  --t-cont: #17221c;
+  --t-high: #212c26;
+  --t-highest: #2c3731;
+  --t-on: #d9e6dc;
+  --t-on-var: #bacbbf;
+  --t-primary: #00e2a0;
+  --t-on-primary: #003825;
+  --t-pc: #005137;
+  --t-opc: #a9f2cd;
+  --t-sc: #364b40;
+  --t-osc: #cfe9d9;
 }
 
 :root[data-palette='forest'][data-theme='light'] {
-  --bg: #eef3f0;
-  --surface: #ffffff;
-  --surface-2: #f2f7f4;
-  --surface-3: #e8efeb;
-  --surface-4: #dbe5df;
-  --card: #ffffff;
-  --card-hover: #f2f7f4;
-  --text: #13201a;
-  --text-2: #475a50;
-  --muted: #6a7d73;
-  --accent: #13201a;
-  --brand: #047857;
-  --brand-ink: #ffffff;
-  --brand-card: #d2f1e2;
-  --brand-card-text: #063a29;
+  --t-surface: #effdf3;
+  --t-lowest: #ffffff;
+  --t-low: #eaf7ed;
+  --t-cont: #e4f1e7;
+  --t-high: #deebe2;
+  --t-highest: #d9e6dc;
+  --t-on: #131e18;
+  --t-on-var: #3b4a42;
+  --t-primary: #006c4b;
+  --t-on-primary: #ffffff;
+  --t-pc: #a9f2cd;
+  --t-opc: #005137;
+  --t-sc: #cfe9d9;
+  --t-osc: #364b40;
 }
 
-/* Ivory: no colour at all, ink on paper (white on black in the dark). */
-:root[data-palette='ivory']:not([data-theme='light']) {
-  --brand: #ededed;
-  --brand-ink: #0b0b0c;
-  --brand-card: #26262b;
-  --brand-card-text: #ededed;
+:root[data-palette='ivory'] {
+  --t-surface: #131313;
+  --t-lowest: #0e0e0e;
+  --t-low: #1b1b1b;
+  --t-cont: #1f1f1f;
+  --t-high: #2a2a2a;
+  --t-highest: #353535;
+  --t-on: #e2e2e2;
+  --t-on-var: #c6c6c6;
+  --t-primary: #ffffff;
+  --t-on-primary: #1b1b1b;
+  --t-pc: #d4d4d4;
+  --t-opc: #000000;
+  --t-sc: #474747;
+  --t-osc: #e2e2e2;
 }
 
 :root[data-palette='ivory'][data-theme='light'] {
-  --brand: #17171a;
-  --brand-ink: #ffffff;
-  --brand-card: #e4e4e8;
-  --brand-card-text: #17171a;
+  --t-surface: #f9f9f9;
+  --t-lowest: #ffffff;
+  --t-low: #f3f3f3;
+  --t-cont: #eeeeee;
+  --t-high: #e8e8e8;
+  --t-highest: #e2e2e2;
+  --t-on: #1b1b1b;
+  --t-on-var: #474747;
+  --t-primary: #000000;
+  --t-on-primary: #e2e2e2;
+  --t-pc: #3b3b3b;
+  --t-opc: #ffffff;
+  --t-sc: #d4d4d4;
+  --t-osc: #1b1b1b;
 }
 
-
-/* ═══════════════ Dim: the dark theme with lighter, softer greys, for each colour theme ═══════════════ */
-:root[data-dim] {
-  --bg: #1b1c20;
-  --surface: #25262b;
-  --surface-2: #2d2e34;
-  --surface-3: #35363d;
-  --surface-4: #41424a;
-  --card: #2a2b31;
-  --card-hover: #33343b;
-  --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-  --brand-card: #16435a;
-  --bar-dark: #36373e;
-  --float-bg: rgba(27, 28, 32, 0.96);
-}
-
-:root[data-palette='gold'][data-dim] {
-  --bg: #1d1b17;
-  --surface: #282520;
-  --surface-2: #302c26;
-  --surface-3: #39352e;
-  --surface-4: #45403a;
-  --card: #2d2a24;
-  --card-hover: #36322b;
-  --brand-card: #4a3714;
-  --bar-dark: #39352e;
-  --float-bg: rgba(29, 27, 23, 0.96);
-}
-
-:root[data-palette='indigo'][data-dim] {
-  --bg: #1a1b26;
-  --surface: #242635;
-  --surface-2: #2c2e3e;
-  --surface-3: #343748;
-  --surface-4: #404355;
-  --card: #282a3a;
-  --card-hover: #313446;
-  --brand-card: #30366f;
-  --bar-dark: #343748;
-  --float-bg: rgba(26, 27, 38, 0.96);
-}
-
-:root[data-palette='coral'][data-dim] {
-  --bg: #1e1a19;
-  --surface: #292322;
-  --surface-2: #312a29;
-  --surface-3: #3a3230;
-  --surface-4: #463d3b;
-  --card: #2e2726;
-  --card-hover: #372f2e;
-  --brand-card: #5a2a1f;
-  --bar-dark: #3a3230;
-  --float-bg: rgba(30, 26, 25, 0.96);
-}
-
-:root[data-palette='forest'][data-dim] {
-  --bg: #171c1a;
-  --surface: #212825;
-  --surface-2: #29302d;
-  --surface-3: #313935;
-  --surface-4: #3d4641;
-  --card: #252d29;
-  --card-hover: #2e3632;
-  --brand-card: #154a37;
-  --bar-dark: #313935;
-  --float-bg: rgba(23, 28, 26, 0.96);
-}
-
-:root[data-palette='ivory'][data-dim] {
-  --brand-card: #34353c;
+/* ═══════════════ Black: true black for AMOLED screens, cards just lifted off it ═══════════════ */
+:root[data-black] {
+  --bg: #000000;
+  --surface: var(--t-lowest);
+  --surface-2: var(--t-low);
+  --surface-3: var(--t-cont);
+  --surface-4: var(--t-high);
+  --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
+  --card: var(--t-low);
+  --card-hover: var(--t-cont);
+  --bar-dark: var(--t-cont);
+  --float-bg: rgba(0, 0, 0, 0.95);
 }
 
 *,
@@ -8123,10 +8106,11 @@ strong.settings-value {
   font-size: 12.5px;
 }
 
+/* Each sketch takes a tint of your colour, as the theme itself does. */
 .theme-sketch {
-  --s-bg: #09090a;
-  --s-card: #1f1f24;
-  --s-ink: #3a3a42;
+  --s-bg: color-mix(in srgb, var(--brand) 7%, #0d0d0f);
+  --s-card: color-mix(in srgb, var(--brand) 11%, #1f1f24);
+  --s-ink: color-mix(in srgb, var(--brand) 14%, #3a3a42);
   display: flex;
   gap: 6px;
   aspect-ratio: 16 / 10;
@@ -8135,17 +8119,18 @@ strong.settings-value {
   background: var(--s-bg);
 }
 
-.theme-sketch.dim {
-  --s-bg: #1b1c20;
-  --s-card: #2a2b31;
-  --s-ink: #4a4b53;
+.theme-sketch.black {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --s-bg: #000000;
+  --s-card: color-mix(in srgb, var(--brand) 8%, #141416);
+  --s-ink: color-mix(in srgb, var(--brand) 12%, #303036);
 }
 
 .theme-sketch.light {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --s-bg: #f1f1f3;
+  --s-bg: color-mix(in srgb, var(--brand) 10%, #f6f6f7);
   --s-card: #ffffff;
-  --s-ink: #d9d9de;
+  --s-ink: color-mix(in srgb, var(--brand) 14%, #d9d9de);
 }
 
 /* System: the dark sketch, with the light one laid over its right half. */

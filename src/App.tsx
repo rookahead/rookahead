@@ -93,14 +93,14 @@ export default function App() {
   const appRoute = auth ? under : route
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
   const online = useOnline()
-  const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance === 'dim' ? 'dark' : settings.appearance
+  const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance === 'black' ? 'dark' : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
   useLayoutEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
     root.dataset.palette = settings.palette
-    // Dim is the dark theme with lighter greys (index.css, :root[data-dim]).
-    root.toggleAttribute('data-dim', settings.appearance === 'dim')
+    // Black is the dark theme on a true black page (index.css, :root[data-black]).
+    root.toggleAttribute('data-black', settings.appearance === 'black')
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
     // The browser's (and an installed app's) bars take the page's own background.
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim())

@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Rookahead" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="theme-color" content="#121417" />
+    <meta name="theme-color" content="#1a1206" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Rookahead · Free chess game review</title>
     <meta name="description" content="Free, unlimited chess game review with Stockfish 19 in your browser. Every move graded from Legendary to Blunder, with accuracy and key moments. Paste a PGN and go. No sign-up." />
@@ -33,9 +33,10 @@
         var s = JSON.parse(localStorage.getItem('rookahead.settings.v2') || '{}')
         var a = s.appearance || 'dark'
         var r = document.documentElement
-        r.dataset.theme = a === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : a === 'dim' ? 'dark' : a
-        if (s.palette) r.dataset.palette = s.palette
-        if (a === 'dim') r.setAttribute('data-dim', '')
+        r.dataset.theme = a === 'light' ? 'light' : a === 'system' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        // Settings from before the tonal themes: Sky was the default then, Gold is now (settings.ts).
+        if (s.palette && !(s.palette === 'sky' && !s.themes)) r.dataset.palette = s.palette
+        if (a === 'black') r.setAttribute('data-black', '')
       } catch (e) {}
     </script>
     <!-- Until the app is up: the page's shape in placeholders (index.css, .boot). React replaces it. -->

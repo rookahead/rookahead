@@ -2,15 +2,15 @@ import { useCallback, useState } from 'react'
 import { FULL_ENGINE_AVAILABLE, type EngineStrength } from '../engine/Engine'
 import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
 
-/** 'dim' is dark with softer, lighter greys. */
-export type Appearance = 'dark' | 'dim' | 'light' | 'system'
+/** 'black' is dark on a true black page, for AMOLED screens. */
+export type Appearance = 'dark' | 'black' | 'light' | 'system'
 
 /** The app's colour: its accent, and a tint to match in the backgrounds (index.css, :root[data-palette]). */
 export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'ivory'
 
 export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
-  { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
   { id: 'gold', label: 'Gold', swatch: '#f2b33d' },
+  { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
   { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
   { id: 'coral', label: 'Coral', swatch: '#ff7a59' },
   { id: 'forest', label: 'Forest', swatch: '#34d399' },
@@ -56,11 +56,13 @@ export interface Settings {
   /** Dots on the squares a picked-up piece can go to. */
   showLegalMoves: boolean
   animation: Animation
+  /** How far the settings have come with the theme changes (see load); missing on settings from before them. */
+  themes?: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: 'dark',
-  palette: 'sky',
+  palette: 'gold',
   engine: 'lite',
   lines: 3,
   liveDepth: 30,
@@ -82,6 +84,9 @@ export const DEFAULT_SETTINGS: Settings = {
 }
 
 const KEY = STORE_KEYS.settings
+/** Where the settings' theme changes are up to (Settings.themes). */
+const THEMES_VERSION = 1
+
 /** v1 defaulted to the full engine; its other settings carry over, the engine choice doesn't. */
 const OLD_KEY = 'rookahead.settings.v1'
 const REVIEW_DEPTHS = [12, 16, 20]
@@ -101,6 +106,12 @@ function load(): Settings {
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
+      // 1, the tonal themes: before them Sky was everyone's colour unless they changed it, and Dim was the soft dark.
+      if (!s.themes) {
+        if (s.palette === 'sky') s.palette = 'gold'
+        if ((s.appearance as string) === 'dim') s.appearance = 'dark'
+      }
+      s.themes = THEMES_VERSION
       return s
     }
   } catch {

@@ -3,9 +3,9 @@ import { PalettePicker } from '../../components/PalettePicker'
 import { Section } from './shared'
 
 const THEMES: [Appearance, string, string][] = [
-  ['dark', 'Dark', 'Easy on the eyes, day or night.'],
-  ['dim', 'Dim', 'Dark, with softer greys.'],
-  ['light', 'Light', 'Bright and crisp.'],
+  ['dark', 'Dark', 'Dark, tinted with your colour.'],
+  ['black', 'Black', 'True black, for AMOLED screens.'],
+  ['light', 'Light', 'Bright, tinted with your colour.'],
   ['system', 'System', 'Follows your device.'],
 ]
 
@@ -34,7 +34,7 @@ function Sketch({ theme }: { theme: Appearance }) {
   )
 }
 
-/** Dark, light, or whatever the device uses. */
+/** Dark, black, light, or whatever the device uses. */
 export function AppearanceSection({ settings, onChange }: { settings: Settings; onChange: (patch: Partial<Settings>) => void }) {
   return (
     <Section title="Appearance" lead="Choose how Rookahead looks.">
@@ -51,7 +51,7 @@ export function AppearanceSection({ settings, onChange }: { settings: Settings; 
       </div>
       <header className="settings-section-head palette-head">
         <h2>Colour</h2>
-        <p>The accent on buttons, your latest game and the tab you’re on, with backgrounds tinted to match.</p>
+        <p>The accent on buttons and your latest game, and the tint of every background.</p>
       </header>
       <PalettePicker value={settings.palette} onChange={(palette) => onChange({ palette })} />
     </Section>
