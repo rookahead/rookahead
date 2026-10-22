@@ -12,7 +12,11 @@ This page lists every change to the verdict rules, so you can see why a move's v
 
 **Rules:** Clutch is the only move, however obvious. A free capture, or an attacked piece moved to its one safe square, now counts when nothing else works. Taking back what your opponent just took, and the checkmating move itself, stay Best. We tested the change on purpose-built positions and on real games before making it.
 
-
+- A new look: your colour theme now tints the whole app, in Light, Dark and a new Black mode with a true black page for AMOLED screens. Black replaces Dim, and Sky is still the default.
+- A Theme board, now the default, in your colour theme's own shades. The eval bar uses your board's colours.
+- The Rookahead logo, the sidebar and the sign-in page are in your colour, and the blog, About and Privacy pages follow your theme.
+- Icons on Home's cards, and a short transition between pages.
+- Home opens much faster when you have many reviewed games, and scrolling and buttons work while it loads.
 - This blog, with posts on [how Rookahead grades a move](/blog/how-rookahead-grades-a-move) and [what counts as a sacrifice](/blog/what-counts-as-a-sacrifice).
 - A [Discord server](https://discord.gg/ebm3NZNHZH) for chess talk, questions about verdicts, bug reports and ideas. It's linked from the sidebar, the You tab and the About page.
 
