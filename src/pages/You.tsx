@@ -7,6 +7,7 @@ import { PalettePicker } from '../components/PalettePicker'
 import { AvatarFace } from '../components/UserCard'
 import { ACCOUNTS_ENABLED, hasUnsynced, logOut, openAccountPage, useAccount } from '../lib/account'
 import { useInstall } from '../lib/install'
+import { DISCORD_URL } from '../lib/links'
 import { DEFAULT_SETTINGS, type Appearance, type Settings } from '../lib/settings'
 
 interface Props {
@@ -170,6 +171,7 @@ export function YouPage({ settings, updateSettings }: Props) {
         <nav className="you-links" aria-label="Site">
           <a href="/about">About</a>
           <a href="/privacy">Privacy</a>
+          <a href={DISCORD_URL}>Discord</a>
           <a href="https://github.com/rookahead/rookahead">GitHub</a>
         </nav>
       </main>

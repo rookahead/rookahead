@@ -849,6 +849,17 @@ svg {
   text-decoration: none;
 }
 
+.sidebar-links .sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sidebar-logo svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
 .sidebar-links a:hover {
   color: var(--text);
 }
