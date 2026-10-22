@@ -335,7 +335,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
 ${body}
     <footer class="foot">
       <span>Rookahead, free chess game review</span>
-      <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/blog/feed.xml">Feed</a></nav>
+      <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav>
     </footer>
     ${SCRIPT}
   </body>
