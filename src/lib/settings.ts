@@ -17,7 +17,8 @@ export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
   { id: 'ivory', label: 'Ivory', swatch: '#ededed' },
 ]
 
-export type BoardTheme = 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
+/** 'theme' takes its squares from your colour theme. */
+export type BoardTheme = 'theme' | 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
 
 export type Animation = 'none' | 'fast' | 'normal' | 'slow'
 
@@ -68,7 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   liveDepth: 30,
   reviewDepth: 16,
   showArrows: true,
-  boardTheme: 'graphite',
+  boardTheme: 'theme',
   coordinates: true,
   autoReview: true,
   chesscomUser: '',
@@ -85,7 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = STORE_KEYS.settings
 /** Where the settings' theme changes are up to (Settings.themes). */
-const THEMES_VERSION = 1
+const THEMES_VERSION = 2
 
 /** v1 defaulted to the full engine; its other settings carry over, the engine choice doesn't. */
 const OLD_KEY = 'rookahead.settings.v1'
@@ -106,11 +107,14 @@ function load(): Settings {
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
+      const was = s.themes ?? 0
       // 1, the tonal themes: before them Sky was everyone's colour unless they changed it, and Dim was the soft dark.
-      if (!s.themes) {
+      if (was < 1) {
         if (s.palette === 'sky') s.palette = 'gold'
         if ((s.appearance as string) === 'dim') s.appearance = 'dark'
       }
+      // 2, the Theme board: Graphite was everyone's board unless they changed it.
+      if (was < 2 && s.boardTheme === 'graphite') s.boardTheme = 'theme'
       s.themes = THEMES_VERSION
       return s
     }

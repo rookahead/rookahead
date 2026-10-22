@@ -1,17 +1,18 @@
 // The Share dialog's Image tab (and, later, GIF): renders frames with the lazily-loaded renderer.
 import { useEffect, useRef, useState } from 'react'
+import { useBoardPrefs } from '../lib/boardPrefs'
 import type { GameReport } from '../lib/classify'
 import { download } from '../lib/download'
 import type { Color } from '../lib/evaluation'
 import { frameFor } from '../lib/frame'
 import { planGif, type GifRange, type GifSpeed } from '../lib/gifPlan'
 import { pgnFileName } from '../lib/pgn'
-import type { BoardTheme } from '../lib/settings'
+import type { BoardTheme, Palette } from '../lib/settings'
 import type { MoveNode, PgnHeaders } from '../lib/tree'
-import { BOARD_THEMES } from './Board'
+import { boardColors } from './Board'
 
-const themeColors = (name: BoardTheme) => {
-  const t = BOARD_THEMES[name]
+const themeColors = (name: BoardTheme, palette: Palette) => {
+  const t = boardColors(name, palette)
   return { light: t.light, dark: t.dark, lastMove: t.lastMove ?? 'rgba(255, 255, 51, 0.42)' }
 }
 
@@ -30,8 +31,9 @@ export function ImageTab(props: MediaProps) {
   const [png, setPng] = useState<{ blob: Blob; url: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const { palette } = useBoardPrefs()
   // Drawn once per opening of the tab: the dialog is modal, so the position can't change underneath.
-  const [spec] = useState(() => frameFor(props.node, { ...props, theme: themeColors(props.boardTheme) }))
+  const [spec] = useState(() => frameFor(props.node, { ...props, theme: themeColors(props.boardTheme, palette) }))
 
   useEffect(() => {
     let live = true
@@ -84,6 +86,7 @@ const GIF_WIDTH = 480
 
 /** The main line as an animated GIF; `endIndex` is the shared move, for "Last 10 moves". */
 export function GifTab(props: MediaProps & { endIndex: number }) {
+  const { palette } = useBoardPrefs()
   const [speed, setSpeed] = useState<GifSpeed>('normal')
   const [range, setRange] = useState<GifRange>('game')
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
@@ -107,7 +110,7 @@ export function GifTab(props: MediaProps & { endIndex: number }) {
     setProgress({ done: 0, total: 1 })
     try {
       const { line, report } = props
-      const theme = themeColors(props.boardTheme)
+      const theme = themeColors(props.boardTheme, palette)
       // Every reviewed move gets its badge, as on the board.
       const reviewed = line.map((n) => Boolean(report?.moves[n.id]))
       const plan = planGif(line.length, { speed, range, endIndex: props.endIndex, badged: reviewed })

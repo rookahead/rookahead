@@ -7,7 +7,7 @@ import { Chess, SQUARES, type Square } from 'chess.js'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Color } from '../lib/evaluation'
 import { useBoardPrefs } from '../lib/boardPrefs'
-import { ANIMATION_MS, type BoardTheme } from '../lib/settings'
+import { ANIMATION_MS, type BoardTheme, type Palette } from '../lib/settings'
 import type { MoveClass } from '../lib/classify'
 import type { EndKind, EndMark } from '../lib/gameEnd'
 import { playSound } from '../lib/sound'
@@ -16,13 +16,51 @@ import { EndChip } from './EndIcon'
 import { PuzzleMark } from './PuzzleIcons'
 import { PieceIcon } from './PieceIcon'
 
-export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string; label: string; lastMove?: string }> = {
+export interface BoardColors {
+  light: string
+  dark: string
+  label: string
+  lastMove?: string
+  /** The engine's arrows, where the usual amber would melt into the squares. */
+  arrow?: string
+}
+
+// Warm amber reads on almost every board, violet included.
+const ARROW = '#ffad33'
+const brushes = (arrow: string) => ({
+  best: { key: 'best', color: arrow, opacity: 0.92, lineWidth: 12 },
+  alt: { key: 'alt', color: arrow, opacity: 0.5, lineWidth: 9 },
+  suggest: { key: 'suggest', color: '#5fbf5a', opacity: 0.85, lineWidth: 12 },
+  green: { key: 'g', color: '#15781B', opacity: 1, lineWidth: 10 },
+  red: { key: 'r', color: '#cc3333', opacity: 1, lineWidth: 10 },
+  blue: { key: 'b', color: '#003088', opacity: 1, lineWidth: 10 },
+  yellow: { key: 'y', color: '#e68f00', opacity: 1, lineWidth: 10 },
+})
+
+export const BOARD_THEMES: Record<Exclude<BoardTheme, 'theme'>, BoardColors> = {
   graphite: { light: '#d9dce1', dark: '#8e96a1', label: 'Graphite', lastMove: 'rgba(255, 214, 102, 0.55)' },
   iris: { light: '#d3cff3', dark: '#7d70dc', label: 'Iris', lastMove: 'rgba(238, 150, 232, 0.62)' },
   green: { light: '#ebecd0', dark: '#739552', label: 'Green' },
   brown: { light: '#f0d9b5', dark: '#b58863', label: 'Brown' },
   blue: { light: '#dee3e6', dark: '#8ca2ad', label: 'Blue' },
   slate: { light: '#c9cfd8', dark: '#6b7a8f', label: 'Slate' },
+}
+
+/** The Theme board for each colour theme: its seed colour's hue at tone 90 and 60 (Material's HCT, as index.css's
+ * --t-* tones). Gold's last move goes yellow-green, as plain yellow would vanish on its squares; Gold and Coral
+ * take blue arrows for the same reason. */
+const THEME_BOARDS: Record<Palette, BoardColors> = {
+  gold: { light: '#f8dfbb', dark: '#b38a43', label: 'Theme', lastMove: 'rgba(214, 210, 0, 0.6)', arrow: '#3b82f6' },
+  sky: { light: '#d1e5f4', dark: '#5e97b8', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  indigo: { light: '#e1e0f9', dark: '#888dc4', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  coral: { light: '#ffdad2', dark: '#c97d6a', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)', arrow: '#3b82f6' },
+  forest: { light: '#cfe9d9', dark: '#5d9d7f', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  ivory: { light: '#e2e2e2', dark: '#919191', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.55)' },
+}
+
+/** A board's colours; the Theme board's follow your colour theme. */
+export function boardColors(theme: BoardTheme, palette: Palette): BoardColors {
+  return theme === 'theme' ? THEME_BOARDS[palette] : BOARD_THEMES[theme]
 }
 
 export function boardImage(light: string, dark: string) {
@@ -114,7 +152,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color } | null>(null)
-  const { highlightLastMove, showLegalMoves, animation, moveEffects, soundVolume } = useBoardPrefs()
+  const { highlightLastMove, showLegalMoves, animation, moveEffects, soundVolume, palette } = useBoardPrefs()
   // How long a piece takes to slide to its square. The classification badge waits for it to land.
   const slideMs = reducedMotion() ? 0 : ANIMATION_MS[animation]
 
@@ -136,7 +174,9 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
   if (endIntro.at !== endsAt) setEndIntro({ at: endsAt, done: false })
   const introducing = endList.length > 0 && !endIntro.done
   // The first position, for building the board: it starts there rather than sliding in from the opening position.
-  const initial = useRef({ fen, orientation, coordinates })
+  const arrow = boardColors(theme, palette).arrow ?? ARROW
+  const initial = useRef({ fen, orientation, coordinates, arrow })
+  const drawnArrow = useRef(arrow)
 
   const position = useMemo(() => {
     // Pages pass legal positions; skipping the check also allows a bare board (no kings) while loading.
@@ -162,16 +202,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       draggable: { showGhost: true },
       ranksPosition: 'left',
       drawable: {
-        brushes: {
-          // Warm amber reads on every board theme, violet included.
-          best: { key: 'best', color: '#ffad33', opacity: 0.92, lineWidth: 12 },
-          alt: { key: 'alt', color: '#ffad33', opacity: 0.5, lineWidth: 9 },
-          suggest: { key: 'suggest', color: '#5fbf5a', opacity: 0.85, lineWidth: 12 },
-          green: { key: 'g', color: '#15781B', opacity: 1, lineWidth: 10 },
-          red: { key: 'r', color: '#cc3333', opacity: 1, lineWidth: 10 },
-          blue: { key: 'b', color: '#003088', opacity: 1, lineWidth: 10 },
-          yellow: { key: 'y', color: '#e68f00', opacity: 1, lineWidth: 10 },
-        },
+        brushes: brushes(initial.current.arrow),
       },
     })
     // Chessground watches its own size and repositions the pieces in place.
@@ -267,7 +298,15 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     api.current?.setAutoShapes(JSON.parse(shapesKey))
   }, [shapesKey])
 
-  const colors = BOARD_THEMES[theme]
+  // A new board or colour theme can change the arrows' colour: redrawn in the new one.
+  useEffect(() => {
+    if (arrow === drawnArrow.current) return
+    drawnArrow.current = arrow
+    api.current?.set({ drawable: { brushes: brushes(arrow) } })
+    api.current?.redrawAll()
+  }, [arrow])
+
+  const colors = boardColors(theme, palette)
   const style = {
     '--board-image': boardImage(colors.light, colors.dark),
     '--sq-light': colors.light,

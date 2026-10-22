@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { BOARD_THEMES } from '../components/Board'
+import { boardColors } from '../components/Board'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
@@ -31,7 +31,7 @@ export function YouPage({ settings, updateSettings }: Props) {
   const [leaving, setLeaving] = useState(false)
   const signedIn = status === 'signed-in' && account
   const muted = settings.soundVolume === 0
-  const board = BOARD_THEMES[settings.boardTheme]
+  const board = boardColors(settings.boardTheme, settings.palette)
 
   const leave = async () => {
     setLeaving(true)

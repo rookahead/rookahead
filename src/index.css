@@ -8119,6 +8119,11 @@ strong.settings-value {
   gap: 8px;
 }
 
+/* Theme, the board in your colour, has the first row to itself; the fixed boards fill the rows under it. */
+.board-swatch:first-child {
+  grid-column: 1 / -1;
+}
+
 .board-swatch {
   display: flex;
   align-items: center;

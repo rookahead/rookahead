@@ -1,7 +1,7 @@
 import type { Square } from 'chess.js'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
-import { Board, BOARD_THEMES } from './Board'
+import { Board, boardColors, BOARD_THEMES } from './Board'
 import { OptionRow, Segmented, SwitchRow } from './controls'
 
 interface Props {
@@ -25,18 +25,21 @@ export function BoardOptions({ settings, onChange, preview }: Props) {
         </div>
       )}
       <div className="board-swatches" role="radiogroup" aria-label="Board colours">
-        {(Object.keys(BOARD_THEMES) as BoardTheme[]).map((t) => (
-          <button
-            key={t}
-            role="radio"
-            aria-checked={settings.boardTheme === t}
-            className={`board-swatch ${settings.boardTheme === t ? 'active' : ''}`}
-            onClick={() => onChange({ boardTheme: t })}
-          >
-            <span className="board-swatch-squares" style={{ background: `conic-gradient(${BOARD_THEMES[t].dark} 0 25%, ${BOARD_THEMES[t].light} 0 50%, ${BOARD_THEMES[t].dark} 0 75%, ${BOARD_THEMES[t].light} 0)` }} />
-            <span>{BOARD_THEMES[t].label}</span>
-          </button>
-        ))}
+        {(['theme', ...Object.keys(BOARD_THEMES)] as BoardTheme[]).map((t) => {
+          const c = boardColors(t, settings.palette)
+          return (
+            <button
+              key={t}
+              role="radio"
+              aria-checked={settings.boardTheme === t}
+              className={`board-swatch ${settings.boardTheme === t ? 'active' : ''}`}
+              onClick={() => onChange({ boardTheme: t })}
+            >
+              <span className="board-swatch-squares" style={{ background: `conic-gradient(${c.dark} 0 25%, ${c.light} 0 50%, ${c.dark} 0 75%, ${c.light} 0)` }} />
+              <span>{c.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />

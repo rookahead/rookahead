@@ -42,10 +42,10 @@ export default function App() {
   // A thread count synced from a bigger computer is capped at this device's cores.
   const threads = settings.threads ? Math.min(settings.threads, navigator.hardwareConcurrency || 4) : undefined
   const { engine, status } = useEngine(settings.engine, { threads })
-  const { highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume } = settings
+  const { highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume, palette } = settings
   const boardPrefs = useMemo(
-    () => ({ highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume }),
-    [highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume],
+    () => ({ highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume, palette }),
+    [highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume, palette],
   )
   const route = useRoute()
   const phone = useMediaQuery('(max-width: 1000px)')
