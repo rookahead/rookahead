@@ -6667,6 +6667,16 @@ button.stat-card:hover {
   background: var(--surface-4);
 }
 
+/* Light: the rows take the sidebar's cream on the white card, as on the mockup; the step darker that dark
+   rows take would read heavy here. */
+:root[data-theme='light'] .game-card {
+  background: var(--side);
+}
+
+:root[data-theme='light'] .game-card:hover {
+  background: var(--surface-3);
+}
+
 .game-card-board {
   flex: none;
   width: 52px;
