@@ -3764,6 +3764,7 @@ svg {
 .home-welcome span {
   color: var(--muted);
   font-size: 13.5px;
+  line-height: 1.45;
 }
 
 .home-card {
@@ -4001,6 +4002,673 @@ svg {
     order: -2;
     margin: 0;
     font-size: 20px;
+  }
+}
+
+/* Home's plan for today, accuracy and puzzle streak (HomeCards.tsx). */
+.home-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.plan-card,
+.streak-card,
+.accuracy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.streak-card .home-card-head,
+.accuracy-card .home-card-head {
+  padding: 0;
+}
+
+.plan-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.plan-head > div {
+  min-width: 0;
+}
+
+.plan-head p {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plan-ring {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}
+
+.plan-ring circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+.plan-ring .track {
+  stroke: color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.plan-ring .fill {
+  stroke: var(--brand);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+.plan-ring text {
+  font: 700 13px var(--font-display);
+  fill: var(--text);
+  text-anchor: middle;
+}
+
+.plan-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+/* Desktop: one row, a column per tile (PlanCard sets them). A tile coming into the plan grows from nothing
+   beside the first, the others making room; the gap between tiles is each tile's own, so it grows too. */
+.plan-steps.row {
+  gap: 0;
+  transition: grid-template-columns 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.plan-steps.row > li {
+  min-width: 0;
+  overflow: hidden;
+  transition: padding-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease 0.1s;
+}
+
+.plan-steps.row > li + li {
+  padding-left: 10px;
+}
+
+.plan-steps.row > li.off {
+  padding-left: 0;
+  opacity: 0;
+  transition: padding-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-steps.row,
+  .plan-steps.row > li {
+    transition: none;
+  }
+}
+
+.plan-step {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.plan-step:hover {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.plan-step.next {
+  background: color-mix(in srgb, var(--brand) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.plan-step.next:hover {
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+.plan-check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-step.next .plan-check {
+  border-color: var(--brand);
+}
+
+.plan-step.done .plan-check {
+  border: 0;
+  background: var(--win);
+}
+
+.plan-check svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: var(--bg);
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.plan-text {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Every tile keeps two lines for its title, two for its detail and one for the button's words, whatever it
+   says, so the card is the same height loading or loaded, and whatever the day holds. */
+.plan-text strong,
+.plan-text small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.45;
+  min-height: calc(2em * 1.45);
+}
+
+.plan-text strong {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.plan-step.done .plan-text strong {
+  color: var(--text-2);
+}
+
+.plan-text small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.plan-go {
+  margin-top: auto;
+  color: var(--brand);
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.plan-step:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.plan-step:not(.next) .plan-go {
+  visibility: hidden;
+}
+
+.streak-card {
+  flex: 2 1 260px;
+}
+
+.streak-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.streak-count b {
+  font: 700 44px/1 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--streak);
+}
+
+.streak-count span {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.streak-week {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px 6px;
+}
+
+.streak-note {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.streak-week li {
+  justify-content: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.streak-dot {
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.streak-week .solved .streak-dot {
+  background: color-mix(in srgb, var(--streak) 20%, transparent);
+}
+
+.streak-dot svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--streak);
+}
+
+.streak-week .today .streak-dot {
+  background: none;
+  border: 2px dashed var(--streak);
+}
+
+.streak-week .later .streak-dot {
+  background: none;
+  border: 1.5px solid var(--border-strong);
+}
+
+.streak-day {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.streak-week .today .streak-day {
+  color: var(--streak);
+}
+
+.streak-go,
+.streak-card .skel-button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.streak-go.accent-btn {
+  background: var(--streak);
+  color: color-mix(in srgb, var(--streak) 15%, #000);
+}
+
+.streak-go:not(.accent-btn) {
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--streak) 13%, transparent);
+  color: var(--streak);
+}
+
+.accuracy-card {
+  flex: 3 1 360px;
+}
+
+.accuracy-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  height: 40px;
+  white-space: nowrap;
+}
+
+.accuracy-value {
+  font: 700 40px/1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+.accuracy-value.empty {
+  color: var(--muted);
+  font-size: 26px;
+}
+
+.accuracy-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.accuracy-sub .up {
+  color: var(--win);
+  font-weight: 600;
+}
+
+.accuracy-sub .down {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.accuracy-tip {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+}
+
+.accuracy-tip strong {
+  color: var(--text);
+}
+
+.accuracy-chart {
+  position: relative;
+  height: 96px;
+}
+
+.accuracy-chart.empty {
+  margin: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.accuracy-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.accuracy-chart .area {
+  fill: color-mix(in srgb, var(--brand) 13%, transparent);
+}
+
+.accuracy-chart .trend {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.accuracy-chart .avg {
+  stroke: var(--guide);
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.accuracy-point {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.accuracy-point::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  transition: inset 0.12s, box-shadow 0.12s;
+}
+
+.accuracy-point.on::after {
+  inset: 5px;
+  box-shadow: 0 0 0 3px var(--card);
+}
+
+.accuracy-point:focus-visible {
+  outline: 2px solid var(--brand);
+}
+
+.phase-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phase-bars li {
+  display: grid;
+  grid-template-columns: 92px 1fr 30px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.phase-label {
+  color: var(--text-2);
+}
+
+.phase-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  overflow: hidden;
+}
+
+.phase-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--brand);
+  transition: width 0.5s ease;
+}
+
+.phase-bars .weakest .phase-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.phase-bars .weakest .phase-bar span {
+  background: var(--warn);
+}
+
+.phase-value {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.accuracy-foot {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.accuracy-note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+a.see-all,
+.accuracy-legendary {
+  text-decoration: none;
+}
+
+.accuracy-legendary {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--tone-violet);
+  font-size: 12.5px;
+}
+
+.plan-card.compact {
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-card.compact .plan-ring {
+  width: 40px;
+  height: 40px;
+}
+
+.plan-summary {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.plan-summary small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.plan-summary strong {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plan-chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.plan-card.open .plan-chevron {
+  transform: rotate(180deg);
+}
+
+.plan-card.compact .plan-go {
+  display: none;
+}
+
+.skel-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-next {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.week-dots {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.week-dots i {
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.week-dots .solved {
+  background: var(--streak);
+}
+
+.week-dots .today {
+  background: none;
+  border: 1.5px solid var(--streak);
+}
+
+.week-dots .later {
+  background: none;
+  border: 1px solid var(--border-strong);
+}
+
+@media (max-width: 1000px) {
+  .plan-steps {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .plan-step {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px;
+  }
+
+  .plan-text strong,
+  .plan-text small {
+    min-height: 0;
+  }
+
+  .plan-step:not(.next) .plan-go {
+    display: none;
+  }
+
+  .plan-go {
+    margin: 0 0 0 auto;
+    white-space: nowrap;
   }
 }
 
@@ -6252,13 +6920,7 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* ═══════════════ My games: stat cards, the games table, the Games page ═══════════════ */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
-}
-
+/* ═══════════════ My games: Home's form card, the games table, the Games page ═══════════════ */
 .stat-card {
   display: flex;
   flex-direction: column;
@@ -6272,25 +6934,8 @@ button.user-avatar.guest:hover {
   --tone: var(--brand);
 }
 
-.stat-card.legendary {
-  --tone: #a78bfa;
-}
-
-.stat-card.mistakes {
-  --tone: var(--danger);
-}
-
 .stat-card.streak {
   --tone: var(--streak);
-}
-
-button.stat-card {
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-button.stat-card:hover {
-  background: var(--card-hover);
 }
 
 .stat-head {
@@ -6301,12 +6946,6 @@ button.stat-card:hover {
   color: var(--text-2);
   font-size: 13px;
   font-weight: 550;
-}
-
-.stat-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .stat-row {
@@ -6325,7 +6964,6 @@ button.stat-card:hover {
   line-height: 1;
 }
 
-.stat-card.legendary .stat-value,
 .stat-card.streak .stat-value {
   color: var(--tone);
 }
@@ -6505,6 +7143,10 @@ button.stat-card:hover {
   margin-top: 8px;
 }
 
+.skel-round {
+  border-radius: 50%;
+}
+
 .skel-pill {
   border-radius: 999px;
 }
@@ -6562,11 +7204,23 @@ button.stat-card:hover {
   view-transition-name: daily-card;
 }
 
+:root.settling .plan-card {
+  view-transition-name: plan-card;
+}
+
+:root.settling .accuracy-card {
+  view-transition-name: accuracy-card;
+}
+
+:root.settling .streak-card {
+  view-transition-name: streak-card;
+}
+
 :root.settling .home-main > .games-card {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .home-main > .games-card) {
+:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .plan-card, .accuracy-card, .streak-card, .home-main > .games-card) {
   view-transition-class: card;
 }
 
@@ -6592,35 +7246,6 @@ button.stat-card:hover {
   width: 58%;
   height: 30px;
   border-radius: 8px;
-}
-
-.stat-skeleton-line {
-  width: 78%;
-  height: 12px;
-  margin-top: 2px;
-}
-
-.stat-row.arrive,
-.stat-sub.arrive {
-  animation: stat-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-.stat-sub.arrive {
-  animation-delay: 0.06s;
-}
-
-@keyframes stat-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stat-row.arrive,
-  .stat-sub.arrive {
-    animation: none;
-  }
 }
 
 .stat-sub .up {
@@ -6820,6 +7445,20 @@ button.stat-card:hover {
   gap: 3px;
   min-width: 0;
   font-size: 14px;
+}
+
+/* One line each, cut short rather than wrapped (a long opening name), so the board sets the card's height
+   and its placeholder matches. */
+.latest-text > *,
+.latest-card > div > p,
+.daily-foot .muted {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.daily-foot p {
+  min-width: 0;
 }
 
 .latest-result {
@@ -7063,6 +7702,56 @@ button.stat-card:hover {
 .mistakes-go {
   align-self: flex-start;
   margin-top: 4px;
+}
+
+/* Phones: the board small beside the counts, the button full width below. */
+.mistakes-card.compact {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px;
+}
+
+.mistakes-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mistakes-card.compact .mistakes-board {
+  flex: 0 0 72px;
+  border-radius: 7px;
+}
+
+.mistakes-card.compact .mistakes-text {
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.mistakes-card.compact h2 {
+  font-size: 16px;
+}
+
+.mistakes-card.compact p {
+  font-size: 13px;
+}
+
+.mistakes-card.compact .chip-row {
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.mistakes-card.compact .chip {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.mistakes-card.compact .mistakes-go {
+  align-self: stretch;
+  height: 42px;
+  margin: 0;
+  border-radius: 11px;
 }
 
 .chip-row {
@@ -8940,6 +9629,17 @@ a.you-row:active {
   margin: 6px 0 0;
   color: var(--text-2);
   font-size: 15px;
+  /* Two lines kept for it, as long or short as it is, so the cards below don't move when it comes. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.45;
+  min-height: calc(2em * 1.45);
+}
+
+.phone-welcome p.skel-lines {
+  display: flex;
 }
 
 .home-streak {
@@ -9048,10 +9748,6 @@ a.you-row:active {
   background: var(--card-hover);
 }
 
-.form-card .stat-card.mistakes .stat-value {
-  color: var(--tone);
-}
-
 .form-card .stat-card + .stat-card {
   border-left: 1px solid var(--border);
 }
@@ -9064,26 +9760,54 @@ a.you-row:active {
   text-decoration: none;
 }
 
-/* Home's daily puzzle on a phone: a small board beside what it is, like the latest game. */
-.phone-home .daily-card {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
+/* Home's daily puzzle on a phone: a small board beside what it is, the button below, like the latest game. */
+.daily-card.compact {
+  gap: 12px;
+  padding: 14px;
+}
+
+.daily-row {
+  display: flex;
   align-items: center;
-  gap: 12px 14px;
-  padding: 16px;
+  gap: 14px;
 }
 
-.phone-home .daily-head {
-  grid-column: 1 / -1;
+.daily-card.compact .daily-board {
+  flex: 0 0 72px;
 }
 
-.phone-home .daily-head h2 {
-  font-size: 17px;
+.daily-card.compact .daily-board .mini-board,
+.daily-card.compact .daily-board .skel-board {
+  border-radius: 7px;
 }
 
-.phone-home .daily-foot {
+.daily-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.daily-text h2 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+
+.daily-text h2 .muted {
+  margin-left: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.daily-text > .muted {
+  font-size: 13px;
+}
+
+.daily-go {
+  height: 42px;
+  border-radius: 11px;
 }
 
 /* Home's latest game on a phone: a compact card, the board beside the result. */
@@ -9108,8 +9832,32 @@ a.you-row:active {
   height: 48px;
 }
 
-.phone-home .latest-more {
-  margin-top: -4px;
+/* Compact: the board small, three lines beside it, a shorter button. */
+.phone-home .latest-card.compact {
+  padding: 14px;
+  gap: 12px;
+}
+
+.phone-home .latest-card.compact .latest-board {
+  flex-basis: 72px;
+  border-radius: 7px;
+}
+
+.phone-home .latest-card.compact .latest-text {
+  gap: 2px;
+}
+
+.phone-home .latest-card.compact .latest-text strong {
+  overflow: hidden;
+  font-size: 15px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.phone-home .latest-card.compact .accent-btn {
+  height: 42px;
+  border-radius: 11px;
+  font-size: 15px;
 }
 
 /* Phones' Review tab: load a game or open the analysis board, above your games. */

@@ -1,12 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { GameList } from '../components/GameList'
+import { AccuracyCard, PlanCard, PlanCardSkeleton, StreakCard, WeekDots, type AccuracyPoint } from '../components/HomeCards'
 import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
-import { GameListSkeleton, LatestCardSkeleton, LegendaryRowSkeleton, Skel } from '../components/Skeleton'
+import { GameListSkeleton, LatestCardSkeleton, LegendaryRowSkeleton, MistakesCardSkeleton, Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
 import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -19,16 +20,21 @@ import { currentGame, greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
 import { sinceFor } from '../lib/legendary'
 import { dayLabel, finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
+import { phaseAccuracy, type Phase } from '../lib/phases'
 import { localDayNumber } from '../lib/puzzles'
-import { dayStreak, loadProgress } from '../lib/puzzleStore'
+import { dayStreak, loadProgress, type PuzzleProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
+import { decodeSaved } from '../lib/share'
 import { readSession, requestLoadDialog } from '../lib/session'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from './puzzles/shared'
 
 const SHOWN = 6
+/** Games in the accuracy chart, and how many of them the phase bars average. */
+const CHART_GAMES = 20
+const PHASE_GAMES = 10
 /** Legendary moves in Home's row on a phone; the rest are a tap away. */
 const STRIP = 8
 
@@ -74,6 +80,31 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   const phone = useMediaQuery('(max-width: 1000px)')
 
   const mistakes = useMistakes()
+
+  // Your reviewed games, oldest first, for the accuracy chart; the newest of them for accuracy by phase.
+  const points = useMemo<AccuracyPoint[]>(
+    () =>
+      games
+        .flatMap((game) => {
+          const review = reviews[game.key]
+          const accuracy = review?.accuracy[game.color]
+          return review && accuracy != null ? [{ game, review, accuracy }] : []
+        })
+        .slice(0, CHART_GAMES)
+        .reverse(),
+    [games, reviews],
+  )
+  const [phases, setPhases] = useState<Record<Phase, number | null> | null>(null)
+  useEffect(() => {
+    let live = true
+    const recent = points.slice(-PHASE_GAMES)
+    void Promise.all(recent.map(async (p) => ({ game: await decodeSaved(p.review.token), color: p.game.color }))).then((decoded) => {
+      if (live) setPhases(phaseAccuracy(decoded.flatMap((d) => (d.game ? [{ game: d.game, color: d.color }] : []))))
+    })
+    return () => {
+      live = false
+    }
+  }, [points])
 
   const open = async (game: MyGame, review?: CachedReview) => {
     await openMyGame(game, review)
@@ -133,7 +164,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
       </button>
     </section>
   )
-  const heroOrStats = firstVisit ? (
+  const hero = (
     <section className="home-card accent-card hero-card" aria-labelledby="hero">
       <h2 id="hero">Review your games, free</h2>
       <p>Stockfish 19 grades every move, from Legendary to Blunder. No limits, no sign-up needed.</p>
@@ -149,48 +180,33 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         </button>
       </p>
     </section>
-  ) : (
-    <section className="stat-grid" aria-label="Your numbers" aria-busy={waiting || mistakes === null}>
-      <StatCard pending={waiting} tone="accuracy" label="Accuracy" empty="Not yet" value={stats.accuracy?.toFixed(1)} spark={stats.recent} onClick={() => navigate('/games')}>
-        {stats.accuracy == null ? (
-          'Review a game to see it'
-        ) : stats.trend != null ? (
-          <>
-            <span className={stats.trend >= 0 ? 'up' : 'down'}>
-              {stats.trend >= 0 ? '+' : ''}
-              {stats.trend.toFixed(1)}
-            </span>{' '}
-            over your last 10
-          </>
-        ) : (
-          'Your last 10 reviewed'
-        )}
-      </StatCard>
-      <StatCard
-        pending={waiting}
-        tone="legendary"
-        label="Legendary"
-        empty="None yet"
-        value={stats.legendary ? String(stats.legendary) : undefined}
-        onClick={stats.legendaryAll ? () => navigate('/legendary') : undefined}
-      >
-        {stats.legendaryAll ? 'This week · see all ›' : 'This week'}
-      </StatCard>
-      <StatCard
-        pending={waiting || mistakes === null}
-        tone="mistakes"
-        label="Mistakes to fix"
-        empty="All clear"
-        value={mistakes?.length ? String(mistakes.length) : undefined}
-        onClick={() => navigate('/puzzles/mistakes')}
-      >
-        {mistakes?.length ? 'Practise them ›' : 'From your games'}
-      </StatCard>
-      <StatCard pending={waiting} tone="streak" label="Puzzle streak" empty="Start today" value={streak ? String(streak) : undefined} onClick={() => navigate('/puzzles')}>
-        {streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${progress.days?.best ? ` · best ${progress.days.best}` : ''}` : 'Solve one puzzle'}
-      </StatCard>
-    </section>
   )
+
+  // Whether the phone's Legendary row has moves to show: from your games' reviews once the games are here, from
+  // any saved review before that, and assumed while neither has come.
+  const reviewList = Object.values(reviews)
+  const legendaryExpected = games.length
+    ? stats.legendaryAll > 0
+    : reviewList.length
+      ? reviewList.some((r) => r.brilliant.white + r.brilliant.black > 0)
+      : arriving
+  // Shown after its placeholder, the plan's tiles open out of the placeholder's one tile.
+  const [planGrows, setPlanGrows] = useState(false)
+  if (waiting && !planGrows) setPlanGrows(true)
+  const latestReview = latest && reviews[latest.key]
+  const openLatest = () => latest && void open(latest, reviews[latest.key])
+  const plan = !firstVisit && <PlanCard grow={planGrows} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
+  const accuracyCard = !firstVisit && (
+    <AccuracyCard pending={waiting} points={points} accuracy={stats.accuracy} trend={stats.trend} phases={phases} legendary={stats.legendary} onOpen={(g, r) => void open(g, r)} />
+  )
+  const streakCard = !firstVisit && <StreakCard pending={waiting} progress={progress} />
+  // Your mistakes come from reading your reviews, after the rest: a placeholder holds their place meanwhile.
+  const mistakesCard =
+    mistakes === null ? (
+      Object.keys(reviews).length > 0 && <MistakesCardSkeleton />
+    ) : (
+      mistakes.length > 0 && <MistakesCard compact mistakes={mistakes} theme={settings.boardTheme} />
+    )
 
   if (phone) {
     // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
@@ -213,19 +229,34 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             ) : (
               <h1>{firstVisit ? 'Welcome to Rookahead' : greeting(hour)}</h1>
             )}
-            {waiting ? <Skel w="72%" h="15px" className="skel-gap" /> : !firstVisit && <p>{line}</p>}
+            {waiting ? (
+              <p className="skel-lines">
+                <span className="skel-line">
+                  <Skel w="88%" h="13px" />
+                </span>
+                <span className="skel-line">
+                  <Skel w="40%" h="13px" />
+                </span>
+              </p>
+            ) : (
+              !firstVisit && <p>{line}</p>
+            )}
           </div>
           {guestNudge}
-          {firstVisit && heroOrStats}
+          {firstVisit && hero}
           {waiting ? (
-            <LatestCardSkeleton />
+            <LatestCardSkeleton compact />
           ) : (
-            latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
+            latest && !firstVisit && <LatestCard compact game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
           )}
-          {!firstVisit && <LegendaryStrip pending={arriving} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
-          {!firstVisit && <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={stats.recent} mistakes={mistakes ? mistakes.length : null} />}
-          {mistakes && mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />}
-          <DailyCard theme={settings.boardTheme} />
+          {waiting && <PlanCardSkeleton compact />}
+          {!waiting && !firstVisit && (
+            <PlanCard compact latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
+          )}
+          {!firstVisit && <LegendaryStrip pending={arriving} expected={legendaryExpected} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
+          {!firstVisit && <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} progress={progress} />}
+          {mistakesCard}
+          <DailyCard compact theme={settings.boardTheme} />
         </main>
       </div>
     )
@@ -238,12 +269,28 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         <div className="home-main">
           <div className="home-welcome">
             <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
-            {waiting ? <Skel w="320px" h="14px" className="skel-gap" /> : !firstVisit && <span>{line}</span>}
+            {waiting ? (
+              <span className="skel-line">
+                <Skel w="320px" h="12px" />
+              </span>
+            ) : (
+              !firstVisit && <span>{line}</span>
+            )}
           </div>
 
           {guestNudge}
 
-          {heroOrStats}
+          {firstVisit ? (
+            hero
+          ) : (
+            <>
+              {waiting ? <PlanCardSkeleton /> : plan}
+              <div className="home-pair">
+                {accuracyCard}
+                {streakCard}
+              </div>
+            </>
+          )}
 
           <section className="home-card games-card" aria-labelledby="my-games">
             <header className="home-card-head">
@@ -274,8 +321,6 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
               </div>
             )}
           </section>
-
-          {mistakes && mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />}
         </div>
 
         <aside className="home-side" aria-label="Start">
@@ -291,6 +336,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             </span>
           </button>
           <DailyCard theme={settings.boardTheme} />
+          {mistakesCard}
           <PuzzlesCard rating={progress.rating} />
           <button className="home-card quick-card" onClick={() => navigate(current ? '/analysis' : '/board')}>
             <IconTile tone="analyze" size="big" />
@@ -311,6 +357,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 /** Phones: your Legendary moves as a row of small boards to swipe through, or what they are when there are none yet. */
 function LegendaryStrip({
   pending,
+  expected,
   games,
   reviews,
   theme,
@@ -318,13 +365,16 @@ function LegendaryStrip({
 }: {
   /** Your games are still on their way (not waiting for Home's placeholders to settle, so both settle together). */
   pending: boolean
+  /** Your saved reviews count some Legendary moves (known at once, before the games are read for them). */
+  expected: boolean
   games: MyGame[]
   reviews: Record<string, CachedReview>
   theme: BoardTheme
   onOpenAnalysis: () => void
 }) {
   const { moves, loading } = useLegendaryMoves(games, reviews)
-  const busy = useSettled((pending || loading) && !moves.length)
+  // Only a row of moves on its way gets the row's placeholder: with none to find, the teaser shows at once.
+  const busy = useSettled(expected && (pending || loading) && !moves.length)
   if (busy) return <LegendaryRowSkeleton />
   if (!moves.length)
     return (
@@ -375,10 +425,13 @@ function LegendaryStrip({
   )
 }
 
-/** Phones: how you're playing. Your accuracy and where it's heading, beside the mistakes waiting to be fixed. */
-function FormCard({ pending, accuracy, trend, recent, mistakes }: { pending: boolean; accuracy: number | null; trend: number | null; recent: number[]; mistakes: number | null }) {
+/** Phones: how you're playing, in one card split in two. Your accuracy and its trend, beside your puzzle streak and this week. */
+function FormCard({ pending, accuracy, trend, recent, progress }: { pending: boolean; accuracy: number | null; trend: number | null; recent: number[]; progress: PuzzleProgress }) {
+  const today = localDayNumber(new Date())
+  const streak = dayStreak(progress, today)
+  const best = progress.days?.best ?? 0
   return (
-    <section className="home-card form-card" aria-label="Your form" aria-busy={pending || mistakes === null}>
+    <section className="home-card form-card" aria-label="Your form" aria-busy={pending}>
       <Link to="/games" className="stat-card accuracy">
         <span className="stat-head">
           <IconTile tone="accuracy" size="small" />
@@ -412,21 +465,16 @@ function FormCard({ pending, accuracy, trend, recent, mistakes }: { pending: boo
           </>
         )}
       </Link>
-      <Link to="/puzzles/mistakes" className="stat-card mistakes">
+      <Link to={progress.daily?.day === today ? '/puzzles' : '/puzzles/daily'} className="stat-card streak">
         <span className="stat-head">
-          <IconTile tone="mistakes" size="small" />
-          Mistakes to fix
+          <IconTile tone="streak" size="small" />
+          Puzzle streak
         </span>
-        {pending || mistakes === null ? (
-          <span className="stat-row">
-            <span className="skel stat-skeleton" aria-label="Loading" />
-          </span>
-        ) : (
-          <>
-            <span className="stat-row">{mistakes ? <b className="stat-value">{mistakes}</b> : <b className="stat-empty">All clear</b>}</span>
-            <span className="stat-sub">{mistakes ? 'Practise them ›' : 'From your games'}</span>
-          </>
-        )}
+        <span className="stat-row">
+          {streak ? <b className="stat-value">{streak}</b> : <b className="stat-empty">Start today</b>}
+          <WeekDots progress={progress} />
+        </span>
+        <span className="stat-sub">{streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${best ? ` · best ${best}` : ''}` : 'Solve one puzzle'}</span>
       </Link>
     </section>
   )
@@ -447,81 +495,56 @@ function Sparkline({ values }: { values: number[] }) {
   )
 }
 
-interface StatCardProps {
-  /** Still loading: a placeholder where the number goes; the number fades in when it comes. */
-  pending?: boolean
-  tone: 'accuracy' | 'legendary' | 'mistakes' | 'streak'
-  label: string
-  /** The number; left out, the card says `empty` in words instead of a lone "0". */
-  value?: string
-  empty: string
-  spark?: number[]
-  onClick?: () => void
-  children: ReactNode
-}
-
-const TILES = { accuracy: 'accuracy', legendary: 'legendary', mistakes: 'mistakes', streak: 'streak' } as const
-
-/** One of the four numbers: its label, the number (or words when there's nothing yet), a line of context. */
-function StatCard({ pending = false, tone, label, value, empty, spark, onClick, children }: StatCardProps) {
-  // Only a number that was waited for fades in; one that's there from the start just shows.
-  const [waited, setWaited] = useState(pending)
-  if (pending && !waited) setWaited(true)
-  const arrive = waited && !pending ? 'arrive' : ''
-  const body = (
-    <>
-      <span className="stat-head">
-        <IconTile tone={TILES[tone]} size="small" />
-        <span className="stat-label">{label}</span>
-      </span>
-      {pending ? (
-        <>
-          <span className="stat-row">
-            <span className="skel stat-skeleton" aria-label="Loading" />
-          </span>
-          <span className="skel stat-sub stat-skeleton-line" aria-hidden />
-        </>
-      ) : (
-        <>
-          <span className={`stat-row ${arrive}`}>
-            {value ? <b className="stat-value">{value}</b> : <b className="stat-empty">{empty}</b>}
-            {value && spark && <Sparkline values={spark} />}
-          </span>
-          <span className={`stat-sub ${arrive}`}>{children}</span>
-        </>
-      )}
-    </>
-  )
-  return onClick ? (
-    <button className={`home-card stat-card ${tone}`} onClick={onClick}>
-      {body}
-    </button>
-  ) : (
-    <div className={`home-card stat-card ${tone}`}>{body}</div>
-  )
-}
-
-/** The newest game, big: its final position and one button to review it. */
-function LatestCard({ game, review, theme, onOpen, className = '' }: { game: MyGame; review?: CachedReview; theme: BoardTheme; onOpen: () => void; className?: string }) {
+/** The newest game, big: its final position and one button to review it. On phones (`compact`), a short card:
+ * a small board, three lines and the button. */
+function LatestCard({ game, review, theme, onOpen, compact = false }: { game: MyGame; review?: CachedReview; theme: BoardTheme; onOpen: () => void; compact?: boolean }) {
   const final = finalPosition(game)
   const opponent = game.color === 'white' ? game.black : game.white
   const accuracy = review?.accuracy[game.color]
+  const result = <span className={`latest-result ${game.result}`}>{game.result === 'win' ? 'Won' : game.result === 'loss' ? 'Lost' : 'Draw'}</span>
+  const board = final && (
+    <div className="latest-board">
+      <MiniBoard fen={final.fen} orientation={game.color} theme={theme} lastMove={final.lastMove} />
+    </div>
+  )
+  const button = (
+    <button className="btn accent-btn" onClick={onOpen}>
+      {review ? 'Open the review' : 'Review this game'}
+    </button>
+  )
+  if (compact)
+    return (
+      <section className="home-card accent-card latest-card compact" aria-label="Your latest game">
+        <div className="latest-body">
+          {board}
+          <div className="latest-text">
+            <span className="muted-on-brand">
+              {review ? 'Your latest game' : 'Not reviewed yet'} · {ago(game.endedAt)}
+            </span>
+            <strong>
+              {result} vs {opponent.name} {opponent.rating != null && <span className="muted-on-brand">{opponent.rating}</span>}
+            </strong>
+            <span className="muted-on-brand">
+              {accuracy != null ? `${accuracy.toFixed(1)} accuracy · ` : ''}
+              {game.moves} {game.moves === 1 ? 'move' : 'moves'} · {game.time}
+            </span>
+          </div>
+        </div>
+        {button}
+      </section>
+    )
   return (
-    <section className={`home-card accent-card latest-card ${className}`} aria-label="Your latest game">
+    <section className="home-card accent-card latest-card" aria-label="Your latest game">
       <div>
-        <h2>{review ? 'Your latest game' : 'Review your latest game'}</h2>
+        <h2>Your latest game</h2>
         <p>
           {SOURCE_LABEL[game.source]} · {game.time} · {ago(game.endedAt)}
         </p>
       </div>
       <div className="latest-body">
-        {final && (
-          <div className="latest-board">
-            <MiniBoard fen={final.fen} orientation={game.color} theme={theme} lastMove={final.lastMove} />
-          </div>
-        )}
+        {board}
         <div className="latest-text">
-          <span className={`latest-result ${game.result}`}>{game.result === 'win' ? 'Won' : game.result === 'loss' ? 'Lost' : 'Draw'}</span>
+          {result}
           <strong>
             vs {opponent.name} {opponent.rating != null && <span className="muted-on-brand">{opponent.rating}</span>}
           </strong>
@@ -532,9 +555,7 @@ function LatestCard({ game, review, theme, onOpen, className = '' }: { game: MyG
           {accuracy != null && <span className="latest-accuracy">{accuracy.toFixed(1)} accuracy</span>}
         </div>
       </div>
-      <button className="btn accent-btn" onClick={onOpen}>
-        {review ? 'Open the review' : 'Review this game'}
-      </button>
+      {button}
       <button className="link-btn latest-more" onClick={() => navigate('/games')}>
         Pick another game ›
       </button>
@@ -548,34 +569,60 @@ const MISTAKE_KINDS = [
   ['miss', 'oversights'],
 ] as const
 
-/** "Learn from your mistakes": the first one on a board, the counts, and the way in. */
-function MistakesCard({ mistakes, theme }: { mistakes: MistakePuzzle[]; theme: BoardTheme }) {
+/** "Learn from your mistakes": the first one on a board, the counts, and the way in. On phones (`compact`), a short
+ * card: a small board beside the counts, the button below. */
+function MistakesCard({ mistakes, theme, compact = false }: { mistakes: MistakePuzzle[]; theme: BoardTheme; compact?: boolean }) {
   const first = mistakes[0]
   const games = new Set(mistakes.map((m) => m.gameKey)).size
+  const board = (
+    <button className="mistakes-board" onClick={() => navigate('/puzzles/mistakes')} aria-label="Practise your mistakes">
+      <MiniBoard fen={first.fen} orientation={first.color} theme={theme} />
+    </button>
+  )
+  const chips = (
+    <div className="chip-row">
+      {MISTAKE_KINDS.map(([cls, label]) => {
+        const n = mistakes.filter((m) => m.cls === cls).length
+        return n ? (
+          <span key={cls} className="chip">
+            <ClassIcon cls={cls} size={14} /> {n} {label}
+          </span>
+        ) : null
+      })}
+    </div>
+  )
+  const go = (
+    <button className="btn primary mistakes-go" onClick={() => navigate('/puzzles/mistakes')}>
+      Start practice
+    </button>
+  )
+  if (compact)
+    return (
+      <section className="home-card mistakes-card compact" aria-labelledby="mistakes">
+        <div className="mistakes-row">
+          {board}
+          <div className="mistakes-text">
+            <h2 id="mistakes">Learn from your mistakes</h2>
+            <p>
+              {mistakes.length} {mistakes.length === 1 ? 'position' : 'positions'} from {games} {games === 1 ? 'game' : 'games'}
+            </p>
+            {chips}
+          </div>
+        </div>
+        {go}
+      </section>
+    )
   return (
     <section className="home-card mistakes-card" aria-labelledby="mistakes">
-      <button className="mistakes-board" onClick={() => navigate('/puzzles/mistakes')} aria-label="Practise your mistakes">
-        <MiniBoard fen={first.fen} orientation={first.color} theme={theme} />
-      </button>
+      {board}
       <div className="mistakes-text">
         <h2 id="mistakes">Learn from your mistakes</h2>
         <p>
           {mistakes.length} {mistakes.length === 1 ? 'position' : 'positions'} from {games} reviewed {games === 1 ? 'game' : 'games'} where a better move
           was there. Find it this time.
         </p>
-        <div className="chip-row">
-          {MISTAKE_KINDS.map(([cls, label]) => {
-            const n = mistakes.filter((m) => m.cls === cls).length
-            return n ? (
-              <span key={cls} className="chip">
-                <ClassIcon cls={cls} size={14} /> {n} {label}
-              </span>
-            ) : null
-          })}
-        </div>
-        <button className="btn primary mistakes-go" onClick={() => navigate('/puzzles/mistakes')}>
-          Start practice
-        </button>
+        {chips}
+        {go}
       </div>
     </section>
   )

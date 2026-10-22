@@ -41,12 +41,32 @@ export function GameListSkeleton({ rows = 4 }: { rows?: number }) {
 }
 
 /** Home's latest game, on its way. */
-export function LatestCardSkeleton() {
+export function LatestCardSkeleton({ compact = false }: { compact?: boolean }) {
+  if (compact)
+    return (
+      <section className="home-card accent-card latest-card compact skel-group" aria-busy aria-label="Loading your latest game">
+        <div className="latest-body">
+          <div className="latest-board">
+            <SkelBoard />
+          </div>
+          <div className="latest-text">
+            <Skel w="60%" h="12px" />
+            <Skel w="85%" h="16px" />
+            <Skel w="70%" h="12px" />
+          </div>
+        </div>
+        <Skel w="100%" h="42px" className="skel-button" />
+      </section>
+    )
   return (
     <section className="home-card accent-card latest-card skel-group" aria-busy aria-label="Loading your latest game">
       <div>
-        <Skel w="62%" h="20px" />
-        <Skel w="44%" h="12px" className="skel-gap" />
+        <h2 className="skel-line">
+          <Skel w="62%" h="22px" />
+        </h2>
+        <p className="skel-line">
+          <Skel w="44%" h="12px" />
+        </p>
       </div>
       <div className="latest-body">
         <div className="latest-board">
@@ -56,10 +76,33 @@ export function LatestCardSkeleton() {
           <Skel w="30%" h="14px" />
           <Skel w="80%" h="16px" />
           <Skel w="70%" h="12px" />
+          <Skel w="64%" h="12px" />
           <Skel w="56%" h="12px" />
         </div>
       </div>
-      <Skel w="100%" h="48px" className="skel-button" />
+      <Skel w="100%" h="50px" className="skel-button" />
+      <span className="link-btn latest-more skel-line">
+        <Skel w="110px" h="12px" />
+      </span>
+    </section>
+  )
+}
+
+/** Learn from your mistakes (the compact card), while your mistakes are worked out from your reviews. */
+export function MistakesCardSkeleton() {
+  return (
+    <section className="home-card mistakes-card compact skel-group" aria-busy aria-label="Loading your mistakes">
+      <div className="mistakes-row">
+        <span className="mistakes-board">
+          <SkelBoard />
+        </span>
+        <div className="mistakes-text">
+          <Skel w="80%" h="16px" />
+          <Skel w="60%" h="12px" />
+          <Skel w="70%" h="22px" className="skel-pill" />
+        </div>
+      </div>
+      <Skel w="100%" h="42px" className="skel-button" />
     </section>
   )
 }
@@ -105,7 +148,23 @@ export function LegendaryGridSkeleton({ cards = 6 }: { cards?: number }) {
 }
 
 /** The daily puzzle, on its way. */
-export function DailyCardSkeleton() {
+export function DailyCardSkeleton({ compact = false }: { compact?: boolean }) {
+  if (compact)
+    return (
+      <section className="home-card daily-card compact skel-group" aria-busy aria-label="Loading the daily puzzle">
+        <div className="daily-row">
+          <span className="daily-board">
+            <SkelBoard />
+          </span>
+          <div className="daily-text">
+            <Skel w="60%" h="16px" />
+            <Skel w="40%" h="14px" />
+            <Skel w="80%" h="12px" />
+          </div>
+        </div>
+        <Skel w="100%" h="42px" className="skel-button" />
+      </section>
+    )
   return (
     <section className="home-card daily-card skel-group" aria-busy aria-label="Loading the daily puzzle">
       <header className="daily-head">

@@ -15,8 +15,9 @@ import { DailyCardSkeleton } from './Skeleton'
 // Today's puzzle once it's loaded, so coming back to Home shows it at once instead of its placeholder.
 let loaded: { day: number; puzzle: Puzzle | null } | null = null
 
-/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). */
-export function DailyCard({ theme }: { theme: BoardTheme }) {
+/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). On phones
+ * (`compact`), a short card: a small board beside what it is, the button below. */
+export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compact?: boolean }) {
   const day = dayNumber(new Date())
   // Undefined while it loads; null if it couldn't (offline, say), and the card stays away.
   const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(() => (loaded?.day === day ? loaded.puzzle : undefined))
@@ -38,11 +39,40 @@ export function DailyCard({ theme }: { theme: BoardTheme }) {
     return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)) }
   }, [version])
   const loading = useSettled(puzzle === undefined)
-  if (loading) return <DailyCardSkeleton />
+  if (loading) return <DailyCardSkeleton compact={compact} />
   if (!puzzle) return null
   const color = playerColor(puzzle)
   const first = puzzle.moves[0]
   const open = () => navigate('/puzzles/daily')
+  const board = (
+    <button className="daily-board" onClick={open} aria-label="Solve the daily puzzle">
+      <MiniBoard fen={positionAfter(puzzle, [first]).fen()} orientation={color} theme={theme} lastMove={[first.slice(0, 2), first.slice(2, 4)]} />
+    </button>
+  )
+  const status =
+    done === 'solved'
+      ? 'Solved · next one tomorrow'
+      : done === 'failed'
+        ? 'Missed · next one tomorrow'
+        : `Rated ${puzzle.rating} · ${days ? `keeps your ${days}-day streak` : 'starts a streak'}`
+  if (compact)
+    return (
+      <section className="home-card daily-card compact" aria-labelledby="daily-puzzle">
+        <div className="daily-row">
+          {board}
+          <div className="daily-text">
+            <h2 id="daily-puzzle">
+              Daily puzzle <span className="muted">{formatDay(Date.now() / 1000)}</span>
+            </h2>
+            <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
+            <span className="muted">{status}</span>
+          </div>
+        </div>
+        <button className={`btn daily-go ${done ? 'ghost' : 'primary'}`} onClick={open}>
+          {done ? 'See it' : 'Solve'}
+        </button>
+      </section>
+    )
   return (
     <section className="home-card daily-card" aria-labelledby="daily-puzzle">
       <header className="daily-head">
@@ -52,19 +82,11 @@ export function DailyCard({ theme }: { theme: BoardTheme }) {
         </h2>
         <DayStreak days={days} />
       </header>
-      <button className="daily-board" onClick={open} aria-label="Solve the daily puzzle">
-        <MiniBoard fen={positionAfter(puzzle, [first]).fen()} orientation={color} theme={theme} lastMove={[first.slice(0, 2), first.slice(2, 4)]} />
-      </button>
+      {board}
       <div className="daily-foot">
         <p>
           <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
-          <span className="muted">
-            {done === 'solved'
-              ? 'Solved · next one tomorrow'
-              : done === 'failed'
-                ? 'Missed · next one tomorrow'
-                : `Rated ${puzzle.rating} · ${days ? `keeps your ${days}-day streak` : 'starts a streak'}`}
-          </span>
+          <span className="muted">{status}</span>
         </p>
         <button className={`btn small ${done ? 'ghost' : 'primary'}`} onClick={open}>
           {done ? 'See it' : 'Solve'}
