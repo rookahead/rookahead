@@ -12,10 +12,19 @@ let running: Promise<unknown> | null = null
 type Kind = 'settling' | 'page-change'
 const kinds: Record<Kind, number> = { settling: 0, 'page-change': 0 }
 
+/** How long after a transition ends a wheel turn it swallowed waits to see if the browser scrolls anyway. */
+const WHEEL_BEAT_MS = 120
+
+// Keys that scroll the page.
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
+
 /**
  * A view transition that gives way to scrolling. While one runs, its named cards are drawn against the
  * window, not the page, so a scroll would slide the rest of the page under them: scrolling ends it at
- * once instead. Listening starts once the animation does, so the update's own layout shift can't end it.
+ * once instead. Firefox doesn't scroll at all while one runs, so trying to (the wheel, a touch, a key)
+ * ends it too, rather than the scroll that never comes, and a wheel turn it swallowed is scrolled by hand.
+ * Listening for the scroll itself starts once the animation does, so the update's own layout shift can't
+ * end it.
  * `kind` goes on the root as a class while it runs: it's what gives the parts their names (index.css), so
  * a page change animates the page and a settle the cards, never each other's.
  */
@@ -27,11 +36,35 @@ export function startViewTransition(update: () => void, kind?: Kind): ViewTransi
   }
   const transition = document.startViewTransition(update)
   const skip = () => transition.skipTransition()
+  const key = (e: KeyboardEvent) => SCROLL_KEYS.has(e.key) && skip()
+  const wheel = (e: WheelEvent) => {
+    skip()
+    // Lines and pages, as the browser would count them.
+    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1)
+    // A browser that does scroll meanwhile (smoothly, so a moment later) has started by a beat after it
+    // wound up; only one that hasn't gets the turn by hand.
+    let moved = false
+    const scrolled = () => (moved = true)
+    addEventListener('scroll', scrolled, { passive: true })
+    void transition.finished.finally(() =>
+      setTimeout(() => {
+        removeEventListener('scroll', scrolled)
+        if (!moved) scrollBy({ top: dy, behavior: 'instant' })
+      }, WHEEL_BEAT_MS),
+    )
+  }
+  const input = { capture: true, passive: true }
+  addEventListener('wheel', wheel, input)
+  addEventListener('touchstart', skip, input)
+  addEventListener('keydown', key, input)
   transition.ready.then(() => addEventListener('scroll', skip, { once: true, passive: true }), () => {})
   const done: Promise<unknown> = transition.finished
     .catch(() => {})
     .finally(() => {
       removeEventListener('scroll', skip)
+      removeEventListener('wheel', wheel, input)
+      removeEventListener('touchstart', skip, input)
+      removeEventListener('keydown', key, input)
       // A quick second click starts the next one before this has wound up: its names stay.
       if (kind && --kinds[kind] === 0) root.classList.remove(kind)
       if (running === done) running = null
