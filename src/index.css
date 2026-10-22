@@ -804,27 +804,6 @@ svg {
   gap: 10px;
 }
 
-/* The Today card folds away (height to 0) in the rail; its width stays put so nothing reflows. */
-.sidebar-fold {
-  display: grid;
-  grid-template-rows: 1fr;
-  margin-bottom: -10px;
-  transition: grid-template-rows var(--side-t) var(--side-ease), opacity 0.2s ease 0.12s;
-}
-
-.sidebar-fold > div {
-  min-height: 0;
-  overflow: hidden;
-  padding-bottom: 10px;
-}
-
-.sidebar.rail .sidebar-fold {
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows var(--side-t) var(--side-ease), opacity 0.1s ease;
-}
-
-.sidebar-fold .today-card,
 .sidebar .user-card {
   flex: none;
   box-sizing: border-box;
@@ -8043,76 +8022,6 @@ h2 {
 
 .sidebar-item.active svg {
   color: var(--brand);
-}
-
-/* Today: a short to-do list above the user card. */
-.today-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 8px 8px;
-  border-radius: 16px;
-  background: var(--card);
-}
-
-.today-card h2 {
-  margin: 0;
-  padding: 0 8px 6px;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.today-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 8px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.today-row:hover {
-  background: var(--surface-3);
-}
-
-.today-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
-.today-row.daily .today-dot {
-  background: var(--streak);
-}
-
-.today-row.mistakes .today-dot {
-  background: var(--danger);
-}
-
-.today-row.done .today-dot {
-  background: var(--win);
-}
-
-.today-label {
-  flex: 1;
-  min-width: 0;
-}
-
-.today-value {
-  color: var(--muted);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Accuracy on the latest-game card: even-width digits without DM Mono's slashed zero. */

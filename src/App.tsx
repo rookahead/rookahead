@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { faviconUrl } from './components/RookLogo'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
-import { TodayCard } from './components/TodayCard'
 import { UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
@@ -155,8 +154,6 @@ export default function App() {
             rail={rail}
             onToggleRail={toggleRail}
             footer={userCard}
-            // Re-read on every page change: what's left to do today moves as you play.
-            today={<TodayCard key={appRoute} settings={settings} />}
           />}
         <div className="shell-page">
           {!online && (

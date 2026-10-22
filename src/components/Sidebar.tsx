@@ -13,8 +13,6 @@ interface Props {
   onToggleRail: () => void
   /** The user card. */
   footer: ReactNode
-  /** The Today card, folded away when the sidebar is a rail. */
-  today?: ReactNode
 }
 
 /** A section's icon: its strokes, plus any solid shapes. */
@@ -32,7 +30,7 @@ export function NavItemIcon({ item }: { item: NavItem }) {
  * Collapsing slides it to a rail of icons: the icons, logo and avatar keep their places while
  * the words fade and the width (and with it the page) animates.
  */
-export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
+export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
   return (
     <aside className={`sidebar ${rail ? 'rail' : ''}`} aria-label="Sidebar">
       <div className="sidebar-head">
@@ -65,11 +63,6 @@ export function Sidebar({ route, rail, onToggleRail, footer, today }: Props) {
         })}
       </nav>
       <div className="sidebar-foot">
-        {today && (
-          <div className="sidebar-fold" inert={rail}>
-            <div>{today}</div>
-          </div>
-        )}
         {footer}
         <div className="sidebar-bottom">
           <div className="sidebar-links" inert={rail}>
