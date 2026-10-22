@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { useBoardPrefs } from '../lib/boardPrefs'
 import { formatScore, winPercent, type Color } from '../lib/evaluation'
+import type { BoardTheme } from '../lib/settings'
 import type { Score } from '../lib/uci'
+import { boardColors } from './Board'
 
 interface Props {
   /** Latest trustworthy score, or null while the engine is still working on a new position. */
@@ -10,6 +13,8 @@ interface Props {
   active: boolean
   /** Phones: a thin bar across the top of the board, filling from the left with your side's colour. */
   horizontal?: boolean
+  /** The board beside it: White's share is its light squares, Black's its dark ones. */
+  theme: BoardTheme
 }
 
 const sameScore = (a: Score | null, b: Score | null) =>
@@ -27,7 +32,9 @@ export function chipText(score: Score): string {
   return `${pawns > 0 ? '+' : '−'}${abs >= 10 ? abs.toFixed(0) : abs.toFixed(1)}`
 }
 
-export function EvalBar({ score, orientation, active, horizontal = false }: Props) {
+export function EvalBar({ score, orientation, active, horizontal = false, theme }: Props) {
+  const { palette } = useBoardPrefs()
+  const squares = boardColors(theme, palette)
   // Hold the last score while a new position is being analysed, so the bar glides
   // from the old value to the new one instead of snapping to the middle in between.
   const [held, setHeld] = useState<Score | null>(score)
@@ -53,6 +60,7 @@ export function EvalBar({ score, orientation, active, horizontal = false }: Prop
       aria-valuenow={Math.round(white)}
       aria-valuetext={shown ? formatScore(shown) : 'No evaluation yet'}
       title={shown ? formatScore(shown) : undefined}
+      style={{ '--bar-light': squares.light, '--bar-dark': squares.dark } as CSSProperties}
     >
       <div className="eval-bar-fill" style={{ transform: horizontal ? `scaleX(${fill / 100})` : `scaleY(${fill / 100})` }} />
       <span className="eval-bar-chip" style={horizontal ? { left: chipLeft } : { top: chipTop }}>

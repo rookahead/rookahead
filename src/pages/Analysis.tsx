@@ -743,7 +743,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       >
         <section className="board-column">
           {player(orientation === 'white' ? 'black' : 'white')}
-          {phone && <EvalBar horizontal score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />}
+          {phone && <EvalBar horizontal score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
           <div className="board-row">
             <span
               className="board-resize"
@@ -753,7 +753,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               onPointerDown={startResize}
               onDoubleClick={() => saveBoardSize(setBoardSize, null)}
             />
-            {!phone && <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} />}
+            {!phone && <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
             <Board
               fen={node.fen}
               orientation={orientation}
