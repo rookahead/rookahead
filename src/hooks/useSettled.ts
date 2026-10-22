@@ -3,22 +3,40 @@ import { flushSync } from 'react-dom'
 
 // What arrives together (your games, then the Legendary moves read from them a moment later) comes in
 // as one transition: a second one started meanwhile would cut the first short. Anything later waits
-// for the one on screen to finish.
+// for the one on screen to finish, a change of page included.
 const BATCH_MS = 60
 let queue: (() => void)[] = []
 let scheduled = false
 let running: Promise<unknown> | null = null
 
+type Kind = 'settling' | 'page-change'
+const kinds: Record<Kind, number> = { settling: 0, 'page-change': 0 }
+
 /**
  * A view transition that gives way to scrolling. While one runs, its named cards are drawn against the
  * window, not the page, so a scroll would slide the rest of the page under them: scrolling ends it at
  * once instead. Listening starts once the animation does, so the update's own layout shift can't end it.
+ * `kind` goes on the root as a class while it runs: it's what gives the parts their names (index.css), so
+ * a page change animates the page and a settle the cards, never each other's.
  */
-export function startViewTransition(update: () => void): ViewTransition {
+export function startViewTransition(update: () => void, kind?: Kind): ViewTransition {
+  const root = document.documentElement
+  if (kind) {
+    kinds[kind]++
+    root.classList.add(kind)
+  }
   const transition = document.startViewTransition(update)
   const skip = () => transition.skipTransition()
   transition.ready.then(() => addEventListener('scroll', skip, { once: true, passive: true }), () => {})
-  transition.finished.finally(() => removeEventListener('scroll', skip))
+  const done: Promise<unknown> = transition.finished
+    .catch(() => {})
+    .finally(() => {
+      removeEventListener('scroll', skip)
+      // A quick second click starts the next one before this has wound up: its names stay.
+      if (kind && --kinds[kind] === 0) root.classList.remove(kind)
+      if (running === done) running = null
+    })
+  running = done
   return transition
 }
 
@@ -27,12 +45,11 @@ function settleSmoothly(update: () => void) {
   if (scheduled) return
   scheduled = true
   setTimeout(async () => {
-    if (running) await running
+    while (running) await running
     scheduled = false
     const updates = queue
     queue = []
-    const transition = startViewTransition(() => flushSync(() => updates.forEach((u) => u())))
-    running = transition.finished.finally(() => (running = null))
+    startViewTransition(() => flushSync(() => updates.forEach((u) => u())), 'settling')
   }, BATCH_MS)
 }
 

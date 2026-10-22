@@ -1,5 +1,7 @@
 // A tiny History-API router: pages switch without a reload, so the engine and the loaded game survive.
 import { useSyncExternalStore } from 'react'
+import { flushSync } from 'react-dom'
+import { startViewTransition } from '../hooks/useSettled'
 
 export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
@@ -44,8 +46,36 @@ export function afterSignIn(back: string): string {
 }
 
 const listeners = new Set<() => void>()
-const notify = () => listeners.forEach((l) => l())
-if (typeof window !== 'undefined') window.addEventListener('popstate', notify)
+// Analyze is Game review's page without a game: moving between them isn't a change of page.
+const pageOf = (pathname: string) => {
+  const route = routeFor(pathname)
+  return route === 'board' ? 'analysis' : route
+}
+let shownPage = typeof location === 'undefined' ? 'home' : pageOf(location.pathname)
+
+/**
+ * Tells the app the address changed (running `first` just before it redraws). Going to another page plays
+ * as one view transition (index.css, ::view-transition-*(page)): the page fades out and the next rises in,
+ * the sidebar staying put. The sign-in pages have their own slide, so they and reduced motion just switch.
+ */
+function notify(first?: () => void) {
+  const from = shownPage
+  shownPage = pageOf(location.pathname)
+  const update = () => {
+    first?.()
+    listeners.forEach((l) => l())
+  }
+  const animate =
+    shownPage !== from &&
+    from !== 'auth' &&
+    shownPage !== 'auth' &&
+    typeof document !== 'undefined' &&
+    'startViewTransition' in document &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (animate) startViewTransition(() => flushSync(update), 'page-change')
+  else update()
+}
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => notify())
 
 const reselectListeners = new Set<(path: string) => void>()
 
@@ -64,8 +94,8 @@ export function navigate(path: string, { replace = false } = {}): void {
   // Pages reached inside the app are marked, so a Back button knows there's somewhere to go back to.
   if (replace) history.replaceState(history.state, '', path)
   else history.pushState({ inApp: true }, '', path)
-  window.scrollTo(0, 0)
-  notify()
+  // The page you're leaving is captured where you left it; the next one starts at the top.
+  notify(() => window.scrollTo(0, 0))
 }
 
 /** Phones' Back button: the page you came from, or `fallback` when this page was opened directly. */

@@ -5251,18 +5251,71 @@ button.user-avatar.guest:hover {
   transform: scale(0.96);
 }
 
-/* Motion: pages fade in as you switch to them; the Play screens rise in. A page kept mounted
-   (Play, Analysis) restarts its fade each time it's shown, since [hidden] clears the animation.
-   Home's cards don't move as they come: a card that slid in each time read as the page adjusting. */
-.home-page,
-.page-host,
-.analysis-host {
-  animation: fade-in 0.22s ease-out;
+/* Motion: going to another page, the one you're on fades out and the next rises in, all of it as one piece
+   (a view transition, router.ts: the live page never moves, so a board measures where it really is). The
+   sidebar and the phone's tab bar stay put, the current item lighting up at once. Cards never move on
+   their own as a page comes: a card that slid in each time read as the page adjusting. */
+:root.page-change .shell-page {
+  view-transition-name: page;
 }
 
-.page-host[hidden],
-.analysis-host[hidden] {
+:root.page-change .sidebar {
+  view-transition-name: sidebar;
+}
+
+:root.page-change .tabbar {
+  view-transition-name: tabbar;
+}
+
+::view-transition-group(page),
+::view-transition-group(sidebar),
+::view-transition-group(tabbar),
+::view-transition-old(sidebar),
+::view-transition-new(sidebar) {
   animation: none;
+}
+
+/* The tab bar crossfades quickly: the board screens hide it, and it shouldn't hang on while they come. */
+::view-transition-old(tabbar),
+::view-transition-new(tabbar) {
+  animation-duration: 0.15s;
+}
+
+::view-transition-old(page) {
+  animation: page-out 0.12s ease-in both;
+}
+
+::view-transition-new(page) {
+  animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Browsers without view transitions: the page just fades in. A page kept mounted (Play, Analysis)
+   restarts its fade each time it's shown, since [hidden] clears the animation. */
+@supports not (view-transition-name: none) {
+  .home-page,
+  .page-host,
+  .analysis-host,
+  .puzzles-page {
+    animation: fade-in 0.22s ease-out;
+  }
+
+  .page-host[hidden],
+  .analysis-host[hidden] {
+    animation: none;
+  }
 }
 
 .setup-card,
@@ -6467,39 +6520,33 @@ button.stat-card:hover {
 }
 
 /* When what was loading arrives (useSettled), each placeholder morphs into the card that takes its place,
-   sharing its name, and the cards around slide to where they now sit, while the contents crossfade. */
-.latest-card {
+   sharing its name, and the cards around slide to where they now sit, while the contents crossfade.
+   The names only exist while that runs (:root.settling), so a change of page moves the page as one. */
+:root.settling .latest-card {
   view-transition-name: latest-card;
 }
 
-.legendary-strip,
-.legendary-teaser {
+:root.settling :is(.legendary-strip, .legendary-teaser) {
   view-transition-name: legendary-strip;
 }
 
-.mistakes-card {
+:root.settling .mistakes-card {
   view-transition-name: mistakes-card;
 }
 
-.form-card {
+:root.settling .form-card {
   view-transition-name: form-card;
 }
 
-.daily-card {
+:root.settling .daily-card {
   view-transition-name: daily-card;
 }
 
-.home-main > .games-card {
+:root.settling .home-main > .games-card {
   view-transition-name: home-games;
 }
 
-.latest-card,
-.legendary-strip,
-.legendary-teaser,
-.mistakes-card,
-.form-card,
-.daily-card,
-.home-main > .games-card {
+:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .home-main > .games-card) {
   view-transition-class: card;
 }
 
