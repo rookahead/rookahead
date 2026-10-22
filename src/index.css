@@ -5252,7 +5252,8 @@ button.user-avatar.guest:hover {
 }
 
 /* Motion: pages fade in as you switch to them; the Play screens rise in. A page kept mounted
-   (Play, Analysis) restarts its fade each time it's shown, since [hidden] clears the animation. */
+   (Play, Analysis) restarts its fade each time it's shown, since [hidden] clears the animation.
+   Home's cards don't move as they come: a card that slid in each time read as the page adjusting. */
 .home-page,
 .page-host,
 .analysis-host {
@@ -5262,24 +5263,6 @@ button.user-avatar.guest:hover {
 .page-host[hidden],
 .analysis-host[hidden] {
   animation: none;
-}
-
-.home-main > *,
-.home-side > * {
-  animation: rise-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.home-main > :nth-child(2),
-.home-side > :nth-child(1) {
-  animation-delay: 0.04s;
-}
-
-.home-side > :nth-child(2) {
-  animation-delay: 0.08s;
-}
-
-.home-side > :nth-child(3) {
-  animation-delay: 0.12s;
 }
 
 .setup-card,
@@ -5725,6 +5708,13 @@ button.user-avatar.guest:hover {
 
 .daily-foot .muted {
   font-size: 13px;
+}
+
+/* A placeholder bar on a line of its own: as tall as the line of text it stands in for. */
+.skel-line {
+  display: flex;
+  align-items: center;
+  height: calc(1em * 1.45);
 }
 
 /* Phones: what you need while solving (status, buttons, move controls) sits right under the board. */
@@ -6463,10 +6453,6 @@ button.stat-card:hover {
 
 .skel-day {
   margin: 0 12px 10px;
-}
-
-.skel-group .daily-foot p {
-  gap: 8px;
 }
 
 .skel-group .game-card-accuracy {

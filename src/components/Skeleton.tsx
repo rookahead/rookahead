@@ -118,8 +118,12 @@ export function DailyCardSkeleton() {
       </span>
       <div className="daily-foot">
         <p>
-          <Skel w="96px" h="14px" />
-          <Skel w="140px" h="12px" />
+          <span className="skel-line">
+            <Skel w="96px" h="14px" />
+          </span>
+          <span className="skel-line muted">
+            <Skel w="140px" h="12px" />
+          </span>
         </p>
         <Skel w="72px" h="34px" className="skel-pill" />
       </div>

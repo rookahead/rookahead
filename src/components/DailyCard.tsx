@@ -12,16 +12,25 @@ import { IconTile } from './IconTile'
 import { MiniBoard } from './MiniBoard'
 import { DailyCardSkeleton } from './Skeleton'
 
+// Today's puzzle once it's loaded, so coming back to Home shows it at once instead of its placeholder.
+let loaded: { day: number; puzzle: Puzzle | null } | null = null
+
 /** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). */
 export function DailyCard({ theme }: { theme: BoardTheme }) {
+  const day = dayNumber(new Date())
   // Undefined while it loads; null if it couldn't (offline, say), and the card stays away.
-  const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(undefined)
+  const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(() => (loaded?.day === day ? loaded.puzzle : undefined))
   useEffect(() => {
+    if (loaded?.day === day) return
     dailyLine().then(
-      (l) => setPuzzle(parsePuzzleLine(l)),
+      (l) => {
+        const p = parsePuzzleLine(l)
+        loaded = { day, puzzle: p }
+        setPuzzle(p)
+      },
       () => setPuzzle(null),
     )
-  }, [])
+  }, [day])
   const version = useStoreVersion('puzzles')
   const { done, days } = useMemo(() => {
     const progress = loadProgress()

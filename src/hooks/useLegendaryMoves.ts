@@ -23,19 +23,34 @@ async function decode(token: string): Promise<SharedGame | null> {
   return decoded.get(token)!
 }
 
+// Only games whose review counted a Legendary move of yours need opening up.
+const candidates = (games: MyGame[], reviews: Record<string, CachedReview>) =>
+  games.filter((g) => (reviews[g.key]?.brilliant[g.color] ?? 0) > 0).sort((a, b) => b.endedAt - a.endedAt)
+
+const entries = (game: MyGame, review: CachedReview, shared: SharedGame | null): LegendaryEntry[] =>
+  shared ? legendaryMoves(shared, game.color).map((m) => ({ ...m, id: `${game.key}#${m.ply}`, game, review })) : []
+
+/** The moves straight away when every game they're in has been opened before; null when one still needs decoding. */
+function known(games: MyGame[], reviews: Record<string, CachedReview>): LegendaryEntry[] | null {
+  const list = candidates(games, reviews)
+  if (!list.every((g) => decoded.has(reviews[g.key].token))) return null
+  return list.flatMap((g) => entries(g, reviews[g.key], decoded.get(reviews[g.key].token)!))
+}
+
 /** Every Legendary move you played in your reviewed games, newest game first. */
 export function useLegendaryMoves(games: MyGame[], reviews: Record<string, CachedReview>): { moves: LegendaryEntry[]; loading: boolean } {
-  const [state, setState] = useState<{ moves: LegendaryEntry[]; loading: boolean }>({ moves: [], loading: true })
+  // Coming back to a page, they're usually all known already: shown at once, with no placeholder in between.
+  const [state, setState] = useState<{ moves: LegendaryEntry[]; loading: boolean }>(() => {
+    const moves = known(games, reviews)
+    return moves ? { moves, loading: false } : { moves: [], loading: true }
+  })
 
   useEffect(() => {
     let live = true
-    // Only games whose review counted a Legendary move of yours need opening up.
-    const candidates = games.filter((g) => (reviews[g.key]?.brilliant[g.color] ?? 0) > 0).sort((a, b) => b.endedAt - a.endedAt)
     void Promise.all(
-      candidates.map(async (game) => {
+      candidates(games, reviews).map(async (game) => {
         const review = reviews[game.key]
-        const shared = await decode(review.token)
-        return shared ? legendaryMoves(shared, game.color).map((m) => ({ ...m, id: `${game.key}#${m.ply}`, game, review })) : []
+        return entries(game, review, await decode(review.token))
       }),
     ).then((found) => {
       if (live) setState({ moves: found.flat(), loading: false })
