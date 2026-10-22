@@ -134,12 +134,11 @@
   --dark-piece-glow: none;
 }
 
-/* ═══════════════ Colour themes (Settings → Appearance; Gold is the default) ═══════════════
+/* ═══════════════ Colour themes (Settings → Appearance; Sky is the default) ═══════════════
    Each theme is one seed colour worked out into tones the way Android's Material You does it
    (material-color-utilities: backgrounds from its Vibrant scheme, so the tint shows; the containers
    from Tonal Spot, as Vibrant turns some neon). Ivory is its Monochrome scheme: no colour at all.
    Verdict, result and section colours stay the same in every theme: they mean something. */
-:root,
 :root[data-palette='gold'] {
   --t-surface: #1a1206;
   --t-lowest: #140d03;
@@ -157,7 +156,6 @@
   --t-osc: #f8dfbb;
 }
 
-:root[data-theme='light'],
 :root[data-palette='gold'][data-theme='light'] {
   --t-surface: #fff8f3;
   --t-lowest: #ffffff;
@@ -175,6 +173,7 @@
   --t-osc: #55442a;
 }
 
+:root,
 :root[data-palette='sky'] {
   --t-surface: #0b151a;
   --t-lowest: #060f15;
@@ -192,6 +191,7 @@
   --t-osc: #d1e5f4;
 }
 
+:root[data-theme='light'],
 :root[data-palette='sky'][data-theme='light'] {
   --t-surface: #f5faff;
   --t-lowest: #ffffff;

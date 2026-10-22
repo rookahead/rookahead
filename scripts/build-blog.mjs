@@ -268,9 +268,9 @@ const GITHUB =
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
 
 // The look you picked in the app (Settings → Appearance and Board), before the first paint: light, dark or
-// black (else the device's), your colour and your board. Settings from before the tonal themes read as the
-// app reads them (src/lib/settings.ts): their Sky and Graphite were only the old defaults.
-const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='sky'&&v<1))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
+// black (else the device's), your colour and your board. Settings read as the app reads them (src/lib/settings.ts):
+// a Graphite board from before the Theme board and a Gold that was only the default for a day are the defaults.
+const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='gold'&&v<3))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
 // Copy link, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
@@ -491,10 +491,10 @@ function themeCss() {
   }
   const squares = (b) => `--sq-light: ${b.light};\n  --sq-dark: ${b.dark};\n  --sq-last: ${b.last};`
   const fixed = boards('BOARD_THEMES').map((b) => `:root[data-board='${b.id}'] {\n  ${squares(b)}\n}`)
-  // The Theme board, the default: Gold's unless your colour theme says otherwise.
+  // The Theme board, the default: Sky's unless your colour theme says otherwise.
   const themed = boards('THEME_BOARDS').map((b) => {
     const sel = `:root[data-palette='${b.id}']:is(:not([data-board]), [data-board='theme'])`
-    return `${b.id === 'gold' ? ":root:is(:not([data-board]), [data-board='theme']),\n" : ''}${sel} {\n  ${squares(b)}\n}`
+    return `${b.id === 'sky' ? ":root:is(:not([data-board]), [data-board='theme']),\n" : ''}${sel} {\n  ${squares(b)}\n}`
   })
   return `/* Made by scripts/build-blog.mjs from the app's own colours: don't edit, it's rebuilt. */\n${css.slice(start, end).trim()}\n\n${[...themed, ...fixed].join('\n\n')}\n`
 }

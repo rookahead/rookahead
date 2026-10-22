@@ -9,8 +9,8 @@ export type Appearance = 'dark' | 'black' | 'light' | 'system'
 export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'ivory'
 
 export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
-  { id: 'gold', label: 'Gold', swatch: '#f2b33d' },
   { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
+  { id: 'gold', label: 'Gold', swatch: '#f2b33d' },
   { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
   { id: 'coral', label: 'Coral', swatch: '#ff7a59' },
   { id: 'forest', label: 'Forest', swatch: '#34d399' },
@@ -63,7 +63,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: 'dark',
-  palette: 'gold',
+  palette: 'sky',
   engine: 'lite',
   lines: 3,
   liveDepth: 30,
@@ -86,7 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = STORE_KEYS.settings
 /** Where the settings' theme changes are up to (Settings.themes). */
-const THEMES_VERSION = 2
+const THEMES_VERSION = 3
 
 /** v1 defaulted to the full engine; its other settings carry over, the engine choice doesn't. */
 const OLD_KEY = 'rookahead.settings.v1'
@@ -108,13 +108,12 @@ function load(): Settings {
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
       const was = s.themes ?? 0
-      // 1, the tonal themes: before them Sky was everyone's colour unless they changed it, and Dim was the soft dark.
-      if (was < 1) {
-        if (s.palette === 'sky') s.palette = 'gold'
-        if ((s.appearance as string) === 'dim') s.appearance = 'dark'
-      }
+      // 1, the tonal themes: Dim folded into Dark.
+      if (was < 1 && (s.appearance as string) === 'dim') s.appearance = 'dark'
       // 2, the Theme board: Graphite was everyone's board unless they changed it.
       if (was < 2 && s.boardTheme === 'graphite') s.boardTheme = 'theme'
+      // 3, Sky the default again: Gold was everyone's colour for a day, as the default, not a choice.
+      if (was < 3 && s.palette === 'gold') s.palette = 'sky'
       s.themes = THEMES_VERSION
       return s
     }
