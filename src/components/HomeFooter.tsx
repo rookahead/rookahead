@@ -1,4 +1,5 @@
 import { DISCORD_URL, YOUTUBE_URL } from '../lib/links'
+import { RookLogo } from './RookLogo'
 
 // Simple Icons, CC0.
 const LOGOS = [
@@ -19,10 +20,14 @@ const LOGOS = [
   },
 ]
 
-/** The bottom of Home: the site's own pages, where to find us, and that it's open source. */
+/** The bottom of Home: whose it is, the site's own pages, where to find us, and that it's open source. */
 export function HomeFooter() {
   return (
     <footer className="home-footer">
+      {/* Your copyright, under the GPL that makes it free to use, change and share: not "all rights reserved". */}
+      <span className="home-footer-brand">
+        <RookLogo />© {new Date().getFullYear()} Rookahead
+      </span>
       <nav aria-label="Rookahead">
         <a href="/blog">Blog</a>
         <a href="/about">About</a>

@@ -4647,6 +4647,24 @@ a.see-all,
   font-size: 13px;
 }
 
+.home-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-2);
+}
+
+.home-footer-brand .brand-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.home-footer-brand .brand-logo svg {
+  width: 16px;
+  height: 16px;
+}
+
 .home-footer nav {
   display: flex;
   gap: 18px;
