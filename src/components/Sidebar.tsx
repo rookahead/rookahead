@@ -25,9 +25,9 @@ export function NavItemIcon({ item }: { item: NavItem }) {
 }
 
 /**
- * Desktop navigation: a floating panel, full window height, with the user card at the bottom.
- * Collapsing slides it to a rail of icons: the icons, logo and avatar keep their places while
- * the words fade and the width (and with it the page) animates.
+ * Desktop navigation: a floating panel, full window height, with the user card at the bottom and the
+ * collapse button beside the name. Collapsing slides it to a rail of icons: the icons, logo and avatar
+ * keep their places while the words fade and the width (and with it the page) animates.
  */
 export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
   return (
@@ -37,6 +37,12 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
           <RookLogo />
           <Wordmark className="sidebar-wordmark" />
         </Link>
+        {/* Beside the name; on the rail it takes the logo's place while the logo is pointed at. */}
+        <button className="icon-btn sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : 'Collapse'}>
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="m11 7-5 5 5 5M18 7l-5 5 5 5" />
+          </svg>
+        </button>
       </div>
       <nav className="sidebar-nav" aria-label="Main">
         {NAV_ITEMS.map((item) => {
@@ -63,13 +69,6 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
       </nav>
       <div className="sidebar-foot">
         {footer}
-        <div className="sidebar-bottom">
-          <button className="icon-btn sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : 'Collapse'}>
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="m11 7-5 5 5 5M18 7l-5 5 5 5" />
-            </svg>
-          </button>
-        </div>
       </div>
     </aside>
   )
