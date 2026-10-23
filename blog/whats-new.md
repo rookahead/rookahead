@@ -1,14 +1,22 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-10-22
+date: 2026-10-23
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
 
-## 22 October 2026
+## 23 October 2026
+
+- A new Home. Today's plan lists a few things worth doing today and ticks them off as you do them: review your latest game, solve the daily puzzle, fix a few of your mistakes when you have some, and play a game. It replaces the Today list in the sidebar.
+- An Accuracy card with a chart of your last 20 reviewed games. Point at a game to see its accuracy, and click it to open the review. Below the chart is your accuracy in the opening, the middlegame and the endgame, with the weakest of the three picked out.
+- A Puzzle streak card that shows the last two weeks, a flame on each day you solved a puzzle.
+- Home on a phone is much shorter: your latest game, your mistakes and the daily puzzle are compact cards, and your accuracy and streak share one card.
+- Home keeps its shape while it loads, so the cards don't jump when your games arrive.
+- Pages no longer shift sideways when you go from a short page to a long one.
+
 
 **Rules:** Clutch is the only move, however obvious. A free capture, or an attacked piece moved to its one safe square, now counts when nothing else works. Taking back what your opponent just took, and the checkmating move itself, stay Best. We tested the change on purpose-built positions and on real games before making it.
 
