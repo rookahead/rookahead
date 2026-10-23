@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 3
+export const RULES_VERSION = 4
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -254,6 +254,7 @@ function enPrise(chess: Chess, square: Square, us: 'w' | 'b', takers: Square[]):
  */
 function offeredSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, hungAlready: (sq: Square, type: string) => boolean): Sacrifice | null {
   const us = color === 'white' ? 'w' : 'b'
+  const before = new Chess(beforeFen)
   const after = new Chess(afterFen)
   const gained = materialBalance(afterFen, color) - materialBalance(beforeFen, color)
   const captures = after.moves({ verbose: true }).filter((m) => m.captured)
@@ -266,12 +267,36 @@ function offeredSacrifice(beforeFen: string, afterFen: string, pv: string[], col
     const takers = captures.filter((m) => m.to === sq).map((m) => m.from)
     if (!enPrise(after, sq, us, takers)) continue
     if (hungAlready(sq, piece.type)) continue
+    // A piece left behind (not the one that moved) while the move attacks as much is a trade. The moved
+    // piece is still offered: a person takes a queen they're given, whatever comes back (14.Qxh3 Bxh3 15.Bxg5+).
+    const leftBehind = before.get(sq)?.type === piece.type && before.get(sq)?.color === us
+    if (leftBehind && winsBack(after, sq, us, gained)) continue
     // A defended rook that only a knight or bishop can win is the exchange; anything else is material.
     const exchange = piece.type === 'r' && after.attackers(sq, us).length > 0 && cheapest(after, takers) === 3
     if (!exchange) return 'material'
     found = 'exchange'
   }
   return found
+}
+
+/**
+ * However the opponent takes the piece on `sq`, can the mover's next move win back as much: under a pawn
+ * behind, counting what the move itself took (`gained`)? Then leaving it there was a trade, not an
+ * offer: 5…Qxg2 leaves the h8 rook to the f7 knight, but 6.Nxh8 Qxh1+ wins a rook back.
+ */
+function winsBack(after: Chess, sq: Square, us: 'w' | 'b', gained: number): boolean {
+  const lost = VALUES[after.get(sq)!.type]
+  const takes = after.moves({ verbose: true }).filter((m) => m.to === sq && m.captured)
+  return takes.every((take) => {
+    const chess = new Chess(after.fen())
+    chess.move(take)
+    // A defended piece is only worth taking with something cheaper, and only for the difference.
+    const wins = chess.moves({ verbose: true }).filter((m) => m.captured).map((m) => {
+      const defended = chess.attackers(m.to, us === 'w' ? 'b' : 'w').length > 0
+      return defended ? VALUES[m.captured!] - VALUES[m.piece] : VALUES[m.captured!]
+    })
+    return gained - lost + Math.max(0, ...wins) > -1
+  })
 }
 
 /**

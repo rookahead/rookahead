@@ -41,7 +41,11 @@ counts however obvious it is.
     piece: the evaluation is two pawns or more below the material count; less than that is just
     compensation, as in 12.dxe5, a bishop given for a pawn while a pawn up at 0.00); a check that leaves
     a piece attacked but gives the opponent no time to take it; a piece that has been hanging since before
-    the opponent's last move and is left hanging again, unless the move is also the only good move.
+    the opponent's last move and is left hanging again, unless the move is also the only good move;
+    a piece left where it stands while the move attacks as much: if the opponent takes it, your next move
+    wins back as much (5…Qxg2 in the Blackburne Shilling Gambit leaves the h8 rook to the f7 knight, but
+    6.Nxh8 Qxh1+ is a rook for a rook). The piece that moved is still offered, whatever comes back: a
+    person takes a queen they're given (14.Qxh3 Bxh3 15.Bxg5+).
 
 ## The verdicts, in the order they're decided
 

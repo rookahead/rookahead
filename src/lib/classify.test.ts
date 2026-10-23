@@ -278,6 +278,21 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(check.line, check.evals).moves[check.line[2].id].cls).toBe('best')
   })
 
+  it('does not count a piece left hanging as a sacrifice when taking it lets the mover win as much back', () => {
+    // Blackburne Shilling Gambit, 5…Qxg2: 6.Nxh8 Qxh1+ is a rook for a rook.
+    const chess = new Chess()
+    'e4 e5 Nf3 Nc6 Bc4 Nd4 Nxe5 Qg5 Nxf7'.split(' ').forEach((san) => chess.move(san))
+    const before = chess.fen()
+    chess.move('Qxg2')
+    expect(isSacrifice(before, chess.fen(), ['f7g5', 'g2h1', 'c4f1', 'f8e7'], 'black', 6.39, true)).toBe(false)
+    // 1.Qc3 leaves the b4 rook to the knight and attacks h8: undefended, so 1…Nxb4 2.Qxh8+ wins it back…
+    expect(isSacrifice('k6r/8/2n5/8/1R6/8/8/2Q3K1 w - - 0 1', 'k6r/8/2n5/8/1R6/2Q5/8/6K1 b - - 1 1', ['a8b7'], 'white', Infinity, true)).toBe(false)
+    // …but with the king guarding h8 there's nothing to win back, and the rook was given up.
+    expect(isSacrifice('6kr/8/2n5/8/1R6/8/8/2Q3K1 w - - 0 1', '6kr/8/2n5/8/1R6/2Q5/8/6K1 b - - 1 1', ['g8g7'], 'white', Infinity, true)).toBe(true)
+    // A piece moved where it can be taken is still offered, whatever comes back.
+    expect(isSacrifice('k6r/8/2n5/8/8/2Q5/8/1R4K1 w - - 0 1', 'k6r/8/2n5/8/1R6/2Q5/8/6K1 b - - 1 1', ['a8b7'], 'white')).toBe(true)
+  })
+
   it('calls an undefended rook left to a knight a sacrifice of material, not the exchange', () => {
     expect(sacrifice('4k3/8/2n5/8/8/8/8/R3K3 w - - 0 1', '4k3/8/2n5/8/1R6/8/8/4K3 b - - 1 1', ['e8d7'], 'white')).toBe('material')
   })
