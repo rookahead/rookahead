@@ -25,6 +25,58 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Who and what this is, for search engines: the name "Rookahead" (not a typo of "rook ahead"), a free chess app, and where else it lives. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://rookahead.com/#website",
+            "name": "Rookahead",
+            "alternateName": [
+              "Rook ahead",
+              "RookAhead"
+            ],
+            "url": "https://rookahead.com/",
+            "publisher": {
+              "@id": "https://rookahead.com/#org"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://rookahead.com/#org",
+            "name": "Rookahead",
+            "url": "https://rookahead.com/",
+            "logo": "https://rookahead.com/icon-512.png",
+            "email": "support@rookahead.com",
+            "sameAs": [
+              "https://www.youtube.com/channel/UCBgLOKhkiQKsYYEhi7mW-1A",
+              "https://github.com/rookahead/rookahead",
+              "https://discord.gg/ebm3NZNHZH"
+            ]
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://rookahead.com/#app",
+            "name": "Rookahead",
+            "url": "https://rookahead.com/",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Any web browser, Android",
+            "browserRequirements": "Requires JavaScript",
+            "description": "Free, unlimited chess game review with Stockfish 19 in your browser. Every move graded from Legendary to Blunder, with accuracy and key moments.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "publisher": {
+              "@id": "https://rookahead.com/#org"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <!-- Your theme before the first paint (App.tsx keeps it up to date after), so the page doesn't flash dark. -->
