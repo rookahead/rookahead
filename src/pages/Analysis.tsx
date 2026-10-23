@@ -688,8 +688,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     )
   }
 
-  /** Drag the corner handle: the corner follows the pointer (whichever way it moved further). The board
-   *  is centred, so its corner moves sideways half as far as it grows: a sideways drag counts double.
+  /** Drag the corner handle: the corner keeps as close to the pointer as it can. The board is centred, so
+   *  as it grows its corner moves half as far sideways as down: the drag is measured along that path.
    *  The layout's size variable is set directly while dragging, so the page doesn't re-render each frame. */
   const startResize = (e: React.PointerEvent<HTMLElement>) => {
     const board = e.currentTarget.parentElement?.querySelector('.board')
@@ -705,9 +705,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     let moved = false
     const onMove = (ev: PointerEvent) => {
       moved = true
-      const dx = 2 * (ev.clientX - x0)
-      const dy = ev.clientY - y0
-      size = Math.round(Math.min(Math.max(start + (Math.abs(dx) > Math.abs(dy) ? dx : dy), MIN_BOARD), max))
+      const grow = (0.5 * (ev.clientX - x0) + (ev.clientY - y0)) / 1.25
+      size = Math.round(Math.min(Math.max(start + grow, MIN_BOARD), max))
       layout.style.setProperty('--board-user', `${size}px`)
       layout.classList.add('sized')
     }
