@@ -471,8 +471,9 @@ function FormCard({ pending, accuracy, trend, recent, progress }: { pending: boo
           Puzzle streak
         </span>
         <span className="stat-row">
+          {/* This week's dots only beside a streak: "Start today" needs the room, and the row its one line. */}
           {streak ? <b className="stat-value">{streak}</b> : <b className="stat-empty">Start today</b>}
-          <WeekDots progress={progress} />
+          {streak > 0 && <WeekDots progress={progress} />}
         </span>
         <span className="stat-sub">{streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${best ? ` · best ${best}` : ''}` : 'Solve one puzzle'}</span>
       </Link>
