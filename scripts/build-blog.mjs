@@ -500,7 +500,7 @@ function themeCss() {
 }
 
 // The app's own pages that are worth finding from a search, then the blog.
-const APP_PAGES = ['/', '/games', '/puzzles', '/puzzles/daily', '/play', '/legendary', '/about', '/privacy']
+const APP_PAGES = ['/', '/games', '/puzzles', '/puzzles/daily', '/play', '/legendary', '/board', '/about', '/privacy']
 
 function sitemap(posts) {
   const urls = [...APP_PAGES.map((p) => ({ loc: SITE + p })), { loc: `${SITE}/blog`, lastmod: posts[0]?.date }, ...posts.map((p) => ({ loc: `${SITE}/blog/${p.slug}`, lastmod: p.date }))]

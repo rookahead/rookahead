@@ -9,7 +9,8 @@ import { useOnline } from './hooks/useOnline'
 import { openAccountPage, startAccounts, useAccount } from './lib/account'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
-import { navigate, useRoute, type Route } from './lib/router'
+import { titleFor } from './lib/pageMeta'
+import { navigate, usePathname, useRoute, type Route } from './lib/router'
 import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
@@ -48,6 +49,11 @@ export default function App() {
     [highlightLastMove, showLegalMoves, animation, notation, moveEffects, soundVolume, palette],
   )
   const route = useRoute()
+  const pathname = usePathname()
+  // The tab says which page this is (pageMeta.ts; the same titles search engines get).
+  useEffect(() => {
+    document.title = titleFor(pathname)
+  }, [pathname])
   const phone = useMediaQuery('(max-width: 1000px)')
   const { status: accountStatus, needsUsername } = useAccount()
   const [rail, setRail] = useState(readRail)

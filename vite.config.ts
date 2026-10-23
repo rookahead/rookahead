@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { PAGE_META, SITE } from './src/lib/pageMeta.ts'
 
 // Multi-threaded Stockfish needs SharedArrayBuffer, which browsers only expose
 // on cross-origin isolated pages. These two headers turn isolation on.
@@ -50,8 +51,42 @@ function preloadFonts(): Plugin {
   }
 }
 
+// The app is one page, so every address used to tell search engines the home page's title and description.
+// After the build, each page in PAGE_META gets its own copy (dist/puzzles.html is served at /puzzles), the
+// same app with that page's title, description and address in its head.
+const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+
+function routePages(): Plugin {
+  let outDir = 'dist'
+  return {
+    name: 'route-pages',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      const html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8')
+      for (const [route, meta] of Object.entries(PAGE_META)) {
+        if (route === '/') continue
+        const title = escapeHtml(meta.title)
+        const description = escapeHtml(meta.description)
+        const page = html
+          .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+          .replace(/(<meta name="description" content=")[^"]*/, `$1${description}`)
+          .replace(/(<meta property="og:title" content=")[^"]*/, `$1${title}`)
+          .replace(/(<meta property="og:description" content=")[^"]*/, `$1${description}`)
+          .replace(/(<meta property="og:url" content=")[^"]*/, `$1${SITE}${route}`)
+          .replace(/(<link rel="canonical" href=")[^"]*/, `$1${SITE}${route}`)
+        const file = path.join(outDir, `${route.slice(1)}.html`)
+        fs.mkdirSync(path.dirname(file), { recursive: true })
+        fs.writeFileSync(file, page)
+      }
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), preloadFonts(), mode === 'web' && dropFullEngine(loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true')],
+  plugins: [react(), preloadFonts(), routePages(), mode === 'web' && dropFullEngine(loadEnv(mode, process.cwd()).VITE_LITE_ONLY === 'true')],
   // Two pages: the app, and the engine-free viewer other sites embed (rookahead.com/embed).
   build: { rollupOptions: { input: { main: 'index.html', embed: 'embed.html' } } },
   server: { headers: isolationHeaders },
