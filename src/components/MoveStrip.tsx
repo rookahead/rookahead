@@ -8,7 +8,7 @@ interface Props {
   tree: GameTree
   currentId: string
   onSelect: (id: string) => void
-  report?: GameReport | null
+  report?: Pick<GameReport, 'moves'> | null
 }
 
 // Icons in the strip: the notable verdicts plus Best, like the move list.

@@ -178,13 +178,15 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
 
   const inVariation = !isMainline(tree, node.id)
+  // The Analysis board grades the moves played on it as they're played, until the game is reviewed.
+  const gradingBoard = blank && review.status === 'idle'
   // Moves tried in a side line after the review get verdicts too, from the same kind of search.
   const sideLine = useMemo(() => {
-    if (!inVariation) return []
-    const off = path.filter((n) => !isMainline(tree, n.id))
+    if (!inVariation && !gradingBoard) return []
+    const off = gradingBoard ? path : path.filter((n) => !isMainline(tree, n.id))
     // The move on the board first, then the rest of the line from where it leaves the game.
-    return [node.fen, path[path.length - 2]?.fen, ...off.map((n) => n.fen)].filter((f): f is string => Boolean(f))
-  }, [inVariation, path, tree, node.fen])
+    return [...new Set([node.fen, path[path.length - 2]?.fen, ...off.map((n) => n.fen)])].filter((f): f is string => Boolean(f))
+  }, [inVariation, gradingBoard, path, tree, node.fen])
   const reviewDepth = depthOfReview(review.evals) ?? settings.reviewDepth
   const side = useSideLineReview({
     engine,
@@ -192,24 +194,25 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     evals: review.evals,
     fens: sideLine,
     depth: reviewDepth,
-    enabled: review.status === 'done' && Boolean(report) && active,
+    enabled: ((review.status === 'done' && Boolean(report)) || gradingBoard) && active,
   })
   const sideMoves = useMemo(() => {
     const moves: Record<string, MoveReview> = {}
-    if (!report || !Object.keys(side.evals).length) return moves
+    if (!Object.keys(side.evals).length) return moves
     const evals = { ...review.evals, ...side.evals }
     // Each side line is graded as a game of its own, from the start, so book and "miss" work as usual.
+    // With no review, every line is one of the board's own, the main line included.
     for (const n of Object.values(tree.nodes)) {
-      if (n.children.length || isMainline(tree, n.id)) continue
+      if (n.children.length || (report && isMainline(tree, n.id))) continue
       for (const [id, m] of Object.entries(classifyGame(pathTo(tree, n.id), evals, book?.isBook).moves)) {
-        if (!report.moves[id] && !isMainline(tree, id)) moves[id] = m
+        if (!report || (!report.moves[id] && !isMainline(tree, id))) moves[id] = m
       }
     }
     return moves
   }, [report, review.evals, side.evals, tree, book])
   // The move list's icons: the game's moves and any side-line moves graded since.
-  const listReport = useMemo<GameReport | null>(
-    () => (report && Object.keys(sideMoves).length ? { ...report, moves: { ...report.moves, ...sideMoves } } : report),
+  const listReport = useMemo<Pick<GameReport, 'moves'> | null>(
+    () => (Object.keys(sideMoves).length ? { ...report, moves: { ...report?.moves, ...sideMoves } } : report),
     [report, sideMoves],
   )
   const currentReview = report?.moves[node.id] ?? sideMoves[node.id]

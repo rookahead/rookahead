@@ -10,7 +10,7 @@ interface Props {
   onSelect: (id: string) => void
   result?: string
   /** When the game has been reviewed, moves get their classification icon (side-line moves too, once graded). */
-  report?: GameReport | null
+  report?: Pick<GameReport, 'moves'> | null
   /** What an empty list says. */
   emptyText?: string
 }
@@ -25,7 +25,7 @@ interface MoveButtonProps {
   node: MoveNode
   current: boolean
   onSelect: (id: string) => void
-  report?: GameReport | null
+  report?: Pick<GameReport, 'moves'> | null
 }
 
 function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
@@ -48,7 +48,7 @@ function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
 }
 
 /** A side line rendered inline: "3… Nf6 4. d3 (4. Ng5 d5) 4… Bc5". */
-function Variation({ tree, startId, currentId, onSelect, report }: { tree: GameTree; startId: string; currentId: string; onSelect: (id: string) => void; report?: GameReport | null }) {
+function Variation({ tree, startId, currentId, onSelect, report }: { tree: GameTree; startId: string; currentId: string; onSelect: (id: string) => void; report?: Pick<GameReport, 'moves'> | null }) {
   const parts: ReactNode[] = []
   const push = (node: MoveNode, forceNumber: boolean) => {
     const white = isWhiteMove(node.ply)
