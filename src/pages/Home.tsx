@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { GameList } from '../components/GameList'
+import { HomeFooter } from '../components/HomeFooter'
 import { AccuracyCard, PlanCard, PlanCardSkeleton, StreakCard, WeekDots, type AccuracyPoint } from '../components/HomeCards'
 import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
@@ -257,6 +258,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           {!firstVisit && <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} progress={progress} />}
           {mistakesCard}
           <DailyCard compact theme={settings.boardTheme} />
+          <HomeFooter />
         </main>
       </div>
     )
@@ -349,6 +351,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             </span>
           </button>
         </aside>
+        <HomeFooter />
       </main>
     </div>
   )

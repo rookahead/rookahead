@@ -667,13 +667,12 @@ svg {
 .sidebar-wordmark,
 .sidebar-label,
 .soon-tag,
-.sidebar-links,
 .user-card-text,
 .user-card-gear {
   transition: opacity 0.2s ease 0.12s, visibility 0s;
 }
 
-.sidebar.rail :is(.sidebar-wordmark, .sidebar-label, .soon-tag, .sidebar-links, .user-card-text, .user-card-gear) {
+.sidebar.rail :is(.sidebar-wordmark, .sidebar-label, .soon-tag, .user-card-text, .user-card-gear) {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.1s ease, visibility 0s linear var(--side-t);
@@ -714,10 +713,6 @@ svg {
 
 .sidebar.rail .sidebar-toggle {
   margin-right: 6px;
-}
-
-.sidebar.rail .sidebar-links {
-  padding: 0;
 }
 
 .sidebar.rail .sidebar-toggle svg {
@@ -808,38 +803,6 @@ svg {
   flex: none;
   box-sizing: border-box;
   width: 224px;
-}
-
-/* Shrinks away as the rail closes in, so the toggle stays in view. */
-.sidebar-links {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  display: flex;
-  gap: 10px;
-  padding: 0 4px 2px 8px;
-  font-size: 12.5px;
-}
-
-.sidebar-links a {
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.sidebar-links .sidebar-logo {
-  display: inline-flex;
-  align-items: center;
-}
-
-.sidebar-logo svg {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
-}
-
-.sidebar-links a:hover {
-  color: var(--text);
 }
 
 /* The bar at the top of a page: title and actions (on phones also the logo and the avatar). */
@@ -4649,6 +4612,60 @@ a.see-all,
     margin: 0 0 0 auto;
     white-space: nowrap;
   }
+}
+
+/* The bottom of Home: the site's pages, where to find us, and that it's open source. */
+.home-footer {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  margin-top: 8px;
+  padding: 18px 4px 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-footer nav {
+  display: flex;
+  gap: 18px;
+}
+
+.home-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.home-footer a:hover {
+  color: var(--text);
+}
+
+.home-footer-logos {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.home-footer-logos a {
+  display: inline-flex;
+}
+
+.home-footer-logos svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.phone-home .home-footer {
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.phone-home .home-footer-logos {
+  margin-left: 0;
 }
 
 /* User card: who you are and the way into settings, at the sidebar's foot. */
