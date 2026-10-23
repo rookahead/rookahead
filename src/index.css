@@ -7150,8 +7150,29 @@ button.user-avatar.guest:hover {
 }
 
 .boot-welcome {
-  height: 53.5px;
+  height: 53.4px;
   gap: 12px;
+}
+
+/* A first visit (index.html sets data-boot-first) has the welcome card's page instead of your cards. */
+.boot-home .boot-first,
+:root[data-boot-first] .boot-home .boot-returning {
+  display: none;
+}
+
+:root[data-boot-first] .boot-home .boot-first {
+  display: flex;
+}
+
+/* The empty My games card's line wraps while the main column is narrow, like Play the computer's. */
+.boot-games-empty {
+  --h: 132px;
+}
+
+@container page (min-width: 920px) and (max-width: 1048px) {
+  .boot-games-empty {
+    --h: 149.4px;
+  }
 }
 
 /* Play the computer: its second line wraps while the right column is narrow. */
@@ -7205,6 +7226,33 @@ button.user-avatar.guest:hover {
 
   :root[data-boot-user] .boot-phone-welcome {
     --h: 108.3px;
+  }
+
+  /* The welcome card's words wrap more on a narrow phone. */
+  .boot-first-welcome {
+    --h: 37px;
+  }
+
+  .boot-hero {
+    --h: 300.9px;
+  }
+
+  @media (max-width: 590px) {
+    .boot-hero {
+      --h: 358.9px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .boot-hero {
+      --h: 418.4px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .boot-first-welcome {
+      --h: 68.1px;
+    }
   }
 
   /* Your Legendary moves in a row, or the card that says what they are. */

@@ -33,14 +33,19 @@
         var s = JSON.parse(localStorage.getItem('rookahead.settings.v2') || '{}')
         var a = s.appearance || 'dark'
         var r = document.documentElement
-        // Home's loading screen is Home's own shape (.boot-home): the sidebar as it was left, and the greeting
-        // a signed-in visitor gets.
-        if (location.pathname === '/') r.dataset.boot = 'home'
-        if (localStorage.getItem('rookahead.sidebar') === 'rail') r.dataset.bootRail = ''
-        var sync = JSON.parse(localStorage.getItem('rookahead.sync.v1') || 'null')
-        if (sync && sync.user) r.dataset.bootUser = ''
-        var saved = JSON.parse(localStorage.getItem('rookahead.reviews.v1') || '{}')
-        for (var k in saved) if (saved[k].brilliant && saved[k].brilliant.white + saved[k].brilliant.black > 0) r.dataset.bootLegendary = ''
+        try {
+          // Home's loading screen is Home's own shape (.boot-home): the sidebar as it was left, and the greeting
+          // a signed-in visitor gets.
+          if (location.pathname === '/') r.dataset.boot = 'home'
+          if (localStorage.getItem('rookahead.sidebar') === 'rail') r.dataset.bootRail = ''
+          var sync = JSON.parse(localStorage.getItem('rookahead.sync.v1') || 'null')
+          if (sync && sync.user) r.dataset.bootUser = ''
+          // A first visit (no username, no games, not signed in) opens on the welcome card instead.
+          var played = JSON.parse(localStorage.getItem('rookahead.games.v1') || '[]')
+          if (!s.chesscomUser && !s.lichessUser && !(sync && sync.user) && !(played && played.length)) r.dataset.bootFirst = ''
+          var saved = JSON.parse(localStorage.getItem('rookahead.reviews.v1') || '{}')
+          for (var k in saved) if (saved[k].brilliant && saved[k].brilliant.white + saved[k].brilliant.black > 0) r.dataset.bootLegendary = ''
+        } catch (e) {}
         r.dataset.theme = a === 'light' ? 'light' : a === 'system' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
         // Gold was everyone's colour for a day, as the default: those settings read as Sky (settings.ts).
         if (s.palette && !(s.palette === 'gold' && (s.themes || 0) < 3)) r.dataset.palette = s.palette
@@ -90,25 +95,30 @@
           <div class="shell-page">
             <div class="home">
               <div class="home-main">
-                <div class="home-welcome boot-welcome">
+                <div class="home-welcome boot-welcome boot-returning">
                   <span class="skel" style="width: 300px; height: 22px"></span>
                   <span class="skel" style="width: 340px; height: 12px"></span>
                 </div>
-                <div class="home-card boot-fill" style="--h: 274px"><span class="skel boot-title"></span></div>
-                <div class="home-pair">
+                <div class="home-card boot-fill boot-returning" style="--h: 274px"><span class="skel boot-title"></span></div>
+                <div class="home-pair boot-returning">
                   <div class="home-card accuracy-card boot-fill" style="--h: 351px"><span class="skel boot-title"></span></div>
                   <div class="home-card streak-card boot-fill" style="--h: 327px"><span class="skel boot-title"></span></div>
                 </div>
-                <div class="home-card boot-fill" style="--h: 467px"><span class="skel boot-title"></span></div>
+                <div class="home-card boot-fill boot-returning" style="--h: 467px"><span class="skel boot-title"></span></div>
+                <div class="home-welcome boot-fill boot-first" style="--h: 31.9px"><span class="skel" style="width: 280px; height: 26px"></span></div>
+                <div class="home-card accent-card boot-fill boot-first" style="--h: 300.9px"><span class="skel boot-title"></span></div>
+                <div class="home-card boot-fill boot-first boot-games-empty"><span class="skel boot-title"></span></div>
               </div>
               <div class="home-side">
-                <div class="home-card accent-card boot-fill" style="--h: 330px"><span class="skel boot-title"></span></div>
+                <div class="home-card accent-card boot-fill boot-returning" style="--h: 330px"><span class="skel boot-title"></span></div>
                 <div class="home-card boot-fill boot-quick"><span class="skel boot-title"></span></div>
                 <div class="home-card daily-card">
                   <span class="skel boot-daily-head"></span>
                   <span class="skel boot-board"></span>
                   <span class="boot-daily-foot"></span>
                 </div>
+                <div class="home-card boot-fill boot-first" style="--h: 106.1px"><span class="skel boot-title"></span></div>
+                <div class="home-card boot-fill boot-first" style="--h: 81.3px"><span class="skel boot-title"></span></div>
               </div>
             </div>
           </div>
@@ -119,15 +129,17 @@
             <span class="skel" style="width: 110px; height: 18px"></span>
           </div>
           <div class="phone-home">
-            <div class="phone-welcome boot-fill boot-phone-welcome">
+            <div class="phone-welcome boot-fill boot-phone-welcome boot-returning">
               <span class="skel" style="width: 60%; height: 26px"></span>
               <span class="skel" style="width: 85%; height: 13px"></span>
             </div>
-            <div class="home-card accent-card boot-fill" style="--h: 154px"></div>
-            <div class="home-card boot-fill" style="--h: 64px"></div>
-            <div class="home-card boot-fill boot-legendary"></div>
-            <div class="home-card boot-fill" style="--h: 126px"></div>
-            <div class="home-card boot-fill" style="--h: 155px"></div>
+            <div class="home-card accent-card boot-fill boot-returning" style="--h: 154px"></div>
+            <div class="home-card boot-fill boot-returning" style="--h: 64px"></div>
+            <div class="home-card boot-fill boot-legendary boot-returning"></div>
+            <div class="home-card boot-fill boot-returning" style="--h: 126px"></div>
+            <div class="home-card boot-fill boot-returning" style="--h: 155px"></div>
+            <div class="phone-welcome boot-fill boot-first boot-first-welcome"><span class="skel" style="width: 75%; height: 26px"></span></div>
+            <div class="home-card accent-card boot-fill boot-first boot-hero"></div>
             <div class="home-card boot-fill" style="--h: 154px"></div>
           </div>
           <div class="boot-tabs"></div>
