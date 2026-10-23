@@ -111,7 +111,8 @@ that promoted with check, where everything else is mated). Either of two ways:
 
 Never Clutch: taking back what the opponent just took (a recapture on the same square, or a capture
 anywhere that only brings the material back to where it was before their capture), and the mating move
-itself, which is Best.
+itself, which is Best. A capture elsewhere by a piece that was under attack isn't taking back: it's
+escaping a threat. 5…Qxg2 takes the queen out of the f7 fork, and it's the only move.
 
 ### Oversight
 Replaces a Mistake or Blunder. All of:

@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 4
+export const RULES_VERSION = 5
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -302,10 +302,16 @@ function winsBack(after: Chess, sq: Square, us: 'w' | 'b', gained: number): bool
 /**
  * Does the move take back what the opponent just took: a recapture on the same square, or a
  * capture anywhere that only brings the material back to where it was before their capture?
+ * A capture elsewhere by a piece that was under attack is escaping a threat, not taking back
+ * (5…Qxg2, the queen out of the f7 fork).
  */
 function takesBack(older: MoveNode | undefined, prev: MoveNode, node: MoveNode, color: Color) {
   if (!prev.san?.includes('x') || !node.san?.includes('x')) return false
-  return prev.to === node.to || (older !== undefined && materialBalance(node.fen, color) <= materialBalance(older.fen, color))
+  if (prev.to === node.to) return true
+  const before = new Chess(prev.fen)
+  const piece = node.from && before.get(node.from)
+  if (piece && hanging(before, node.from!, piece.type, piece.color)) return false
+  return older !== undefined && materialBalance(node.fen, color) <= materialBalance(older.fen, color)
 }
 
 function emptyCounts(): Record<MoveClass, number> {

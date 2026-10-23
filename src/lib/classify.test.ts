@@ -233,6 +233,18 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(line, evals).moves[line[2].id].cls).toBe('best')
   })
 
+  it('calls a capture that escapes a fork "great", though it brings the material back', () => {
+    // Blackburne Shilling Gambit: 5.Nxf7 forks queen and rook; 5…Qxg2 is the only move, not just a pawn back.
+    const chess = new Chess()
+    'e4 e5 Nf3 Nc6 Bc4 Nd4 Nxe5 Qg5'.split(' ').forEach((san) => chess.move(san))
+    const { line, evals } = game(
+      ['e5f7', 'g5g2'],
+      [{ score: cp(-150), bestMove: 'c4f7' }, { score: cp(-639), bestMove: 'g5g2', second: cp(377) }, { score: cp(-723), pv: ['f7g5', 'g2h1', 'c4f1', 'f8e7'] }],
+      chess.fen(),
+    )
+    expect(classifyGame(line, evals).moves[line[2].id].cls).toBe('great')
+  })
+
   it('does not call a recapture "great"', () => {
     // 1.e4 d5 2.exd5 Qxd5: the queen recapture is "only", but it's just a recapture.
     const { line, evals } = game(
