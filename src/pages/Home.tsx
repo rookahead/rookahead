@@ -195,7 +195,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   if (waiting && !planGrows) setPlanGrows(true)
   const latestReview = latest && reviews[latest.key]
   const openLatest = () => latest && void open(latest, reviews[latest.key])
-  const plan = !firstVisit && <PlanCard grow={planGrows} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
+  const plan = !firstVisit && <PlanCard grow={planGrows} ready={mistakes !== null} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
   const accuracyCard = !firstVisit && (
     <AccuracyCard pending={waiting} points={points} accuracy={stats.accuracy} trend={stats.trend} phases={phases} legendary={stats.legendary} onOpen={(g, r) => void open(g, r)} />
   )

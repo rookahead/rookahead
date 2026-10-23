@@ -21,6 +21,11 @@ const WHEEL_BEAT_MS = 120
 // Keys that scroll the page.
 const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
 
+/** Resolves once no view transition is on screen or waiting in a batch, for work that would make one stutter. */
+export async function transitionsDone(): Promise<void> {
+  while (running || scheduled) await (running ?? new Promise((r) => setTimeout(r, BATCH_MS)))
+}
+
 /**
  * A view transition that gives way to scrolling. While one runs, its named cards are drawn against the
  * window, not the page, so a scroll would slide the rest of the page under them: scrolling ends it at

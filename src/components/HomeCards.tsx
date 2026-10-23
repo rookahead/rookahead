@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { IconTile } from './IconTile'
+import { transitionsDone } from '../hooks/useSettled'
 import { Skel } from './Skeleton'
 import { Link } from './Link'
 import type { Phase } from '../lib/phases'
@@ -35,6 +36,7 @@ const track = (on: boolean) => (on ? 'minmax(0, 1fr)' : 'minmax(0, 0fr)')
 export function PlanCard({
   compact = false,
   grow = false,
+  ready = true,
   latest,
   review,
   games,
@@ -46,6 +48,8 @@ export function PlanCard({
   compact?: boolean
   /** Coming after the placeholder: the tiles start as one and open out. */
   grow?: boolean
+  /** Everything the tiles need is in (your mistakes are counted): they open out once, then. */
+  ready?: boolean
   latest?: MyGame
   review?: CachedReview
   games: MyGame[]
@@ -104,17 +108,20 @@ export function PlanCard({
   const done = steps.filter((s) => s.done).length
   const next = steps.find((s) => !s.done)
   const [open, setOpen] = useState(false)
-  // After the placeholder, the first frame shows its one tile; the rest open out from the next.
+  // After the placeholder, the plan shows its one tile until everything's in and the page has settled; then
+  // the rest open out in one go. Opening while your account is still being read (just signed in) or a
+  // transition runs would share the main thread with that work, and stutter.
   const [opened, setOpened] = useState(!grow)
   useEffect(() => {
-    if (opened) return
-    let second = 0
-    const first = requestAnimationFrame(() => (second = requestAnimationFrame(() => setOpened(true))))
+    if (opened || !ready) return
+    let live = true
+    let frame = 0
+    void transitionsDone().then(() => (frame = requestAnimationFrame(() => (frame = requestAnimationFrame(() => live && setOpened(true))))))
     return () => {
-      cancelAnimationFrame(first)
-      cancelAnimationFrame(second)
+      live = false
+      cancelAnimationFrame(frame)
     }
-  }, [opened])
+  }, [opened, ready])
   const tile = (s: Step) => (
     <button className={`plan-step ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : undefined}>
       <span className="plan-check" aria-hidden>
