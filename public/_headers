@@ -22,3 +22,10 @@
 # own Share dialog preview) load it.
 /embed*
   Cross-Origin-Resource-Policy: cross-origin
+
+# rookahead.pages.dev and every preview branch serve a copy of the site: kept out of search results, so
+# search engines index rookahead.com alone.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
