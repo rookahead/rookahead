@@ -1354,6 +1354,14 @@ svg {
   overflow: hidden;
 }
 
+/* Chessground shrinks its board to whole device pixels per square (8px steps at 100% zoom), a frame
+   behind its box. While the board is being resized that shows as a juddering edge and pieces that
+   jump: it fills its box exactly instead, and moves with it. */
+.board cg-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .board cg-board {
   background-color: var(--sq-light);
   background-image: var(--board-image);
