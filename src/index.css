@@ -9651,8 +9651,9 @@ a.you-row:active {
 
 .you-links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 24px;
+  gap: 10px 22px;
   padding: 6px 0;
   font-size: 13px;
 }
