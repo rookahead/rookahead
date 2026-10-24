@@ -537,9 +537,21 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   // ── Review tab content ──
   const stepCoach = () => {
+    // Phones have the big Next under the thumb instead. On desktop it's in the coach's middle slot on
+    // every card, the first one too, so it never moves.
+    const next = !phone && (
+      <button className="btn primary coach-next" onClick={goNext} disabled={!node.children.length}>
+        Next move
+        <NavIcon name="next" />
+      </button>
+    )
     const parent = node.parentId ? tree.nodes[node.parentId] : null
     if (!parent || !node.san) {
-      return <CoachCard key={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." />
+      return (
+        <CoachCard key={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." fixed={!phone}>
+          {next}
+        </CoachCard>
+      )
     }
     if (!currentReview) {
       return (
@@ -549,10 +561,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           title={<San san={node.san} />}
           detail={inVariation ? (side.pending ? 'Checking this move…' : 'You’re exploring a side line. The Analysis tab has the live engine.') : 'Not reviewed yet.'}
           score={score}
-        />
+          fixed={!phone}
+        >
+          {next}
+        </CoachCard>
       )
     }
     const bestSan = currentReview.bestMove ? pvToSan(parent.fen, [currentReview.bestMove])[0] : undefined
+    const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
       <CoachCard
         key={node.id}
@@ -564,19 +580,24 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         // A forced move has nothing to disagree with.
         onReport={ACCOUNTS_ENABLED && currentReview.cls !== 'forced' ? () => setReporting(node.id) : undefined}
         reported={reported.has(`${node.id}:${currentReview.cls}`)}
+        fixed={!phone}
       >
-        {currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls) && (
+        {showBest ? (
           <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
             Show {bestSan ?? 'best'}
           </button>
+        ) : (
+          // The engine's own move: nothing better to show, so the slot says so.
+          !phone && !currentReview.bestMove && !['book', 'forced'].includes(currentReview.cls) && (
+            <span className="coach-agrees">
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M5 12l5 5 9-10" />
+              </svg>
+              Engine’s pick
+            </span>
+          )
         )}
-        {/* Phones have the big Next under the thumb instead. */}
-        {!phone && (
-          <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
-            Next move
-            <NavIcon name="next" />
-          </button>
-        )}
+        {next}
       </CoachCard>
     )
   }

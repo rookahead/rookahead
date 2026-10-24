@@ -2277,6 +2277,90 @@ svg {
   margin-top: 4px;
 }
 
+/* Stepping through a review on desktop: the note keeps room for two lines and the actions sit in three
+   equal slots (Show best, Next move, Disagree?), each in its own column, so Next move never moves. */
+.coach:has(.coach-actions.fixed) .coach-head {
+  height: 30px;
+}
+
+/* Only the verdict eases in; the buttons stay still under the pointer. */
+.panel-body > .coach:has(.coach-actions.fixed) {
+  animation: none;
+}
+
+.coach:has(.coach-actions.fixed) :is(.coach-head, .coach-detail) {
+  animation: rise-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach:has(.coach-actions.fixed) .coach-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coach:has(.coach-actions.fixed) .coach-detail {
+  min-height: calc(2 * 1.55em);
+}
+
+.coach-actions.fixed {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.coach-actions.fixed > * {
+  grid-row: 1;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.coach-actions.fixed > .coach-next {
+  grid-column: 2;
+}
+
+.coach-actions.fixed > .coach-report {
+  grid-column: 3;
+  margin-left: 0;
+}
+
+.coach-actions.fixed > .btn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The engine's own move: a quiet note where Show best would be. */
+.coach-agrees {
+  grid-column: 1;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.coach-agrees svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: #4f9a3c; /* Best's green (CLASS_INFO) */
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Why the move is good or bad: under the actions, so its length never moves them. */
+.coach-explanation {
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
 .review-progress {
   flex: 1;
   display: grid;

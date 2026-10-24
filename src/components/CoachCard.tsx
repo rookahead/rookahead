@@ -14,10 +14,17 @@ interface Props {
   onReport?: () => void
   /** This verdict has been reported already (this visit). */
   reported?: boolean
+  /**
+   * Stepping through a review: the actions sit in three fixed slots (Show best, Next move, Disagree?)
+   * under a note with room for two lines, so Next move stays in one spot from move to move.
+   */
+  fixed?: boolean
+  /** Why the move is good or bad, under the actions so it can be any length without moving them. */
+  explanation?: ReactNode
 }
 
 /** The review's verdict for the current move (or the game): headline, eval and actions. */
-export function CoachCard({ icon, kicker, title, detail, score, children, onReport, reported }: Props) {
+export function CoachCard({ icon, kicker, title, detail, score, children, onReport, reported, fixed, explanation }: Props) {
   return (
     <div className="coach">
       <div className="coach-head">
@@ -26,9 +33,9 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
         <h2 className="coach-title">{title}</h2>
         {score && <span className="eval-pill">{formatScore(score)}</span>}
       </div>
-      {detail && <p className="coach-detail">{detail}</p>}
-      {(children || onReport) && (
-        <div className="coach-actions">
+      {(detail || fixed) && <p className="coach-detail">{detail}</p>}
+      {(children || onReport || fixed) && (
+        <div className={`coach-actions${fixed ? ' fixed' : ''}`}>
           {children}
           {onReport && (
             <button
@@ -45,6 +52,7 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
           )}
         </div>
       )}
+      {explanation && <div className="coach-explanation">{explanation}</div>}
     </div>
   )
 }
