@@ -16,30 +16,6 @@ export function SkelBoard({ className = '' }: { className?: string }) {
   return <span className={`skel skel-board ${className}`} aria-hidden />
 }
 
-/** Rows of games on their way, shaped like GameList's cards. */
-export function GameListSkeleton({ rows = 4 }: { rows?: number }) {
-  return (
-    <ul className="game-cards skel-group" aria-busy aria-label="Loading your games">
-      {Array.from({ length: rows }, (_, i) => (
-        <li key={i}>
-          <div className="game-card skel-card">
-            <span className="game-card-board">
-              <SkelBoard />
-            </span>
-            <span className="game-card-text">
-              <Skel w={`${58 - (i % 3) * 8}%`} h="14px" />
-              <Skel w={`${42 + (i % 2) * 10}%`} h="11px" />
-            </span>
-            <span className="game-card-accuracy">
-              <Skel w="40px" h="20px" />
-            </span>
-          </div>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 /** Phones: Home's latest game, on its way. */
 export function LatestCardSkeleton() {
   return (

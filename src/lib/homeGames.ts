@@ -35,7 +35,7 @@ export function howItEnded(game: MyGame): string | null {
 }
 
 /** Your rating after the game: what Chess.com gives, or Lichess's (from before it) with the game's change added. */
-function ratingAfter(game: MyGame): number | null {
+export function ratingAfter(game: MyGame): number | null {
   const rating = game[game.color].rating
   if (rating == null) return null
   if (game.source === 'chesscom') return rating
@@ -47,7 +47,7 @@ function ratingAfter(game: MyGame): number | null {
 }
 
 /** Your rating before the game: Lichess's own, or for Chess.com your rating after your game before it, if it's here. */
-function ratingBefore(game: MyGame, all: MyGame[]): number | null {
+export function ratingBefore(game: MyGame, all: MyGame[]): number | null {
   if (game.source === 'lichess') return game[game.color].rating ?? null
   if (game.source !== 'chesscom') return null
   const earlier = all.find((g) => g.endedAt < game.endedAt && samePool(g, game))
@@ -55,7 +55,7 @@ function ratingBefore(game: MyGame, all: MyGame[]): number | null {
 }
 
 /** Rated the same way: one site and one time control (bullet, blitz and rapid each have their own rating). */
-const samePool = (a: MyGame, b: MyGame) => a.source === b.source && a.time === b.time
+export const samePool = (a: MyGame, b: MyGame) => a.source === b.source && a.time === b.time
 
 export interface GameDay {
   label: string
