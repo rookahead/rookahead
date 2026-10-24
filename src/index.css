@@ -7408,21 +7408,6 @@ button.user-avatar.guest:hover {
   color: var(--danger);
 }
 
-/* Review: a sky pill, brighter while its row is hovered. */
-.game-card-review {
-  flex: none;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
-  font-size: 13.5px;
-  font-weight: 650;
-  transition: background 0.15s, color 0.15s;
-}
-
 /* Home's games (HomeGames.tsx): a heading per day, then rows of the final position with the result on its
    corner, who and what, your moves as a strip of verdict colours, and the way in. */
 .home-games-chips {
@@ -7614,24 +7599,26 @@ button.home-game:hover {
   text-overflow: ellipsis;
 }
 
-.home-game-open {
+/* The way in, as text: Open a review in grey, Review a game in sky; each brighter while its row is hovered. */
+.home-game-go {
   justify-self: end;
   color: var(--muted);
   font-size: 13.5px;
   font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s;
 }
 
-button.home-game:hover .home-game-open {
+button.home-game:hover .home-game-go {
   color: var(--text);
 }
 
-.home-game .game-card-review {
-  justify-self: end;
+.home-game-go.review {
+  color: var(--brand);
 }
 
-button.home-game:hover .game-card-review {
-  background: var(--brand);
-  color: var(--brand-ink);
+button.home-game:hover .home-game-go.review {
+  color: color-mix(in srgb, var(--brand) 75%, var(--text));
 }
 
 /* Phones (the Review tab): the strip and its line go under who and what, the way in stays on the right. */
@@ -7661,15 +7648,13 @@ button.home-game:hover .game-card-review {
     grid-row: 2;
   }
 
-  .home-game-open,
-  .home-game .game-card-review {
+  .home-game-go,
+  .home-game-go-space {
     grid-column: 3;
     grid-row: 1;
   }
 
-  .home-game .game-card-review {
-    height: 30px;
-    padding: 0 13px;
+  .home-game-go {
     font-size: 13px;
   }
 }

@@ -192,7 +192,7 @@ function GameRow({ game, review, theme, onOpen }: { game: MyGame; review?: Cache
           )}
         </span>
       </span>
-      {review ? <span className="home-game-open">Open ›</span> : <span className="game-card-review">Review</span>}
+      <span className={`home-game-go ${review ? '' : 'review'}`}>{review ? 'Open' : 'Review'} ›</span>
     </button>
   )
 }
@@ -245,7 +245,7 @@ export function GameDaysSkeleton({ rows }: { rows: number }) {
                 <Skel w="100%" h="14px" />
                 <Skel w="70%" h="11px" />
               </span>
-              <span className="home-game-open" />
+              <span className="home-game-go-space" />
             </span>
           </li>
         ))}
