@@ -48,6 +48,12 @@ export function moveDetail(review: MoveReview, bestSan?: string): string | undef
     case 'excellent':
     case 'good':
       return bestSan ? `${bestSan} was slightly stronger.` : undefined
+    case 'best':
+      return review.score.type === 'mate' && review.score.value === 0 ? 'Checkmate.' : 'Nothing on the board beats it.'
+    case 'book':
+      return 'A well-known opening move.'
+    case 'forced':
+      return 'The only legal move.'
     default:
       return undefined
   }
