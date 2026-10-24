@@ -82,35 +82,45 @@ export function HomeGames({ games, reviews, theme, onOpen, error }: Props) {
       </header>
       {error && <p className="games-error">{error}</p>}
       {days.length ? (
-        days.map((day) => (
-          <section key={day.label} className="home-day" aria-label={day.label}>
-            <h3 className="home-day-head">
-              <b>{day.label}</b>
-              <span>{daySummary(day)}</span>
-            </h3>
-            <ul className="home-games">
-              {day.games.map((g) => (
-                <li key={`${g.source}:${g.key}`}>
-                  <GameRow game={g} review={reviews[g.key]} theme={theme} onOpen={onOpen} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
+        <GameDays days={days} reviews={reviews} theme={theme} onOpen={onOpen} />
       ) : (
         <p className="home-games-none">{filter === 'unreviewed' ? 'Every one of your games is reviewed.' : 'No losses among your games.'}</p>
       )}
-      {shown.some((g) => reviews[g.key]) && (
-        <ul className="quality-key" aria-label="Colours">
-          {QUALITY.map(([q, label, color]) => (
-            <li key={q}>
-              <i style={{ background: color }} />
-              {label}
-            </li>
-          ))}
-        </ul>
-      )}
+      {shown.some((g) => reviews[g.key]) && <QualityKey />}
     </>
+  )
+}
+
+/** Games under a heading per day: how the day went, and your rating through it. */
+export function GameDays({ days, reviews, theme, onOpen }: { days: GameDay[]; reviews: Record<string, CachedReview>; theme: BoardTheme; onOpen: Props['onOpen'] }) {
+  return days.map((day) => (
+    <section key={day.label} className="home-day" aria-label={day.label}>
+      <h3 className="home-day-head">
+        <b>{day.label}</b>
+        <span>{daySummary(day)}</span>
+      </h3>
+      <ul className="home-games">
+        {day.games.map((g) => (
+          <li key={`${g.source}:${g.key}`}>
+            <GameRow game={g} review={reviews[g.key]} theme={theme} onOpen={onOpen} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))
+}
+
+/** What the strips' colours stand for. */
+export function QualityKey() {
+  return (
+    <ul className="quality-key" aria-label="Colours">
+      {QUALITY.map(([q, label, color]) => (
+        <li key={q}>
+          <i style={{ background: color }} />
+          {label}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -182,7 +192,7 @@ function GameRow({ game, review, theme, onOpen }: { game: MyGame; review?: Cache
           )}
         </span>
       </span>
-      {review ? <span className="home-game-open">Open ›</span> : <span className="game-card-review">Review</span>}
+      <span className={`home-game-go ${review ? '' : 'review'}`}>{review ? 'Open' : 'Review'} ›</span>
     </button>
   )
 }
@@ -201,31 +211,7 @@ export function HomeGamesSkeleton({ reviewed = false }: { reviewed?: boolean }) 
           <Skel w="84px" h="30px" className="skel-pill" />
         </span>
       </header>
-      <div className="home-day">
-        <h3 className="home-day-head">
-          <Skel w="64px" h="13px" />
-        </h3>
-        <ul className="home-games">
-          {Array.from({ length: HOME_GAMES }, (_, i) => (
-            <li key={i}>
-              <span className="home-game">
-                <span className="home-game-board">
-                  <SkelBoard />
-                </span>
-                <span className="home-game-text">
-                  <Skel w={`${58 - (i % 3) * 8}%`} h="14px" />
-                  <Skel w={`${72 - (i % 2) * 12}%`} h="11px" />
-                </span>
-                <span className="home-game-moves">
-                  <Skel w="100%" h="14px" />
-                  <Skel w="70%" h="11px" />
-                </span>
-                <span className="home-game-open" />
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <GameDaysSkeleton rows={HOME_GAMES} />
       {reviewed && (
         <ul className="quality-key">
           <li>
@@ -233,6 +219,37 @@ export function HomeGamesSkeleton({ reviewed = false }: { reviewed?: boolean }) 
           </li>
         </ul>
       )}
+    </div>
+  )
+}
+
+/** A day of games on its way: its heading and rows the shape of the real ones. */
+export function GameDaysSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="home-day">
+      <h3 className="home-day-head">
+        <Skel w="64px" h="13px" />
+      </h3>
+      <ul className="home-games">
+        {Array.from({ length: rows }, (_, i) => (
+          <li key={i}>
+            <span className="home-game">
+              <span className="home-game-board">
+                <SkelBoard />
+              </span>
+              <span className="home-game-text">
+                <Skel w={`${58 - (i % 3) * 8}%`} h="14px" />
+                <Skel w={`${72 - (i % 2) * 12}%`} h="11px" />
+              </span>
+              <span className="home-game-moves">
+                <Skel w="100%" h="14px" />
+                <Skel w="70%" h="11px" />
+              </span>
+              <span className="home-game-go-space" />
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

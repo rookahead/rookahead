@@ -3893,6 +3893,14 @@ svg {
   --tile: var(--danger);
 }
 
+.icon-tile.clock {
+  --tile: var(--tone-amber);
+}
+
+.icon-tile.openings {
+  --tile: var(--tone-rose);
+}
+
 .quick-card strong {
   display: block;
   font-size: 15.5px;
@@ -7295,18 +7303,9 @@ button.user-avatar.guest:hover {
   pointer-events: none;
 }
 
-.skel-group .latest-text,
-.skel-group .game-card-text {
+.skel-group .latest-text {
   flex: 1;
   gap: 8px;
-}
-
-.skel-day {
-  margin: 0 12px 10px;
-}
-
-.skel-group .game-card-accuracy {
-  align-self: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -7409,139 +7408,6 @@ button.user-avatar.guest:hover {
   color: var(--danger);
 }
 
-/* Games as cards: final position, result and opponent, details, your accuracy or Review. */
-.game-cards {
-  list-style: none;
-  margin: 0;
-  padding: 0 4px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.game-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 6px 16px 6px 6px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--surface-3);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.game-card:hover {
-  background: var(--surface-4);
-}
-
-/* Light: the rows take the sidebar's cream on the white card, as on the mockup; the step darker that dark
-   rows take would read heavy here. */
-:root[data-theme='light'] .game-card {
-  background: var(--side);
-}
-
-:root[data-theme='light'] .game-card:hover {
-  background: var(--surface-3);
-}
-
-.game-card-board {
-  flex: none;
-  width: 52px;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.game-card-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.game-card-title {
-  font-size: 14.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.game-card-title strong {
-  font-weight: 650;
-}
-
-.game-card-result {
-  font-weight: 650;
-  color: var(--muted);
-}
-
-.game-card-result.win {
-  color: var(--win);
-}
-
-.game-card-result.loss {
-  color: var(--danger);
-}
-
-.game-card-rating {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.game-card-detail {
-  color: var(--muted);
-  font-size: 12.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.game-card-accuracy {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.game-card-accuracy b {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.game-card-accuracy small {
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-/* Review: a sky pill, brighter while the card is hovered. */
-.game-card-review {
-  flex: none;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand);
-  font-size: 13.5px;
-  font-weight: 650;
-  transition: background 0.15s, color 0.15s;
-}
-
-.game-card:hover .game-card-review {
-  background: var(--brand);
-  color: var(--brand-ink);
-}
-
 /* Home's games (HomeGames.tsx): a heading per day, then rows of the final position with the result on its
    corner, who and what, your moves as a strip of verdict colours, and the way in. */
 .home-games-chips {
@@ -7572,6 +7438,7 @@ button.user-avatar.guest:hover {
 }
 
 .home-day-head b {
+  flex: none;
   color: var(--text);
   font-weight: 650;
 }
@@ -7732,24 +7599,64 @@ button.home-game:hover {
   text-overflow: ellipsis;
 }
 
-.home-game-open {
+/* The way in, as text: Open a review in grey, Review a game in sky; each brighter while its row is hovered. */
+.home-game-go {
   justify-self: end;
   color: var(--muted);
   font-size: 13.5px;
   font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s;
 }
 
-button.home-game:hover .home-game-open {
+button.home-game:hover .home-game-go {
   color: var(--text);
 }
 
-.home-game .game-card-review {
-  justify-self: end;
+.home-game-go.review {
+  color: var(--brand);
 }
 
-button.home-game:hover .game-card-review {
-  background: var(--brand);
-  color: var(--brand-ink);
+button.home-game:hover .home-game-go.review {
+  color: color-mix(in srgb, var(--brand) 75%, var(--text));
+}
+
+/* Phones (the Review tab): the strip and its line go under who and what, the way in stays on the right. */
+@media (max-width: 640px) {
+  .home-day-head {
+    height: auto;
+    min-height: 34px;
+    align-items: baseline;
+    padding: 8px 12px;
+  }
+
+  .home-game {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 8px;
+  }
+
+  .home-game-board {
+    width: 48px;
+    height: 48px;
+    grid-row: span 2;
+    align-self: start;
+  }
+
+  .home-game-moves {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+
+  .home-game-go,
+  .home-game-go-space {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .home-game-go {
+    font-size: 13px;
+  }
 }
 
 .home-games-none {
@@ -7781,17 +7688,6 @@ button.home-game:hover .game-card-review {
   width: 10px;
   height: 10px;
   border-radius: 2px;
-}
-
-@media (max-width: 520px) {
-  .game-card {
-    gap: 12px;
-    padding-right: 12px;
-  }
-
-  .game-card-board {
-    width: 44px;
-  }
 }
 
 /* The coloured card: your latest game. */
@@ -8177,49 +8073,41 @@ button.chip:hover {
   font-size: 13px;
 }
 
-/* The Games page. */
-.games-page {
-  max-width: 1000px;
-  /* Centred in the space beside the sidebar, not hugging it, on wide screens. */
-  margin-inline: auto;
-  box-sizing: border-box;
-  padding: 26px var(--pad-x) 48px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.games-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px;
-  padding: 6px 4px 0;
-}
-
-.games-title {
-  flex: 1 1 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.games-title h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-.games-title p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
+/* The My games page (Games.tsx): Home's two columns, the list in Home's rows, your record above it and your games
+   by time control and opening beside it. */
 .games-title strong {
   color: var(--text-2);
   font-weight: 550;
+}
+
+.games-toolbar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.games-toolbar .filter-chip {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.games-sources {
+  margin-left: auto;
+}
+
+.games-picked {
+  margin: 0 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.games-older {
+  display: flex;
+  margin: 12px auto 4px;
 }
 
 .games-totals {
@@ -8244,13 +8132,6 @@ button.chip:hover {
   font-family: var(--font-mono);
   font-size: 18px;
   font-weight: 550;
-}
-
-.games-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
 }
 
 /* Result filters: tonal chips, a dot in each result's colour; the chosen one tinted in it. */
@@ -8314,44 +8195,265 @@ button.chip:hover {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
-.games-load {
-  margin-left: auto;
+/* A result's colour: a bar of wins, draws and losses, and dots before their counts. */
+.result-bar {
+  flex: none;
+  width: 64px;
+  height: 6px;
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 3px;
 }
 
-.games-load svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.result-bar i,
+.result-dot::before {
+  background: var(--muted);
 }
 
-.games-day {
-  padding: 14px 8px 8px;
+.result-bar .win,
+.result-dot.win::before {
+  background: var(--win);
 }
 
-.games-day-label {
-  margin: 0;
-  padding: 0 12px 6px;
-  color: var(--muted);
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.result-bar .loss,
+.result-dot.loss::before {
+  background: var(--danger);
 }
 
-.games-older {
+.result-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.result-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Three equal parts, where Home's streak takes what its week needs. */
+.record-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* In the strip, the results' bar and the rating's line sit where Home's accuracy bars do. */
+.record-strip .form-bars {
   align-self: center;
 }
 
-@media (max-width: 1000px) {
-  .games-page {
-    padding: 16px 16px calc(var(--tabbar-h) + 24px);
-  }
+.record-strip .result-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+}
 
-  .games-load {
-    margin-left: 0;
-  }
+.form-spark {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.form-spark path {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Time controls and openings: a row each, with how they went and your score; picking one filters the list. */
+.group-card {
+  padding: 20px 8px 8px;
+}
+
+.group-card .home-card-head {
+  padding: 0 12px 8px;
+}
+
+.group-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.group-row {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+button.group-row:hover {
+  background: var(--surface-3);
+}
+
+.group-row.on {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+.group-text {
+  flex: 1;
+  min-width: 0;
+  /* Two lines' height, so a placeholder row is as tall as a real one. */
+  min-height: 37px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.skel-group .group-text {
+  gap: 8px;
+}
+
+.group-text strong,
+.group-text small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.group-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.group-text small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* The side you had: a little piece-coloured disc. */
+.side-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.side-dot.white {
+  background: #f2f2f2;
+}
+
+.side-dot.black {
+  background: #1a1a1a;
+}
+
+/* Time controls: a small table, a row each to pick. */
+.time-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.time-head,
+.time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 52px 60px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-head {
+  height: 24px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.time-row {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.time-row:hover {
+  background: var(--surface-3);
+}
+
+.time-row.on {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+.time-name {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.time-name strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.time-rating {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.group-note {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.group-score {
+  flex: none;
+  width: 38px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 
