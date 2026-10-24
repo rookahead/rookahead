@@ -40,50 +40,21 @@ export function GameListSkeleton({ rows = 4 }: { rows?: number }) {
   )
 }
 
-/** Home's latest game, on its way. */
-export function LatestCardSkeleton({ compact = false }: { compact?: boolean }) {
-  if (compact)
-    return (
-      <section className="home-card accent-card latest-card compact skel-group" aria-busy aria-label="Loading your latest game">
-        <div className="latest-body">
-          <div className="latest-board">
-            <SkelBoard />
-          </div>
-          <div className="latest-text">
-            <Skel w="60%" h="12px" />
-            <Skel w="85%" h="16px" />
-            <Skel w="70%" h="12px" />
-          </div>
-        </div>
-        <Skel w="100%" h="42px" className="skel-button" />
-      </section>
-    )
+/** Phones: Home's latest game, on its way. */
+export function LatestCardSkeleton() {
   return (
-    <section className="home-card accent-card latest-card skel-group" aria-busy aria-label="Loading your latest game">
-      <div>
-        <h2 className="skel-line">
-          <Skel w="62%" h="22px" />
-        </h2>
-        <p className="skel-line">
-          <Skel w="44%" h="12px" />
-        </p>
-      </div>
+    <section className="home-card accent-card latest-card compact skel-group" aria-busy aria-label="Loading your latest game">
       <div className="latest-body">
         <div className="latest-board">
           <SkelBoard />
         </div>
         <div className="latest-text">
-          <Skel w="30%" h="14px" />
-          <Skel w="80%" h="16px" />
+          <Skel w="60%" h="12px" />
+          <Skel w="85%" h="16px" />
           <Skel w="70%" h="12px" />
-          <Skel w="64%" h="12px" />
-          <Skel w="56%" h="12px" />
         </div>
       </div>
-      <Skel w="100%" h="50px" className="skel-button" />
-      <span className="link-btn latest-more skel-line">
-        <Skel w="110px" h="12px" />
-      </span>
+      <Skel w="100%" h="42px" className="skel-button" />
     </section>
   )
 }

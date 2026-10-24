@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
-import { GameList } from '../components/GameList'
 import { HomeFooter } from '../components/HomeFooter'
-import { AccuracyCard, PlanCard, PlanCardSkeleton, StreakCard, WeekDots, type AccuracyPoint } from '../components/HomeCards'
+import { FormStrip, PlanCard, PlanCardSkeleton, WeekDots, type AccuracyPoint } from '../components/HomeCards'
+import { HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
-import { GameListSkeleton, LatestCardSkeleton, LegendaryRowSkeleton, MistakesCardSkeleton, Skel } from '../components/Skeleton'
+import { LatestCardSkeleton, LegendaryRowSkeleton, MistakesCardSkeleton, Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
 import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -17,25 +17,23 @@ import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
 import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
-import { currentGame, greeting, nudge } from '../lib/home'
+import { greeting, nudge } from '../lib/home'
 import type { MistakePuzzle } from '../lib/mistakes'
 import { sinceFor } from '../lib/legendary'
-import { dayLabel, finalPosition, gameStats, SOURCE_LABEL, type MyGame } from '../lib/myGames'
-import { phaseAccuracy, type Phase } from '../lib/phases'
+import { dayLabel, finalPosition, gameStats, type MyGame } from '../lib/myGames'
+import { weakestPhase, type Phase } from '../lib/phases'
 import { localDayNumber } from '../lib/puzzles'
 import { dayStreak, loadProgress, type PuzzleProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
 import { decodeSaved } from '../lib/share'
-import { readSession, requestLoadDialog } from '../lib/session'
+import { requestLoadDialog } from '../lib/session'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from './puzzles/shared'
 
-const SHOWN = 6
-/** Games in the accuracy chart, and how many of them the phase bars average. */
-const CHART_GAMES = 20
-const PHASE_GAMES = 10
+/** Reviewed games the accuracy bars show and your weakest phase is read from. */
+const RECENT_GAMES = 10
 /** Legendary moves in Home's row on a phone; the rest are a tap away. */
 const STRIP = 8
 
@@ -73,7 +71,6 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   // Only the Rookahead username: the Google name would show first and then swap on every reload.
   const name = account.status === 'guest' ? null : account.username
   const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
-  const current = useMemo(() => currentGame(readSession()), [])
   const puzzlesVersion = useStoreVersion('puzzles')
   const progress = useMemo(() => loadProgress(), [puzzlesVersion])
   const today = localDayNumber(new Date())
@@ -82,7 +79,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 
   const mistakes = useMistakes()
 
-  // Your reviewed games, oldest first, for the accuracy chart; the newest of them for accuracy by phase.
+  // Your latest reviewed games, oldest first: the accuracy bars, and your weakest phase.
   const points = useMemo<AccuracyPoint[]>(
     () =>
       games
@@ -91,21 +88,27 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           const accuracy = review?.accuracy[game.color]
           return review && accuracy != null ? [{ game, review, accuracy }] : []
         })
-        .slice(0, CHART_GAMES)
+        .slice(0, RECENT_GAMES)
         .reverse(),
     [games, reviews],
   )
-  const [phases, setPhases] = useState<Record<Phase, number | null> | null>(null)
+  // Undefined while the reviews are read.
+  const [weakest, setWeakest] = useState<{ phase: Phase; accuracy: number } | null>()
+  const [phaseGames, setPhaseGames] = useState(0)
   useEffect(() => {
+    // Phones don't show it.
+    if (phone) return
     let live = true
-    const recent = points.slice(-PHASE_GAMES)
-    void Promise.all(recent.map(async (p) => ({ game: await decodeSaved(p.review.token), color: p.game.color }))).then((decoded) => {
-      if (live) setPhases(phaseAccuracy(decoded.flatMap((d) => (d.game ? [{ game: d.game, color: d.color }] : []))))
+    void Promise.all(points.map(async (p) => ({ game: await decodeSaved(p.review.token), color: p.game.color }))).then((decoded) => {
+      const read = decoded.flatMap((d) => (d.game ? [{ game: d.game, color: d.color }] : []))
+      if (!live) return
+      setWeakest(weakestPhase(read))
+      setPhaseGames(read.length)
     })
     return () => {
       live = false
     }
-  }, [points])
+  }, [points, phone])
 
   const open = async (game: MyGame, review?: CachedReview) => {
     await openMyGame(game, review)
@@ -191,23 +194,12 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
     : reviewList.length
       ? reviewList.some((r) => r.brilliant.white + r.brilliant.black > 0)
       : arriving
-  // Shown after its placeholder, the plan's tiles open out of the placeholder's one tile.
-  const [planGrows, setPlanGrows] = useState(false)
-  if (waiting && !planGrows) setPlanGrows(true)
   const latestReview = latest && reviews[latest.key]
   const openLatest = () => latest && void open(latest, reviews[latest.key])
-  const plan = !firstVisit && <PlanCard grow={planGrows} ready={mistakes !== null} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
-  const accuracyCard = !firstVisit && (
-    <AccuracyCard pending={waiting} points={points} accuracy={stats.accuracy} trend={stats.trend} phases={phases} legendary={stats.legendary} onOpen={(g, r) => void open(g, r)} />
-  )
-  const streakCard = !firstVisit && <StreakCard pending={waiting} progress={progress} />
+  const hasReviews = Object.keys(reviews).length > 0
   // Your mistakes come from reading your reviews, after the rest: a placeholder holds their place meanwhile.
   const mistakesCard =
-    mistakes === null ? (
-      Object.keys(reviews).length > 0 && <MistakesCardSkeleton />
-    ) : (
-      mistakes.length > 0 && <MistakesCard compact mistakes={mistakes} theme={settings.boardTheme} />
-    )
+    mistakes === null ? hasReviews && <MistakesCardSkeleton /> : mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />
 
   if (phone) {
     // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
@@ -246,9 +238,9 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           {guestNudge}
           {firstVisit && hero}
           {waiting ? (
-            <LatestCardSkeleton compact />
+            <LatestCardSkeleton />
           ) : (
-            latest && !firstVisit && <LatestCard compact game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
+            latest && !firstVisit && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />
           )}
           {waiting && <PlanCardSkeleton compact />}
           {!waiting && !firstVisit && (
@@ -263,6 +255,56 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
       </div>
     )
   }
+
+  const opponentOf = (g: MyGame) => (g.color === 'white' ? g.black : g.white).name
+  const reviewAction = waiting ? (
+    <div className="home-card quick-card skel-group" aria-busy aria-label="Loading your latest game">
+      <IconTile tone="review" size="big" />
+      <span className="quick-lines">
+        <Skel w="150px" h="16px" />
+        <Skel w="200px" h="12px" />
+      </span>
+    </div>
+  ) : latest ? (
+    <button className="home-card quick-card" onClick={openLatest}>
+      <IconTile tone="review" size="big" />
+      <span className="quick-lines">
+        <strong>Review latest game</strong>
+        <small>
+          vs {opponentOf(latest)} ·{' '}
+          {latestReview
+            ? `${latestReview.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy`
+            : `${latest.result === 'win' ? 'won' : latest.result === 'loss' ? 'lost' : 'drawn'}, ${latest.moves} ${latest.moves === 1 ? 'move' : 'moves'}`}
+        </small>
+      </span>
+      <span className="quick-go" aria-hidden>
+        ›
+      </span>
+    </button>
+  ) : (
+    <button className="home-card quick-card" onClick={loadGame}>
+      <IconTile tone="review" size="big" />
+      <span className="quick-lines">
+        <strong>Review a game</strong>
+        <small>Paste a PGN or a game link</small>
+      </span>
+      <span className="quick-go" aria-hidden>
+        ›
+      </span>
+    </button>
+  )
+  const analysisAction = (
+    <button className="home-card quick-card" onClick={() => navigate('/board')}>
+      <IconTile tone="analyze" size="big" />
+      <span className="quick-lines">
+        <strong>Analysis board</strong>
+        <small>Any position, PGN or FEN</small>
+      </span>
+      <span className="quick-go" aria-hidden>
+        ›
+      </span>
+    </button>
+  )
 
   return (
     <div className="home-page">
@@ -282,54 +324,54 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
 
           {guestNudge}
 
-          {firstVisit ? (
-            hero
-          ) : (
+          {firstVisit && hero}
+
+          {!firstVisit && (
             <>
-              {waiting ? <PlanCardSkeleton /> : plan}
-              <div className="home-pair">
-                {accuracyCard}
-                {streakCard}
+              <div className="home-actions">
+                {reviewAction}
+                {analysisAction}
               </div>
+              <FormStrip pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} progress={progress} weakest={weakest} reviewed={phaseGames} />
             </>
           )}
 
           <section className="home-card games-card" aria-labelledby="my-games">
-            <header className="home-card-head">
-              <IconTile tone="games" />
-              <h2 id="my-games">My games</h2>
-              {games.length > 0 && (
-                <button className="link-btn see-all" onClick={() => navigate('/games')}>
-                  All games ›
-                </button>
-              )}
-            </header>
-            {importError && hasUsers && !firstVisit && <p className="games-error">{importError}</p>}
-            {waiting ? (
-              <GameListSkeleton rows={SHOWN} />
+            {waiting || (loading && !games.length) ? (
+              <HomeGamesSkeleton reviewed={hasReviews} />
             ) : games.length ? (
-              <GameList games={games.slice(0, SHOWN)} reviews={reviews} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} />
-            ) : loading ? (
-              <GameListSkeleton rows={SHOWN} />
+              <HomeGames games={games} reviews={reviews} theme={settings.boardTheme} error={hasUsers ? importError : undefined} onOpen={(g, r) => void open(g, r)} />
             ) : (
-              <div className="games-empty">
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d="M4 5h16M4 12h16M4 19h10" />
-                </svg>
-                <p>
-                  <strong>Your games show up here, newest first</strong>
-                  <span>From Chess.com, Lichess and games you play on Rookahead, each with your accuracy.</span>
-                </p>
-              </div>
+              <>
+                <header className="home-card-head">
+                  <IconTile tone="games" />
+                  <h2 id="my-games">My games</h2>
+                </header>
+                {importError && hasUsers && !firstVisit && <p className="games-error">{importError}</p>}
+                <div className="games-empty">
+                  <svg viewBox="0 0 24 24" aria-hidden>
+                    <path d="M4 5h16M4 12h16M4 19h10" />
+                  </svg>
+                  <p>
+                    <strong>Your games show up here, newest first</strong>
+                    <span>From Chess.com, Lichess and games you play on Rookahead, each with your accuracy.</span>
+                  </p>
+                </div>
+              </>
             )}
           </section>
         </div>
 
-        <aside className="home-side" aria-label="Start">
-          {waiting ? <LatestCardSkeleton /> : latest && <LatestCard game={latest} review={reviews[latest.key]} theme={settings.boardTheme} onOpen={() => void open(latest, reviews[latest.key])} />}
+        <aside className="home-side" aria-label="Today">
+          {!firstVisit &&
+            (waiting ? (
+              <PlanCardSkeleton steps={3 + (hasReviews ? 1 : 0)} />
+            ) : (
+              <PlanCard expectMistakes={hasReviews} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
+            ))}
           <button className="home-card quick-card" onClick={() => navigate('/play')}>
             <IconTile tone="play" size="big" />
-            <span>
+            <span className="quick-lines">
               <strong>Play the computer</strong>
               <small>8 levels, 400 to 2600, any time control</small>
             </span>
@@ -338,18 +380,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
             </span>
           </button>
           <DailyCard theme={settings.boardTheme} />
-          {mistakesCard}
-          <PuzzlesCard rating={progress.rating} />
-          <button className="home-card quick-card" onClick={() => navigate(current ? '/analysis' : '/board')}>
-            <IconTile tone="analyze" size="big" />
-            <span>
-              <strong>{current ? 'Continue on the board' : 'Analysis board'}</strong>
-              <small>{current ? `${current.title} · ${current.moves} ${current.moves === 1 ? 'move' : 'moves'}` : 'Any position, PGN or FEN'}</small>
-            </span>
-            <span className="quick-go" aria-hidden>
-              ›
-            </span>
-          </button>
+          {firstVisit && analysisAction}
         </aside>
         <HomeFooter />
       </main>
@@ -499,69 +530,35 @@ function Sparkline({ values }: { values: number[] }) {
   )
 }
 
-/** The newest game, big: its final position and one button to review it. On phones (`compact`), a short card:
- * a small board, three lines and the button. */
-function LatestCard({ game, review, theme, onOpen, compact = false }: { game: MyGame; review?: CachedReview; theme: BoardTheme; onOpen: () => void; compact?: boolean }) {
+/** Phones: the newest game in a short card, a small board, three lines and one button to review it. */
+function LatestCard({ game, review, theme, onOpen }: { game: MyGame; review?: CachedReview; theme: BoardTheme; onOpen: () => void }) {
   const final = finalPosition(game)
   const opponent = game.color === 'white' ? game.black : game.white
   const accuracy = review?.accuracy[game.color]
   const result = <span className={`latest-result ${game.result}`}>{game.result === 'win' ? 'Won' : game.result === 'loss' ? 'Lost' : 'Draw'}</span>
-  const board = final && (
-    <div className="latest-board">
-      <MiniBoard fen={final.fen} orientation={game.color} theme={theme} lastMove={final.lastMove} />
-    </div>
-  )
-  const button = (
-    <button className="btn accent-btn" onClick={onOpen}>
-      {review ? 'Open the review' : 'Review this game'}
-    </button>
-  )
-  if (compact)
-    return (
-      <section className="home-card accent-card latest-card compact" aria-label="Your latest game">
-        <div className="latest-body">
-          {board}
-          <div className="latest-text">
-            <span className="muted-on-brand">
-              {review ? 'Your latest game' : 'Not reviewed yet'} · {ago(game.endedAt)}
-            </span>
-            <strong>
-              {result} vs {opponent.name} {opponent.rating != null && <span className="muted-on-brand">{opponent.rating}</span>}
-            </strong>
-            <span className="muted-on-brand">
-              {accuracy != null ? `${accuracy.toFixed(1)} accuracy · ` : ''}
-              {game.moves} {game.moves === 1 ? 'move' : 'moves'} · {game.time}
-            </span>
-          </div>
-        </div>
-        {button}
-      </section>
-    )
   return (
-    <section className="home-card accent-card latest-card" aria-label="Your latest game">
-      <div>
-        <h2>Your latest game</h2>
-        <p>
-          {SOURCE_LABEL[game.source]} · {game.time} · {ago(game.endedAt)}
-        </p>
-      </div>
+    <section className="home-card accent-card latest-card compact" aria-label="Your latest game">
       <div className="latest-body">
-        {board}
+        {final && (
+          <div className="latest-board">
+            <MiniBoard fen={final.fen} orientation={game.color} theme={theme} lastMove={final.lastMove} />
+          </div>
+        )}
         <div className="latest-text">
-          {result}
+          <span className="muted-on-brand">
+            {review ? 'Your latest game' : 'Not reviewed yet'} · {ago(game.endedAt)}
+          </span>
           <strong>
-            vs {opponent.name} {opponent.rating != null && <span className="muted-on-brand">{opponent.rating}</span>}
+            {result} vs {opponent.name} {opponent.rating != null && <span className="muted-on-brand">{opponent.rating}</span>}
           </strong>
           <span className="muted-on-brand">
-            You played {game.color === 'white' ? 'White' : 'Black'} · {game.moves} {game.moves === 1 ? 'move' : 'moves'}
-            {game.opening ? ` · ${game.opening}` : ''}
+            {accuracy != null ? `${accuracy.toFixed(1)} accuracy · ` : ''}
+            {game.moves} {game.moves === 1 ? 'move' : 'moves'} · {game.time}
           </span>
-          {accuracy != null && <span className="latest-accuracy">{accuracy.toFixed(1)} accuracy</span>}
         </div>
       </div>
-      {button}
-      <button className="link-btn latest-more" onClick={() => navigate('/games')}>
-        Pick another game ›
+      <button className="btn accent-btn" onClick={onOpen}>
+        {review ? 'Open the review' : 'Review this game'}
       </button>
     </section>
   )
@@ -573,85 +570,36 @@ const MISTAKE_KINDS = [
   ['miss', 'oversights'],
 ] as const
 
-/** "Learn from your mistakes": the first one on a board, the counts, and the way in. On phones (`compact`), a short
- * card: a small board beside the counts, the button below. */
-function MistakesCard({ mistakes, theme, compact = false }: { mistakes: MistakePuzzle[]; theme: BoardTheme; compact?: boolean }) {
+/** Phones: "Learn from your mistakes", a small board with the first one beside the counts, the way in below. */
+function MistakesCard({ mistakes, theme }: { mistakes: MistakePuzzle[]; theme: BoardTheme }) {
   const first = mistakes[0]
   const games = new Set(mistakes.map((m) => m.gameKey)).size
-  const board = (
-    <button className="mistakes-board" onClick={() => navigate('/puzzles/mistakes')} aria-label="Practise your mistakes">
-      <MiniBoard fen={first.fen} orientation={first.color} theme={theme} />
-    </button>
-  )
-  const chips = (
-    <div className="chip-row">
-      {MISTAKE_KINDS.map(([cls, label]) => {
-        const n = mistakes.filter((m) => m.cls === cls).length
-        return n ? (
-          <span key={cls} className="chip">
-            <ClassIcon cls={cls} size={14} /> {n} {label}
-          </span>
-        ) : null
-      })}
-    </div>
-  )
-  const go = (
-    <button className="btn primary mistakes-go" onClick={() => navigate('/puzzles/mistakes')}>
-      Start practice
-    </button>
-  )
-  if (compact)
-    return (
-      <section className="home-card mistakes-card compact" aria-labelledby="mistakes">
-        <div className="mistakes-row">
-          {board}
-          <div className="mistakes-text">
-            <h2 id="mistakes">Learn from your mistakes</h2>
-            <p>
-              {mistakes.length} {mistakes.length === 1 ? 'position' : 'positions'} from {games} {games === 1 ? 'game' : 'games'}
-            </p>
-            {chips}
+  return (
+    <section className="home-card mistakes-card compact" aria-labelledby="mistakes">
+      <div className="mistakes-row">
+        <button className="mistakes-board" onClick={() => navigate('/puzzles/mistakes')} aria-label="Practise your mistakes">
+          <MiniBoard fen={first.fen} orientation={first.color} theme={theme} />
+        </button>
+        <div className="mistakes-text">
+          <h2 id="mistakes">Learn from your mistakes</h2>
+          <p>
+            {mistakes.length} {mistakes.length === 1 ? 'position' : 'positions'} from {games} {games === 1 ? 'game' : 'games'}
+          </p>
+          <div className="chip-row">
+            {MISTAKE_KINDS.map(([cls, label]) => {
+              const n = mistakes.filter((m) => m.cls === cls).length
+              return n ? (
+                <span key={cls} className="chip">
+                  <ClassIcon cls={cls} size={14} /> {n} {label}
+                </span>
+              ) : null
+            })}
           </div>
         </div>
-        {go}
-      </section>
-    )
-  return (
-    <section className="home-card mistakes-card" aria-labelledby="mistakes">
-      {board}
-      <div className="mistakes-text">
-        <h2 id="mistakes">Learn from your mistakes</h2>
-        <p>
-          {mistakes.length} {mistakes.length === 1 ? 'position' : 'positions'} from {games} reviewed {games === 1 ? 'game' : 'games'} where a better move
-          was there. Find it this time.
-        </p>
-        {chips}
-        {go}
       </div>
-    </section>
-  )
-}
-
-/** Puzzles at a glance: your rating and the ways in. */
-function PuzzlesCard({ rating }: { rating: number }) {
-  return (
-    <section className="home-card puzzles-card" aria-labelledby="puzzles-card">
-      <header>
-        <IconTile tone="puzzles" />
-        <h2 id="puzzles-card">Puzzles</h2>
-        <span className="muted">Rating {Math.round(rating)}</span>
-      </header>
-      <div className="chip-row">
-        <button className="chip" onClick={() => navigate('/puzzles')}>
-          Rated
-        </button>
-        <button className="chip" onClick={() => navigate('/puzzles/sprint')}>
-          Puzzle Sprint
-        </button>
-        <button className="chip" onClick={() => navigate('/puzzles/mistakes')}>
-          Your mistakes
-        </button>
-      </div>
+      <button className="btn primary mistakes-go" onClick={() => navigate('/puzzles/mistakes')}>
+        Start practice
+      </button>
     </section>
   )
 }

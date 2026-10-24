@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { phaseAccuracy, phaseMoves } from './phases'
+import { phaseAccuracy, phaseMoves, weakestPhase } from './phases'
 import type { SharedGame } from './share'
 import type { Score } from './uci'
 
@@ -53,5 +53,27 @@ describe('phaseAccuracy', () => {
     expect(acc.opening!).toBeLessThan(80)
     expect(acc.middlegame).toBeNull()
     expect(acc.endgame).toBeNull()
+  })
+})
+
+describe('weakestPhase', () => {
+  // 24 plies of shuffling: an opening and a short middlegame, White's middlegame moves throwing away a pawn each.
+  const slipping = () => game(START, SHUFFLE, SHUFFLE.map((_, i) => cp(i < 20 ? 0 : -100 * (i - 19))).concat(cp(-500)))
+
+  it('waits for five reviewed games', () => {
+    expect(weakestPhase(Array.from({ length: 4 }, () => ({ game: slipping(), color: 'white' as const })))).toBeNull()
+  })
+
+  it('names the phase that costs the most once there are enough games', () => {
+    const weakest = weakestPhase(Array.from({ length: 5 }, () => ({ game: slipping(), color: 'white' as const })))
+    expect(weakest?.phase).toBe('middlegame')
+    expect(weakest!.accuracy).toBeLessThan(100)
+  })
+
+  it('leaves out a phase reached in fewer than three games', () => {
+    const quiet = game(START, SHUFFLE.slice(0, 4), [cp(0), cp(0), cp(0), cp(0), cp(0)])
+    const games = [slipping(), slipping(), quiet, quiet, quiet].map((g) => ({ game: g, color: 'white' as const }))
+    // Only the opening is reached in three or more: nothing to compare it with.
+    expect(weakestPhase(games)).toBeNull()
   })
 })

@@ -1,10 +1,7 @@
-import { useEffect, useState } from 'react'
-import { IconTile } from './IconTile'
-import { transitionsDone } from '../hooks/useSettled'
+import { useState } from 'react'
 import { Skel } from './Skeleton'
 import { Link } from './Link'
-import type { Phase } from '../lib/phases'
-import { PHASES } from '../lib/phases'
+import { WEAKEST_MIN_REVIEWED, type Phase } from '../lib/phases'
 import { dayLabel, type MyGame } from '../lib/myGames'
 import { localDayNumber } from '../lib/puzzles'
 import { dayStreak, solvedOn, type PuzzleProgress } from '../lib/puzzleStore'
@@ -25,18 +22,18 @@ interface Step {
   go: () => void
 }
 
-/** The row of tiles takes the grid's columns, one each; a tile that isn't in the plan has a column of nothing. */
+/** The list of tiles takes the grid's rows, one each; a tile that isn't in the plan has a row of nothing. */
 const track = (on: boolean) => (on ? 'minmax(0, 1fr)' : 'minmax(0, 0fr)')
 
 /**
- * Today's plan: three or four things worth doing today, ticked off as you do them, the next one lit up. The card
- * keeps its height; its tiles share one row and grow out of the first (after the placeholder's single tile, and
- * when your mistakes turn up once they're worked out).
+ * Today's plan: three or four things worth doing today, ticked off as you do them, the next one lit up. On
+ * desktop a list down the right of Home, each tile one line of title and one of detail, so the card is the same
+ * height whatever the day holds; fixing your mistakes keeps its place from the start when you have reviews to
+ * find them in, and folds away should none turn up.
  */
 export function PlanCard({
   compact = false,
-  grow = false,
-  ready = true,
+  expectMistakes = false,
   latest,
   review,
   games,
@@ -46,10 +43,8 @@ export function PlanCard({
 }: {
   /** Phones: one row, the next step and its button; the whole list a tap away. */
   compact?: boolean
-  /** Coming after the placeholder: the tiles start as one and open out. */
-  grow?: boolean
-  /** Everything the tiles need is in (your mistakes are counted): they open out once, then. */
-  ready?: boolean
+  /** Your mistakes are still being counted and there are reviews to count them in: keep their tile's place. */
+  expectMistakes?: boolean
   latest?: MyGame
   review?: CachedReview
   games: MyGame[]
@@ -90,7 +85,7 @@ export function PlanCard({
       title: `Fix ${goal || MISTAKES_GOAL} of your mistakes`,
       sub: goal ? `${Math.min(fixed, goal)} of ${goal} today · ${mistakes} waiting` : '',
       done: goal > 0 && fixed >= goal,
-      on: goal > 0,
+      on: goal > 0 || (mistakes === null && expectMistakes),
       action: 'Practise',
       go: () => navigate('/puzzles/mistakes'),
     },
@@ -108,20 +103,6 @@ export function PlanCard({
   const done = steps.filter((s) => s.done).length
   const next = steps.find((s) => !s.done)
   const [open, setOpen] = useState(false)
-  // After the placeholder, the plan shows its one tile until everything's in and the page has settled; then
-  // the rest open out in one go. Opening while your account is still being read (just signed in) or a
-  // transition runs would share the main thread with that work, and stutter.
-  const [opened, setOpened] = useState(!grow)
-  useEffect(() => {
-    if (opened || !ready) return
-    let live = true
-    let frame = 0
-    void transitionsDone().then(() => (frame = requestAnimationFrame(() => (frame = requestAnimationFrame(() => live && setOpened(true))))))
-    return () => {
-      live = false
-      cancelAnimationFrame(frame)
-    }
-  }, [opened, ready])
   const tile = (s: Step) => (
     <button className={`plan-step ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : undefined}>
       <span className="plan-check" aria-hidden>
@@ -171,7 +152,6 @@ export function PlanCard({
       </section>
     )
 
-  const shown = (s: Step, i: number) => s.on && (opened || i === 0)
   return (
     <section className="home-card plan-card" aria-labelledby="plan-title">
       <header className="plan-head">
@@ -181,9 +161,9 @@ export function PlanCard({
           <p>{next ? `${steps.length - done} to go. Next: ${next.title.toLowerCase()}.` : 'All done for today. See you tomorrow.'}</p>
         </div>
       </header>
-      <ol className="plan-steps row" style={{ gridTemplateColumns: all.map((s, i) => track(shown(s, i))).join(' ') }}>
-        {all.map((s, i) => (
-          <li key={s.id} className={shown(s, i) ? '' : 'off'} inert={!shown(s, i)}>
+      <ol className="plan-steps column" style={{ gridTemplateRows: all.map((s) => track(s.on)).join(' ') }}>
+        {all.map((s) => (
+          <li key={s.id} className={s.on ? '' : 'off'} inert={!s.on}>
             {tile(s)}
           </li>
         ))}
@@ -192,8 +172,8 @@ export function PlanCard({
   )
 }
 
-/** Today's plan on its way: the same card with one tile, the one the rest open out of. */
-export function PlanCardSkeleton({ compact = false }: { compact?: boolean }) {
+/** Today's plan on its way: the same card, with as many tiles as it's about to have. */
+export function PlanCardSkeleton({ compact = false, steps = 3 }: { compact?: boolean; steps?: number }) {
   if (compact)
     return (
       <section className="home-card plan-card compact skel-group" aria-busy aria-label="Loading today's plan">
@@ -218,33 +198,22 @@ export function PlanCardSkeleton({ compact = false }: { compact?: boolean }) {
           <Skel w="220px" h="13px" className="skel-gap" />
         </div>
       </header>
-      <ol className="plan-steps row" style={{ gridTemplateColumns: track(true) }}>
-        <li>
-          <span className="plan-step">
-            <Skel w="24px" h="24px" className="skel-round" />
-            <span className="plan-text">
-              <strong className="skel-lines">
-                <span className="skel-line">
-                  <Skel w="180px" h="14px" />
-                </span>
-                <span className="skel-line">
-                  <Skel w="120px" h="14px" />
-                </span>
-              </strong>
-              <small className="skel-lines">
-                <span className="skel-line">
-                  <Skel w="160px" h="11px" />
-                </span>
-                <span className="skel-line">
-                  <Skel w="100px" h="11px" />
-                </span>
-              </small>
+      <ol className="plan-steps column" style={{ gridTemplateRows: Array.from({ length: steps }, () => track(true)).join(' ') }}>
+        {Array.from({ length: steps }, (_, i) => (
+          <li key={i}>
+            <span className="plan-step">
+              <Skel w="24px" h="24px" className="skel-round" />
+              <span className="plan-text">
+                <strong className="skel-line">
+                  <Skel w={`${70 - (i % 2) * 18}%`} h="14px" />
+                </strong>
+                <small className="skel-line">
+                  <Skel w={`${56 - (i % 3) * 8}%`} h="11px" />
+                </small>
+              </span>
             </span>
-            <span className="plan-go skel-line">
-              <Skel w="56px" h="13px" />
-            </span>
-          </span>
-        </li>
+          </li>
+        ))}
       </ol>
     </section>
   )
@@ -291,203 +260,131 @@ export function WeekDots({ progress }: { progress: PuzzleProgress }) {
   )
 }
 
-/** The puzzle streak: days in a row, this week's days as dots, your best, and the way to keep it going. */
-export function StreakCard({ progress, pending = false }: { progress: PuzzleProgress; pending?: boolean }) {
-  const today = localDayNumber(new Date())
-  const streak = dayStreak(progress, today)
-  const best = progress.days?.best ?? 0
-  const solvedToday = solvedOn(progress, today)
-  const dailyDone = progress.daily?.day === today
-  const fortnight = weekDays(progress, 2)
-  const solvedDays = fortnight.filter((d) => d.state === 'solved').length
-
-  return (
-    <section className={`home-card streak-card ${pending ? 'skel-group' : ''}`} aria-labelledby="streak-title" aria-busy={pending}>
-      <header className="home-card-head">
-        <IconTile tone="streak" />
-        <h2 id="streak-title">Puzzle streak</h2>
-        {best > 0 && !pending && <span className="see-all muted">Best {best}</span>}
-      </header>
-      <div className="streak-count">
-        {pending ? <Skel w="120px" h="44px" /> : <b>{streak}</b>}
-        {!pending && <span>{streak === 1 ? 'day' : 'days'} in a row</span>}
-      </div>
-      <ol className="streak-week" aria-label="Last week and this week">
-        {fortnight.map((d, i) => (
-          <li key={d.day} className={pending ? 'missed' : d.state} title={`${d.date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}: ${d.state === 'solved' ? 'solved' : d.state === 'later' ? 'still to come' : d.state === 'today' ? 'not yet' : 'no puzzle'}`}>
-            <span className="streak-dot" aria-hidden>
-              {d.state === 'solved' && !pending && (
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 2c1 3 5 5.5 5 10.5a5 5 0 0 1-10 0c0-2.5 1.2-3.8 2.4-5 0 2.2 1 3.4 2.3 3.4 0-3.4-1-6 .3-8.9z" />
-                </svg>
-              )}
-            </span>
-            {i >= 7 && <span className="streak-day">{d.label[0]}</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="streak-note">
-        {pending ? (
-          <span className="skel-line">
-            <Skel w="70%" h="12px" />
-          </span>
-        ) : (
-          `${solvedDays} of the last ${fortnight.filter((d) => d.state !== 'later').length} days · ${progress.solved} puzzles solved in all`
-        )}
-      </p>
-      {pending ? (
-        <Skel w="100%" h="50px" className="skel-button" />
-      ) : solvedToday ? (
-        <button className="btn streak-go" onClick={() => navigate(dailyDone ? '/puzzles' : '/puzzles/daily')}>
-          {dailyDone ? 'Safe for today · more puzzles ›' : 'Safe for today · daily puzzle ›'}
-        </button>
-      ) : (
-        <button className="btn accent-btn streak-go" onClick={() => navigate(dailyDone ? '/puzzles' : '/puzzles/daily')}>
-          {streak ? `Solve one to make it ${streak + 1}` : 'Solve one to start a streak'}
-        </button>
-      )}
-    </section>
-  )
-}
-
 export interface AccuracyPoint {
   game: MyGame
   review: CachedReview
   accuracy: number
 }
 
-/** The phase bars start here rather than at 0, so the gaps between phases show. */
-const BAR_FLOOR = 40
-
 const PHASE_LABEL: Record<Phase, string> = { opening: 'Opening', middlegame: 'Middlegame', endgame: 'Endgame' }
 
-/** Your accuracy: the number, its trend game by game (point at one to see it, click to open it), and by phase. */
-export function AccuracyCard({
+/**
+ * Desktop Home's numbers in one strip of three: your accuracy over your last ten reviews with a bar per game,
+ * your puzzle streak over this week's days (seven dots however long the streak), and the phase of the game that
+ * costs you most. Each part keeps its shape loading, empty or full.
+ */
+export function FormStrip({
   pending = false,
-  points,
   accuracy,
   trend,
-  phases,
-  legendary,
-  onOpen,
+  recent,
+  progress,
+  weakest,
+  reviewed,
 }: {
-  /** Your games are on their way: the card's shape, with placeholders. */
+  /** Your games are on their way. */
   pending?: boolean
-  /** Reviewed games, oldest first. */
-  points: AccuracyPoint[]
   accuracy: number | null
   trend: number | null
-  /** Null while the reviews are read. */
-  phases: Record<Phase, number | null> | null
-  legendary: number
-  onOpen: (game: MyGame, review: CachedReview) => void
+  /** Your last reviewed games' accuracy, oldest first. */
+  recent: number[]
+  progress: PuzzleProgress
+  /** Your weakest phase (null when there isn't enough to say), or undefined while your reviews are read. */
+  weakest: { phase: Phase; accuracy: number } | null | undefined
+  /** Reviewed games the phases come from. */
+  reviewed: number
 }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const W = 300
-  const H = 92
-  const values = points.map((p) => p.accuracy)
-  const lo = Math.max(0, Math.min(...values) - 6)
-  const hi = Math.min(100, Math.max(...values) + 6)
-  const x = (i: number) => (points.length < 2 ? W / 2 : 6 + (i / (points.length - 1)) * (W - 12))
-  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 16)
-  const line = points.map((p, i) => `${x(i).toFixed(1)},${y(p.accuracy).toFixed(1)}`).join(' ')
-  const avgY = accuracy != null ? y(accuracy) : null
-  const shown = hover ?? points.length - 1
-  const tip = points[shown]
-  const scored = phases ? PHASES.filter((p) => phases[p] != null) : []
-  const weakest = !pending && scored.length > 1 ? scored.reduce((a, b) => (phases![a]! <= phases![b]! ? a : b)) : null
-
+  const today = localDayNumber(new Date())
+  const streak = dayStreak(progress, today)
+  const best = Math.max(progress.days?.best ?? 0, streak)
+  const bars = recent.slice(-10)
+  const lo = Math.min(...bars) - 4
+  const hi = Math.max(...bars)
+  const dailyDone = progress.daily?.day === today
   return (
-    <section className={`home-card accuracy-card ${pending ? 'skel-group' : ''}`} aria-labelledby="accuracy-title" aria-busy={pending}>
-      <header className="home-card-head">
-        <IconTile tone="accuracy" />
-        <h2 id="accuracy-title">Accuracy</h2>
-        {!pending && points.length > 0 && (
-          <Link to="/games" className="link-btn see-all">
-            Last {points.length} reviewed ›
-          </Link>
-        )}
-      </header>
-      {/* One shape whatever there is to show (loading, nothing reviewed yet, your numbers), so nothing moves
-          when it arrives. */}
-      <div className="accuracy-top">
-        {pending ? (
-          <Skel w="110px" h="40px" />
-        ) : accuracy == null ? (
-          <>
-            <b className="accuracy-value empty">Not yet</b>
-            <span className="accuracy-sub">Review a game to see it</span>
-          </>
-        ) : (
-          <>
-            <b className="accuracy-value">{accuracy.toFixed(1)}</b>
-            <span className="accuracy-sub">
+    <section className={`home-card form-strip ${pending ? 'skel-group' : ''}`} aria-label="Your form" aria-busy={pending}>
+      <Link to="/games" className="form-part">
+        <span className="form-label">Accuracy, last {bars.length > 1 ? bars.length : 10}</span>
+        <span className="form-row">
+          {pending ? (
+            <Skel w="96px" h="28px" />
+          ) : accuracy == null ? (
+            <b className="form-value empty">Not yet</b>
+          ) : (
+            <>
+              <b className="form-value">{accuracy.toFixed(1)}</b>
               {trend != null && (
-                <span className={trend >= 0 ? 'up' : 'down'}>
+                <span className={`form-trend ${trend >= 0 ? 'up' : 'down'}`}>
                   {trend >= 0 ? '+' : ''}
                   {trend.toFixed(1)}
                 </span>
-              )}{' '}
-              {trend != null ? 'over your last 10' : 'your last 10'}
-            </span>
-            {tip && (
-              <span className="accuracy-tip" aria-live="polite">
-                <strong>{tip.accuracy.toFixed(1)}</strong> vs {(tip.game.color === 'white' ? tip.game.black : tip.game.white).name} · {dayLabel(tip.game.endedAt)}
-              </span>
-            )}
-          </>
-        )}
-      </div>
-      {pending ? (
-        <Skel w="100%" h="96px" className="accuracy-chart" />
-      ) : !points.length ? (
-        <p className="accuracy-chart empty">Each game you review adds a point here.</p>
-      ) : (
-        <div className="accuracy-chart" onMouseLeave={() => setHover(null)}>
-          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
-            {avgY != null && <line className="avg" x1="0" x2={W} y1={avgY} y2={avgY} />}
-            <polygon className="area" points={`${x(0)},${H} ${line} ${x(points.length - 1)},${H}`} />
-            <polyline className="trend" points={line} />
-          </svg>
-          {points.map((p, i) => (
-            <button
-              key={p.game.key}
-              className={`accuracy-point ${i === shown ? 'on' : ''} ${p.game.result}`}
-              style={{ left: `${(x(i) / W) * 100}%`, top: `${(y(p.accuracy) / H) * 100}%` }}
-              onMouseEnter={() => setHover(i)}
-              onFocus={() => setHover(i)}
-              onClick={() => onOpen(p.game, p.review)}
-              aria-label={`${p.accuracy.toFixed(1)} against ${(p.game.color === 'white' ? p.game.black : p.game.white).name}, ${dayLabel(p.game.endedAt)}: open the review`}
-            />
-          ))}
-        </div>
-      )}
-      <ul className="phase-bars" aria-label="By phase of the game" aria-busy={pending || (points.length > 0 && !phases)}>
-        {PHASES.map((p) => {
-          const v = pending ? null : phases?.[p]
-          return (
-            <li key={p} className={p === weakest ? 'weakest' : ''}>
-              <span className="phase-label">{PHASE_LABEL[p]}</span>
-              <span className="phase-bar">{v != null && <span style={{ width: `${Math.max(4, ((v - BAR_FLOOR) / (100 - BAR_FLOOR)) * 100)}%` }} />}</span>
-              <span className="phase-value">{v == null ? '–' : v.toFixed(0)}</span>
-            </li>
-          )
-        })}
-      </ul>
-      <p className="accuracy-foot">
-        {pending ? (
-          <span className="skel-line">
-            <Skel w="240px" h="12px" />
+              )}
+            </>
+          )}
+          <span className="form-bars" aria-hidden>
+            {!pending &&
+              bars.length > 1 &&
+              bars.map((v, i) => <i key={i} className={i === bars.length - 1 ? 'last' : ''} style={{ height: `${18 + ((v - lo) / (hi - lo || 1)) * 82}%` }} />)}
           </span>
-        ) : (
-          <span className="accuracy-note">{weakest ? `Your ${PHASE_LABEL[weakest].toLowerCase()} costs you the most.` : 'Accuracy by phase, from your last 10 reviews.'}</span>
-        )}
-        {!pending && legendary > 0 && (
-          <Link to="/legendary" className="link-btn accuracy-legendary">
-            {legendary} Legendary this week ›
-          </Link>
-        )}
-      </p>
+        </span>
+        <span className="form-sub">{pending ? <Skel w="60%" h="11px" /> : accuracy == null ? 'Review a game to see it' : trend != null ? 'Against the 10 before' : 'Your reviewed games'}</span>
+      </Link>
+      <Link to={dailyDone ? '/puzzles' : '/puzzles/daily'} className="form-part form-streak">
+        <span className="form-col">
+          <span className="form-label">Puzzle streak</span>
+          <span className="form-row">
+            {pending ? (
+              <Skel w="72px" h="28px" />
+            ) : streak ? (
+              <>
+                <b className="form-value streak">{streak}</b>
+                <span className="form-unit">{streak === 1 ? 'day' : 'days'}</span>
+              </>
+            ) : (
+              <b className="form-value empty">Start today</b>
+            )}
+          </span>
+          <span className="form-sub">{pending ? <Skel w="50px" h="11px" /> : best ? `Best ${best}` : 'Solve one to start'}</span>
+        </span>
+        <ol className="form-week" aria-label="This week">
+          {weekDays(progress, 1).map((d) => (
+            <li
+              key={d.day}
+              className={pending ? 'missed' : d.state}
+              title={`${d.date.toLocaleDateString('en-GB', { weekday: 'long' })}: ${d.state === 'solved' ? 'solved' : d.state === 'later' ? 'still to come' : d.state === 'today' ? 'not yet' : 'no puzzle'}`}
+            >
+              <i aria-hidden />
+              <span>{d.label[0]}</span>
+            </li>
+          ))}
+        </ol>
+      </Link>
+      <div className="form-part">
+        <span className="form-label">Weakest phase</span>
+        <span className="form-row">
+          {pending || weakest === undefined ? (
+            <Skel w="120px" h="22px" />
+          ) : weakest ? (
+            <>
+              <b className="form-phase">{PHASE_LABEL[weakest.phase]}</b>
+              <span className="form-unit">{weakest.accuracy.toFixed(1)}</span>
+            </>
+          ) : (
+            <b className="form-phase empty">Not yet</b>
+          )}
+        </span>
+        <span className="form-sub">
+          {pending || weakest === undefined ? (
+            <Skel w="80%" h="11px" />
+          ) : weakest ? (
+            `Last ${reviewed} reviews`
+          ) : reviewed < WEAKEST_MIN_REVIEWED ? (
+            `Review ${WEAKEST_MIN_REVIEWED - reviewed} more ${WEAKEST_MIN_REVIEWED - reviewed === 1 ? 'game' : 'games'} to see it`
+          ) : (
+            'Needs more games past the opening'
+          )}
+        </span>
+      </div>
     </section>
   )
 }

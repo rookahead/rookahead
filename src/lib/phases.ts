@@ -55,3 +55,25 @@ export function phaseAccuracy(games: { game: SharedGame; color: Color }[]): Reco
   }
   return { opening: mean(all.opening), middlegame: mean(all.middlegame), endgame: mean(all.endgame) }
 }
+
+/** Games a phase must be reached in, and reviewed games in all, before Home names your weakest phase. */
+export const WEAKEST_MIN_GAMES = 3
+export const WEAKEST_MIN_REVIEWED = 5
+
+/**
+ * Your weakest phase over several reviewed games, or null until there's enough to say: five games, and only
+ * phases reached in three of them count (a single endgame proves nothing), at least two of them.
+ */
+export function weakestPhase(games: { game: SharedGame; color: Color }[]): { phase: Phase; accuracy: number } | null {
+  if (games.length < WEAKEST_MIN_REVIEWED) return null
+  const reached: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
+  for (const { game, color } of games) {
+    const moves = phaseMoves(game, color)
+    for (const p of PHASES) if (moves[p].length) reached[p]++
+  }
+  const accuracy = phaseAccuracy(games)
+  const counted = PHASES.filter((p) => reached[p] >= WEAKEST_MIN_GAMES && accuracy[p] != null)
+  if (counted.length < 2) return null
+  const phase = counted.reduce((a, b) => (accuracy[a]! <= accuracy[b]! ? a : b))
+  return { phase, accuracy: accuracy[phase]! }
+}

@@ -3707,7 +3707,7 @@ svg {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .home-welcome {
@@ -3877,6 +3877,10 @@ svg {
   --tile: var(--tone-pink);
 }
 
+.icon-tile.review {
+  --tile: var(--brand);
+}
+
 .icon-tile.accuracy {
   --tile: var(--brand);
 }
@@ -3905,6 +3909,203 @@ svg {
   margin-left: auto;
   color: var(--muted);
   font-size: 18px;
+}
+
+.quick-lines {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Desktop Home's two ways in under the greeting, side by side; each keeps to one line of detail. */
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.home-actions .quick-card small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-actions .quick-lines .skel + .skel {
+  margin-top: 6px;
+}
+
+/* Your form in one strip of three (HomeCards.tsx, FormStrip): accuracy and its bars, the streak and this week,
+   the weakest phase, split by hairlines. */
+/* The streak takes the room its week needs; accuracy and the weakest phase share the rest. */
+.form-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 18px 0;
+}
+
+.form-part {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 22px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.form-part + .form-part {
+  border-left: 1px solid var(--border);
+}
+
+/* The streak: its number and best on the left, this week's days on the right. */
+.form-streak {
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+}
+
+.form-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label,
+.form-sub {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.form-sub {
+  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-row {
+  height: 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.form-row .skel {
+  align-self: center;
+}
+
+.form-value {
+  font: 700 30px/32px var(--font-display);
+  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.form-value.streak {
+  color: var(--streak);
+}
+
+.form-value.empty,
+.form-phase.empty {
+  color: var(--text-2);
+  font-size: 18px;
+}
+
+.form-phase {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 32px;
+}
+
+.form-unit {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.form-trend {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.form-trend.up {
+  color: var(--win);
+}
+
+.form-trend.down {
+  color: var(--danger);
+}
+
+/* A bar per game, at the right of the number. */
+.form-bars {
+  flex: 0 1 110px;
+  min-width: 0;
+  height: 30px;
+  margin-left: auto;
+  align-self: flex-end;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.form-bars i {
+  flex: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 32%, transparent);
+}
+
+.form-bars i.last {
+  background: var(--brand);
+}
+
+.form-week {
+  flex: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.form-week li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.form-week i {
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.form-week .solved i {
+  background: var(--streak);
+}
+
+.form-week .today i {
+  background: none;
+  border: 2px solid var(--streak);
+}
+
+.form-week .today span {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.form-week .later i {
+  background: none;
+  border: 1px solid var(--border-strong);
 }
 
 /* The one coloured card. */
@@ -3968,24 +4169,11 @@ svg {
   }
 }
 
-/* Home's plan for today, accuracy and puzzle streak (HomeCards.tsx). */
-.home-pair {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.plan-card,
-.streak-card,
-.accuracy-card {
+/* Home's plan for today (HomeCards.tsx). */
+.plan-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.streak-card .home-card-head,
-.accuracy-card .home-card-head {
-  padding: 0;
 }
 
 .plan-head {
@@ -4042,34 +4230,62 @@ svg {
   gap: 10px;
 }
 
-/* Desktop: one row, a column per tile (PlanCard sets them). A tile coming into the plan grows from nothing
-   beside the first, the others making room; the gap between tiles is each tile's own, so it grows too. */
-.plan-steps.row {
+/* Desktop: a list down the right column, a row per tile (PlanCard sets them). A tile leaving the plan folds to
+   nothing, the gap above it (its own) with it. */
+.plan-steps.column {
   gap: 0;
-  transition: grid-template-columns 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.plan-steps.row > li {
-  min-width: 0;
+.plan-steps.column > li {
+  min-height: 0;
   overflow: hidden;
-  transition: padding-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease 0.1s;
+  transition: padding-top 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
 }
 
-.plan-steps.row > li + li {
-  padding-left: 10px;
+.plan-steps.column > li + li {
+  padding-top: 8px;
 }
 
-.plan-steps.row > li.off {
-  padding-left: 0;
+.plan-steps.column > li.off {
+  padding-top: 0;
   opacity: 0;
-  transition: padding-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .plan-steps.row,
-  .plan-steps.row > li {
+  .plan-steps.column,
+  .plan-steps.column > li {
     transition: none;
   }
+}
+
+.plan-steps.column .plan-step {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.plan-steps.column .plan-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* One line each, so every tile is the same height whatever it says. */
+.plan-steps.column .plan-text strong,
+.plan-steps.column .plan-text small {
+  display: block;
+  min-height: 1.45em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plan-steps.column .plan-go {
+  margin: 0;
+}
+
+.plan-steps.column .plan-step:not(.next) .plan-go {
+  display: none;
 }
 
 .plan-step {
@@ -4186,312 +4402,8 @@ svg {
   visibility: hidden;
 }
 
-.streak-card {
-  flex: 2 1 260px;
-}
-
-.streak-count {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.streak-count b {
-  font: 700 44px/1 var(--font-display);
-  letter-spacing: -0.03em;
-  color: var(--streak);
-}
-
-.streak-count span {
-  color: var(--text-2);
-  font-size: 14px;
-}
-
-.streak-week {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px 6px;
-}
-
-.streak-note {
-  margin: 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12.5px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.streak-week li {
-  justify-content: flex-start;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.streak-dot {
-  width: 30px;
-  height: 30px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-}
-
-.streak-week .solved .streak-dot {
-  background: color-mix(in srgb, var(--streak) 20%, transparent);
-}
-
-.streak-dot svg {
-  width: 16px;
-  height: 16px;
-  fill: var(--streak);
-}
-
-.streak-week .today .streak-dot {
-  background: none;
-  border: 2px dashed var(--streak);
-}
-
-.streak-week .later .streak-dot {
-  background: none;
-  border: 1.5px solid var(--border-strong);
-}
-
-.streak-day {
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.streak-week .today .streak-day {
-  color: var(--streak);
-}
-
-.streak-go,
-.streak-card .skel-button {
-  width: 100%;
-  margin-top: auto;
-}
-
-.streak-go.accent-btn {
-  background: var(--streak);
-  color: color-mix(in srgb, var(--streak) 15%, #000);
-}
-
-.streak-go:not(.accent-btn) {
-  height: 44px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--streak) 13%, transparent);
-  color: var(--streak);
-}
-
-.accuracy-card {
-  flex: 3 1 360px;
-}
-
-.accuracy-top {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  height: 40px;
-  white-space: nowrap;
-}
-
-.accuracy-value {
-  font: 700 40px/1 var(--font-display);
-  letter-spacing: -0.03em;
-}
-
-.accuracy-value.empty {
-  color: var(--muted);
-  font-size: 26px;
-}
-
-.accuracy-sub {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.accuracy-sub .up {
-  color: var(--win);
-  font-weight: 600;
-}
-
-.accuracy-sub .down {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-.accuracy-tip {
-  min-width: 0;
-  margin-left: auto;
-  overflow: hidden;
-  color: var(--text-2);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-}
-
-.accuracy-tip strong {
-  color: var(--text);
-}
-
-.accuracy-chart {
-  position: relative;
-  height: 96px;
-}
-
-.accuracy-chart.empty {
-  margin: 0;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px dashed var(--border-strong);
-  border-radius: 12px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.accuracy-chart svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.accuracy-chart .area {
-  fill: color-mix(in srgb, var(--brand) 13%, transparent);
-}
-
-.accuracy-chart .trend {
-  fill: none;
-  stroke: var(--brand);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.accuracy-chart .avg {
-  stroke: var(--guide);
-  stroke-dasharray: 3 4;
-  vector-effect: non-scaling-stroke;
-}
-
-.accuracy-point {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-}
-
-.accuracy-point::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 50%;
-  background: var(--brand);
-  transition: inset 0.12s, box-shadow 0.12s;
-}
-
-.accuracy-point.on::after {
-  inset: 5px;
-  box-shadow: 0 0 0 3px var(--card);
-}
-
-.accuracy-point:focus-visible {
-  outline: 2px solid var(--brand);
-}
-
-.phase-bars {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.phase-bars li {
-  display: grid;
-  grid-template-columns: 92px 1fr 30px;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-}
-
-.phase-label {
-  color: var(--text-2);
-}
-
-.phase-bar {
-  height: 8px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--text) 7%, transparent);
-  overflow: hidden;
-}
-
-.phase-bar span {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
-  background: var(--brand);
-  transition: width 0.5s ease;
-}
-
-.phase-bars .weakest .phase-label {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.phase-bars .weakest .phase-bar span {
-  background: var(--warn);
-}
-
-.phase-value {
-  text-align: right;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.accuracy-foot {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.45;
-  white-space: nowrap;
-}
-
-.accuracy-note {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-a.see-all,
-.accuracy-legendary {
+a.see-all {
   text-decoration: none;
-}
-
-.accuracy-legendary {
-  flex-shrink: 0;
-  margin-left: auto;
-  color: var(--tone-violet);
-  font-size: 12.5px;
 }
 
 .plan-card.compact {
@@ -7241,13 +7153,31 @@ button.user-avatar.guest:hover {
 
 /* Play the computer: its second line wraps while the right column is narrow. */
 .boot-quick {
-  --h: 81.3px;
+  --h: 83.3px;
 }
 
 @container page (min-width: 920px) and (max-width: 1048px) {
   .boot-quick {
-    --h: 100.2px;
+    --h: 102.2px;
   }
+}
+
+/* My games: six rows under a day's heading, and the colours' key when some have been reviewed. */
+.boot-games {
+  --h: 528px;
+}
+
+:root[data-boot-reviews] .boot-games {
+  --h: 560px;
+}
+
+/* Today's plan: three steps, or four with your mistakes to fix. */
+.boot-plan {
+  --h: 321.4px;
+}
+
+:root[data-boot-reviews] .boot-plan {
+  --h: 394.6px;
 }
 
 .boot-daily-head {
@@ -7413,19 +7343,19 @@ button.user-avatar.guest:hover {
   view-transition-name: plan-card;
 }
 
-:root.settling .accuracy-card {
-  view-transition-name: accuracy-card;
+:root.settling .form-strip {
+  view-transition-name: form-strip;
 }
 
-:root.settling .streak-card {
-  view-transition-name: streak-card;
+:root.settling .home-actions > :first-child {
+  view-transition-name: review-action;
 }
 
 :root.settling .home-main > .games-card {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .plan-card, .accuracy-card, .streak-card, .home-main > .games-card) {
+:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
   view-transition-class: card;
 }
 
@@ -7610,6 +7540,247 @@ button.user-avatar.guest:hover {
 .game-card:hover .game-card-review {
   background: var(--brand);
   color: var(--brand-ink);
+}
+
+/* Home's games (HomeGames.tsx): a heading per day, then rows of the final position with the result on its
+   corner, who and what, your moves as a strip of verdict colours, and the way in. */
+.home-games-chips {
+  margin-left: 8px;
+}
+
+.home-games-chips .filter-chip {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.home-day + .home-day {
+  margin-top: 6px;
+}
+
+.home-day-head {
+  height: 34px;
+  box-sizing: border-box;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 450;
+}
+
+.home-day-head b {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.home-games {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-game {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1.2fr) minmax(120px, 1fr) 76px;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px 8px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+button.home-game:hover {
+  background: var(--surface-4);
+}
+
+:root[data-theme='light'] .home-game {
+  background: var(--side);
+}
+
+:root[data-theme='light'] button.home-game:hover {
+  background: var(--surface-3);
+}
+
+.home-game-board {
+  position: relative;
+  width: 52px;
+  height: 52px;
+}
+
+.home-game-board > .mini-board,
+.home-game-board > .skel {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.home-game-result {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-4);
+  color: var(--text);
+  font: 700 11px/16px var(--font-ui);
+  font-style: normal;
+}
+
+.home-game-result.win {
+  background: var(--win);
+  color: var(--bg);
+}
+
+.home-game-result.loss {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.home-game-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-game-title,
+.home-game-detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-game-title {
+  font-size: 14.5px;
+  line-height: 20px;
+}
+
+.home-game-title strong {
+  font-weight: 650;
+}
+
+.home-game-title span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-game-detail {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 16px;
+}
+
+.home-game-moves {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quality-strip {
+  height: 14px;
+  box-sizing: border-box;
+  display: flex;
+  gap: 1px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quality-strip i {
+  flex: 1;
+}
+
+.quality-strip.empty {
+  border: 1px dashed var(--border-strong);
+}
+
+.home-game-under {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.home-game-under b {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.home-game-under > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-game-open {
+  justify-self: end;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+button.home-game:hover .home-game-open {
+  color: var(--text);
+}
+
+.home-game .game-card-review {
+  justify-self: end;
+}
+
+button.home-game:hover .game-card-review {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.home-games-none {
+  margin: 0;
+  padding: 14px 12px 8px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.quality-key {
+  list-style: none;
+  margin: 0;
+  padding: 14px 12px 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.quality-key li {
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quality-key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
 
 @media (max-width: 520px) {

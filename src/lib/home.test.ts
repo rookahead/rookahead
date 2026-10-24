@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentGame, formatDay, greeting, movesInPgn, nudge, playedRow } from './home'
-import type { Session } from './session'
+import { formatDay, greeting, movesInPgn, nudge, playedRow } from './home'
 
 describe('movesInPgn', () => {
   it('counts full moves, ignoring headers, clocks and black move numbers', () => {
@@ -23,25 +22,6 @@ describe('formatDay', () => {
   it('leaves the year out for this year', () => {
     expect(formatDay(Date.parse('2026-10-17T10:00:00Z') / 1000, now)).toBe('Oct 17')
     expect(formatDay(Date.parse('2025-03-02T10:00:00Z') / 1000, now)).toBe('Mar 2, 2025')
-  })
-})
-
-describe('currentGame', () => {
-  const session = (pgn: string, reviewed = false): Session => ({
-    pgn,
-    orientation: 'white',
-    currentPly: 0,
-    evals: reviewed ? { x: { score: { type: 'cp', value: 0 }, bestMove: null, pv: [], depth: 16 } } : {},
-  })
-
-  it('describes the game open on the board', () => {
-    expect(currentGame(session('[White "Ann"]\n[Black "Bob"]\n\n1. e4 e5 2. Nf3 *'))).toEqual({ title: 'Ann vs Bob', moves: 2, reviewed: false })
-    expect(currentGame(session('1. d4 d5 *', true))).toEqual({ title: 'Your analysis board', moves: 1, reviewed: true })
-  })
-
-  it('is null without a game in progress', () => {
-    expect(currentGame(null)).toBeNull()
-    expect(currentGame(session('[White "Ann"]\n\n*'))).toBeNull()
   })
 })
 

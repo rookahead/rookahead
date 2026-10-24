@@ -2,7 +2,6 @@
 import { clockLabel } from './clock'
 import type { PlayedGame } from './games'
 import { levelInfo } from './levels'
-import type { Session } from './session'
 
 /** Full moves in a PGN (as players count them): the last move number in the movetext. */
 export function movesInPgn(pgn: string): number {
@@ -13,22 +12,6 @@ export function movesInPgn(pgn: string): number {
   let last = 0
   for (const m of movetext.matchAll(/(\d+)\.+/g)) last = Math.max(last, Number(m[1]))
   return last
-}
-
-/** The game open on the board (from the saved session), for the home page's "Continue" card. */
-export function currentGame(session: Session | null): { title: string; moves: number; reviewed: boolean } | null {
-  if (!session) return null
-  const moves = movesInPgn(session.pgn)
-  if (!moves) return null
-  const tag = (name: string) => /^\[(\w+) "(.*)"\]$/m.exec(session.pgn.split('\n').find((l) => l.startsWith(`[${name} `)) ?? '')?.[2]
-  const white = tag('White')
-  const black = tag('Black')
-  const named = (n?: string) => n && n !== '?'
-  return {
-    title: named(white) || named(black) ? `${named(white) ? white : 'White'} vs ${named(black) ? black : 'Black'}` : 'Your analysis board',
-    moves,
-    reviewed: Object.keys(session.evals ?? {}).length > 0,
-  }
 }
 
 /** The letter in a user's avatar. */
