@@ -640,13 +640,12 @@ svg {
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
-  /* The page beside it is flex: 1, so it resizes along with this. */
-  transition: flex-basis var(--side-t) var(--side-ease);
 }
 
 /*
- * The rail: the same panel at 72px. Icons, logo and avatar are placed so they sit on the
- * rail's centre line (36px) in both states; the words fade out and the width clips them.
+ * The rail: the same panel at 72px, at once (sliding it laid the page beside it out again on every frame,
+ * which stuttered). Icons, logo and avatar are placed so they sit on the rail's centre line (36px) in both
+ * states; the words fade out and the width clips them.
  */
 .sidebar.rail {
   flex-basis: 72px;
@@ -701,42 +700,37 @@ svg {
   letter-spacing: -0.02em;
 }
 
-/* The toggle sits at the right end of the name's row. */
-.sidebar-toggle {
+/* The toggle: a quiet row like the links, above the user card, the arrows at its right end (following the
+   sidebar's edge as it folds) and turning to point the other way on the rail, on the icons' line. */
+.sidebar .sidebar-toggle {
   flex: none;
-  margin-left: auto;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  width: 100%;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
 }
 
-.sidebar-toggle svg {
-  transition: transform var(--side-t) var(--side-ease);
-}
-
-/* On the rail the toggle sits on the logo (both centred on the rail's 36px line), out of sight until the
-   logo is pointed at or the toggle reached by keyboard; then the logo gives way to it. */
-.sidebar.rail .sidebar-toggle {
-  position: absolute;
-  left: 6px;
-  top: 3px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.sidebar.rail .sidebar-head:hover .sidebar-toggle,
-.sidebar.rail .sidebar-toggle:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
+.sidebar .sidebar-toggle:hover {
   background: var(--surface-3);
   color: var(--text);
 }
 
-.sidebar.rail .brand-logo {
-  transition: opacity 0.15s;
+.sidebar-toggle svg {
+  margin-left: auto;
+  transition: transform var(--side-t) var(--side-ease);
 }
 
-.sidebar.rail .sidebar-head:hover .brand-logo,
-.sidebar.rail .sidebar-head:has(.sidebar-toggle:focus-visible) .brand-logo {
-  opacity: 0;
+.sidebar-toggle .sidebar-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar.rail .sidebar-toggle {
+  gap: 0;
 }
 
 .sidebar.rail .sidebar-toggle svg {
@@ -4729,6 +4723,13 @@ a.see-all,
   background-color: transparent;
 }
 
+/* A guest's card folds from its buttons to an avatar on the rail: it keeps their height, the avatar at the
+   foot, so the collapse button above it stays where the pointer is. */
+.sidebar.rail .user-card.folded-guest {
+  min-height: 144px;
+  align-items: flex-end;
+}
+
 .user-avatar {
   flex-shrink: 0;
   width: 38px;
@@ -6011,6 +6012,7 @@ button.user-avatar.guest:hover {
     transform: translateY(10px);
   }
 }
+
 
 /* Browsers without view transitions: the page just fades in. A page kept mounted (Play, Analysis)
    restarts its fade each time it's shown, since [hidden] clears the animation. */

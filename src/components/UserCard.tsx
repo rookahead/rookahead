@@ -134,8 +134,9 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
       </div>
     )
   }
+  // A guest's buttons, folded on the rail: the card keeps their height (index.css).
   return (
-    <div className="user-card">
+    <div className={`user-card ${canSignUp ? 'folded-guest' : ''}`}>
       {avatar}
       {status === 'signed-in' && account ? (
         needsUsername ? (
