@@ -52,6 +52,10 @@ const pageOf = (pathname: string) => {
   return route === 'board' ? 'analysis' : route
 }
 let shownPage = typeof location === 'undefined' ? 'home' : pageOf(location.pathname)
+// The path the app shows. It moves on with the redraw, not with the address: a page that re-renders between the
+// two (a dialog closing) would otherwise switch pages early, before the view transition has taken its picture of
+// the page you're leaving, and the transition would then fade the new page into itself.
+let shownPath = typeof location === 'undefined' ? '/' : location.pathname
 
 /**
  * Tells the app the address changed (running `first` just before it redraws). Going to another page plays
@@ -63,6 +67,7 @@ function notify(first?: () => void) {
   shownPage = pageOf(location.pathname)
   const update = () => {
     first?.()
+    shownPath = location.pathname
     listeners.forEach((l) => l())
   }
   const animate =
@@ -111,7 +116,7 @@ export function usePathname(): string {
       listeners.add(l)
       return () => listeners.delete(l)
     },
-    () => location.pathname,
+    () => shownPath,
   )
 }
 
