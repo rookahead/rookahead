@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { StockfishEngine, type AnalysisResult, type EngineStrength } from '../engine/Engine'
+import { backUp, type DeepLine } from '../lib/backup'
 import { checkmatedScore, type Color } from '../lib/evaluation'
 import type { MoveNode } from '../lib/tree'
 import type { Score } from '../lib/uci'
@@ -138,6 +139,8 @@ export interface ReviewState {
   total: number
   /** Results keyed by FEN. */
   evals: Record<string, PositionEval>
+  /** After the first pass: the positions being searched deeper (backup.ts), so far and in all. */
+  checking?: { done: number; total: number }
 }
 
 /**
@@ -187,6 +190,30 @@ async function reviewSearch(eng: StockfishEngine, fen: string, depth: number, si
     })
     const [top, second] = result?.lines ?? []
     if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score }
+  }
+  return undefined
+}
+
+/** How much deeper than the review a position is searched when the game's continuation disagrees with it. */
+export const DEEPER = 4
+
+/** At most this many deeper searches per review, so a game of sacrifices can't hold it up for long. */
+const DEEP_BUDGET = 24
+
+/** A deeper look at one position for the back-up: its three best lines, same engine set-up as the review. */
+async function deepSearch(eng: StockfishEngine, fen: string, depth: number, signal: AbortSignal, live: () => boolean): Promise<DeepLine[] | undefined> {
+  for (let attempt = 0; attempt < 3 && live(); attempt++) {
+    const result = await eng.analyze({
+      fen,
+      multiPv: Math.min(3, legalMoveCount(fen)),
+      depth,
+      nodes: reviewNodeCap(depth),
+      threads: 1,
+      hashMb: REVIEW_HASH_MB,
+      fresh: true,
+      signal,
+    })
+    if (result?.lines.length) return result.lines.filter((l) => l.pv.length).map((l) => ({ move: l.pv[0], score: l.score, pv: l.pv }))
   }
   return undefined
 }
@@ -246,28 +273,53 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
 
       const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB }))
       const live = () => runId.current === id
-      let next = 0
+      const evals: Record<string, PositionEval> = {}
+      const deep: Record<string, DeepLine[]> = {}
 
-      const work = async (eng: StockfishEngine) => {
-        try {
-          await eng.ready
-        } catch {
-          return // A helper that fails to load just doesn't take part.
+      /** Hands `fens` out from one queue to every engine that loaded. */
+      const pool = async (fens: string[], each: (eng: StockfishEngine, fen: string) => Promise<void>) => {
+        let next = 0
+        const work = async (eng: StockfishEngine) => {
+          try {
+            await eng.ready
+          } catch {
+            return // A helper that fails to load just doesn't take part.
+          }
+          while (live() && next < fens.length) await each(eng, fens[next++])
         }
-        while (live() && next < line.length) {
-          const { fen } = line[next++]
-          const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
-          if (!live()) return
-          setState((s) => ({ ...s, progress: s.progress + 1, evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
-        }
+        await Promise.all([engine, ...helpers].map(work))
       }
 
       try {
-        await Promise.all([engine, ...helpers].map(work))
+        await pool(
+          line.map((n) => n.fen),
+          async (eng, fen) => {
+            const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
+            if (!live()) return
+            if (entry) evals[fen] = entry
+            setState((s) => ({ ...s, progress: s.progress + 1, evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
+          },
+        )
+        // Then the back-up: wherever the game's continuation disagrees with a position's own search,
+        // that position is searched deeper, until nothing new disagrees or the budget runs out.
+        let spent = 0
+        while (live() && spent < DEEP_BUDGET) {
+          const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent)
+          if (!todo.length) break
+          spent += todo.length
+          setState((s) => ({ ...s, checking: { done: 0, total: todo.length } }))
+          await pool(todo, async (eng, fen) => {
+            const lines = await deepSearch(eng, fen, depth + DEEPER, ctrl.signal, live)
+            if (!live()) return
+            // A search that failed is asked for again next round, within the budget.
+            if (lines) deep[fen] = lines
+            setState((s) => ({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
+          })
+        }
       } finally {
         helpers.forEach((h) => h.terminate())
       }
-      if (live()) setState((s) => ({ ...s, status: 'done', progress: line.length }))
+      if (live()) setState((s) => ({ ...s, status: 'done', progress: line.length, checking: undefined, evals: backUp(line, evals, deep).evals }))
     },
     [engine, ready, depth, strength],
   )

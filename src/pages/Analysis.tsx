@@ -26,7 +26,7 @@ import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
 import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
-import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
+import { DEEPER, depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
@@ -583,16 +583,21 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   let reviewBody: React.ReactNode
   if (review.status === 'running') {
-    const pct = Math.round((review.progress / Math.max(review.total, 1)) * 100)
+    // Then the moments where the eval jumps get a second, deeper look (backup.ts).
+    const { checking } = review
+    const pct = Math.round(checking ? (checking.done / Math.max(checking.total, 1)) * 100 : (review.progress / Math.max(review.total, 1)) * 100)
     reviewBody = (
       <>
-        <CoachCard title="Reviewing the game…" detail={`Stockfish is checking every move at depth ${settings.reviewDepth}.`}>
+        <CoachCard
+          title="Reviewing the game…"
+          detail={checking ? `Double-checking the sharp moments at depth ${settings.reviewDepth + DEEPER}.` : `Stockfish is checking every move at depth ${settings.reviewDepth}.`}
+        >
           <div className="review-progress">
             <div className="progress">
               <div className="progress-fill" style={{ width: `${pct}%` }} />
             </div>
             <span className="muted small">
-              {review.progress} of {review.total} positions
+              {checking ? `${checking.done} of ${checking.total} sharp moments` : `${review.progress} of ${review.total} positions`}
             </span>
             <button className="btn ghost small" onClick={cancelReview}>
               Cancel
