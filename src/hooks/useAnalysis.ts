@@ -283,7 +283,9 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
       controller.current = ctrl
       setState({ status: 'running', progress: 0, total: line.length, evals: {} })
 
-      const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB }))
+      // Helpers search on one thread anyway, so they use the build without shared memory: the threaded
+      // one reserves 2 GB apiece up front, more than phones will give a page.
+      const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB, singleThreaded: true }))
       const live = () => runId.current === id
       const evals: Record<string, PositionEval> = {}
       const deep: Record<string, DeepLine[]> = {}

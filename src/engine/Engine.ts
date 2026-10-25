@@ -134,8 +134,9 @@ export class StockfishEngine {
   private activeElo: number | null = null
   private activeSkill = 20
 
-  constructor(strength: EngineStrength, opts: { hashMb?: number; threads?: number } = {}) {
-    const multiThreaded = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated
+  /** `singleThreaded` picks the build without shared memory even where threads are available. */
+  constructor(strength: EngineStrength, opts: { hashMb?: number; threads?: number; singleThreaded?: boolean } = {}) {
+    const multiThreaded = !opts.singleThreaded && typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated
     const threads = multiThreaded ? Math.max(1, Math.min(opts.threads ?? autoThreads(), 32)) : 1
     this.strength = strength
     this.hashMb = opts.hashMb ?? 128

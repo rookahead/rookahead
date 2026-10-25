@@ -209,4 +209,13 @@ describe('StockfishEngine', () => {
     expect(engine.status).toMatchObject({ state: 'error', error: 'boom' })
     expect(states).toContain('error')
   })
+
+  it('uses the single-threaded build when asked, even where threads are available', async () => {
+    vi.stubGlobal('crossOriginIsolated', true)
+    const before = FakeWorker.created
+    const engine = new StockfishEngine('lite', { threads: 1, singleThreaded: true })
+    await engine.ready
+    expect(FakeWorker.created).toBe(before + 1)
+    expect(FakeWorker.last.url).toContain('stockfish-19-lite-single.js')
+  })
 })
