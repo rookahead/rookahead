@@ -28,6 +28,12 @@ export function winPercent(score: Score): number {
   return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
 }
 
+/** The White-POV score that gives White these winning chances: winPercent's inverse, within ±10 pawns. */
+export function scoreForWin(win: number): Score {
+  const cp = -Math.log(100 / Math.max(0.01, Math.min(99.99, win)) - 1) / 0.00368208
+  return { type: 'cp', value: Math.round(Math.max(-1000, Math.min(1000, cp))) }
+}
+
 /** "+1.24", "−0.50", "M3", "−M2", "0.00". Expects a White-POV score. */
 export function formatScore(score: Score): string {
   if (score.type === 'mate') {

@@ -6,6 +6,7 @@ import { cloudOpening } from './cloudEval'
 import { addLine, createTree, mainline, ROOT_ID, treeFromPgn, type MoveNode } from './tree'
 import type { Score } from './uci'
 import kasparov from './fixtures/backup-kasparov-topalov.json'
+import kasparovCloud from './fixtures/backup-kasparov-topalov-cloud.json'
 import melonlord from './fixtures/backup-melonlord.json'
 
 const cp = (value: number): Score => ({ type: 'cp', value })
@@ -19,9 +20,9 @@ function game(ucis: string[], entries: (Partial<PositionEval> & { score: Score }
 }
 
 /** A recorded review: the depth-16 evals, and the deeper searches the back-up asked for (depth 20). */
-function recorded(fx: { pgn: string; evals: unknown; deep: unknown }) {
+function recorded(fx: { pgn: string; evals: unknown; deep?: unknown }) {
   const line = mainline(treeFromPgn(fx.pgn).tree)
-  return { line, evals: fx.evals as Record<string, PositionEval>, deep: fx.deep as Record<string, DeepLine[]> }
+  return { line, evals: fx.evals as Record<string, PositionEval>, deep: (fx.deep ?? {}) as Record<string, DeepLine[]> }
 }
 
 const at = (line: MoveNode[], san: string, ply: number) => line.find((n) => n.san === san && n.ply === ply)!
@@ -55,13 +56,19 @@ describe('backing up the evals', () => {
       { score: cp(20), bestMove: 'd7d6' },
       { score: cp(600) },
     ])
-    const deep = { [line[3].fen]: [{ move: 'd7d6', score: cp(30), pv: ['d7d6'] }] }
+    const deep = {
+      [line[3].fen]: [
+        { move: 'd7d6', score: cp(30), pv: ['d7d6'] },
+        { move: 'b8c6', score: cp(550), pv: ['b8c6'] },
+      ],
+    }
     const { evals: backed, need } = backUp(line, evals, deep)
     expect(need).toEqual([])
     const report = classifyGame(line, backed)
     expect(report.moves[line[4].id]).toMatchObject({ cls: 'blunder', bestMove: 'd7d6' })
     expect(report.moves[line[3].id].cls).toBe('best')
-    expect(backed[line[3].fen].score).toEqual(cp(30))
+    // Worth the game's +6 less the gap that one search saw between the two moves (+5.5 against +0.3).
+    expect(backed[line[3].fen]).toMatchObject({ bestMove: 'd7d6', score: cp(49) })
   })
 
   it('takes a cloud eval as it is: it’s deeper than any search we would add', () => {
@@ -93,26 +100,47 @@ describe('backing up the evals', () => {
 })
 
 describe('Kasparov–Topalov, Wijk aan Zee 1999', () => {
-  const { line, evals, deep } = recorded(kasparov)
-  const backed = backUp(line, evals, deep)
-  const report = classifyGame(line, backed.evals)
-  const cls = (san: string, ply: number) => report.moves[at(line, san, ply).id].cls
+  const verdicts = (fx: { pgn: string; evals: unknown; deep?: unknown }) => {
+    const { line, evals, deep } = recorded(fx)
+    const backed = backUp(line, evals, deep)
+    const report = classifyGame(line, backed.evals)
+    return { need: backed.need, cls: (san: string, ply: number) => report.moves[at(line, san, ply).id].cls }
+  }
 
-  it('settles with the recorded deeper searches', () => {
-    expect(backed.need).toEqual([])
+  describe('from our own engine (depth 16, then 20)', () => {
+    const { need, cls } = verdicts(kasparov)
+
+    it('settles with the recorded deeper searches', () => {
+      expect(need).toEqual([])
+    })
+
+    it('no longer blames 36…Rd2, which was Best on a bogus 0.00', () => {
+      expect(['best', 'excellent']).toContain(cls('Rd2', 72))
+    })
+
+    it('stops calling forced moves in a lost position Clutch', () => {
+      expect(cls('Kxc3', 66)).toBe('best')
+      expect(cls('Kd2', 68)).toBe('best')
+      expect(cls('Kd1', 70)).toBe('best')
+    })
   })
 
-  it('puts the error where it was made: 24…cxd4, not 36…Rd2', () => {
-    // At depth 16 the eval only creeps up after 24…cxd4 (an inaccuracy), and 36…Rd2 was Best on a bogus 0.00.
-    expect(classifyGame(line, evals).moves[at(line, 'cxd4', 48).id].cls).toBe('inaccuracy')
-    expect(cls('cxd4', 48)).toBe('mistake')
-    expect(['best', 'excellent']).toContain(cls('Rd2', 72))
-  })
+  describe('from the Lichess cloud (depth 28 to 75)', () => {
+    const { need, cls } = verdicts(kasparovCloud)
 
-  it('stops calling forced moves in a lost position Clutch', () => {
-    expect(cls('Kxc3', 66)).toBe('best')
-    expect(cls('Kd2', 68)).toBe('best')
-    expect(cls('Kd1', 70)).toBe('best')
+    it('trusts the cloud: nothing to search deeper', () => {
+      expect(need).toEqual([])
+    })
+
+    it('finds the real error, 24…cxd4, and keeps 36…Rd2 Best', () => {
+      expect(cls('cxd4', 48)).toBe('blunder')
+      expect(cls('Rd2', 72)).toBe('best')
+      expect(['inaccuracy', 'mistake']).toContain(cls('Kxa3', 62))
+    })
+
+    it('marks the famous sacrifices Legendary', () => {
+      for (const [san, ply] of [['Rxd4', 47], ['Re7+', 49], ['Qxd4+', 51], ['Rxb7', 59], ['Bf1', 71]] as const) expect(cls(san, ply)).toBe('brilliant')
+    })
   })
 })
 

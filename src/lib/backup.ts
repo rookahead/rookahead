@@ -1,5 +1,5 @@
 import type { PositionEval } from '../hooks/useAnalysis'
-import { winPercent, type Color } from './evaluation'
+import { scoreForWin, winPercent, type Color } from './evaluation'
 import type { MoveNode } from './tree'
 import type { Score } from './uci'
 
@@ -39,6 +39,24 @@ const turnOf = (fen: string): Color => (fen.split(' ')[1] === 'b' ? 'black' : 'w
 const moverWin = (score: Score, color: Color) => (color === 'white' ? winPercent(score) : 100 - winPercent(score))
 
 /**
+ * The best other move from a deeper search. When the move played is among its lines too, the other move is
+ * worth the move played plus however much better that one search finds it: a search that close to a
+ * combination may misjudge both moves, but it misjudges them alike, so the gap between them is what it can
+ * vouch for, not its eval of the other move against the game's.
+ */
+function fromDeep(lines: DeepLine[], played: string, playedScore: Score, color: Color): DeepLine | null {
+  const ranked = [...lines].sort((a, b) => moverWin(b.score, color) - moverWin(a.score, color))
+  const best = ranked.find((l) => l.move !== played)
+  if (!best) return null
+  // Not even among the best lines: the search rules the move played out, and the game shows what it cost.
+  const mine = ranked.find((l) => l.move === played)
+  if (!mine) return best
+  const win = moverWin(playedScore, color) + moverWin(best.score, color) - moverWin(mine.score, color)
+  const score = win >= moverWin(best.score, color) ? best.score : scoreForWin(color === 'white' ? win : 100 - win)
+  return { ...best, score }
+}
+
+/**
  * Backs up `evals` along `line` (the main line, start position first), using the deeper searches in `deep`
  * (keyed by FEN, best line first). Positions that still want one are listed in `need`; until they're
  * searched, they keep what their own search said.
@@ -65,7 +83,7 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
     // A cloud eval (cloudEval.ts) is already far deeper than our deeper look would be: it stands as it is.
     if (!own.cloud && (Math.abs(gap) >= JUMP || (ownOther && gap >= SHORT))) {
       const lines = deep[parent.fen]
-      if (lines?.length) other = lines.filter((l) => l.move !== node.uci).sort((a, b) => moverWin(b.score, color) - moverWin(a.score, color))[0] ?? null
+      if (lines?.length) other = fromDeep(lines, node.uci, played, color)
       else need.push(parent.fen)
     }
 
