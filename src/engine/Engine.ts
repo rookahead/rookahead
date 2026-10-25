@@ -142,6 +142,7 @@ export class StockfishEngine {
     this.hashMb = opts.hashMb ?? 128
     this.status = { state: 'loading', threads, multiThreaded, progress: 0, restarts: 0 }
     this.ready = this.spawn()
+    this.ready.catch(() => {}) // A failure shows in the status.
     this.watchdog = setInterval(() => this.checkHealth(), 1000)
   }
 
@@ -153,12 +154,26 @@ export class StockfishEngine {
     this.waiters = []
     // Ignore anything a replaced worker still manages to send.
     worker.onmessage = (e) => this.worker === worker && this.onMessage(e.data)
-    worker.onerror = (e) => {
-      if (this.worker === worker) this.setStatus({ state: 'error', error: e.message || 'The engine failed to load.' })
-    }
-    return this.init().catch((err) => {
-      this.setStatus({ state: 'error', error: String(err) })
-      throw err
+    return new Promise<void>((resolve, reject) => {
+      worker.onerror = (e) => {
+        if (this.worker !== worker) return
+        // The threaded build reserves 2 GB of shared memory up front, which Safari on phones often
+        // refuses ("RangeError: Out of memory"). The single-threaded build grows as it needs.
+        if (this.status.state === 'loading' && this.status.multiThreaded) {
+          console.warn('[engine] threaded build failed to load; using the single-threaded one', e.message)
+          worker.terminate()
+          this.setStatus({ multiThreaded: false, threads: 1 })
+          this.spawn().then(resolve, reject)
+          return
+        }
+        const error = e.message || 'The engine failed to load.'
+        this.setStatus({ state: 'error', error })
+        reject(new Error(error))
+      }
+      this.init().then(resolve, (err) => {
+        this.setStatus({ state: 'error', error: String(err) })
+        reject(err)
+      })
     })
   }
 

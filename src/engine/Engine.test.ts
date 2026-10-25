@@ -9,6 +9,8 @@ class FakeWorker {
   static created = 0
   /** Simulate a wedged engine that never answers `stop`. */
   static ignoreStop = false
+  /** Simulate a browser that can't give the threaded build its shared memory. */
+  static threadedOutOfMemory = false
   onmessage: ((e: { data: string }) => void) | null = null
   onerror: ((e: unknown) => void) | null = null
   received: string[] = []
@@ -24,6 +26,10 @@ class FakeWorker {
   postMessage(cmd: unknown) {
     if (typeof cmd !== 'string') return
     this.received.push(cmd)
+    if (cmd === 'uci' && FakeWorker.threadedOutOfMemory && !this.url.includes('-single')) {
+      queueMicrotask(() => this.onerror?.({ message: 'RangeError: Out of memory' }))
+      return
+    }
     if (cmd === 'uci') queueMicrotask(() => this.emit('id name Stockfish 19 WASM', 'uciok'))
     if (cmd === 'isready') queueMicrotask(() => this.emit('readyok'))
     if (cmd.startsWith('go')) this.searching = true
@@ -54,6 +60,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
   FakeWorker.ignoreStop = false
+  FakeWorker.threadedOutOfMemory = false
 })
 
 describe('StockfishEngine', () => {
@@ -208,6 +215,17 @@ describe('StockfishEngine', () => {
     FakeWorker.last.onerror?.({ message: 'boom' })
     expect(engine.status).toMatchObject({ state: 'error', error: 'boom' })
     expect(states).toContain('error')
+    await expect(engine.ready).rejects.toThrow('boom')
+  })
+
+  it('falls back to the single-threaded build when the threaded one runs out of memory', async () => {
+    vi.stubGlobal('crossOriginIsolated', true)
+    FakeWorker.threadedOutOfMemory = true
+    const engine = new StockfishEngine('lite', { threads: 4 })
+    await engine.ready
+    expect(FakeWorker.last.url).toContain('stockfish-19-lite-single.js')
+    expect(engine.status).toMatchObject({ state: 'ready', multiThreaded: false, threads: 1 })
+    expect(FakeWorker.last.received).toContain('setoption name Threads value 1')
   })
 
   it('uses the single-threaded build when asked, even where threads are available', async () => {
