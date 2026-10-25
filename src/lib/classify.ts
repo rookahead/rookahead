@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 6
+export const RULES_VERSION = 7
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -386,7 +386,8 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       else cls = 'blunder'
 
       // The only move (Clutch): every other move gives up what we have, an advantage, a level game or a
-      // worse one that holds; another move that keeps even a little of an advantage leaves it no Clutch.
+      // worse one that holds, or would be a Blunder even where it keeps some advantage (+6.0 to +0.9).
+      // Another move that keeps most of an advantage leaves it no Clutch.
       // Or it's the only fast mate (the next-best move doesn't mate, or takes 3+ moves longer).
       // The only good move (for giving up the exchange): every alternative would be a mistake or worse,
       // short of leaving us clearly winning. A mating sacrifice only needs the fastest mate, 2+ moves
@@ -398,7 +399,7 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
         const worse = (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy
-        onlyMove = winAfter >= HOLDING && worse && standing(secondWin) < standing(winBefore)
+        onlyMove = winAfter >= HOLDING && worse && (standing(secondWin) < standing(winBefore) || (winBefore - secondWin) / 100 >= LOSS_BANDS.mistake)
         onlyGood = winAfter >= HOLDING && worse && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)

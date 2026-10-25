@@ -162,6 +162,10 @@ describe('Kasparov–Topalov, Wijk aan Zee 1999', () => {
       expect(cls('Qxh8', 77)).toBe('best')
     })
 
+    it('calls 27.b4+ Clutch: 27.Re6 keeps an edge, but falls from +6.0 to +0.9', () => {
+      expect(cls('b4+', 53)).toBe('great')
+    })
+
     it('marks the famous sacrifices Legendary', () => {
       for (const [san, ply] of [['Rxd4', 47], ['Re7+', 49], ['Qxd4+', 51], ['Rxb7', 59], ['Bf1', 71]] as const) expect(cls(san, ply)).toBe('brilliant')
     })

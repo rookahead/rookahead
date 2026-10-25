@@ -112,7 +112,9 @@ that promoted with check, where everything else is mated). Either of two ways:
 
 **The only move.** All of:
 1. It's the engine's top move.
-2. It's the only move: every other move gives up what you have.
+2. It's the only move: every other move gives up what you have, or would be a Blunder even where it
+   keeps some advantage (27.b4+ in Kasparov–Topalov: 27.Re6 still leaves White ahead, but falls from
+   +6.0 to +0.9).
 3. Afterwards you're level or better, or holding a worse game that isn't lost: 30% or more (about −2.3).
    Below that, it only loses more slowly.
 
@@ -149,6 +151,7 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | Advantage | 55% (about +0.5) |
 | Only move, only good move: second-best gives up at least | 10% |
 | …and doesn't still leave you at | 85% or more |
+| Only move (Clutch), even keeping an advantage: second-best gives up at least | 20% (a Blunder) |
 | Level or better | 45% (about −0.5) |
 | Holding, not lost (Clutch) | 30% (about −2.3) |
 | Legendary: loss at most | 3.5% |
