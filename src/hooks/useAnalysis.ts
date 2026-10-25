@@ -287,6 +287,9 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
       const live = () => runId.current === id
       const evals: Record<string, PositionEval> = {}
       const deep: Record<string, DeepLine[]> = {}
+      // How long each position's own search took. The deeper searches go slowest first, so the last
+      // one to finish isn't a long one running alone while the other engines sit idle.
+      const took = new Map<string, number>()
 
       /** Hands `fens` out from one queue to every engine that loaded. */
       const pool = async (fens: string[], each: (eng: StockfishEngine, fen: string) => Promise<void>) => {
@@ -329,7 +332,9 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
           line.map((n) => n.fen).reverse(),
           async (eng, fen) => {
             if (done.has(fen)) return
+            const began = performance.now()
             const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
+            took.set(fen, performance.now() - began)
             // The cloud's eval, if it came meanwhile, is the deeper one.
             if (live() && !evals[fen]?.cloud) found(fen, entry)
           },
@@ -344,7 +349,7 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
         // that position is searched deeper, until nothing new disagrees or the budget runs out.
         let spent = 0
         while (live() && spent < DEEP_BUDGET) {
-          const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent)
+          const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent).sort((a, b) => (took.get(b) ?? 0) - (took.get(a) ?? 0))
           if (!todo.length) break
           spent += todo.length
           setState((s) => ({ ...s, checking: { done: 0, total: todo.length } }))
