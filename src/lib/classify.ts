@@ -175,8 +175,28 @@ export function sacrifice(beforeFen: string, afterFen: string, pv: string[], col
   return sacrificeDetail(beforeFen, afterFen, pv, color, expected, stillHanging, olderFen)?.kind ?? null
 }
 
+type SacrificeDetail = { kind: Sacrifice; declined: boolean } | null
+
+/**
+ * Answers already worked out. A review re-grades the whole game each time a position comes in, and
+ * this check (all of chess.js's verbose move generation) is most of the cost: on a long game, enough
+ * to stall the board mid-slide.
+ */
+const sacrifices = new Map<string, SacrificeDetail>()
+const SACRIFICES_KEPT = 4000
+
 /** `sacrifice`, also saying whether the opponent's best line declines it (it can't safely be taken). */
-function sacrificeDetail(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number, stillHanging: boolean, olderFen?: string): { kind: Sacrifice; declined: boolean } | null {
+function sacrificeDetail(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number, stillHanging: boolean, olderFen?: string): SacrificeDetail {
+  // The engine's line is read four plies deep at most (acceptedSacrifice).
+  const key = [beforeFen, afterFen, pv.slice(0, 4).join(' '), color, expected, stillHanging, olderFen].join('|')
+  if (sacrifices.has(key)) return sacrifices.get(key)!
+  if (sacrifices.size >= SACRIFICES_KEPT) sacrifices.clear()
+  const detail = findSacrifice(beforeFen, afterFen, pv, color, expected, stillHanging, olderFen)
+  sacrifices.set(key, detail)
+  return detail
+}
+
+function findSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected: number, stillHanging: boolean, olderFen?: string): SacrificeDetail {
   const us = color === 'white' ? 'w' : 'b'
   const before = new Chess(beforeFen)
   const older = olderFen ? new Chess(olderFen) : null
