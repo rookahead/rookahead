@@ -42,7 +42,7 @@ import { useImmersive } from '../lib/immersive'
 import { sendVerdictReport } from '../lib/reports'
 import { navigate } from '../lib/router'
 import { readSession, writeSession, type Session } from '../lib/session'
-import type { Settings } from '../lib/settings'
+import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
 import { clampPly, decodeShare, encodeShare, fromSharedGame, parseShareHash, toSharedGame, type ShareError } from '../lib/share'
 import {
   addLine,
@@ -511,6 +511,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     return () => window.removeEventListener('keydown', onKey)
   }, [active, goPrev, goNext, goStart, goEnd, flip])
 
+  const muted = settings.soundVolume === 0
   const material = useMemo(() => materialState(node.fen), [node.fen])
   const turn: Color = node.fen.split(' ')[1] === 'b' ? 'black' : 'white'
   const result = headers.Result && headers.Result !== '*' ? headers.Result : undefined
@@ -812,6 +813,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   return (
     <div className="analysis-page">
       <PageHeader
+        // Desktop has the title and actions in the panel's own header, so the board gets the height.
+        phoneOnly
         title={blank ? 'Analysis board' : 'Game review'}
         back="/games"
         phoneTitle={hasGame ? `${headers.White || 'White'} vs ${headers.Black || 'Black'}` : blank ? 'Analysis board' : 'Game review'}
@@ -864,6 +867,34 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           <aside className="panel">
             {banner && <ShareBanner kind={banner} onLoadGame={() => setLoadOpen(true)} onClose={() => setBanner(null)} />}
             <div className="panel-card">
+              {!phone && (
+                <div className="panel-top">
+                  <h1 className="panel-title">{blank ? 'Analysis board' : 'Game review'}</h1>
+                  <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
+                    <svg viewBox="0 0 24 24" aria-hidden>
+                      <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />
+                    </svg>
+                  </button>
+                  <button
+                    className="icon-btn"
+                    onClick={() => updateSettings({ soundVolume: muted ? DEFAULT_SETTINGS.soundVolume : 0 })}
+                    aria-label={muted ? 'Sounds on' : 'Sounds off'}
+                    title={muted ? 'Sounds on' : 'Sounds off'}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden>
+                      <path d={muted ? 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5' : 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'} />
+                    </svg>
+                  </button>
+                  {line.length > 1 && (
+                    <button className="icon-btn" onClick={() => setShareOpen(true)} aria-label="Share game" title="Share game">
+                      <svg viewBox="0 0 24 24" aria-hidden>
+                        <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+                      </svg>
+                    </button>
+                  )}
+                  <BoardMenu placement="down" noFlip onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />
+                </div>
+              )}
               <header className="panel-header">
                 {phone ? (
                   <PhoneViews
@@ -957,7 +988,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
                   <NavIcon name="last" />
                 </button>
-                {!phone && <BoardMenu onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
               </nav>
             </div>
           </aside>

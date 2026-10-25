@@ -7,6 +7,8 @@ interface Props {
   onSettings: () => void
   /** Which way the list opens: up from the move controls (the default), or down from a page header. */
   placement?: 'up' | 'down'
+  /** Leave Flip out: it has a button of its own beside the menu. */
+  noFlip?: boolean
 }
 
 const ITEMS = [
@@ -44,7 +46,7 @@ const ITEMS = [
 ] as const
 
 /** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
-export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up' }: Props) {
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up', noFlip = false }: Props) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -70,7 +72,7 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placemen
       </button>
       {open && (
         <div className="board-menu-list" role="menu">
-          {ITEMS.map((item) => (
+          {ITEMS.filter((item) => !noFlip || item.id !== 'flip').map((item) => (
             <button
               key={item.id}
               role="menuitem"

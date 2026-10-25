@@ -951,6 +951,14 @@ svg {
   padding: var(--pad-y) var(--pad-x);
 }
 
+/* Desktop: no bar above the review page (its title and actions are in the panel), so the board
+   gets that height too. */
+@media (min-width: 1001px) {
+  .analysis-page .layout {
+    --nav-h: 0px;
+  }
+}
+
 /* Wide screens give the review's panel more room: the coach, the report and the move list. */
 @media (min-width: 1700px) {
   .analysis-page .layout {
@@ -1771,6 +1779,39 @@ svg {
   overflow: hidden;
 }
 
+/* Desktop: the page's title and the board's quick actions, at the top of the panel (as on the
+   page's own bar elsewhere, which the review page gives up so the board gets the height). */
+.panel-top {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 8px 0 18px;
+}
+
+.panel-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.panel-top .icon-btn:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+.panel-top .icon-btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .panel-header {
   flex-shrink: 0;
   display: flex;
@@ -1985,7 +2026,7 @@ svg {
 .panel-nav {
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) 50px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   padding: 10px;
   border-top: 1px solid var(--border);
