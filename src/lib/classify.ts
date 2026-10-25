@@ -393,7 +393,11 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // the only good move. Or a sacrifice that is the fastest mate. Leaving a piece that already hung en
       // prise again counts only when the move is the only good one.
       const gradable = cls === 'best' || cls === 'excellent' || cls === 'good'
-      const sac = gradable ? sacrificeDetail(parent.fen, node.fen, after.pv, color, moverPawns(before.score, color), onlyGood, line[i - 2]?.fen) : null
+      const offered = (pv: string[]) => sacrificeDetail(parent.fen, node.fen, pv, color, moverPawns(before.score, color), onlyGood, line[i - 2]?.fen)
+      // Where the game went the engine's way, its own moves have to show the sacrifice too: the engine's line
+      // may throw in a check that gives more up (22.Nd5 Nbxd5 23.Nc6+ Bxc6), where the game just took back.
+      const played = line.slice(i + 1, i + 5).flatMap((n) => (n.uci ? [n.uci] : []))
+      const sac = gradable ? offered(after.pv) && (played[0] !== after.pv[0] || played.length < 2 ? offered(after.pv) : offered(played)) : null
       const mates = after.score.type === 'mate' && after.score.value === 0
       const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
       if (soundSac || (sac !== null && fastestMate)) {

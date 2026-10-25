@@ -353,6 +353,23 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('best')
   })
 
+  it('takes the game\'s word over the engine\'s line when the game went the engine\'s way', () => {
+    // Kasparov–Topalov: 22.Nd5 Nbxd5 23.exd5 just takes back; the Lite engine's line had 23.Nc6+ Bxc6 first.
+    const start = 'b2r3r/k3qp1p/pn3np1/Npp5/3pPQ2/P1N2PPB/1PP4P/1K1RR3 w - - 0 22'
+    const nd5 = (ucis: string[]) => {
+      const { line, evals } = game(ucis, [
+        { score: cp(-38), bestMove: 'c3d5', second: cp(-69) },
+        { score: cp(-38), bestMove: 'b6d5', pv: ['b6d5', 'a5c6', 'a8c6', 'e4d5'] },
+        { score: cp(-38), bestMove: 'e4d5' },
+        { score: cp(-38) },
+      ], start)
+      return classifyGame(line, evals).moves[line[1].id].cls
+    }
+    expect(nd5(['c3d5', 'b6d5', 'e4d5'])).toBe('best')
+    // Where the game did follow the engine's line, it's a sacrifice.
+    expect(nd5(['c3d5', 'b6d5', 'a5c6'])).toBe('brilliant')
+  })
+
   it('counts a capture that leaves something bigger to be taken as a sacrifice', () => {
     // 1.Bxb4 takes a knight but opens the d-file: 1…Rxd1+ takes the queen instead of the bishop.
     expect(sacrifice('3r2k1/8/8/8/1n6/8/3B4/3QK3 w - - 0 1', '3r2k1/8/8/8/1B6/8/8/3QK3 b - - 0 1', ['d8d1'], 'white')).toBe('material')

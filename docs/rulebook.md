@@ -38,6 +38,10 @@ counts however obvious it is.
     take, or takeable by something cheaper) and the opponent does best not to take it. Winning it back a
     few moves later through a tactic still counts. So does ignoring a piece the opponent has just
     attacked and playing something else.
+  - Where the game went the engine's way (the opponent answered as the engine expected), the game's own
+    moves have to show the sacrifice too. The engine's line may throw in a check that gives more away,
+    where the player simply took back: 22.Nd5 Nbxd5 (Kasparov–Topalov) is a trade, because the game went
+    23.exd5, though the Lite engine's line had 23.Nc6+ Bxc6 first.
   - Taken at once means the opponent's line goes straight for it, capturing from its first move. If they
     play a quiet move first, the move didn't offer anything: they had to set up the attack, and you chose
     not to answer it. 23.g4 (Rudra_Yagami vs MelonLord-009) isn't a sacrifice of the g5 knight, which
