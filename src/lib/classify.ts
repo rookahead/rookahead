@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 7
+export const RULES_VERSION = 8
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -236,6 +236,7 @@ function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], co
   // Only a rook lost, for less than a minor piece's worth: the exchange.
   const kind = (): Sacrifice => (taken.length === 1 && taken[0] === 'r' && material - balance() < 3 ? 'exchange' : 'material')
   let pieceTaken = false
+  let takerFrom: Square | null = null // where the opponent's last capture came from
   for (const uci of pv.slice(0, 4)) {
     let move
     try {
@@ -251,15 +252,33 @@ function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], co
     // The opponent has to go straight for it: a quiet move first means they had to set up the attack,
     // so whatever they win later, this move didn't offer it (23.g4 Be7 24.Kb1 Bxg5).
     if (!ours && !move.captured && !pieceTaken) return null
-    if (!ours && move.captured) taken.push(move.captured)
-    // Our next move doesn't take back as much (still a pawn or more behind): a sacrifice. All of it: a trade.
-    if (ours && pieceTaken) return balance() <= baseline - 1 ? kind() : null
+    if (!ours && move.captured) {
+      taken.push(move.captured)
+      takerFrom = move.from
+    }
+    // Our next move doesn't take back as much (still a pawn or more behind): a sacrifice. All of it: a trade,
+    // unless it takes back through the square the taker left: the sacrifice pulled it off that line
+    // (11…Nxg3 12.hxg3 Qxh1, the h2 pawn deflected from between the queen and the rook).
+    if (ours && pieceTaken) return balance() <= baseline - 1 || (move.captured && takerFrom && crosses(move.from, move.to, takerFrom)) ? kind() : null
     // Once the mover captures something itself, a new exchange begins: what's lost after it
     // belongs to that move, not this one (8…Bxc3 9.Bxc3 Nxe4 10.Qxe4: the knight is 9…Nxe4's).
     if (ours && move.captured) return null
     if (!ours && move.captured && down()) pieceTaken = true
   }
   return pieceTaken ? kind() : null
+}
+
+/** Does a straight or diagonal move from `from` to `to` pass over `sq` (between them, not on either end)? */
+function crosses(from: Square, to: Square, sq: Square): boolean {
+  const xy = (s: Square) => [s.charCodeAt(0) - 97, Number(s[1]) - 1]
+  const [fx, fy] = xy(from)
+  const [tx, ty] = xy(to)
+  const dx = Math.sign(tx - fx)
+  const dy = Math.sign(ty - fy)
+  if (fx !== tx && fy !== ty && Math.abs(tx - fx) !== Math.abs(ty - fy)) return false // a knight's jump
+  const [sx, sy] = xy(sq)
+  for (let x = fx + dx, y = fy + dy; x !== tx || y !== ty; x += dx, y += dy) if (x === sx && y === sy) return true
+  return false
 }
 
 /** The cheapest piece on `squares`, by value; the king can only take an undefended piece, so it counts as dearest. */

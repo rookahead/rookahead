@@ -6,7 +6,10 @@ import { CLASS_INFO, classifyGame, gameAccuracy, isSacrifice, materialBalance, m
 import { moveDetail, moveHeadline } from './commentary'
 import { materialState } from './material'
 import { makeBook, openingOf } from './openings'
-import { addLine, createTree, mainline, ROOT_ID } from './tree'
+import { addLine, createTree, mainline, ROOT_ID, treeFromPgn } from './tree'
+import { backUp, type DeepLine } from './backup'
+import type { PositionEval } from '../hooks/useAnalysis'
+import centerGame from './fixtures/backup-melonlord-center-game.json'
 import type { Score } from './uci'
 
 const cp = (value: number): Score => ({ type: 'cp', value })
@@ -465,6 +468,18 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(isSacrifice('4k2r/7p/8/8/8/3B4/8/4K2Q w - - 0 1', '4k2r/7B/8/8/8/8/8/4K2Q b - - 0 1', ['h8h7', 'h1h7'], 'white')).toBe(false)
   })
 
+  it('counts a piece that pulls the taker off a line as a sacrifice, though it comes straight back', () => {
+    // 11…Nxg3 12.hxg3 Qxh1: the h2 pawn stood between the queen and the rook (HNasser96–MelonLord-009).
+    const before = 'r1b2rk1/ppp2ppp/2n5/3P3n/7q/P1N2PP1/1PP4P/R1BQKB1R b KQ - 0 11'
+    const after = 'r1b2rk1/ppp2ppp/2n5/3P4/7q/P1N2Pn1/1PP4P/R1BQKB1R w KQ - 0 12'
+    expect(sacrifice(before, after, ['h2g3', 'h4h1'], 'black')).toBe('material')
+  })
+
+  it('does not count winning something back elsewhere, that was there to take all along', () => {
+    // 1.Nxe5 dxe5 2.Qxa4: the rook on a4 could have been taken at once; the knight bought nothing.
+    expect(isSacrifice('4k3/8/3p4/4p3/r7/5N2/8/3QK3 w - - 0 1', '4k3/8/3p4/4N3/r7/8/8/3QK3 b - - 0 1', ['d6e5', 'd1a4'], 'white')).toBe(false)
+  })
+
   it('counts a piece given for two pawns as a sacrifice', () => {
     // 1.Nxe5 dxe5 2.Qxe5: a knight for two pawns, a pawn short, like 9.Rxf5 exf5 10.Nxf7.
     expect(isSacrifice('4k3/8/3p4/4p3/8/5N2/4Q3/4K3 w - - 0 1', '4k3/8/3p4/4N3/8/8/4Q3/4K3 b - - 0 1', ['d6e5', 'e2e5'], 'white')).toBe(true)
@@ -675,5 +690,19 @@ describe('withClasses', () => {
     expect(out.counts.white.brilliant).toBe(report.counts.white.brilliant + 1)
     expect(out.accuracy).toEqual(report.accuracy)
     expect(report.moves[third].cls).toBe('best')
+  })
+})
+
+describe('a deflection', () => {
+  it('marks 11…Nxg3 Legendary: 12.hxg3 opens the h-file to the h1 rook, and anything else loses it too', () => {
+    const { line, evals, deep } = (() => {
+      const fx = centerGame as { pgn: string; evals: Record<string, PositionEval>; deep: Record<string, DeepLine[]> }
+      return { line: mainline(treeFromPgn(fx.pgn).tree), evals: fx.evals, deep: fx.deep }
+    })()
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    const at = (san: string, ply: number) => report.moves[line.find((n) => n.san === san && n.ply === ply)!.id].cls
+    expect(at('Nxg3', 22)).toBe('brilliant')
+    // 12…Qxh1 itself only takes the rook back.
+    expect(at('Qxh1', 24)).not.toBe('brilliant')
   })
 })

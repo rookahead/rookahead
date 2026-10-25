@@ -38,6 +38,11 @@ counts however obvious it is.
     take, or takeable by something cheaper) and the opponent does best not to take it. Winning it back a
     few moves later through a tactic still counts. So does ignoring a piece the opponent has just
     attacked and playing something else.
+  - **A deflection counts, even when the material comes straight back.** If the piece that takes yours
+    stood in the way, and your next move takes back through the square it left, the sacrifice is what
+    opened the line: 11…Nxg3 12.hxg3 Qxh1 pulls the h2 pawn off the h-file and wins the rook behind it
+    (and if White doesn't take, 12…Nxh1 wins it anyway). Taking back something you could have taken
+    all along isn't: 1.Nxe5 dxe5 2.Qxa4, when the rook on a4 was there for the taking before.
   - Where the game went the engine's way (the opponent answered as the engine expected), the game's own
     moves have to show the sacrifice too. The engine's line may throw in a check that gives more away,
     where the player simply took back: 22.Nd5 Nbxd5 (Kasparov–Topalov) is a trade, because the game went

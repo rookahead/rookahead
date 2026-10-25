@@ -215,7 +215,7 @@ describe('an ordinary game', () => {
     const report = classifyGame(line, backed.evals)
     expect(report.moves[at(line, 'Qg2+', 30).id]).toMatchObject({ cls: 'mistake', bestMove: 'h3f1' })
     expect(report.moves[at(line, 'Ne2', 31).id].cls).toBe('blunder')
-    expect(report.moves[at(line, 'Nxg3', 22).id].cls).toBe('great')
+    expect(report.moves[at(line, 'Nxg3', 22).id].cls).toBe('brilliant')
   })
 })
 
