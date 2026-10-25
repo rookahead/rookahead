@@ -16,6 +16,9 @@ export const NAGS: Partial<Record<MoveClass, string>> = {
 
 const MAX_LINE = 80
 
+/** The standard's seven tags, first and in this order, with its placeholders for what isn't known. */
+const ROSTER: PgnHeaders = { Event: '?', Site: '?', Date: '????.??.??', Round: '?', White: '?', Black: '?', Result: '*' }
+
 /** Seconds → "h:mm:ss", keeping tenths when the clock has them. */
 function formatClock(seconds: number): string {
   const tenths = Math.round(seconds * 10)
@@ -29,7 +32,7 @@ function formatClock(seconds: number): string {
 const escapeTag = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 
 export function exportPgn(line: MoveNode[], headers: PgnHeaders, opts: { classes?: Record<string, MoveClass> | null; clocks: boolean }): string {
-  const tags: PgnHeaders = { ...headers }
+  const tags: PgnHeaders = { ...ROSTER, ...headers }
   const startFen = line[0].fen
   if (startFen !== DEFAULT_POSITION) {
     tags.SetUp = '1'

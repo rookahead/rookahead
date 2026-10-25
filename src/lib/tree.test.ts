@@ -93,6 +93,11 @@ describe('PGN import', () => {
     expect(tree.nodes[ROOT_ID].ply).toBe(0)
   })
 
+  it('leaves out the tags chess.js fills in with question marks', () => {
+    const { headers } = treeFromPgn(`[White "alice"]\n\n1. e4 *`)
+    expect(headers).toEqual({ White: 'alice', Result: '*' })
+  })
+
   it('throws on garbage', () => {
     expect(() => treeFromPgn('1. e4 e5 2. Ke3 Qh4')).toThrow()
   })

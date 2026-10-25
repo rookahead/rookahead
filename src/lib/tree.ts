@@ -177,8 +177,9 @@ export interface ImportedGame {
 export function treeFromPgn(pgn: string): ImportedGame {
   const chess = new Chess()
   chess.loadPgn(pgn.trim())
+  // chess.js fills the tags a PGN leaves out with "?" (and the date with "????.??.??"): they'd show as names.
   const headers = Object.fromEntries(
-    Object.entries(chess.getHeaders()).filter((e): e is [string, string] => typeof e[1] === 'string'),
+    Object.entries(chess.getHeaders()).filter((e): e is [string, string] => typeof e[1] === 'string' && !/^[?.]+$/.test(e[1])),
   )
   const history = chess.history({ verbose: true })
   const startFen = headers.FEN && headers.SetUp !== '0' ? headers.FEN : (history[0]?.before ?? DEFAULT_POSITION)
