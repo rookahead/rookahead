@@ -71,6 +71,25 @@ describe('backing up the evals', () => {
     expect(backed[line[3].fen]).toMatchObject({ bestMove: 'd7d6', score: cp(49) })
   })
 
+  it('blames only by the smallest gap any search that ranks both moves sees', () => {
+    // The review's own search has 2…Nc6 nearly as good as 2…d6; a deeper one thinks it loses 5 pawns more.
+    const { line, evals } = game(UCIS, [
+      { score: cp(20), bestMove: 'e2e4' },
+      { score: cp(20), bestMove: 'e7e5' },
+      { score: cp(20), bestMove: 'g1f3' },
+      { score: cp(20), bestMove: 'd7d6', second: cp(35), secondMove: 'b8c6' },
+      { score: cp(600) },
+    ])
+    const deep = {
+      [line[3].fen]: [
+        { move: 'd7d6', score: cp(30), pv: ['d7d6'] },
+        { move: 'b8c6', score: cp(550), pv: ['b8c6'] },
+      ],
+    }
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    expect(report.moves[line[4].id]).toMatchObject({ cls: 'excellent', bestMove: 'd7d6' })
+  })
+
   it('takes a cloud eval as it is: it’s deeper than any search we would add', () => {
     const { line, evals } = game(UCIS, [
       { score: cp(20), bestMove: 'e2e4', cloud: true },
@@ -132,10 +151,11 @@ describe('Kasparov–Topalov, Wijk aan Zee 1999', () => {
       expect(need).toEqual([])
     })
 
-    it('finds the real error, 24…cxd4, and keeps 36…Rd2 Best', () => {
+    it('finds the real error, 24…cxd4, keeps 36…Rd2 Best and 31…Kxa3 a small slip', () => {
       expect(cls('cxd4', 48)).toBe('blunder')
       expect(cls('Rd2', 72)).toBe('best')
-      expect(['inaccuracy', 'mistake']).toContain(cls('Kxa3', 62))
+      // 31…Kxa3 gave up only what the cloud itself sees between it and 31…Rd1+ (+3.04 against +2.47).
+      expect(['good', 'inaccuracy']).toContain(cls('Kxa3', 62))
     })
 
     it('marks the famous sacrifices Legendary', () => {

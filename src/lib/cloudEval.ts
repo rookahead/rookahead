@@ -37,7 +37,7 @@ export async function cloudEval(fen: string, signal: AbortSignal): Promise<Posit
     const [top, second] = data.pvs ?? []
     if (!top || data.depth < MIN_DEPTH) return null
     const pv = top.moves.split(' ')
-    return { score: scoreOf(top), bestMove: pv[0], pv, depth: data.depth, second: second && scoreOf(second), cloud: true }
+    return { score: scoreOf(top), bestMove: pv[0], pv, depth: data.depth, second: second && scoreOf(second), secondMove: second?.moves.split(' ')[0], cloud: true }
   } catch {
     return 'stop'
   }

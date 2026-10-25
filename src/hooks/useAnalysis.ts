@@ -15,6 +15,8 @@ export interface PositionEval {
   depth: number
   /** Score of the second-best move (the review runs MultiPV 2, for "great move" detection). */
   second?: Score
+  /** The second-best move itself. */
+  secondMove?: string
   /** From Lichess's cloud evals (cloudEval.ts) rather than the review's own search. */
   cloud?: boolean
 }
@@ -196,7 +198,7 @@ async function reviewSearch(eng: StockfishEngine, fen: string, depth: number, si
       signal,
     })
     const [top, second] = result?.lines ?? []
-    if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score }
+    if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score, secondMove: second?.pv[0] }
   }
   return undefined
 }
