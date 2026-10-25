@@ -14,6 +14,11 @@ counts however obvious it is.
   about +1 is 59%, +3 is 75%, a forced mate is 100%. Lichess's open curve, the same one as the eval bar.
 - **Loss**: how much winning chance a move gives up compared with the engine's best move in that position.
   A move the engine rates as good as its own (or better) loses nothing.
+- **Standing**: what the position is for you: an advantage (55% or more, about +0.5), level (45% or
+  more), worse but holding (30% or more, about −2.3), or lost.
+- **Only move**: the second-best move gives up at least 10% winning chance and leaves you a step down:
+  an advantage gone, a level game worse, a worse game lost. Another move that keeps even a little of an
+  advantage means it isn't the only move: 39.Qxh8 taking a rook isn't, when 39.Qc2 still keeps +2.8.
 - **Only good move**: the second-best move gives up at least 10% winning chance, and doesn't still leave
   you clearly winning (85% or more).
 - **Only fast mate**: the move starts a forced mate in 2 or more, and the next-best move doesn't mate or
@@ -101,9 +106,9 @@ capture, or an attacked piece moved to its one safe square, counts when nothing 
 taking a knight left on b4; 9.Bb3, the bishop's only safe square after 8…b5; 54.Rxb1, taking a queen
 that promoted with check, where everything else is mated). Either of two ways:
 
-**The only good move.** All of:
+**The only move.** All of:
 1. It's the engine's top move.
-2. It's the only good move.
+2. It's the only move: every other move gives up what you have.
 3. Afterwards you're level or better, or holding a worse game that isn't lost: 30% or more (about −2.3).
    Below that, it only loses more slowly.
 
@@ -137,7 +142,8 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | Line | Value |
 | --- | --- |
 | Material already lost: eval below material by | 2 pawns or more |
-| Only good move: second-best gives up at least | 10% |
+| Advantage | 55% (about +0.5) |
+| Only move, only good move: second-best gives up at least | 10% |
 | …and doesn't still leave you at | 85% or more |
 | Level or better | 45% (about −0.5) |
 | Holding, not lost (Clutch) | 30% (about −2.3) |

@@ -158,6 +158,10 @@ describe('Kasparov–Topalov, Wijk aan Zee 1999', () => {
       expect(['good', 'inaccuracy']).toContain(cls('Kxa3', 62))
     })
 
+    it('calls 39.Qxh8 Best, not Clutch: 39.Qc2 would still keep White well ahead', () => {
+      expect(cls('Qxh8', 77)).toBe('best')
+    })
+
     it('marks the famous sacrifices Legendary', () => {
       for (const [san, ply] of [['Rxd4', 47], ['Re7+', 49], ['Qxd4+', 51], ['Rxb7', 59], ['Bf1', 71]] as const) expect(cls(san, ply)).toBe('brilliant')
     })

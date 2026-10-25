@@ -62,13 +62,19 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 5
+export const RULES_VERSION = 6
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
 
 /** Clutch also counts holding a worse game that isn't lost: about −2.3 or better. */
 const HOLDING = 30
+
+/** An advantage, however small: about +0.5 or better (the mirror of HOLDS). */
+const ADVANTAGE = 55
+
+/** What a position is for the side to move: an advantage (3), level (2), worse but holding (1) or lost (0). */
+const standing = (win: number) => (win >= ADVANTAGE ? 3 : win >= HOLDS ? 2 : win >= HOLDING ? 1 : 0)
 
 /** What the review engine reported for one position. */
 export interface ReviewedPosition {
@@ -359,16 +365,21 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       else if (loss < LOSS_BANDS.mistake) cls = 'mistake'
       else cls = 'blunder'
 
-      // The only move that works: it keeps us level or better, or holds a worse game that isn't lost,
-      // and every alternative would be a mistake or worse; or it's the only fast mate (the next-best
-      // move doesn't mate, or takes 3+ moves longer). A mating sacrifice only needs the fastest mate,
-      // 2+ moves ahead of the next-best.
+      // The only move (Clutch): every other move gives up what we have, an advantage, a level game or a
+      // worse one that holds; another move that keeps even a little of an advantage leaves it no Clutch.
+      // Or it's the only fast mate (the next-best move doesn't mate, or takes 3+ moves longer).
+      // The only good move (for giving up the exchange): every alternative would be a mistake or worse,
+      // short of leaving us clearly winning. A mating sacrifice only needs the fastest mate, 2+ moves
+      // ahead of the next-best.
+      let onlyMove = false
       let onlyGood = false
       let onlyMate = false
       let fastestMate = false
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
-        onlyGood = winAfter >= HOLDING && (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy && secondWin < 85
+        const worse = (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy
+        onlyMove = winAfter >= HOLDING && worse && standing(secondWin) < standing(winBefore)
+        onlyGood = winAfter >= HOLDING && worse && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)
         onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)
@@ -387,7 +398,7 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
       if (soundSac || (sac !== null && fastestMate)) {
         cls = 'brilliant'
-      } else if ((onlyGood || onlyMate) && !mates && !takesBack(line[i - 2], parent, node, color)) {
+      } else if ((onlyMove || onlyMate) && !mates && !takesBack(line[i - 2], parent, node, color)) {
         // Clutch: the only move, however obvious (a free capture, an attacked piece to its one safe
         // square), but not taking back what the opponent just took, and not the mating move itself.
         cls = 'great'

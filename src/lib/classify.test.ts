@@ -347,6 +347,12 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('great')
   })
 
+  it('calls no move "great" while another one keeps an advantage too', () => {
+    // 5.Bd2 keeps +1.85, and here the next-best way out of check still keeps +0.70.
+    const { line, evals } = game(['f4d2'], [{ score: cp(185), bestMove: 'f4d2', second: cp(70) }, { score: cp(174) }], 'r1b1kbnr/pppp1ppp/2n5/4P3/1q3B2/5N2/PPP1PPPP/RN1QKB1R w KQkq - 5 5')
+    expect(classifyGame(line, evals).moves[line[1].id].cls).toBe('best')
+  })
+
   it('counts a capture that leaves something bigger to be taken as a sacrifice', () => {
     // 1.Bxb4 takes a knight but opens the d-file: 1…Rxd1+ takes the queen instead of the bishop.
     expect(sacrifice('3r2k1/8/8/8/1n6/8/3B4/3QK3 w - - 0 1', '3r2k1/8/8/8/1B6/8/8/3QK3 b - - 0 1', ['d8d1'], 'white')).toBe('material')
