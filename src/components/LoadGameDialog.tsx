@@ -1,11 +1,69 @@
-import { validateFen } from 'chess.js'
+import { DEFAULT_POSITION, validateFen } from 'chess.js'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import * as chesscom from '../lib/chesscom'
 import type { Color } from '../lib/evaluation'
 import * as lichess from '../lib/lichess'
+import { writeSession } from '../lib/session'
+import type { Settings } from '../lib/settings'
+import { createTree, mainline, mainlineToPgn, treeFromPgn } from '../lib/tree'
 import { Tabs } from './Tabs'
 
 export type LoadRequest = { kind: 'pgn'; pgn: string; orientation?: Color } | { kind: 'fen'; fen: string }
+
+/** What the dialog says when a game can't be read. */
+export function loadError(err: unknown): string {
+  return err instanceof Error ? err.message.replace(/^Invalid PGN: /, 'Couldn’t read that PGN: ') : 'Couldn’t read that game.'
+}
+
+/**
+ * Puts a game from the dialog in the session for Analysis to open, as My games does. Returns an error
+ * message, or null. A game is reviewed straight away when the settings say so; a position opens on the engine.
+ */
+function writeLoaded(req: LoadRequest, autoReview: boolean): string | null {
+  try {
+    if (req.kind === 'pgn') {
+      const { tree } = treeFromPgn(req.pgn)
+      writeSession({ pgn: req.pgn, orientation: req.orientation ?? 'white', currentPly: 0, evals: {}, review: autoReview && mainline(tree).length > 1 })
+    } else {
+      const headers: Record<string, string> = req.fen === DEFAULT_POSITION ? {} : { SetUp: '1', FEN: req.fen }
+      writeSession({ pgn: mainlineToPgn(createTree(req.fen), headers), orientation: req.fen.split(' ')[1] === 'b' ? 'black' : 'white', currentPly: 0, evals: {}, engine: true })
+    }
+    return null
+  } catch (err) {
+    return loadError(err)
+  }
+}
+
+interface OpenProps {
+  open: boolean
+  onClose: () => void
+  settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
+  /** The game is in the session: show it in Analysis. */
+  onOpenAnalysis: () => void
+}
+
+/**
+ * The dialog on a page other than Analysis. Analysis opens only once there's a game, straight onto it:
+ * opening it first, under the dialog, showed the last game (its review settling in) and then swapped it out.
+ */
+export function OpenGameDialog({ open, onClose, settings, updateSettings, onOpenAnalysis }: OpenProps) {
+  return (
+    <LoadGameDialog
+      open={open}
+      onClose={onClose}
+      onLoad={(req) => {
+        const err = writeLoaded(req, settings.autoReview)
+        if (!err) onOpenAnalysis()
+        return err
+      }}
+      chesscomUser={settings.chesscomUser}
+      onChesscomUser={(chesscomUser) => updateSettings({ chesscomUser })}
+      lichessUser={settings.lichessUser}
+      onLichessUser={(lichessUser) => updateSettings({ lichessUser })}
+    />
+  )
+}
 
 interface Props {
   open: boolean

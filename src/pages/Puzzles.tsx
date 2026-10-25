@@ -25,12 +25,13 @@ import { SprintView } from './puzzles/Sprint'
 
 interface Props {
   settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
   /** A game or position has been put in the session: show it in Analysis. */
   onOpenAnalysis: () => void
 }
 
 /** Puzzles: rated Lichess puzzles, Puzzle Sprint, today's daily puzzle, and your own mistakes. */
-export function PuzzlesPage({ settings, onOpenAnalysis }: Props) {
+export function PuzzlesPage({ settings, updateSettings, onOpenAnalysis }: Props) {
   const pathname = usePathname()
   const tab = puzzleTab(pathname)
   // Phones: plain /puzzles lists the modes; a mode opens full screen, with Back to that list.
@@ -54,7 +55,7 @@ export function PuzzlesPage({ settings, onOpenAnalysis }: Props) {
   }, [])
 
   const tabs = phone ? null : <PuzzleTabs tab={tab} solved={progress.mistakesSolved} />
-  const props: ViewProps = { progress, update, settings, tabs, onOpenAnalysis }
+  const props: ViewProps = { progress, update, settings, updateSettings, tabs, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
       <PageHeader title="Puzzles" back={hub ? undefined : '/puzzles'} phoneTitle={MODE_NAMES[tab]} />

@@ -5,6 +5,7 @@ import { HomeFooter } from '../components/HomeFooter'
 import { FormStrip, PlanCard, PlanCardSkeleton, WeekDots, type AccuracyPoint } from '../components/HomeCards'
 import { HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
+import { OpenGameDialog } from '../components/LoadGameDialog'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
@@ -27,7 +28,6 @@ import { dayStreak, loadProgress, type PuzzleProgress } from '../lib/puzzleStore
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
 import { decodeSaved } from '../lib/share'
-import { requestLoadDialog } from '../lib/session'
 import type { BoardTheme, Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
 import { DayStreak } from './puzzles/shared'
@@ -114,10 +114,8 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
     await openMyGame(game, review)
     onOpenAnalysis()
   }
-  const loadGame = () => {
-    requestLoadDialog()
-    onOpenAnalysis()
-  }
+  const [loadOpen, setLoadOpen] = useState(false)
+  const loadGame = () => setLoadOpen(true)
 
   const hasUsers = !!(users.chesscom || users.lichess)
   const firstVisit = games.length === 0 && !loading && !waiting
@@ -200,6 +198,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   // Your mistakes come from reading your reviews, after the rest: a placeholder holds their place meanwhile.
   const mistakesCard =
     mistakes === null ? hasReviews && <MistakesCardSkeleton /> : mistakes.length > 0 && <MistakesCard mistakes={mistakes} theme={settings.boardTheme} />
+  const loadDialog = <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
 
   if (phone) {
     // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
@@ -252,6 +251,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           <DailyCard compact theme={settings.boardTheme} />
           <HomeFooter />
         </main>
+        {loadDialog}
       </div>
     )
   }
@@ -384,6 +384,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
         </aside>
         <HomeFooter />
       </main>
+      {loadDialog}
     </div>
   )
 }

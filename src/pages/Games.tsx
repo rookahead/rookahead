@@ -3,6 +3,7 @@ import { OpeningsCard, RecordStrip, TimeControlsCard } from '../components/Games
 import { GameDays, GameDaysSkeleton, QualityKey } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
+import { OpenGameDialog } from '../components/LoadGameDialog'
 import { PageHeader } from '../components/PageHeader'
 import { Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
@@ -14,7 +15,6 @@ import { gameDays } from '../lib/homeGames'
 import { gameStats, SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
-import { requestLoadDialog } from '../lib/session'
 import type { Settings } from '../lib/settings'
 
 const PAGE = 40
@@ -91,10 +91,8 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
     await openMyGame(game, review)
     onOpenAnalysis()
   }
-  const loadGame = () => {
-    requestLoadDialog()
-    onOpenAnalysis()
-  }
+  const [loadOpen, setLoadOpen] = useState(false)
+  const loadGame = () => setLoadOpen(true)
   const reset = () => setShown(PAGE)
   const pick = (kind: 'time' | 'opening', label: (key: string) => string) => (key: string | null) => {
     setPicked(key ? { kind, key, label: label(key) } : null)
@@ -314,6 +312,7 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
           </aside>
         )}
       </main>
+      <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
     </div>
   )
 }

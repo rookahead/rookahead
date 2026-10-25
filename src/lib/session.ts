@@ -14,16 +14,8 @@ export interface Session {
   classes?: (MoveClass | null)[]
   /** Start a review on arrival (a game picked on the home page). Cleared once read. */
   review?: boolean
-}
-
-// "Load a game" on the home page: Analysis opens its Load dialog when it next mounts.
-let loadRequested = false
-export const requestLoadDialog = () => {
-  loadRequested = true
-}
-export const loadDialogRequested = () => loadRequested
-export const clearLoadRequest = () => {
-  loadRequested = false
+  /** Open on the engine rather than the review (a position loaded on another page). Cleared once read. */
+  engine?: boolean
 }
 
 export function readSession(): Session | null {

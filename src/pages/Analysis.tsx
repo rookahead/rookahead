@@ -14,7 +14,7 @@ import { EvalGraph } from '../components/EvalGraph'
 import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
 import { KeyMoments } from '../components/KeyMoments'
-import { LoadGameDialog, type LoadRequest } from '../components/LoadGameDialog'
+import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadGameDialog'
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
 import { PlayerBar } from '../components/PlayerBar'
@@ -42,7 +42,7 @@ import { ACCOUNTS_ENABLED } from '../lib/account'
 import { useImmersive } from '../lib/immersive'
 import { sendVerdictReport } from '../lib/reports'
 import { navigate } from '../lib/router'
-import { clearLoadRequest, loadDialogRequested, readSession, writeSession, type Session } from '../lib/session'
+import { readSession, writeSession, type Session } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { clampPly, decodeShare, encodeShare, fromSharedGame, parseShareHash, toSharedGame, type ShareError } from '../lib/share'
 import {
@@ -81,6 +81,7 @@ function restoreSession(): {
   evals: Record<string, PositionEval>
   classes: Record<string, MoveClass> | null
   review: boolean
+  engine: boolean
 } | null {
   // A share link replaces the saved game, so don't flash the old one first.
   if (parseShareHash(location.pathname, location.hash)) return null
@@ -98,7 +99,7 @@ function restoreSession(): {
         if (cls) classes![node.id] = cls
       })
     }
-    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review) }
+    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine) }
   } catch {
     return null
   }
@@ -128,13 +129,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [engineOn, setEngineOn] = useState(true)
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
-  const [loadOpen, setLoadOpen] = useState(loadDialogRequested)
+  const [loadOpen, setLoadOpen] = useState(false)
   const [optionsOpen, setOptionsOpen] = useState(false)
-  useEffect(clearLoadRequest, [])
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
   // Analyze's clean board opens on the engine; Game review on its Review tab (Load game is there when it's empty).
-  const [tab, setTab] = useState<Tab>(() => (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'review' : 'analysis')
+  // A position loaded on another page opens on the engine too.
+  const [tab, setTab] = useState<Tab>(() => (restored?.engine ? 'analysis' : (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'review' : 'analysis'))
   const [stepping, setStepping] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
@@ -384,7 +385,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         }
         return null
       } catch (err) {
-        return err instanceof Error ? err.message.replace(/^Invalid PGN: /, 'Couldn’t read that PGN: ') : 'Couldn’t read that game.'
+        return loadError(err)
       }
     },
     [resetReview, settings.autoReview],

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Board } from '../../components/Board'
 import { ClassIcon } from '../../components/ClassIcon'
 import { Link } from '../../components/Link'
+import { OpenGameDialog } from '../../components/LoadGameDialog'
 import { NavIcon } from '../../components/NavIcons'
 import { useEngine } from '../../hooks/useEngine'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
@@ -13,7 +14,7 @@ import { formatDay } from '../../lib/home'
 import { acceptable, loadMistakes, type MistakePuzzle } from '../../lib/mistakes'
 import { localDayNumber } from '../../lib/puzzles'
 import { dayStreak, recordMistakeSolved } from '../../lib/puzzleStore'
-import { requestLoadDialog, writeSession } from '../../lib/session'
+import { writeSession } from '../../lib/session'
 import type { Settings } from '../../lib/settings'
 import { decodeShare, fromSharedGame } from '../../lib/share'
 import { playSound } from '../../lib/sound'
@@ -21,7 +22,7 @@ import { mainline, mainlineToPgn } from '../../lib/tree'
 import type { Score } from '../../lib/uci'
 import { DayStreak, EmptyBoard, evalText, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, toMove, useStepKeys, walk, type ViewProps } from './shared'
 
-export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis }: ViewProps) {
+export function MistakesView({ progress, update, settings, updateSettings, tabs, onOpenAnalysis }: ViewProps) {
   const [queue, setQueue] = useState<MistakePuzzle[] | null>(null)
   // Counts moves through the queue, so a mistake that comes round again starts afresh.
   const [round, setRound] = useState(0)
@@ -30,6 +31,7 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
     void loadMistakes(solvedAtStart.current).then(setQueue)
   }, [])
   const { engine, status } = useEngine('lite', { threads: 1, hashMb: 16 })
+  const [loadOpen, setLoadOpen] = useState(false)
 
   if (!queue) return <Placeholder tabs={tabs} settings={settings} />
   const mistake = queue[0]
@@ -45,10 +47,7 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
             <div className="puzzle-message-actions">
               <button
                 className="btn primary small"
-                onClick={() => {
-                  requestLoadDialog()
-                  onOpenAnalysis()
-                }}
+                onClick={() => setLoadOpen(true)}
               >
                 Load a game
               </button>
@@ -58,6 +57,7 @@ export function MistakesView({ progress, update, settings, tabs, onOpenAnalysis 
             </div>
           </div>
         </div>
+        <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
       </PuzzleLayout>
     )
   }

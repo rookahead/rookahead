@@ -19,6 +19,7 @@ export interface ViewProps {
   progress: PuzzleProgress
   update: Update
   settings: Settings
+  updateSettings: (patch: Partial<Settings>) => void
   tabs: ReactNode
   onOpenAnalysis: () => void
 }
