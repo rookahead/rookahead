@@ -178,7 +178,11 @@ describe('the opening from the Lichess cloud', () => {
     const { line } = game(UCIS, [])
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ depth: 12, pvs: [{ moves: 'e2e4', cp: 30 }] })))
     expect(await cloudOpening(line.map((n) => n.fen), new AbortController().signal)).toEqual({})
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 429 })))
+    const refused = vi.fn(async () => new Response('', { status: 429 }))
+    vi.stubGlobal('fetch', refused)
     expect(await cloudOpening(line.map((n) => n.fen), new AbortController().signal)).toEqual({})
+    // And it doesn't ask again for a while.
+    expect(await cloudOpening(line.map((n) => n.fen), new AbortController().signal)).toEqual({})
+    expect(refused).toHaveBeenCalledTimes(1)
   })
 })

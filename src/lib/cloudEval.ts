@@ -11,6 +11,11 @@ const CLOUD = 'https://lichess.org/api/cloud-eval'
 /** A cloud eval worth trusting over the review's own search. */
 const MIN_DEPTH = 24
 
+/** After Lichess says "too many requests", reviews leave the cloud alone this long (Lichess asks for a minute). */
+const BACK_OFF_MS = 5 * 60_000
+
+let pausedUntil = 0
+
 interface CloudPv {
   moves: string
   cp?: number
@@ -22,9 +27,11 @@ const scoreOf = (pv: CloudPv): Score => (pv.mate !== undefined ? { type: 'mate',
 
 /** The cloud's eval of one position: null when it has none (or too shallow), 'stop' when Lichess can't be asked. */
 export async function cloudEval(fen: string, signal: AbortSignal): Promise<PositionEval | null | 'stop'> {
+  if (Date.now() < pausedUntil) return 'stop'
   try {
     const res = await fetch(`${CLOUD}?multiPv=2&fen=${encodeURIComponent(fen)}`, { signal })
     if (res.status === 404) return null
+    if (res.status === 429) pausedUntil = Date.now() + BACK_OFF_MS
     if (!res.ok) return 'stop'
     const data = (await res.json()) as { depth: number; pvs: CloudPv[] }
     const [top, second] = data.pvs ?? []
