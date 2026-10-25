@@ -5898,6 +5898,10 @@ button.user-avatar.guest:hover {
   view-transition-name: tabbar;
 }
 
+/* Outside the page and the sidebar there's only the background, and whatever lay over the page you left: a
+   dialog you loaded a game from, its backdrop. That goes at once, rather than dimming the next page as it comes. */
+:root.page-change::view-transition-old(root),
+:root.page-change::view-transition-new(root),
 ::view-transition-group(page),
 ::view-transition-group(sidebar),
 ::view-transition-group(tabbar),
