@@ -71,7 +71,7 @@ interface Game {
 
 type Tab = 'review' | 'analysis' | 'info'
 
-/** Live scores shallower than this don't move the eval bar (a few ms at most with SF19). */
+/** Live scores shallower than this don't replace the review's on the bar and the lines (a few ms at most with SF19). */
 const BAR_MIN_DEPTH = 12
 
 function restoreSession(): {
@@ -229,10 +229,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     paused: reviewing || side.pending || loadOpen || shareOpen || !active,
   })
 
-  // During a review, fall back to the review's verdict for positions it has reached.
+  // During a review, fall back to the review's verdict for positions it has reached. The live engine takes
+  // over once it's past its first few plies, which swing wildly before settling: the bar and the lines
+  // always show the same number.
   const reviewEval = review.evals[node.fen] ?? side.evals[node.fen]
   const shown: AnalysisResult | null = useMemo(() => {
-    if (live.result?.lines.length) return live.result
+    const top = live.result?.lines[0]
+    if (top && (!reviewEval || top.depth >= BAR_MIN_DEPTH)) return live.result
     if (!reviewEval) return null
     return {
       fen: node.fen,
@@ -243,9 +246,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }, [live.result, reviewEval, node.fen])
 
   const score = terminal?.score ?? shown?.lines[0]?.score ?? reviewEval?.score ?? null
-  // The eval bar ignores the engine's first few plies, which swing wildly before settling.
-  const liveTop = live.result?.lines[0]
-  const barScore = terminal?.score ?? (liveTop && liveTop.depth >= BAR_MIN_DEPTH ? liveTop.score : null) ?? reviewEval?.score ?? null
   const steppingThrough = tab === 'review' && stepping && review.status === 'done'
   // Phones pick one part at a time under the board: the coach (stepping through), the engine,
   // the review's summary, or the game's details.
@@ -764,7 +764,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       >
         <section className="board-column">
           {player(orientation === 'white' ? 'black' : 'white')}
-          {phone && <EvalBar horizontal score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
+          {phone && <EvalBar horizontal score={score} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
           <div className="board-row">
             <span
               className="board-resize"
@@ -774,7 +774,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               onPointerDown={startResize}
               onDoubleClick={() => saveBoardSize(setBoardSize, null)}
             />
-            {!phone && <EvalBar score={barScore} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
+            {!phone && <EvalBar score={score} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
             <Board
               fen={node.fen}
               orientation={orientation}
@@ -799,7 +799,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <PhoneViews
                     value={phoneView}
                     reviewed={reviewed}
-                    score={engineOn && barScore ? chipText(barScore) : null}
+                    score={engineOn && score ? chipText(score) : null}
                     onSelect={pickPhoneView}
                   />
                 ) : steppingThrough && (
