@@ -16,6 +16,8 @@ export interface TabItem<T extends string> {
   count?: number
   /** A tab with its own address is a link (`onSelect` still hears the click). */
   to?: string
+  /** Shown but not open yet (Review while a review is still running). */
+  disabled?: boolean
 }
 
 /** The app's one tab bar: equal columns across the full width, icon over label, a coloured underline on the active tab. */
@@ -58,7 +60,7 @@ export function Tabs<T extends string>({ items, value, onSelect, label }: { item
             {content}
           </Link>
         ) : (
-          <button key={item.id} type="button" {...props} onClick={() => onSelect?.(item.id)}>
+          <button key={item.id} type="button" {...props} disabled={item.disabled} onClick={() => onSelect?.(item.id)}>
             {content}
           </button>
         )
@@ -88,6 +90,8 @@ export const TAB_ICONS = {
       <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
     </>
   ),
+  // The review's report: a list.
+  summary: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
   // The same marks as Game review and Analyze in the sidebar.
   review: <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />,
   analysis: (

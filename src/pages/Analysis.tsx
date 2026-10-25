@@ -13,7 +13,6 @@ import { chipText, EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
 import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
-import { KeyMoments } from '../components/KeyMoments'
 import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadGameDialog'
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
@@ -26,12 +25,12 @@ import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
 import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
-import { DEEPER, depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
+import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
 import { openingFromEcoUrl } from '../lib/chesscom'
-import { classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
+import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
@@ -69,7 +68,7 @@ interface Game {
   headers: PgnHeaders
 }
 
-type Tab = 'review' | 'analysis' | 'info'
+type Tab = 'summary' | 'review' | 'analysis'
 
 /** Live scores shallower than this don't replace the review's on the bar and the lines (a few ms at most with SF19). */
 const BAR_MIN_DEPTH = 12
@@ -140,10 +139,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [optionsOpen, setOptionsOpen] = useState(false)
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
-  // Analyze's clean board opens on the engine; Game review on its Review tab (Load game is there when it's empty).
-  // A position loaded on another page opens on the engine too.
-  const [tab, setTab] = useState<Tab>(() => (restored?.engine ? 'analysis' : (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'review' : 'analysis'))
-  const [stepping, setStepping] = useState(false)
+  // Analyze's clean board opens on the engine; Game review on its Summary tab, where a review starts and
+  // its report shows (Load game is there when it's empty). A position loaded on another page opens on the engine too.
+  const [tab, setTab] = useState<Tab>(() => (restored?.engine ? 'analysis' : (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'summary' : 'analysis'))
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
   const [sharedClasses, setSharedClasses] = useState<Record<string, MoveClass> | null>(() => restored?.classes ?? null)
@@ -177,13 +175,15 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (restored && Object.keys(restored.evals).length) hydrateReview(restored.evals)
   }, [restored, hydrateReview])
 
+  // No verdicts while the review runs: a move's grade can still change once the sharp moments are
+  // double-checked, so none show until every one is final.
   const report = useMemo(
     () => {
-      if (!Object.keys(review.evals).length) return null
+      if (review.status === 'running' || !Object.keys(review.evals).length) return null
       const classified = classifyGame(line, review.evals, book?.isBook)
       return sharedClasses ? withClasses(classified, sharedClasses) : classified
     },
-    [line, review.evals, book, sharedClasses],
+    [review.status, line, review.evals, book, sharedClasses],
   )
 
   const inVariation = !isMainline(tree, node.id)
@@ -260,23 +260,22 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }, [live.result, reviewEval, node.fen, waited])
 
   const score = terminal?.score ?? shown?.lines[0]?.score ?? reviewEval?.score ?? null
-  const steppingThrough = tab === 'review' && stepping && review.status === 'done'
-  // Phones pick one part at a time under the board: the coach (stepping through), the engine,
-  // the review's summary, or the game's details.
   const reviewed = review.status === 'done' && Boolean(report)
-  const phoneView: PhoneView = tab === 'analysis' ? 'engine' : tab === 'info' ? 'info' : reviewed && !stepping ? 'summary' : 'coach'
+  /** Step through the game's verdicts, from the first move when the board is at the start. */
+  const startStepping = () => {
+    setTab('review')
+    if (!node.parentId && line[1]) setCurrentId(line[1].id)
+  }
+  // Phones pick one part at a time under the board, as the tabs do on desktop.
+  const phoneView: PhoneView = tab === 'analysis' ? 'engine' : tab === 'review' ? 'coach' : 'summary'
   const pickPhoneView = (view: PhoneView) => {
     if (view === 'engine') return setTab('analysis')
-    if (view === 'info') return setTab('info')
-    setTab('review')
-    if (view === 'summary') return setStepping(false)
-    if (reviewed) {
-      setStepping(true)
-      if (!node.parentId && line[1]) setCurrentId(line[1].id)
-    }
+    if (view === 'summary') return setTab('summary')
+    if (reviewed) startStepping()
+    else setTab('review')
   }
-  // A look at the Info tab mid-review keeps the review's arrows on the board.
-  const reviewArrows = tab !== 'analysis' && stepping && review.status === 'done'
+  // Stepping through the review: the board shows what was better, not the live engine's lines.
+  const reviewArrows = tab === 'review' && reviewed
 
   const shapes = useMemo<DrawShape[]>(() => {
     // While stepping through a review, show only "this was better" for the move just played.
@@ -335,8 +334,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   const runReview = useCallback(() => {
     setSharedClasses(null)
-    setTab('review')
-    setStepping(false)
+    setTab('summary')
     void startReview(line)
   }, [startReview, line])
 
@@ -384,12 +382,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         setBanner(null)
         setGame(next)
         setCurrentId(ROOT_ID)
-        setStepping(false)
         setPlaying(false)
         if (req.kind === 'pgn') {
           setOrientation(req.orientation ?? 'white')
           if (settings.autoReview && mainline(next.tree).length > 1) {
-            setTab('review')
+            setTab('summary')
             setPendingReview(true)
           }
         } else {
@@ -411,7 +408,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     setGame({ tree: createTree(), headers: {} })
     setCurrentId(ROOT_ID)
     setTab('analysis')
-    setStepping(false)
   }
 
   // Analyze clears the board each time it's opened (not on every render while it's showing).
@@ -430,7 +426,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       // An unknown version keeps its address, so the refresh it asks for (fetching the new app) opens it.
       if (!('error' in shared && shared.error === 'newer-version')) history.replaceState(history.state, '', '/analysis')
       resetReview()
-      setStepping(false)
       setPlaying(false)
       if ('error' in shared) {
         setGame({ tree: createTree(), headers: {} })
@@ -449,13 +444,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       setBanner('shared')
       if (opened.classes) {
         hydrateReview(opened.evals)
-        setTab('review')
-        setStepping(Boolean(at?.parentId))
+        setTab(at?.parentId ? 'review' : 'summary')
         setCurrentId(at?.id ?? ROOT_ID)
       } else {
         setCurrentId(at?.id ?? ROOT_ID)
         const review = settings.autoReview && sharedLine.length > 1
-        setTab(review ? 'review' : 'analysis')
+        setTab(review ? 'summary' : 'analysis')
         setPendingReview(review)
       }
     })
@@ -554,9 +548,21 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   // ── Review tab content ──
   const stepCoach = () => {
+    // Phones have the big Next under the thumb instead. On desktop it's the right half of the coach's
+    // actions on every card, the first one too, so it never moves.
+    const next = !phone && (
+      <button className="btn primary coach-next" onClick={goNext} disabled={!node.children.length}>
+        Next move
+        <NavIcon name="next" />
+      </button>
+    )
     const parent = node.parentId ? tree.nodes[node.parentId] : null
     if (!parent || !node.san) {
-      return <CoachCard key={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." />
+      return (
+        <CoachCard key={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." stepping={!phone}>
+          {next}
+        </CoachCard>
+      )
     }
     if (!currentReview) {
       return (
@@ -566,10 +572,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           title={<San san={node.san} />}
           detail={inVariation ? (side.pending ? 'Checking this move…' : 'You’re exploring a side line. The Analysis tab has the live engine.') : 'Not reviewed yet.'}
           score={score}
-        />
+          stepping={!phone}
+        >
+          {next}
+        </CoachCard>
       )
     }
     const bestSan = currentReview.bestMove ? pvToSan(parent.fen, [currentReview.bestMove])[0] : undefined
+    const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
       <CoachCard
         key={node.id}
@@ -581,113 +591,134 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         // A forced move has nothing to disagree with.
         onReport={ACCOUNTS_ENABLED && currentReview.cls !== 'forced' ? () => setReporting(node.id) : undefined}
         reported={reported.has(`${node.id}:${currentReview.cls}`)}
+        stepping={!phone}
       >
-        {currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls) && (
+        {showBest && (
           <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
             Show {bestSan ?? 'best'}
           </button>
         )}
-        {/* Phones have the big Next under the thumb instead. */}
-        {!phone && (
-          <button className="btn primary" onClick={goNext} disabled={!node.children.length}>
-            Next move
-            <NavIcon name="next" />
-          </button>
-        )}
+        {next}
       </CoachCard>
     )
   }
 
-  let reviewBody: React.ReactNode
-  if (review.status === 'running') {
-    // Then the moments where the eval jumps get a second, deeper look (backup.ts).
+  // ── Summary tab: start a review, follow it, then its report ──
+  const gameInfo = (
+    <GameInfo
+      headers={headers}
+      hasGame={hasGame}
+      opening={line.length > 1 ? (gameOpening ?? infoOpening) : infoOpening}
+      positionNote={terminal ? terminal.label : `${turn === 'white' ? 'White' : 'Black'} to move`}
+      positionOpening={hasGame && opening && opening.name !== infoOpening?.name ? opening : undefined}
+      summary={reviewed ? summaryText : undefined}
+    />
+  )
+  const readyCard = (
+    <CoachCard
+      title={line.length > 1 ? 'Ready when you are' : 'Nothing to review yet'}
+      detail={
+        line.length > 1
+          ? `Stockfish 19 will grade every move — Legendary to Blunder — and work out each side’s accuracy.`
+          : 'Load a game or play some moves on the board first.'
+      }
+    >
+      {line.length > 1 ? (
+        <button className="btn primary" disabled={!ready} onClick={runReview}>
+          Review game
+        </button>
+      ) : (
+        <button className="btn primary" onClick={() => setLoadOpen(true)}>
+          Load game
+        </button>
+      )}
+    </CoachCard>
+  )
+  const progressCard = () => {
+    // Every move is searched first, then the moments where the eval jumps get a second, deeper look (backup.ts).
     const { checking } = review
-    const pct = Math.round(checking ? (checking.done / Math.max(checking.total, 1)) * 100 : (review.progress / Math.max(review.total, 1)) * 100)
-    reviewBody = (
-      <>
-        <CoachCard
-          title="Reviewing the game…"
-          detail={
-            checking
-              ? `Double-checking the sharp moments at depth ${settings.reviewDepth + DEEPER}.`
-              : review.fromCloud
-                ? `Stockfish is checking every move at depth ${settings.reviewDepth}, with Lichess’s deep evals for the opening.`
-                : `Stockfish is checking every move at depth ${settings.reviewDepth}.`
-          }
-        >
-          <div className="review-progress">
-            <div className="progress">
-              <div className="progress-fill" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="muted small">
-              {checking ? `${checking.done} of ${checking.total} sharp moments` : `${review.progress} of ${review.total} positions`}
-            </span>
-            <button className="btn ghost small" onClick={cancelReview}>
-              Cancel
-            </button>
+    const pct = Math.round(checking ? 50 + (checking.done / Math.max(checking.total, 1)) * 50 : (review.progress / Math.max(review.total, 1)) * 50)
+    return (
+      <CoachCard title="Reviewing the game" detail="The verdicts show once every move is checked, so none of them change on you.">
+        <ol className="review-steps">
+          <li className={checking ? 'done' : 'now'}>
+            <span className="review-step-mark" aria-hidden />
+            {checking ? 'Every move searched' : review.fromCloud ? 'Searching every move, with Lichess’s evals for the opening' : 'Searching every move'}
+            <span className="review-step-count">{checking ? `${review.total} of ${review.total}` : `${review.progress} of ${review.total}`}</span>
+          </li>
+          <li className={checking ? 'now' : 'later'}>
+            <span className="review-step-mark" aria-hidden />
+            Double-checking the sharp moments
+            <span className="review-step-count">{checking ? `${checking.done} of ${checking.total}` : ''}</span>
+          </li>
+        </ol>
+        <div className="review-progress">
+          <div className="progress">
+            <div className="progress-fill" style={{ width: `${pct}%` }} />
           </div>
-        </CoachCard>
+          <button className="btn ghost small" onClick={cancelReview}>
+            Cancel
+          </button>
+        </div>
+      </CoachCard>
+    )
+  }
+  // The costliest real error, one click from stepping through to it.
+  const turningPoint = useMemo(() => {
+    if (!report) return null
+    return Object.values(report.moves)
+      .filter((m) => m.cls === 'blunder' || m.cls === 'mistake' || m.cls === 'miss')
+      .sort((a, b) => b.loss - a.loss)[0] ?? null
+  }, [report])
+
+  let summaryBody: React.ReactNode
+  if (review.status === 'running') {
+    summaryBody = (
+      <>
+        {progressCard()}
         {phone ? (
-          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
+          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={null} />
         ) : (
           <>
-            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={104} />
-            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={null} height={96} />
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={null} />
           </>
         )}
       </>
     )
-  } else if (review.status === 'done' && report) {
-    reviewBody = stepping ? (
-      <>
-        {stepCoach()}
-        {phone ? (
-          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
-        ) : (
-          <>
-            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
-            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
-          </>
-        )}
-      </>
-    ) : (
+  } else if (reviewed) {
+    summaryBody = (
       <>
         <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
-        <ReviewSummary report={report} headers={headers} />
-        <div className="summary-cta">
+        <ReviewSummary report={report!} headers={headers} />
+        {turningPoint && tree.nodes[turningPoint.nodeId] && (
           <button
-            className="btn primary big"
+            className="turning-point"
             onClick={() => {
-              setStepping(true)
-              if (!node.parentId && line[1]) setCurrentId(line[1].id)
+              setTab('review')
+              setCurrentId(turningPoint.nodeId)
             }}
           >
+            <ClassIcon cls={turningPoint.cls} size={18} />
+            <span className="turning-point-label">Turning point</span>
+            <span className="turning-point-move">
+              {moveNumberLabel(turningPoint.ply)} {tree.nodes[turningPoint.nodeId].san}, {withArticle(CLASS_INFO[turningPoint.cls].label.toLowerCase())}
+            </span>
+            <NavIcon name="next" />
+          </button>
+        )}
+        {gameInfo}
+        <div className="summary-cta">
+          <button className="btn primary big" onClick={startStepping}>
             Start review
           </button>
         </div>
       </>
     )
   } else {
-    reviewBody = (
+    summaryBody = (
       <>
-        <CoachCard
-          title={line.length > 1 ? 'Ready when you are' : 'Nothing to review yet'}
-          detail={
-            line.length > 1
-              ? `Stockfish 19 will grade every move — Legendary to Blunder — and work out each side’s accuracy.`
-              : 'Load a game or play some moves on the board first.'
-          }
-        >
-          {line.length > 1 ? (
-            <button className="btn primary" disabled={!ready} onClick={runReview}>
-              Review game
-            </button>
-          ) : (
-            <button className="btn primary" onClick={() => setLoadOpen(true)}>
-              Load game
-            </button>
-          )}
-        </CoachCard>
+        {readyCard}
         <div className="review-options">
           <div className="setting">
             <div className="setting-label">
@@ -718,8 +749,31 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             onChange={(cloudEvals) => updateSettings({ cloudEvals })}
           />
         </div>
+        {gameInfo}
       </>
     )
+  }
+
+  // ── Review tab: step through the verdicts ──
+  let reviewBody: React.ReactNode
+  if (reviewed) {
+    reviewBody = (
+      <>
+        {stepCoach()}
+        {phone ? (
+          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
+        ) : (
+          <>
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={72} />
+          </>
+        )}
+      </>
+    )
+  } else if (review.status === 'running') {
+    reviewBody = progressCard()
+  } else {
+    reviewBody = readyCard
   }
 
   /** Drag the corner handle: the corner keeps as close to the pointer as it can. The board is centred, so
@@ -775,7 +829,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       </PageHeader>
 
       <main
-        className={`layout ${blank ? '' : 'with-moments'} ${boardSize ? 'sized' : ''}`}
+        className={`layout ${boardSize ? 'sized' : ''}`}
         style={boardSize ? ({ '--board-user': `${boardSize}px` } as React.CSSProperties) : undefined}
       >
         <section className="board-column">
@@ -818,33 +872,23 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                     score={engineOn && score ? chipText(score) : null}
                     onSelect={pickPhoneView}
                   />
-                ) : steppingThrough && (
-                  <button className="icon-btn" onClick={() => setStepping(false)} aria-label="Back to summary" title="Back to summary">
-                    <NavIcon name="back" />
-                  </button>
-                )}
+                ) : null}
                 {!phone && <Tabs
                   value={tab}
                   onSelect={setTab}
                   items={[
-                    { id: 'review', label: 'Review', icon: TAB_ICONS.review, tone: 'sky' },
+                    { id: 'summary', label: 'Summary', icon: TAB_ICONS.summary, tone: 'violet' },
+                    // Its verdicts aren't final until the review is done.
+                    { id: 'review', label: 'Review', icon: TAB_ICONS.review, tone: 'sky', disabled: reviewing },
                     { id: 'analysis', label: 'Analysis', icon: TAB_ICONS.analysis, tone: 'green' },
-                    { id: 'info', label: 'Info', icon: TAB_ICONS.info, tone: 'violet' },
                   ]}
                 />}
               </header>
 
               <div className={`panel-body ${tab}`}>
-                {tab === 'info' ? (
+                {tab === 'summary' ? (
                   <>
-                    <GameInfo
-                      headers={headers}
-                      hasGame={hasGame}
-                      opening={infoOpening}
-                      positionNote={terminal ? terminal.label : `${turn === 'white' ? 'White' : 'Black'} to move`}
-                      positionOpening={hasGame && opening && opening.name !== infoOpening?.name ? opening : undefined}
-                      summary={review.status === 'done' && report ? summaryText : undefined}
-                    />
+                    {summaryBody}
                     <nav className="site-links phone-only" aria-label="Site">
                       <a href="/about">About</a>
                       <span aria-hidden>·</span>
@@ -918,29 +962,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             </div>
           </aside>
 
-        {/* Under the board: the moves that decided the game, one click from the board. */}
-        {!blank && (
-          <section className="moments-strip" aria-label="Key moments">
-            {review.status === 'done' && report ? (
-              <KeyMoments
-                report={report}
-                tree={tree}
-                currentId={node.id}
-                intro={summaryText}
-                onSelect={(id) => {
-                  setTab('review')
-                  setStepping(true)
-                  setCurrentId(id)
-                }}
-              />
-            ) : (
-              <p className="moments-empty">
-                <span className="section-label">Key moments</span>
-                {review.status === 'running' ? 'Finding them…' : line.length > 1 ? 'Review the game to find them.' : 'Load a game and review it to find them.'}
-              </p>
-            )}
-          </section>
-        )}
       </main>
 
       {shareOpen && (
@@ -1006,15 +1027,17 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
 }
 
-type PhoneView = 'coach' | 'engine' | 'summary' | 'info'
+type PhoneView = 'summary' | 'coach' | 'engine'
+
+/** "a blunder", "an oversight". */
+const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
 
 /** Phones: the switch under the board between the review's parts. The engine's button carries its score. */
 function PhoneViews({ value, reviewed, score, onSelect }: { value: PhoneView; reviewed: boolean; score: string | null; onSelect: (v: PhoneView) => void }) {
   const views: [PhoneView, string][] = [
+    ['summary', 'Summary'],
     ['coach', reviewed ? 'Coach' : 'Review'],
     ['engine', 'Engine'],
-    ...(reviewed ? ([['summary', 'Summary']] as [PhoneView, string][]) : []),
-    ['info', 'Info'],
   ]
   return (
     <div className="phone-views" role="tablist" aria-label="Under the board">

@@ -51,16 +51,25 @@ export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, on
   const pad = Math.min(H / 4, (EDGE / height) * H)
 
   const { area, stroke, known } = useMemo(() => {
-    const pts: [number, number][] = []
+    // While the review runs, the positions it has reached so far: the engine works back from the end
+    // and the cloud forward from the start, so the graph fills in from both ends.
+    const runs: [number, number][][] = []
+    let run: [number, number][] = []
     for (let i = 0; i < line.length; i++) {
       const e = evals[line[i].fen]
-      if (!e) break // Draw only the analysed prefix while the review is running.
-      pts.push([(i / n) * W, plotY(winPercent(e.score), pad)])
+      if (e) run.push([(i / n) * W, plotY(winPercent(e.score), pad)])
+      else if (run.length) {
+        runs.push(run)
+        run = []
+      }
     }
-    if (!pts.length) return { area: '', stroke: '', known: 0 }
-    const path = smoothPath(pts, pad)
-    const last = pts[pts.length - 1][0]
-    return { area: `${path}L${last},${H}L0,${H}Z`, stroke: path, known: pts.length }
+    if (run.length) runs.push(run)
+    const paths = runs.map((r) => smoothPath(r, pad))
+    return {
+      area: runs.map((r, i) => `${paths[i]}L${r[r.length - 1][0]},${H}L${r[0][0]},${H}Z`).join(''),
+      stroke: paths.join(''),
+      known: runs.reduce((sum, r) => sum + r.length, 0),
+    }
   }, [line, evals, n, pad])
 
   // Coloured dots for the moves worth looking at.
