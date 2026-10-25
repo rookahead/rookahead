@@ -161,6 +161,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     ready,
     depth: settings.reviewDepth,
     strength: settings.engine,
+    cloud: settings.cloudEvals,
   })
   const reviewing = review.status === 'running'
 
@@ -590,7 +591,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       <>
         <CoachCard
           title="Reviewing the game…"
-          detail={checking ? `Double-checking the sharp moments at depth ${settings.reviewDepth + DEEPER}.` : `Stockfish is checking every move at depth ${settings.reviewDepth}.`}
+          detail={
+            checking
+              ? `Double-checking the sharp moments at depth ${settings.reviewDepth + DEEPER}.`
+              : review.fromCloud
+                ? `Stockfish is checking every move at depth ${settings.reviewDepth}, with Lichess’s deep evals for the opening.`
+                : `Stockfish is checking every move at depth ${settings.reviewDepth}.`
+          }
         >
           <div className="review-progress">
             <div className="progress">
@@ -687,6 +694,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             hint="Start as soon as a game is loaded."
             checked={settings.autoReview}
             onChange={(autoReview) => updateSettings({ autoReview })}
+          />
+          <SwitchRow
+            label="Lichess cloud evals"
+            hint="Deeper evals for openings and famous games, from lichess.org. Sends the positions, never your name."
+            checked={settings.cloudEvals}
+            onChange={(cloudEvals) => updateSettings({ cloudEvals })}
           />
         </div>
       </>

@@ -62,7 +62,8 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
     const ownOther: DeepLine | null = own.bestMove && own.bestMove !== node.uci ? { move: own.bestMove, score: own.score, pv: own.pv } : null
 
     let other = ownOther
-    if (Math.abs(gap) >= JUMP || (ownOther && gap >= SHORT)) {
+    // A cloud eval (cloudEval.ts) is already far deeper than our deeper look would be: it stands as it is.
+    if (!own.cloud && (Math.abs(gap) >= JUMP || (ownOther && gap >= SHORT))) {
       const lines = deep[parent.fen]
       if (lines?.length) other = lines.filter((l) => l.move !== node.uci).sort((a, b) => moverWin(b.score, color) - moverWin(a.score, color))[0] ?? null
       else need.push(parent.fen)

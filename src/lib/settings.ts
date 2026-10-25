@@ -41,6 +41,8 @@ export interface Settings {
   coordinates: boolean
   /** Start a review automatically after loading a game. */
   autoReview: boolean
+  /** Reviews take the opening's evals from Lichess's cloud where it has them (cloudEval.ts). */
+  cloudEvals: boolean
   chesscomUser: string
   lichessUser: string
   /** Move sounds, 0 (off) to 1. */
@@ -72,6 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
   boardTheme: 'theme',
   coordinates: true,
   autoReview: true,
+  cloudEvals: true,
   chesscomUser: '',
   lichessUser: '',
   soundVolume: 0.7,

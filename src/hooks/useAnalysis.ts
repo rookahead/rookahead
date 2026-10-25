@@ -2,6 +2,7 @@ import { Chess } from 'chess.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { StockfishEngine, type AnalysisResult, type EngineStrength } from '../engine/Engine'
 import { backUp, type DeepLine } from '../lib/backup'
+import { cloudOpening } from '../lib/cloudEval'
 import { checkmatedScore, type Color } from '../lib/evaluation'
 import type { MoveNode } from '../lib/tree'
 import type { Score } from '../lib/uci'
@@ -14,6 +15,8 @@ export interface PositionEval {
   depth: number
   /** Score of the second-best move (the review runs MultiPV 2, for "great move" detection). */
   second?: Score
+  /** From Lichess's cloud evals (cloudEval.ts) rather than the review's own search. */
+  cloud?: boolean
 }
 
 export interface TerminalState {
@@ -130,6 +133,8 @@ interface ReviewOptions {
   ready: boolean
   depth: number
   strength: EngineStrength
+  /** Take the opening's evals from Lichess's cloud where it has them. */
+  cloud: boolean
 }
 
 export interface ReviewState {
@@ -139,6 +144,8 @@ export interface ReviewState {
   total: number
   /** Results keyed by FEN. */
   evals: Record<string, PositionEval>
+  /** Reading the opening's evals from Lichess's cloud (cloudEval.ts), before the engine starts. */
+  fromCloud?: boolean
   /** After the first pass: the positions being searched deeper (backup.ts), so far and in all. */
   checking?: { done: number; total: number }
 }
@@ -200,6 +207,9 @@ export const DEEPER = 4
 /** At most this many deeper searches per review, so a game of sacrifices can't hold it up for long. */
 const DEEP_BUDGET = 24
 
+/** How long a review waits for Lichess's cloud (from its start) when the engine is done first. */
+const CLOUD_WAIT_MS = 20_000
+
 /** A deeper look at one position for the back-up: its three best lines, same engine set-up as the review. */
 async function deepSearch(eng: StockfishEngine, fen: string, depth: number, signal: AbortSignal, live: () => boolean): Promise<DeepLine[] | undefined> {
   for (let attempt = 0; attempt < 3 && live(); attempt++) {
@@ -221,7 +231,7 @@ async function deepSearch(eng: StockfishEngine, fen: string, depth: number, sign
 /** The depth a finished review ran at: most positions reach it exactly (the rest hit the node cap first). */
 export function depthOfReview(evals: Record<string, PositionEval>): number | null {
   const tally = new Map<number, number>()
-  for (const e of Object.values(evals)) if (e.pv.length) tally.set(e.depth, (tally.get(e.depth) ?? 0) + 1)
+  for (const e of Object.values(evals)) if (e.pv.length && !e.cloud) tally.set(e.depth, (tally.get(e.depth) ?? 0) + 1)
   let best: number | null = null
   for (const [d, n] of tally) if (best === null || n > tally.get(best)! || (n === tally.get(best) && d > best)) best = d
   return best
@@ -232,7 +242,7 @@ export function depthOfReview(evals: Record<string, PositionEval>): number | nul
  * in order from one queue to a small pool of single-threaded searches: the main
  * engine plus a few short-lived helpers that are shut down when the review ends.
  */
-export function useGameReview({ engine, ready, depth, strength }: ReviewOptions) {
+export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewOptions) {
   const [state, setState] = useState<ReviewState>({ status: 'idle', progress: 0, total: 0, evals: {} })
   const runId = useRef(0)
   const controller = useRef<AbortController | null>(null)
@@ -290,16 +300,44 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
         await Promise.all([engine, ...helpers].map(work))
       }
 
+      // Every position is counted once, whichever of the cloud and the engine gets to it first.
+      const done = new Set<string>()
+      const found = (fen: string, entry: PositionEval | undefined) => {
+        const first = !done.has(fen)
+        done.add(fen)
+        if (entry) evals[fen] = entry
+        setState((s) => ({ ...s, progress: s.progress + (first ? 1 : 0), evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
+      }
+
       try {
+        // The opening from Lichess's cloud (searched far deeper than a review can) and the engine at the
+        // same time: the cloud from the start, the engine from the end, until they meet.
+        const started = Date.now()
+        const cloudCtrl = new AbortController()
+        ctrl.signal.addEventListener('abort', () => cloudCtrl.abort())
+        const fromCloud = cloud
+          ? cloudOpening(
+              line.map((n) => n.fen),
+              cloudCtrl.signal,
+              (fen, entry) => live() && found(fen, entry),
+            ).then(() => live() && setState((s) => ({ ...s, fromCloud: undefined })))
+          : null
+        if (fromCloud) setState((s) => ({ ...s, fromCloud: true }))
         await pool(
-          line.map((n) => n.fen),
+          line.map((n) => n.fen).reverse(),
           async (eng, fen) => {
+            if (done.has(fen)) return
             const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
-            if (!live()) return
-            if (entry) evals[fen] = entry
-            setState((s) => ({ ...s, progress: s.progress + 1, evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
+            // The cloud's eval, if it came meanwhile, is the deeper one.
+            if (live() && !evals[fen]?.cloud) found(fen, entry)
           },
         )
+        // The cloud's evals are deeper: give it a little longer to replace the engine's, then go on without it.
+        const left = CLOUD_WAIT_MS - (Date.now() - started)
+        if (fromCloud && left > 0) await Promise.race([fromCloud, new Promise((wait) => setTimeout(wait, left))])
+        cloudCtrl.abort()
+        await fromCloud
+        if (!live()) return
         // Then the back-up: wherever the game's continuation disagrees with a position's own search,
         // that position is searched deeper, until nothing new disagrees or the budget runs out.
         let spent = 0
@@ -321,7 +359,7 @@ export function useGameReview({ engine, ready, depth, strength }: ReviewOptions)
       }
       if (live()) setState((s) => ({ ...s, status: 'done', progress: line.length, checking: undefined, evals: backUp(line, evals, deep).evals }))
     },
-    [engine, ready, depth, strength],
+    [engine, ready, depth, strength, cloud],
   )
 
   return { review: state, startReview: start, cancelReview: cancel, resetReview: reset, hydrateReview: hydrate }
