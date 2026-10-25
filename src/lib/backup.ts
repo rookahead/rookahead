@@ -70,7 +70,9 @@ function deepView(lines: DeepLine[], played: string, color: Color): View {
  * The best other move is worth the move played plus however much better a search finds it, and where more
  * than one search ranks both moves, the least of them: a search near a combination may misjudge both moves,
  * but it misjudges them alike, so the gap between them is what it can vouch for, and an error needs every
- * search to agree. A move no search even ranks is judged by what the game showed it cost.
+ * search to agree. A move no search even ranks is judged by what the game showed it cost. But where a
+ * search already had the move played well short of the other one, and valued it about as the game went
+ * on to show, that search saw this position right: the other move is worth what it said.
  */
 export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, deep: Record<string, DeepLine[]>): BackedUp {
   const out = { ...evals }
@@ -96,10 +98,19 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
       else need.push(parent.fen)
     }
 
-    // The best other move, from the deepest search, worth what the searches that rank both moves agree on.
-    const other = views.findLast((v) => v.other)?.other ?? null
+    // A search that valued the move played about as the game went on to show wasn't misled here: its value
+    // for the other move stands as it is (15…Qg2+ 16.Ne2, where 16.Qe2 is +2.2 whatever 16.Ne2 turned out to be).
+    const sound = views.findLast(
+      (v) =>
+        v.other &&
+        v.mine &&
+        moverWin(v.other.score, color) - moverWin(v.mine, color) >= SHORT &&
+        Math.abs(moverWin(v.mine, color) - moverWin(played, color)) < JUMP,
+    )
+    // Otherwise the best other move, from the deepest search, worth what the searches that rank both moves agree on.
+    const other = sound?.other ?? views.findLast((v) => v.other)?.other ?? null
     const gaps = views.flatMap((v) => (v.other && v.mine ? [moverWin(v.other.score, color) - moverWin(v.mine, color)] : []))
-    const otherScore = other && (gaps.length ? shifted(played, Math.min(...gaps), color) : other.score)
+    const otherScore = other && (sound ? other.score : gaps.length ? shifted(played, Math.min(...gaps), color) : other.score)
     // Never worth more than its own search says.
     const worth = other && otherScore && (moverWin(otherScore, color) > moverWin(other.score, color) ? other.score : otherScore)
 

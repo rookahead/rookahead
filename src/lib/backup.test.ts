@@ -8,6 +8,7 @@ import type { Score } from './uci'
 import kasparov from './fixtures/backup-kasparov-topalov.json'
 import kasparovCloud from './fixtures/backup-kasparov-topalov-cloud.json'
 import melonlord from './fixtures/backup-melonlord.json'
+import centerGame from './fixtures/backup-melonlord-center-game.json'
 
 const cp = (value: number): Score => ({ type: 'cp', value })
 
@@ -67,12 +68,33 @@ describe('backing up the evals', () => {
     const report = classifyGame(line, backed)
     expect(report.moves[line[4].id]).toMatchObject({ cls: 'blunder', bestMove: 'd7d6' })
     expect(report.moves[line[3].id].cls).toBe('best')
-    // Worth the game's +6 less the gap that one search saw between the two moves (+5.5 against +0.3).
-    expect(backed[line[3].fen]).toMatchObject({ bestMove: 'd7d6', score: cp(49) })
+    // That search had 2…Nc6 at +5.5, about what the game showed (+6): its +0.3 for 2…d6 stands.
+    expect(backed[line[3].fen]).toMatchObject({ bestMove: 'd7d6', score: cp(30) })
   })
 
-  it('blames only by the smallest gap any search that ranks both moves sees', () => {
-    // The review's own search has 2…Nc6 nearly as good as 2…d6; a deeper one thinks it loses 5 pawns more.
+  it('blames only by the smallest gap any search that ranks both moves sees, when none saw the move as the game did', () => {
+    // The review's own search has 2…Nc6 nearly as good as 2…d6; a deeper one thinks it loses 1.7 pawns more,
+    // but the game showed 2…Nc6 at +6: neither saw what was coming, so neither can vouch for 2…d6.
+    const { line, evals } = game(UCIS, [
+      { score: cp(20), bestMove: 'e2e4' },
+      { score: cp(20), bestMove: 'e7e5' },
+      { score: cp(20), bestMove: 'g1f3' },
+      { score: cp(20), bestMove: 'd7d6', second: cp(35), secondMove: 'b8c6' },
+      { score: cp(600) },
+    ])
+    const deep = {
+      [line[3].fen]: [
+        { move: 'd7d6', score: cp(30), pv: ['d7d6'] },
+        { move: 'b8c6', score: cp(200), pv: ['b8c6'] },
+      ],
+    }
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    expect(report.moves[line[4].id]).toMatchObject({ cls: 'excellent', bestMove: 'd7d6' })
+  })
+
+  it('takes the word of a deeper search that saw the move played as the game did', () => {
+    // The review's own search has 2…Nc6 nearly as good as 2…d6; a deeper one sees it lose 5 pawns more,
+    // and the game bears it out (+6).
     const { line, evals } = game(UCIS, [
       { score: cp(20), bestMove: 'e2e4' },
       { score: cp(20), bestMove: 'e7e5' },
@@ -87,7 +109,7 @@ describe('backing up the evals', () => {
       ],
     }
     const report = classifyGame(line, backUp(line, evals, deep).evals)
-    expect(report.moves[line[4].id]).toMatchObject({ cls: 'excellent', bestMove: 'd7d6' })
+    expect(report.moves[line[4].id]).toMatchObject({ cls: 'blunder', bestMove: 'd7d6' })
   })
 
   it('takes a cloud eval as it is: it’s deeper than any search we would add', () => {
@@ -182,6 +204,18 @@ describe('an ordinary game', () => {
     expect(after.moves[at(line, 'Rab8', 40).id].cls).toBe('blunder')
     expect(Math.abs(after.accuracy.white! - before.accuracy.white!)).toBeLessThan(1)
     expect(Math.abs(after.accuracy.black! - before.accuracy.black!)).toBeLessThan(2)
+  })
+
+  it('blames 15…Qg2+, whose punishment 16.Qe2 White missed (Lite engine, depth 16, then 20)', () => {
+    // 15…Bf1 holds (0.00 at depth 24); after 15…Qg2+, 16.Qe2 is +2.2. White played 16.Ne2, which the game
+    // showed was even worse than the searches thought, but that says nothing about 16.Qe2.
+    const { line, evals, deep } = recorded(centerGame)
+    const backed = backUp(line, evals, deep)
+    expect(backed.need).toEqual([])
+    const report = classifyGame(line, backed.evals)
+    expect(report.moves[at(line, 'Qg2+', 30).id]).toMatchObject({ cls: 'mistake', bestMove: 'h3f1' })
+    expect(report.moves[at(line, 'Ne2', 31).id].cls).toBe('blunder')
+    expect(report.moves[at(line, 'Nxg3', 22).id].cls).toBe('great')
   })
 })
 
