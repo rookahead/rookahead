@@ -283,17 +283,19 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     return out
   }, [reviewArrows, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
 
-  // Persist the session so a refresh doesn't lose the game.
+  // Persist the session so a refresh doesn't lose the game. Writing the PGN replays the game in chess.js:
+  // only when the moves change, not on every step through them.
+  const sessionPgn = useMemo(() => mainlineToPgn(tree, headers), [tree, headers])
   useEffect(() => {
     const session: Session = {
-      pgn: mainlineToPgn(tree, headers),
+      pgn: sessionPgn,
       orientation,
       currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
       evals: review.evals,
       classes: sharedClasses ? line.slice(1).map((n) => sharedClasses[n.id] ?? null) : undefined,
     }
     writeSession(session)
-  }, [tree, headers, orientation, node, line, review.evals, sharedClasses])
+  }, [sessionPgn, tree, orientation, node, line, review.evals, sharedClasses])
 
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
   const reviewRan = useRef(false)
