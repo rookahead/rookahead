@@ -11295,3 +11295,13 @@ a.you-row:active {
   overflow: hidden;
   box-shadow: var(--shadow-pop);
 }
+
+.explain-move {
+  border-radius: 4px;
+}
+
+@media (hover: hover) {
+  .explain-move:hover {
+    background: var(--btn-hover);
+  }
+}

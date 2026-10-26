@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import type { Explanation } from '../lib/explain'
+import { previewAt, type Preview } from './MovePreview'
 import { Skel } from './Skeleton'
 
 interface Props {
@@ -11,13 +12,18 @@ interface Props {
   bestText?: string
   /** The row the board is showing. */
   active: number
+  /** Pointing at a row: the board draws it. */
   onPick: (index: number) => void
+  /** Clicking a row: the board plays its moves. */
+  onPlay: (index: number) => void
   onShowLine: (index: number) => void
   onClose: () => void
+  /** Pointing at a move of a line: a preview of the position after it. */
+  onPreview?: (preview: Preview | null) => void
 }
 
-/** Why the move was a mistake: short rows, one idea each. Pointing at a row draws it on the board. */
-export function ExplainPanel({ title, explanation, bestText, active, onPick, onShowLine, onClose }: Props) {
+/** Why the move was good or bad: short rows, one idea each. Pointing at a row draws it on the board; clicking plays it. */
+export function ExplainPanel({ title, explanation, bestText, active, onPick, onPlay, onShowLine, onClose, onPreview }: Props) {
   const rows =
     explanation === null
       ? [{ key: 'better', label: 'Better', text: bestText ? `${bestText} was stronger, though not for one reason we can show in a line.` : 'There’s no one reason we can show in a line.' }]
@@ -43,7 +49,7 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onS
             aria-pressed={i === active}
             onMouseEnter={() => onPick(i)}
             onFocus={() => onPick(i)}
-            onClick={() => onPick(i)}
+            onClick={() => onPlay(i)}
           >
             <span className={`explain-label${row.key === 'move' || row.key === 'take' ? ' san' : ''}`}>{row.label}</span>
             <span className="explain-text">{row.text}</span>
@@ -62,18 +68,35 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onS
           ))}
         </div>
       )}
-      {explanation?.lines.map((line, i) => (
-        <div key={line.label} className="explain-line">
-          <span className={`explain-label${/\d/.test(line.label) ? ' san' : ''}`}>{line.label}</span>
-          <span className="explain-moves">{line.text}</span>
-          <button className="btn ghost small" onClick={() => onShowLine(i)}>
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M8 5l11 7-11 7z" />
-            </svg>
-            Show
-          </button>
+      {explanation?.lines.length ? (
+        <div className="explain-lines" onMouseLeave={() => onPreview?.(null)}>
+          {explanation.lines.map((line, i) => (
+            <div key={line.label} className="explain-line">
+              <span className={`explain-label${/\d/.test(line.label) ? ' san' : ''}`}>{line.label}</span>
+              <span className="explain-moves">
+                {/* One word per move: "21.e5", "Rd7". The preview sits by all the lines, so it stays put. */}
+                {line.text.split(' ').map((word, k) => (
+                  <Fragment key={k}>
+                    {k > 0 && ' '}
+                    <span
+                      className="explain-move"
+                      onMouseEnter={(e) => onPreview?.(previewAt(line.fen, line.uci, k + 1, e.currentTarget.closest('.explain-lines')!.getBoundingClientRect()))}
+                    >
+                      {word}
+                    </span>
+                  </Fragment>
+                ))}
+              </span>
+              <button className="btn ghost small" onClick={() => onShowLine(i)}>
+                <svg viewBox="0 0 24 24" aria-hidden>
+                  <path d="M8 5l11 7-11 7z" />
+                </svg>
+                Show
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
+      ) : null}
     </section>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { explainMove, lineText, nullMoveFen, takeFen, type ExplainInput } from './explain'
+import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type ExplainInput } from './explain'
 
 const cp = (value: number) => ({ type: 'cp' as const, value })
 
@@ -27,7 +27,7 @@ describe('explaining a move', () => {
       'Better: 20…f6 covers e5. White stays only a little better (+0.86).',
     ])
     // The line stops once the pawn is won.
-    expect(explainMove(RAB8)?.lines).toEqual([{ label: 'The line', from: 'after', uci: ['e4e5', 'd8d7', 'e5d6'], text: '21.e5 Rd7 22.exd6' }])
+    expect(explainMove(RAB8)?.lines).toEqual([{ label: 'The line', from: 'after', fen: '1r1r2k1/1p2qppp/pQnpb3/8/P3P3/B1P5/5PPP/R3RBK1 w - - 8 21', uci: ['e4e5', 'd8d7', 'e5d6'], text: '21.e5 Rd7 22.exd6' }])
   })
 
   it('draws each row on the board', () => {
@@ -117,6 +117,48 @@ describe('explaining a move', () => {
 
   it('gives up when the move doesn’t fit the position', () => {
     expect(explainMove({ ...RAB8, uci: 'e1e8' })).toBeNull()
+  })
+})
+
+describe('explaining a good move', () => {
+  it('says it takes back what was taken, and what came next', () => {
+    // 1.e4 d5 2.exd5 Qxd5
+    const e = explainMove({
+      fenBefore: 'rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2',
+      uci: 'd8d5',
+      san: 'Qxd5',
+      cls: 'best',
+      best: { pv: ['d8d5', 'b1c3', 'd5a5'], score: cp(40) },
+      reply: { pv: ['b1c3', 'd5a5'], score: cp(40) },
+      second: { move: 'g8f6', score: cp(55) },
+    })!
+    expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual(['The idea: Takes back the pawn.', 'Next best: One of several good moves: 2…Nf6 was next (+0.55).'])
+    expect(e.lines[0]).toMatchObject({ label: 'Best play from here', text: '3.Nc3 Qa5' })
+  })
+
+  it('names castling', () => {
+    const e = explainMove({
+      fenBefore: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
+      uci: 'e1g1',
+      san: 'O-O',
+      cls: 'excellent',
+      best: { pv: ['d2d3', 'd7d6'], score: cp(30) },
+      reply: { pv: ['d7d6', 'c2c3'], score: cp(20) },
+    })!
+    expect(e.rows[0].text).toBe('Castles: the king is safe and the rook comes into play.')
+    expect(e.rows[1]).toMatchObject({ label: 'Best', text: '4.d3 was a little better (+0.30).' })
+  })
+})
+
+describe('playing a row', () => {
+  it('steps through its positions', () => {
+    const steps = playSteps({ fen: RAB8.fenBefore, uci: ['a8b8', 'e4e5'] })
+    expect(steps.map((s) => s.lastMove)).toEqual([undefined, ['a8', 'b8'], ['e4', 'e5']])
+    expect(steps[0].fen).toBe(RAB8.fenBefore)
+  })
+
+  it('gives every row of a mistake something to play', () => {
+    expect(explainMove(RAB8)!.rows.map((r) => r.play?.uci)).toEqual([['e4e5'], ['a8b8'], ['e4e5', 'd8d7', 'e5d6'], ['f7f6', 'f2f4', 'e6f7', 'a1d1']])
   })
 })
 

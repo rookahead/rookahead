@@ -31,7 +31,7 @@ import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLi
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
-import { explainMove, lineText, nullMoveFen, takeFen, type Explanation } from '../lib/explain'
+import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
@@ -223,25 +223,33 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
   const currentReview = report?.moves[node.id] ?? sideMoves[node.id]
 
-  // Explain: why the move on the board was a mistake. What it needs that the review didn't keep (what the
-  // opponent was threatening, lines the review saved too short) is searched when it opens.
+  // Explain: why the move on the board was good or bad. What it needs that the review didn't keep (what
+  // either side threatens, lines the review saved too short) is searched when it opens.
   const [explainId, setExplainId] = useState<string | null>(null)
   const [explainRow, setExplainRow] = useState(0)
-  const explainable = currentReview && (EXPLAINED as readonly MoveClass[]).includes(currentReview.cls)
-  const explaining = Boolean(explainable) && explainId === node.id && tab === 'review'
+  const explaining = Boolean(currentReview) && explainId === node.id && tab === 'review'
+  const wrong = Boolean(currentReview && WRONG.includes(currentReview.cls))
   const parentFen = node.parentId ? tree.nodes[node.parentId].fen : null
   const explainFens = useMemo(() => {
     if (!explaining || !parentFen) return []
     const short = (fen: string) => ((review.evals[fen] ?? side.evals[fen])?.pv.length ?? 0) < EXPLAIN_PLIES
-    return [nullMoveFen(parentFen), short(node.fen) && node.fen, short(parentFen) && parentFen].filter((f): f is string => Boolean(f))
-  }, [explaining, parentFen, node.fen, review.evals, side.evals])
+    // A good move is also explained by what it threatens: the mover's best if they could go again.
+    const own = wrong ? null : nullMoveFen(node.fen)
+    return [nullMoveFen(parentFen), own, short(node.fen) && node.fen, short(parentFen) && parentFen].filter((f): f is string => Boolean(f))
+  }, [explaining, wrong, parentFen, node.fen, review.evals, side.evals])
   const explainSearch = useSideLineReview({ engine, ready, evals: NO_EVALS, fens: explainFens, depth: reviewDepth, enabled: explaining && !side.pending && active })
   const evalOf = useCallback((fen: string) => explainSearch.evals[fen] ?? review.evals[fen] ?? side.evals[fen], [explainSearch.evals, review.evals, side.evals])
   // A sacrifice the engine's defence declines (the best line's, or the reply's): how it goes if it's taken anyway.
   const takeFens = useMemo(() => {
     if (!explaining || !parentFen || explainSearch.pending) return []
-    return [takeFen(parentFen, evalOf(parentFen)?.pv ?? []), takeFen(node.fen, evalOf(node.fen)?.pv ?? [])].filter((f): f is string => Boolean(f))
-  }, [explaining, parentFen, node.fen, explainSearch.pending, evalOf])
+    const replyPv = evalOf(node.fen)?.pv ?? []
+    return [
+      takeFen(parentFen, evalOf(parentFen)?.pv ?? []),
+      takeFen(node.fen, replyPv),
+      // A good move that is itself a sacrifice.
+      !wrong && node.uci ? takeFen(parentFen, [node.uci, ...replyPv]) : null,
+    ].filter((f): f is string => Boolean(f))
+  }, [explaining, wrong, parentFen, node.fen, node.uci, explainSearch.pending, evalOf])
   const takeSearch = useSideLineReview({ engine, ready, evals: NO_EVALS, fens: takeFens, depth: reviewDepth, enabled: explaining && !side.pending && active })
   const explanation = useMemo<Explanation | null | undefined>(() => {
     if (!explaining || !currentReview || !parentFen || !node.uci || !node.san) return undefined
@@ -251,6 +259,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (!before || !after) return null
     const nullFen = nullMoveFen(parentFen)
     const threat = nullFen ? explainSearch.evals[nullFen] : undefined
+    const ownFen = nullMoveFen(node.fen)
+    const own = ownFen ? explainSearch.evals[ownFen] : undefined
+    const reviewed = review.evals[parentFen] ?? side.evals[parentFen]
     const taken = (fen: string, pv: string[]) => {
       const f = takeFen(fen, pv)
       const e = f ? takeSearch.evals[f] : undefined
@@ -261,17 +272,28 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       fenBefore: parentFen,
       uci: node.uci,
       san: node.san,
-      cls: currentReview.cls as Explained,
-      best: { pv: before.pv, score: (review.evals[parentFen] ?? side.evals[parentFen] ?? before).score },
+      cls: currentReview.cls,
+      best: { pv: before.pv, score: (reviewed ?? before).score },
       reply: { pv: after.pv, score: currentReview.score },
       threat: threat ? { pv: threat.pv, score: threat.score } : null,
       bestTake: taken(parentFen, before.pv),
       replyTake: taken(node.fen, after.pv),
+      playedTake: taken(parentFen, [node.uci, ...after.pv]),
+      ownThreat: own ? { pv: own.pv, score: own.score } : null,
+      second: reviewed?.secondMove && reviewed.second ? { move: reviewed.secondMove, score: reviewed.second } : null,
     })
   }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
-  const explainView = explaining ? explanation?.rows[explainRow]?.position : undefined
   // A preview never outlives what it was pointing at.
-  useEffect(() => setPreview(null), [node.id, tab])
+  useEffect(() => setPreview(null), [node.id, tab, explaining])
+  // Clicking a row plays its moves on the board, a move at a time, and holds the last position.
+  const [explainPlay, setExplainPlay] = useState<{ steps: ReturnType<typeof playSteps>; at: number } | null>(null)
+  useEffect(() => setExplainPlay(null), [node.id, explaining])
+  useEffect(() => {
+    if (!explainPlay || explainPlay.at >= explainPlay.steps.length - 1) return
+    const timer = setTimeout(() => setExplainPlay((p) => p && { ...p, at: p.at + 1 }), explainPlay.at === 0 ? 350 : 800)
+    return () => clearTimeout(timer)
+  }, [explainPlay])
+  const explainView = !explaining ? undefined : explainPlay ? explainPlay.steps[explainPlay.at] : explanation?.rows[explainRow]?.position
 
   const live = useLiveAnalysis({
     engine,
@@ -321,7 +343,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     // While stepping through a review, show only "this was better" for the move just played.
     if (reviewArrows) {
       // Explaining: the row being pointed at.
-      if (explaining) return (explanation?.rows[explainRow]?.shapes ?? []) as DrawShape[]
+      if (explaining) return explainPlay ? [] : ((explanation?.rows[explainRow]?.shapes ?? []) as DrawShape[])
       const best = currentReview?.bestMove
       if (!best || !currentReview || ['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)) return []
       return [{ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'suggest' }]
@@ -336,7 +358,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       out.push({ orig: uci.slice(0, 2) as Key, dest: uci.slice(2, 4) as Key, brush: i === 0 ? 'best' : 'alt' })
     })
     return out
-  }, [reviewArrows, explaining, explanation, explainRow, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
+  }, [reviewArrows, explaining, explainPlay, explanation, explainRow, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
 
   // Persist the session so a refresh doesn't lose the game. Writing the PGN replays the game in chess.js:
   // only when the moves change, not on every step through them.
@@ -664,21 +686,19 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         reported={reported.has(`${node.id}:${currentReview.cls}`)}
         stepping={!phone}
       >
-        {explainable && (
-          <button
-            className="btn ghost coach-explain"
-            aria-pressed={explaining}
-            onClick={() => {
-              setExplainRow(0)
-              setExplainId(explaining ? null : node.id)
-            }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
-            </svg>
-            Explain
-          </button>
-        )}
+        <button
+          className="btn ghost coach-explain"
+          aria-pressed={explaining}
+          onClick={() => {
+            setExplainRow(0)
+            setExplainId(explaining ? null : node.id)
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+          </svg>
+          Explain
+        </button>
         {showBest && (
           <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
             Show {bestSan ?? 'best'}
@@ -857,7 +877,15 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             explanation={explanation}
             bestText={currentReview.bestMove && parentFen ? lineText(parentFen, pvToSan(parentFen, [currentReview.bestMove])) : undefined}
             active={explainRow}
-            onPick={setExplainRow}
+            onPick={(i) => {
+              setExplainRow(i)
+              setExplainPlay(null)
+            }}
+            onPlay={(i) => {
+              const row = explanation?.rows[i]
+              setExplainRow(i)
+              setExplainPlay(row?.play ? { steps: playSteps(row.play), at: 0 } : null)
+            }}
             onShowLine={(i) => {
               const shown = explanation?.lines[i]
               if (!shown) return
@@ -865,6 +893,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               if (from) showLineFrom(from, shown.uci)
             }}
             onClose={() => setExplainId(null)}
+            onPreview={canHover ? setPreview : undefined}
           />
         ) : phone ? (
           <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
@@ -1170,9 +1199,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 type PhoneView = 'summary' | 'coach' | 'engine'
 
 /** "a blunder", "an oversight". */
-/** The verdicts Explain covers. */
-const EXPLAINED = ['mistake', 'blunder', 'miss'] as const
-type Explained = (typeof EXPLAINED)[number]
+/** Verdicts Explain tells by what went wrong (the rest, by what the move does). */
+const WRONG: readonly MoveClass[] = ['inaccuracy', 'mistake', 'blunder', 'miss']
 /** Lines the review saved shorter than this are searched again for Explain. */
 const EXPLAIN_PLIES = 6
 const NO_EVALS: Record<string, PositionEval> = {}

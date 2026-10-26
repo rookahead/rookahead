@@ -1,5 +1,6 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js'
-import { formatScore, type Color } from './evaluation'
+import type { MoveClass } from './classify'
+import { formatScore, winPercent, type Color } from './evaluation'
 import { uciToMove } from './tree'
 import type { Score } from './uci'
 
@@ -14,20 +15,33 @@ export interface ExplainShape {
 }
 
 export interface ExplainRow {
-  key: 'threat' | 'move' | 'loses' | 'chance' | 'take' | 'result' | 'better'
+  key: 'idea' | 'threat' | 'move' | 'loses' | 'chance' | 'take' | 'result' | 'better' | 'next'
   label: string
   text: string
   /** What the board draws while this row is picked. */
   shapes: ExplainShape[]
   /** The position the row is about, when it isn't the one on the board (with the move that led to it). */
   position?: { fen: string; lastMove: [Square, Square] }
+  /** Clicking the row plays these moves on the board, from this position. */
+  play?: Play
 }
+
+export interface Play {
+  fen: string
+  uci: string[]
+}
+
+/** At most this many moves of a line play when its row is clicked. */
+const PLAY_MOVES = 6
+const play = (fen: string, uci: string[], n = uci.length): Play => ({ fen, uci: uci.slice(0, Math.min(Math.max(n, 1), PLAY_MOVES)) })
 
 /** A line to show, UCI and in notation: what punishes the move (from the position after it), or what
  *  was missed (from the position before). */
 export interface ShownLine {
   label: string
   from: 'before' | 'after'
+  /** The position it starts from. */
+  fen: string
   uci: string[]
   text: string
 }
@@ -48,8 +62,8 @@ export interface ExplainInput {
   fenBefore: string
   uci: string
   san: string
-  /** The review's verdict: only mistakes, blunders and misses get an explanation. */
-  cls: 'mistake' | 'blunder' | 'miss'
+  /** The review's verdict. */
+  cls: MoveClass
   /** The best line from the position before the move. */
   best: EngineLine
   /** The best line for the opponent after the move. */
@@ -60,7 +74,16 @@ export interface ExplainInput {
    *  after it's taken anyway (from `takeFen`). */
   bestTake?: EngineLine | null
   replyTake?: EngineLine | null
+  /** A good move: the best line if it's taken anyway, when the move itself is a sacrifice. */
+  playedTake?: EngineLine | null
+  /** A good move: what it threatens (the mover's best line if they could move again). */
+  ownThreat?: EngineLine | null
+  /** The review's second choice in the position before, for "next best". */
+  second?: { move: string; score: Score } | null
 }
+
+/** Verdicts explained by what went wrong; the rest by what the move does. */
+const WRONG: readonly MoveClass[] = ['inaccuracy', 'mistake', 'blunder', 'miss']
 
 const VALUES: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 const NAMES: Record<PieceSymbol, string> = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' }
@@ -90,6 +113,9 @@ interface Capture {
   by: Color
   piece: PieceSymbol
   square: Square
+  /** Which move of the line it was (0 = the first), and where the capturing piece came from. */
+  ply: number
+  from: Square
 }
 
 interface Played {
@@ -126,7 +152,7 @@ function playLine(fen: string, pv: string[], max = 6): Played {
     }
     san.push(move.san)
     fens.push(chess.fen())
-    if (move.captured) all.push({ by: move.color === 'w' ? 'white' : 'black', piece: move.captured, square: move.to })
+    if (move.captured) all.push({ by: move.color === 'w' ? 'white' : 'black', piece: move.captured, square: move.to, ply: san.length - 1, from: move.from })
     // The captures stop after a move that isn't followed by one.
     const next = pv[san.length]
     const nextTakes = next && san.length < max && chess.moves({ verbose: true }).some((m) => m.from + m.to === next.slice(0, 4) && m.captured)
@@ -241,6 +267,16 @@ function lineStory(fen: string, line: EngineLine, played: Played): string | null
   return `${first} ${wins}`
 }
 
+/**
+ * A threat worth naming by its first move: that move mates or takes something, or the piece it moves
+ * takes something next ("e5, which wins the d6 pawn"). Not a quiet move after which material falls later.
+ */
+function direct(played: Played, pv: string[]): boolean {
+  if (played.mateAt && played.mateAt <= 5) return true
+  const side = played.captures[0] && played.captures.find((c) => c.ply % 2 === 0)
+  return Boolean(side && (side.ply === 0 || (side.ply === 2 && side.from === pv[0]?.slice(2, 4))))
+}
+
 /** Where the mover stands, in words, e.g. "White stays only a little better (+0.73)". */
 function standing(score: Score, mover: Color): string {
   const tag = `(${formatScore(score)})`
@@ -307,7 +343,7 @@ function coversReply(fen: string, bestUci: string, replyUci: string): boolean {
 
 function shownLine(label: string, from: 'before' | 'after', fen: string, pv: string[], played: Played): ShownLine {
   const n = Math.min(Math.max(played.length, 2), played.san.length)
-  return { label, from, uci: pv.slice(0, n), text: lineText(fen, played.san.slice(0, n)) }
+  return { label, from, fen, uci: pv.slice(0, n), text: lineText(fen, played.san.slice(0, n)) }
 }
 
 /** The `k`th move of a line from `fen`, numbered: "6…Kxf7". */
@@ -370,7 +406,13 @@ function sacrificeStory(
   const arrow = (uci: string): ExplainShape => ({ orig: squares(uci)[0], dest: squares(uci)[1], brush: opts.brush })
   const [firstSan] = pvSan(fen, line.pv.slice(0, 1))
   const rows: ExplainRow[] = [
-    { key: opts.key, label: opts.label, text: `${lineText(fen, [firstSan])} sacrifices the ${NAMES[sac.piece]}${sac.check ? ' with check' : ''}.`, shapes: [arrow(line.pv[0])] },
+    {
+      key: opts.key,
+      label: opts.label,
+      text: `${lineText(fen, [firstSan])} sacrifices the ${NAMES[sac.piece]}${sac.check ? ' with check' : ''}.`,
+      shapes: [arrow(line.pv[0])],
+      play: play(fen, line.pv, 1),
+    },
   ]
   const lines: ShownLine[] = []
 
@@ -402,15 +444,16 @@ function sacrificeStory(
       const regainText = regain !== null && regain > 2 ? numbered(fen, regain, sans[regain]) : null
       const firstText = numbered(fen, 2, sans[2])
       const what = fork.length ? `${firstText} forks ${forkWords(fork, !opts.yours)}` : regain === 2 ? `${firstText} wins it back` : `${firstText} follows`
+      const n = Math.max(regain ?? 0, 2) + 1
       rows.push({
         key: 'take',
         label: `If ${takeText}`,
         text: `${what}${regainText ? `, and ${regainText} wins it back` : ''}.`,
         shapes: [arrow(takeUci[2]), ...(regain !== null && regain > 2 ? [arrow(takeUci[regain])] : [])],
         ...(takenFen && { position: { fen: takenFen, lastMove: [...squares(takeUci[1])] as [Square, Square] } }),
+        play: play(fen, takeUci, n),
       })
-      const n = Math.max(regain ?? 0, 2) + 1
-      lines.push({ label: `If ${takeText}`, from: opts.from, uci: takeUci.slice(0, n), text: lineText(fen, sans.slice(0, n)) })
+      lines.push({ label: `If ${takeText}`, from: opts.from, fen, uci: takeUci.slice(0, n), text: lineText(fen, sans.slice(0, n)) })
     }
   }
 
@@ -430,6 +473,7 @@ function sacrificeStory(
       label: rows.length > 1 && !taken ? 'Either way' : 'Then',
       text: `${capitalise(parts.join(', and '))} (${formatScore(line.score)}).`,
       shapes: [arrow(line.pv[0])],
+      play: play(fen, line.pv, played.length),
     })
   }
   if (!taken) lines.push(shownLine(lines.length ? 'Best defence' : 'The line', opts.from, fen, line.pv, played))
@@ -451,6 +495,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     return null
   }
   const [from, to] = squares(uci)
+  if (!WRONG.includes(cls)) return explainGood(input, fenAfter)
   const rows: ExplainRow[] = []
   const bestUci = best.pv[0]
   const bestPlayed = bestUci ? playLine(fenBefore, best.pv) : null
@@ -459,12 +504,12 @@ export function explainMove(input: ExplainInput): Explanation | null {
   /** What the better move would have done, and the move played letting it go. */
   const chance = (note: string): Explanation | null => {
     if (!bestUci || !bestSan || !bestPlayed) return null
-    const moveRow: ExplainRow = { key: 'move', label: san, text: note, shapes: [{ orig: from, dest: to, brush: 'yellow' }] }
+    const moveRow: ExplainRow = { key: 'move', label: san, text: note, shapes: [{ orig: from, dest: to, brush: 'yellow' }], play: play(fenBefore, [uci]) }
     const sac = sacrificeStory(fenBefore, best, bestTake, { key: 'chance', label: 'The chance', from: 'before', brush: 'suggest', yours: true, standing: standing(best.score, mover) })
     if (sac) return { rows: [...sac.rows, moveRow], lines: sac.lines }
     const story = lineStory(fenBefore, best, bestPlayed)
     const text = story ? `${capitalise(story)}. ${capitalise(standing(best.score, mover))}.` : `${lineText(fenBefore, [bestSan])} was the move: ${standing(best.score, mover)}.`
-    rows.push({ key: 'chance', label: 'The chance', text, shapes: [{ orig: squares(bestUci)[0], dest: squares(bestUci)[1], brush: 'suggest' }] }, moveRow)
+    rows.push({ key: 'chance', label: 'The chance', text, shapes: [{ orig: squares(bestUci)[0], dest: squares(bestUci)[1], brush: 'suggest' }], play: play(fenBefore, best.pv, bestPlayed.length) }, moveRow)
     return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, bestPlayed)] }
   }
 
@@ -496,7 +541,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     const t = fenNull ? playLine(fenNull, threat.pv) : null
     const tStory = fenNull && t ? lineStory(fenNull, threat, t) : null
     // Only when it's the same story: a move that half-answers the threat (a counter-attack) isn't "nothing".
-    if (tStory && t && (mateFor(threat.score, them) || Math.abs(t.gain - punished.gain) <= 1)) {
+    if (tStory && t && direct(t, threat.pv) && (mateFor(threat.score, them) || Math.abs(t.gain - punished.gain) <= 1)) {
       threatened = true
       const what = tStory.replace(/^\S+ /, '')
       rows.push({
@@ -504,6 +549,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
         label: 'The threat',
         text: `${sideName(them)} was threatening ${replySan.replace(/[+#]$/, '')}, which ${what}.`,
         shapes: [{ orig: rFrom, dest: rTo, brush: 'red' }],
+        ...(fenNull && { play: play(fenNull, [replyUci]) }),
       })
     }
   }
@@ -525,7 +571,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     }
   }
   if (!moveText && between(rFrom, rTo).includes(from)) moveText = `Opens the way for ${replySan}.`
-  if (moveText) rows.push({ key: 'move', label: san, text: moveText, shapes: moveShapes })
+  if (moveText) rows.push({ key: 'move', label: san, text: moveText, shapes: moveShapes, play: play(fenBefore, [uci]) })
 
   // How it loses: the punishing line, played out.
   const label = cls === 'blunder' ? 'How it loses' : 'What it allows'
@@ -534,7 +580,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const loseShapes: ExplainShape[] = [{ orig: rFrom, dest: rTo, brush: 'red' }]
   if (firstTake && firstTake.square !== rTo) loseShapes.push({ orig: firstTake.square, brush: 'red' })
   if (sac) rows.push(...sac.rows)
-  else rows.push({ key: 'loses', label, text: loses, shapes: loseShapes })
+  else rows.push({ key: 'loses', label, text: loses, shapes: loseShapes, play: play(fenAfter, reply.pv, punished.length) })
 
   // Better: the review's best move, and what it does about it.
   if (bestUci && bestSan && bestPlayed) {
@@ -552,8 +598,117 @@ export function explainMove(input: ExplainInput): Explanation | null {
       label: 'Better',
       text: `${bestText}${point ? ` ${point}` : ' was the move'}. ${capitalise(standing(best.score, mover))}.`,
       shapes: [{ orig: bFrom, dest: bTo, brush: 'suggest' }],
+      play: play(fenBefore, best.pv, bestPlayed.length),
     })
   }
 
   return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)] }
+}
+
+/** In the opening, a knight or bishop leaving its first square. */
+const developing = (fen: string, piece: PieceSymbol, from: Square, color: Color) =>
+  (piece === 'n' || piece === 'b') && from[1] === (color === 'white' ? '1' : '8') && Number(fen.split(' ')[5]) <= 15
+
+/** A move that's fine: what it does (when there's something real to point at), then what else there was. */
+function explainGood(input: ExplainInput, fenAfter: string): Explanation | null {
+  const { fenBefore, uci, cls, best, reply, threat, ownThreat, playedTake, second } = input
+  const mover = turnOf(fenBefore)
+  const them = other(mover)
+  const [from, to] = squares(uci)
+  const mine: ExplainShape = { orig: from, dest: to, brush: 'suggest' }
+  const playedLine: EngineLine = { pv: [uci, ...reply.pv], score: reply.score }
+  const played = playLine(fenBefore, playedLine.pv)
+  const rows: ExplainRow[] = []
+  let lines: ShownLine[] = []
+  const idea = (text: string, shapes: ExplainShape[] = [mine], n = 1) =>
+    rows.push({ key: 'idea', label: 'The idea', text, shapes, play: play(fenBefore, playedLine.pv, n) })
+
+  const after = new Chess(fenAfter)
+  const move = new Chess(fenBefore).move(uciToMove(uci))
+  const mate = played.mateAt ? Math.ceil(played.mateAt / 2) : mateFor(reply.score, mover)
+  const sac = sacrificeStory(fenBefore, playedLine, playedTake, { key: 'idea', label: 'The idea', from: 'before', brush: 'suggest', yours: true, standing: standing(reply.score, mover) })
+  const wins = winsWhat(played, mover)
+  const fork = forkTargets(fenAfter, to)
+  // What they were threatening, if this move stops it.
+  const fenNull = nullMoveFen(fenBefore)
+  const tPlayed = threat && fenNull ? playLine(fenNull, threat.pv) : null
+  const tStory = threat && fenNull && tPlayed && direct(tPlayed, threat.pv) ? lineStory(fenNull, threat, tPlayed) : null
+  // What the move threatens now.
+  const ownNull = nullMoveFen(fenAfter)
+  const oPlayed = ownThreat && ownNull ? playLine(ownNull, ownThreat.pv) : null
+  const oStory = ownThreat && ownNull && oPlayed && direct(oPlayed, ownThreat.pv) ? lineStory(ownNull, ownThreat, oPlayed) : null
+  // Taking back what was just taken: material was down before the move and level after it.
+  const behind = balance(new Chess(fenBefore), mover)
+  const winsBack = move.captured && behind < 0 && played.gain <= -behind
+
+  if (after.isCheckmate()) idea('Checkmate.')
+  else if (mate) idea(`Starts a mate in ${mate}.`, [mine], played.mateAt ?? played.length)
+  else if (cls === 'forced') idea('The only legal move.')
+  else if (sac) {
+    rows.push(...sac.rows)
+    lines = sac.lines
+  } else if (winsBack) idea(`Takes back the ${NAMES[move.captured!]}.`)
+  else if (move.captured && wins && fork.length) idea(`Forks ${forkWords(fork, false)}, and ${wins}.`, [mine], played.length)
+  else if (move.captured && wins) idea(`${capitalise(wins)}.`, [mine], played.length)
+  else if (move.captured) idea(`Takes the ${move.captured === 'p' ? `${to} pawn` : `${NAMES[move.captured]} on ${to}`}.`)
+  else if (tStory && reply.pv[0] !== threat!.pv[0]) {
+    idea(`Deals with ${sideName(them)}’s threat of ${tPlayed!.san[0].replace(/[+#]$/, '')}, which ${tStory.replace(/^\S+ /, '')}.`, [{ ...mine }, { orig: squares(threat!.pv[0])[0], dest: squares(threat!.pv[0])[1], brush: 'red' }])
+  } else if (oStory) {
+    idea(`Threatens ${oPlayed!.san[0].replace(/[+#]$/, '')}, which ${oStory.replace(/^\S+ /, '')}.`, [mine, { orig: squares(ownThreat!.pv[0])[0], dest: squares(ownThreat!.pv[0])[1], brush: 'yellow' }])
+  } else if (move.isKingsideCastle() || move.isQueensideCastle()) idea('Castles: the king is safe and the rook comes into play.')
+  else if (developing(fenBefore, move.piece, from, mover)) idea(`Develops the ${NAMES[move.piece]}.`)
+  else if (cls === 'book') idea('A well-known opening move.')
+  else if (after.inCheck()) idea('Gives check.')
+  // Nothing to point at: some moves are best for reasons a line can't show.
+  else if (cls === 'best' || cls === 'great' || cls === 'brilliant') idea(`No tactic here: it’s simply the most useful move in the position.`)
+  else idea(`A sensible move that keeps things going.`)
+
+  // What else there was.
+  const isBest = uci === best.pv[0]
+  if (isBest && second?.move && second.move !== uci) {
+    const [nextSan] = pvSan(fenBefore, [second.move])
+    if (nextSan) {
+      const gap = Math.abs(winGap(best.score, second.score, mover))
+      const how = cls === 'great' ? 'Nothing else holds' : gap >= 15 ? 'Well ahead of the rest' : gap >= 5 ? 'A little ahead of the rest' : 'One of several good moves'
+      rows.push({
+        key: 'next',
+        label: 'Next best',
+        text: `${how}: ${lineText(fenBefore, [nextSan])} was next (${formatScore(second.score)}).`,
+        shapes: [{ orig: squares(second.move)[0], dest: squares(second.move)[1], brush: 'yellow' }],
+        play: play(fenBefore, [second.move]),
+      })
+    }
+  } else if (!isBest && best.pv[0]) {
+    const bestPlayed = playLine(fenBefore, best.pv)
+    const story = lineStory(fenBefore, best, bestPlayed)
+    const bestSac = sacrifice(fenBefore, best.pv[0])
+    const point = story ? story.replace(/^\S+ /, '') : bestSac ? `sacrifices the ${NAMES[bestSac.piece]}` : null
+    rows.push({
+      key: 'better',
+      label: 'Best',
+      text: `${lineText(fenBefore, bestPlayed.san.slice(0, 1))}${point ? ` ${point}` : ' was a little better'} (${formatScore(best.score)}).`,
+      shapes: [{ orig: squares(best.pv[0])[0], dest: squares(best.pv[0])[1], brush: 'suggest' }],
+      play: play(fenBefore, best.pv, bestPlayed.length),
+    })
+  }
+  if (!lines.length && reply.pv.length) lines = [shownLine('Best play from here', 'after', fenAfter, reply.pv, playLine(fenAfter, reply.pv))]
+  return { rows, lines }
+}
+
+/** How far apart two scores are, in the mover's win chance (0–100). */
+const winGap = (a: Score, b: Score, mover: Color) => (mover === 'white' ? 1 : -1) * (winPercent(a) - winPercent(b))
+
+/** The positions a row's moves pass through, for playing them on the board: the start, then after each move. */
+export function playSteps({ fen, uci }: Play): { fen: string; lastMove?: [Square, Square] }[] {
+  const chess = new Chess(fen)
+  const steps: { fen: string; lastMove?: [Square, Square] }[] = [{ fen }]
+  for (const u of uci) {
+    try {
+      const move = chess.move(uciToMove(u))
+      steps.push({ fen: chess.fen(), lastMove: [move.from, move.to] })
+    } catch {
+      break
+    }
+  }
+  return steps
 }
