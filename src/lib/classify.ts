@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 9
+export const RULES_VERSION = 10
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -398,7 +398,7 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
     } else {
       stillInBook = false
       if (legalMoves === 1) cls = 'forced'
-      else if (playedBest || (after.score.type === 'mate' && after.score.value === 0)) cls = 'best'
+      else if (playedBest || node.san?.endsWith('#')) cls = 'best'
       else if (loss < LOSS_BANDS.excellent) cls = 'excellent'
       else if (loss < LOSS_BANDS.good) cls = 'good'
       else if (loss < LOSS_BANDS.inaccuracy) cls = 'inaccuracy'
@@ -439,7 +439,7 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // may throw in a check that gives more up (22.Nd5 Nbxd5 23.Nc6+ Bxc6), where the game just took back.
       const played = line.slice(i + 1, i + 5).flatMap((n) => (n.uci ? [n.uci] : []))
       const sac = gradable ? offered(after.pv) && (played[0] !== after.pv[0] || played.length < 2 ? offered(after.pv) : offered(played)) : null
-      const mates = after.score.type === 'mate' && after.score.value === 0
+      const mates = node.san?.endsWith('#') ?? false
       const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
       if (soundSac || (sac !== null && fastestMate)) {
         cls = 'brilliant'

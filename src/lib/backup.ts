@@ -45,6 +45,17 @@ function shifted(score: Score, by: number, color: Color): Score {
   return scoreForWin(color === 'white' ? win : 100 - win)
 }
 
+/**
+ * What the position after a move is worth, seen from the position before it (`color` to move there): a mate is
+ * one move further off for the side that mates when it's that side's move. Only a checkmate itself is mate 0.
+ */
+function aMoveEarlier(score: Score, color: Color): Score {
+  if (score.type !== 'mate') return score
+  const whiteMates = score.value === 0 ? score.mated === 'black' : score.value > 0
+  const moves = Math.abs(score.value) + ((color === 'white') === whiteMates ? 1 : 0)
+  return { type: 'mate', value: whiteMates ? moves : -moves }
+}
+
 /** One search's view of a position: its best move other than the one played, and the one played if it lists it. */
 interface View {
   other: DeepLine | null
@@ -88,7 +99,7 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
       continue
     }
     const color = turnOf(parent.fen)
-    const played = next
+    const played = aMoveEarlier(next, color)
     const gap = moverWin(own.score, color) - moverWin(played, color)
     const views = [ownView(own, node.uci)]
     // A cloud eval (cloudEval.ts) is already far deeper than our deeper look would be: it stands as it is.
