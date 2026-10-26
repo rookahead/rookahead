@@ -16,7 +16,7 @@ const ITEMS = [
     id: 'flip',
     label: 'Flip board',
     key: 'F',
-    icon: <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />,
+    icon: <path d="M8 20V4M4 8l4-4 4 4M16 4v16M12 16l4 4 4-4" />,
   },
   {
     id: 'new',

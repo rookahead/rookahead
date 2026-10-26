@@ -10,7 +10,7 @@ interface Props {
   detail?: ReactNode
   score?: Score | null
   children?: ReactNode
-  /** "Report this verdict": a quiet "Disagree?" in the title row, always in the same spot. */
+  /** "Report this verdict": a quiet flag ("Disagree?") in the title row, always in the same spot. */
   onReport?: () => void
   /** This verdict has been reported already (this visit). */
   reported?: boolean
@@ -59,12 +59,12 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
             className="coach-report"
             onClick={onReport}
             disabled={reported}
-            title={reported ? 'Thanks! We’ll take a look.' : 'Think this verdict is wrong? Tell us.'}
+            aria-label={reported ? 'Reported' : 'Disagree?'}
+            title={reported ? 'Reported. Thanks, we’ll take a look.' : 'Disagree? Think this verdict is wrong? Tell us.'}
           >
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
             </svg>
-            {reported ? 'Reported' : 'Disagree?'}
           </button>
         )}
         {score && <span className="eval-pill">{formatScore(score)}</span>}

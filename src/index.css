@@ -9690,12 +9690,15 @@ strong.settings-value {
 }
 
 /* ═══════════════ Report this verdict ═══════════════ */
-/* "Disagree?" in the coach's title row, just before the eval: a quiet link, always in the same spot. */
+/* "Disagree?" in the coach's title row, just before the eval: a quiet flag, always in the same spot,
+   that leaves the title its room. */
 .coach-report {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
   padding: 0;
   border: 0;
   background: none;
@@ -9708,11 +9711,12 @@ strong.settings-value {
 
 .coach-report:hover:not(:disabled) {
   color: var(--text);
+  background: var(--btn);
 }
 
 .coach-report svg {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;

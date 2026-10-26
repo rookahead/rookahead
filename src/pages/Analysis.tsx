@@ -860,7 +860,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <h1 className="panel-title">{blank ? 'Analysis board' : 'Game review'}</h1>
                   <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
                     <svg viewBox="0 0 24 24" aria-hidden>
-                      <path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7" />
+                      <path d="M8 20V4M4 8l4-4 4 4M16 4v16M12 16l4 4 4-4" />
                     </svg>
                   </button>
                   <button
