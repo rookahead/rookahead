@@ -3,6 +3,7 @@ import type { AnalysisResult, EngineLine, EngineStatus } from '../engine/Engine'
 import type { TerminalState } from '../hooks/useAnalysis'
 import { favoured, formatScore } from '../lib/evaluation'
 import { pvToSan } from '../lib/tree'
+import { previewAt, type Preview } from './MovePreview'
 import { Gear } from './UserCard'
 
 interface Props {
@@ -19,6 +20,8 @@ interface Props {
   onPlayLine: (pv: string[], count: number) => void
   /** Opens the analysis settings (the gear in the header). */
   onOpenSettings: () => void
+  /** Pointing at a move: a preview of the position after it (null when the pointer leaves). */
+  onPreview?: (preview: Preview | null) => void
 }
 
 function formatNps(nps?: number) {
@@ -37,16 +40,18 @@ interface LineProps {
   fen: string
   line: EngineLine
   onPlayLine: Props['onPlayLine']
+  onPreview?: Props['onPreview']
 }
 
 // The engine sends a fresh line object many times a second, mostly with nothing visible changed.
 const sameLine = (a: LineProps, b: LineProps) =>
   a.fen === b.fen &&
   a.onPlayLine === b.onPlayLine &&
+  a.onPreview === b.onPreview &&
   formatScore(a.line.score) === formatScore(b.line.score) &&
   a.line.pv.slice(0, PV_SHOWN).join() === b.line.pv.slice(0, PV_SHOWN).join()
 
-const Line = memo(function Line({ fen, line, onPlayLine }: LineProps) {
+const Line = memo(function Line({ fen, line, onPlayLine, onPreview }: LineProps) {
   const sans = pvToSan(fen, line.pv.slice(0, PV_SHOWN))
   const [, side, , , , fullmove] = fen.split(' ')
   // Ply offset so that 0 = White's move; numbers go on White's moves and on the first move.
@@ -62,7 +67,18 @@ const Line = memo(function Line({ fen, line, onPlayLine }: LineProps) {
       <ScoreBadge line={line} />
       <div className="engine-pv">
         {sans.map((san, i) => (
-          <button key={i} className="pv-move" onMouseDown={(e) => e.preventDefault()} onClick={() => onPlayLine(line.pv, i + 1)} title="Play up to here">
+          <button
+            key={i}
+            className="pv-move"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onPreview?.(null)
+              onPlayLine(line.pv, i + 1)
+            }}
+            // The preview sits by the whole set of lines, not the move: it stays put and only its position changes.
+            onMouseEnter={(e) => onPreview?.(previewAt(fen, line.pv, i + 1, e.currentTarget.closest('.engine-lines')!.getBoundingClientRect()))}
+            title="Play up to here"
+          >
             {labelFor(i) && <span className="pv-num">{labelFor(i)}</span>}
             {san}
           </button>
@@ -72,7 +88,7 @@ const Line = memo(function Line({ fen, line, onPlayLine }: LineProps) {
   )
 }, sameLine)
 
-export function EngineLines({ fen, status, enabled, onToggle, result, searching, maxLines, terminal, reviewing, onPlayLine, onOpenSettings }: Props) {
+export function EngineLines({ fen, status, enabled, onToggle, result, searching, maxLines, terminal, reviewing, onPlayLine, onOpenSettings, onPreview }: Props) {
   const loading = status?.state === 'loading'
   const name = status?.name?.replace(/\s*(WASM|Lite|Multithreaded).*$/i, '') || 'Stockfish 19'
   let body: React.ReactNode
@@ -106,9 +122,9 @@ export function EngineLines({ fen, status, enabled, onToggle, result, searching,
     )
   } else {
     body = (
-      <div className="engine-lines">
+      <div className="engine-lines" onMouseLeave={() => onPreview?.(null)}>
         {result.lines.slice(0, maxLines).map((line) => (
-          <Line key={line.multipv} fen={fen} line={line} onPlayLine={onPlayLine} />
+          <Line key={line.multipv} fen={fen} line={line} onPlayLine={onPlayLine} onPreview={onPreview} />
         ))}
       </div>
     )

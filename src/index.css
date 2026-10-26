@@ -11285,3 +11285,13 @@ a.you-row:active {
     display: none;
   }
 }
+
+/* Pointing at a move in a line: the position after it, in a small board above the move. */
+.move-preview {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-pop);
+}

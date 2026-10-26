@@ -11,6 +11,7 @@ import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
 import { chipText, EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
+import { MovePreview, type Preview } from '../components/MovePreview'
 import { ExplainPanel } from '../components/ExplainPanel'
 import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
@@ -119,6 +120,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const ready = status?.state === 'ready'
   // Phones show the board full screen, with the review's parts one at a time under it.
   const phone = useMediaQuery('(max-width: 1000px)')
+  // Pointing at a move in a line shows the position after it (only where there's a pointer to point).
+  const canHover = useMediaQuery('(hover: hover)')
+  const [preview, setPreview] = useState<Preview | null>(null)
   useImmersive(active && phone)
 
   const [restored] = useState(restoreSession)
@@ -266,6 +270,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     })
   }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
   const explainView = explaining ? explanation?.rows[explainRow]?.position : undefined
+  // A preview never outlives what it was pointing at.
+  useEffect(() => setPreview(null), [node.id, tab])
 
   const live = useLiveAnalysis({
     engine,
@@ -1041,6 +1047,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                       reviewing={reviewing}
                       onPlayLine={playLine}
                       onOpenSettings={() => setOptionsOpen(true)}
+                      onPreview={canHover ? setPreview : undefined}
                     />
                     <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
                     {inVariation && (
@@ -1094,6 +1101,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           </aside>
 
       </main>
+
+      <MovePreview preview={preview} orientation={orientation} theme={settings.boardTheme} />
 
       {shareOpen && (
         <ShareDialog
