@@ -140,6 +140,57 @@ describe('backing up the evals', () => {
   })
 })
 
+describe('a game that ends in checkmate', () => {
+  const mate = (value: number): Score => ({ type: 'mate', value })
+  const mated = (side: 'white' | 'black'): Score => ({ type: 'mate', value: 0, mated: side })
+
+  it('blames the move that allows mate in one, and counts the mate a move away', () => {
+    // 1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Nd7 5.Qe2 Ngf6?? 6.Nd6#, the cloud's evals from 5.Qe2 on.
+    const ucis = ['e2e4', 'c7c6', 'd2d4', 'd7d5', 'b1c3', 'd5e4', 'c3e4', 'b8d7', 'd1e2', 'g8f6', 'e4d6']
+    const { line, evals } = game(ucis, [
+      ...ucis.slice(0, 9).map((uci) => ({ score: cp(30), bestMove: uci })),
+      { score: cp(18), bestMove: 'd7f6', second: cp(42), secondMove: 'd8c7', cloud: true },
+      { score: mate(1), bestMove: 'e4d6', second: cp(47), secondMove: 'g1f3', cloud: true },
+      { score: mated('black') },
+    ])
+    const backed = backUp(line, evals, {}).evals
+    expect(backed[line[10].fen].score).toEqual(mate(1))
+    const report = classifyGame(line, backed)
+    expect(report.moves[line[10].id].cls).toBe('blunder')
+    expect(report.moves[line[11].id].cls).toBe('best')
+  })
+
+  it('blames the move that allows mate in two, not the mate', () => {
+    // Légal's mate: 5…Bxd1?? 6.Bxf7+ Ke7 7.Nd5#, where 5…dxe5 is −2.3.
+    const ucis = ['e2e4', 'e7e5', 'g1f3', 'd7d6', 'f1c4', 'c8g4', 'b1c3', 'g7g6', 'f3e5', 'g4d1', 'c4f7', 'e8e7', 'c3d5']
+    const { line, evals } = game(ucis, [
+      ...ucis.slice(0, 9).map((uci) => ({ score: cp(30), bestMove: uci })),
+      { score: cp(-225), bestMove: 'd6e5', second: mate(2), secondMove: 'g4d1' },
+      { score: mate(2), bestMove: 'c4f7' },
+      { score: mate(1), bestMove: 'e8e7' },
+      { score: mate(1), bestMove: 'c3d5' },
+      { score: mated('black') },
+    ])
+    const backed = backUp(line, evals, {}).evals
+    expect(line.slice(10).map((n) => backed[n.fen].score)).toEqual([mate(2), mate(1), mate(1), mated('black')])
+    const report = classifyGame(line, backed)
+    expect(line.slice(10).map((n) => report.moves[n.id].cls)).toEqual(['blunder', 'best', 'forced', 'best'])
+  })
+
+  it('grades a review saved with the old back-up, mate scores before the mate, the same', () => {
+    const ucis = ['e2e4', 'c7c6', 'd2d4', 'd7d5', 'b1c3', 'd5e4', 'c3e4', 'b8d7', 'd1e2', 'g8f6', 'e4d6']
+    const { line, evals } = game(ucis, [
+      ...ucis.slice(0, 9).map((uci) => ({ score: cp(30), bestMove: uci })),
+      { score: cp(18), bestMove: 'd7f6' },
+      { score: mated('black'), bestMove: 'e4d6' },
+      { score: mated('black') },
+    ])
+    const report = classifyGame(line, evals)
+    expect(report.moves[line[10].id].cls).toBe('blunder')
+    expect(report.moves[line[11].id].cls).toBe('best')
+  })
+})
+
 describe('Kasparov–Topalov, Wijk aan Zee 1999', () => {
   const verdicts = (fx: { pgn: string; evals: unknown; deep?: unknown }) => {
     const { line, evals, deep } = recorded(fx)
