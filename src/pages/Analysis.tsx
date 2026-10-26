@@ -11,6 +11,7 @@ import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
 import { chipText, EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
+import { ExplainPanel } from '../components/ExplainPanel'
 import { BoardMenu } from '../components/BoardMenu'
 import { GameInfo } from '../components/GameInfo'
 import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadGameDialog'
@@ -29,6 +30,7 @@ import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLi
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
+import { explainMove, lineText, nullMoveFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
@@ -56,6 +58,7 @@ import {
   pathTo,
   promoteVariation,
   pvToSan,
+  uciToMove,
   ROOT_ID,
   treeFromPgn,
   type GameTree,
@@ -216,6 +219,40 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
   const currentReview = report?.moves[node.id] ?? sideMoves[node.id]
 
+  // Explain: why the move on the board was a mistake. What it needs that the review didn't keep (what the
+  // opponent was threatening, lines the review saved too short) is searched when it opens.
+  const [explainId, setExplainId] = useState<string | null>(null)
+  const [explainRow, setExplainRow] = useState(0)
+  const explainable = currentReview && (EXPLAINED as readonly MoveClass[]).includes(currentReview.cls)
+  const explaining = Boolean(explainable) && explainId === node.id && tab === 'review'
+  const parentFen = node.parentId ? tree.nodes[node.parentId].fen : null
+  const explainFens = useMemo(() => {
+    if (!explaining || !parentFen) return []
+    const short = (fen: string) => ((review.evals[fen] ?? side.evals[fen])?.pv.length ?? 0) < EXPLAIN_PLIES
+    return [nullMoveFen(parentFen), short(node.fen) && node.fen, short(parentFen) && parentFen].filter((f): f is string => Boolean(f))
+  }, [explaining, parentFen, node.fen, review.evals, side.evals])
+  const explainSearch = useSideLineReview({ engine, ready, evals: NO_EVALS, fens: explainFens, depth: reviewDepth, enabled: explaining && !side.pending && active })
+  const explanation = useMemo<Explanation | null | undefined>(() => {
+    if (!explaining || !currentReview || !parentFen || !node.uci || !node.san) return undefined
+    if (explainSearch.pending) return undefined
+    const evalOf = (fen: string) => explainSearch.evals[fen] ?? review.evals[fen] ?? side.evals[fen]
+    const before = evalOf(parentFen)
+    const after = evalOf(node.fen)
+    if (!before || !after) return null
+    const nullFen = nullMoveFen(parentFen)
+    const threat = nullFen ? explainSearch.evals[nullFen] : undefined
+    // The review's own scores, so the numbers match the verdict; the searches only lend their moves.
+    return explainMove({
+      fenBefore: parentFen,
+      uci: node.uci,
+      san: node.san,
+      cls: currentReview.cls as Explained,
+      best: { pv: before.pv, score: (review.evals[parentFen] ?? side.evals[parentFen] ?? before).score },
+      reply: { pv: after.pv, score: currentReview.score },
+      threat: threat ? { pv: threat.pv, score: threat.score } : null,
+    })
+  }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, explainSearch.evals, review.evals, side.evals])
+
   const live = useLiveAnalysis({
     engine,
     ready,
@@ -224,7 +261,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     multiPv: settings.lines,
     depth: settings.liveDepth,
     // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
-    paused: reviewing || side.pending || loadOpen || shareOpen || !active,
+    paused: reviewing || side.pending || explainSearch.pending || loadOpen || shareOpen || !active,
   })
 
   // The live engine's lines as soon as they come (tens of milliseconds after a move), deepening in place
@@ -263,6 +300,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const shapes = useMemo<DrawShape[]>(() => {
     // While stepping through a review, show only "this was better" for the move just played.
     if (reviewArrows) {
+      // Explaining: the row being pointed at.
+      if (explaining) return (explanation?.rows[explainRow]?.shapes ?? []) as DrawShape[]
       const best = currentReview?.bestMove
       if (!best || !currentReview || ['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)) return []
       return [{ orig: best.slice(0, 2) as Key, dest: best.slice(2, 4) as Key, brush: 'suggest' }]
@@ -277,7 +316,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       out.push({ orig: uci.slice(0, 2) as Key, dest: uci.slice(2, 4) as Key, brush: i === 0 ? 'best' : 'alt' })
     })
     return out
-  }, [reviewArrows, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
+  }, [reviewArrows, explaining, explanation, explainRow, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
 
   // Persist the session so a refresh doesn't lose the game. Writing the PGN replays the game in chess.js:
   // only when the moves change, not on every step through them.
@@ -347,6 +386,34 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     },
     [tree],
   )
+
+  // Explain's "Show the line": the line goes on the board and plays itself, a move at a time.
+  const [showing, setShowing] = useState<string[] | null>(null)
+  const showLineFrom = useCallback(
+    (fromId: string, pv: string[]) => {
+      let current = { tree, nodeId: fromId }
+      const ids: string[] = []
+      for (const uci of pv) {
+        const next = addMove(current.tree, current.nodeId, uciToMove(uci))
+        if (!next) break
+        current = next
+        ids.push(next.nodeId)
+      }
+      if (!ids.length) return
+      setGame((g) => ({ ...g, tree: current.tree }))
+      setCurrentId(ids[0])
+      setShowing(ids)
+    },
+    [tree],
+  )
+  useEffect(() => {
+    if (!showing) return
+    const i = showing.indexOf(node.id)
+    // Done, or the board was taken somewhere else.
+    if (i < 0 || i === showing.length - 1) return setShowing(null)
+    const timer = setTimeout(() => setCurrentId(showing[i + 1]), 900)
+    return () => clearTimeout(timer)
+  }, [showing, node.id])
 
   const playLine = useCallback((pv: string[], count: number) => playLineFrom(node.id, pv.slice(0, count)), [playLineFrom, node.id])
 
@@ -577,6 +644,21 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         reported={reported.has(`${node.id}:${currentReview.cls}`)}
         stepping={!phone}
       >
+        {explainable && (
+          <button
+            className="btn ghost coach-explain"
+            aria-pressed={explaining}
+            onClick={() => {
+              setExplainRow(0)
+              setExplainId(explaining ? null : node.id)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+            </svg>
+            Explain
+          </button>
+        )}
         {showBest && (
           <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
             Show {bestSan ?? 'best'}
@@ -749,7 +831,22 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     reviewBody = (
       <>
         {stepCoach()}
-        {phone ? (
+        {explaining && currentReview && node.san ? (
+          <ExplainPanel
+            title={`Why ${moveHeadline(node.san, currentReview)}`}
+            explanation={explanation}
+            bestText={currentReview.bestMove && parentFen ? lineText(parentFen, pvToSan(parentFen, [currentReview.bestMove])) : undefined}
+            active={explainRow}
+            onPick={setExplainRow}
+            onShowLine={() => {
+              const shown = explanation?.line
+              if (!shown) return
+              const from = shown.from === 'after' ? node.id : node.parentId
+              if (from) showLineFrom(from, shown.uci)
+            }}
+            onClose={() => setExplainId(null)}
+          />
+        ) : phone ? (
           <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
         ) : (
           <>
@@ -1048,6 +1145,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 type PhoneView = 'summary' | 'coach' | 'engine'
 
 /** "a blunder", "an oversight". */
+/** The verdicts Explain covers. */
+const EXPLAINED = ['mistake', 'blunder', 'miss'] as const
+type Explained = (typeof EXPLAINED)[number]
+/** Lines the review saved shorter than this are searched again for Explain. */
+const EXPLAIN_PLIES = 6
+const NO_EVALS: Record<string, PositionEval> = {}
+
 const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
 
 /** Phones: the switch under the board between the review's parts. The engine's button carries its score. */

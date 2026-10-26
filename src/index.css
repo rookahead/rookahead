@@ -2341,6 +2341,165 @@ svg {
   grid-column: 1 / -1;
 }
 
+/* Explain and Show best share the left half. */
+.coach-actions.row:has(> :nth-child(3)) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.coach-actions.row:has(> :nth-child(3)) > .coach-next {
+  grid-column: 3 / -1;
+}
+
+.coach-explain svg,
+.explain-line .btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.coach-explain[aria-pressed='true'],
+.coach-explain[aria-pressed='true']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tone-sky) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone-sky) 60%, transparent);
+  font-weight: 600;
+}
+
+/* Explain: the reasons as short rows in place of the move list. */
+.panel-body > .explain {
+  padding: 10px 10px 14px;
+}
+
+.explain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.explain-head {
+  display: flex;
+  align-items: center;
+  padding: 0 6px 2px;
+}
+
+.explain-head h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.explain-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.explain-close:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+.explain-close svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.explain-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+button.explain-row {
+  cursor: pointer;
+}
+
+.explain-row.active {
+  background: color-mix(in srgb, var(--tone-sky) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone-sky) 45%, transparent);
+}
+
+.explain-label {
+  padding-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* The move itself, as written. */
+.explain-label.san {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  padding-top: 1px;
+}
+
+.explain-row.active .explain-label {
+  color: var(--tone-sky);
+}
+
+.explain-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.explain-row.active .explain-text {
+  color: var(--text);
+}
+
+.explain-line {
+  margin: 6px 6px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.explain-moves {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.explain-line .btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  stroke: none;
+}
+
 .review-progress {
   flex: 1 1 100%;
   display: grid;
