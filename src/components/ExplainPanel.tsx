@@ -12,7 +12,7 @@ interface Props {
   /** The row the board is showing. */
   active: number
   onPick: (index: number) => void
-  onShowLine: () => void
+  onShowLine: (index: number) => void
   onClose: () => void
 }
 
@@ -45,7 +45,7 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onS
             onFocus={() => onPick(i)}
             onClick={() => onPick(i)}
           >
-            <span className={`explain-label${row.key === 'move' ? ' san' : ''}`}>{row.label}</span>
+            <span className={`explain-label${row.key === 'move' || row.key === 'take' ? ' san' : ''}`}>{row.label}</span>
             <span className="explain-text">{row.text}</span>
           </button>
         ))
@@ -62,18 +62,18 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onS
           ))}
         </div>
       )}
-      {explanation?.line && (
-        <div className="explain-line">
-          <span className="explain-label">The line</span>
-          <span className="explain-moves">{explanation.line.text}</span>
-          <button className="btn ghost small" onClick={onShowLine}>
+      {explanation?.lines.map((line, i) => (
+        <div key={line.label} className="explain-line">
+          <span className={`explain-label${/\d/.test(line.label) ? ' san' : ''}`}>{line.label}</span>
+          <span className="explain-moves">{line.text}</span>
+          <button className="btn ghost small" onClick={() => onShowLine(i)}>
             <svg viewBox="0 0 24 24" aria-hidden>
               <path d="M8 5l11 7-11 7z" />
             </svg>
-            Show the line
+            Show
           </button>
         </div>
-      )}
+      ))}
     </section>
   )
 }

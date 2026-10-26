@@ -30,7 +30,7 @@ import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLi
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
-import { explainMove, lineText, nullMoveFen, type Explanation } from '../lib/explain'
+import { explainMove, lineText, nullMoveFen, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
@@ -232,15 +232,26 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     return [nullMoveFen(parentFen), short(node.fen) && node.fen, short(parentFen) && parentFen].filter((f): f is string => Boolean(f))
   }, [explaining, parentFen, node.fen, review.evals, side.evals])
   const explainSearch = useSideLineReview({ engine, ready, evals: NO_EVALS, fens: explainFens, depth: reviewDepth, enabled: explaining && !side.pending && active })
+  const evalOf = useCallback((fen: string) => explainSearch.evals[fen] ?? review.evals[fen] ?? side.evals[fen], [explainSearch.evals, review.evals, side.evals])
+  // A sacrifice the engine's defence declines (the best line's, or the reply's): how it goes if it's taken anyway.
+  const takeFens = useMemo(() => {
+    if (!explaining || !parentFen || explainSearch.pending) return []
+    return [takeFen(parentFen, evalOf(parentFen)?.pv ?? []), takeFen(node.fen, evalOf(node.fen)?.pv ?? [])].filter((f): f is string => Boolean(f))
+  }, [explaining, parentFen, node.fen, explainSearch.pending, evalOf])
+  const takeSearch = useSideLineReview({ engine, ready, evals: NO_EVALS, fens: takeFens, depth: reviewDepth, enabled: explaining && !side.pending && active })
   const explanation = useMemo<Explanation | null | undefined>(() => {
     if (!explaining || !currentReview || !parentFen || !node.uci || !node.san) return undefined
-    if (explainSearch.pending) return undefined
-    const evalOf = (fen: string) => explainSearch.evals[fen] ?? review.evals[fen] ?? side.evals[fen]
+    if (explainSearch.pending || takeSearch.pending) return undefined
     const before = evalOf(parentFen)
     const after = evalOf(node.fen)
     if (!before || !after) return null
     const nullFen = nullMoveFen(parentFen)
     const threat = nullFen ? explainSearch.evals[nullFen] : undefined
+    const taken = (fen: string, pv: string[]) => {
+      const f = takeFen(fen, pv)
+      const e = f ? takeSearch.evals[f] : undefined
+      return e ? { pv: e.pv, score: e.score } : null
+    }
     // The review's own scores, so the numbers match the verdict; the searches only lend their moves.
     return explainMove({
       fenBefore: parentFen,
@@ -250,8 +261,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       best: { pv: before.pv, score: (review.evals[parentFen] ?? side.evals[parentFen] ?? before).score },
       reply: { pv: after.pv, score: currentReview.score },
       threat: threat ? { pv: threat.pv, score: threat.score } : null,
+      bestTake: taken(parentFen, before.pv),
+      replyTake: taken(node.fen, after.pv),
     })
-  }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, explainSearch.evals, review.evals, side.evals])
+  }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
+  const explainView = explaining ? explanation?.rows[explainRow]?.position : undefined
 
   const live = useLiveAnalysis({
     engine,
@@ -261,7 +275,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     multiPv: settings.lines,
     depth: settings.liveDepth,
     // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
-    paused: reviewing || side.pending || explainSearch.pending || loadOpen || shareOpen || !active,
+    paused: reviewing || side.pending || explainSearch.pending || takeSearch.pending || loadOpen || shareOpen || !active,
   })
 
   // The live engine's lines as soon as they come (tens of milliseconds after a move), deepening in place
@@ -838,8 +852,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             bestText={currentReview.bestMove && parentFen ? lineText(parentFen, pvToSan(parentFen, [currentReview.bestMove])) : undefined}
             active={explainRow}
             onPick={setExplainRow}
-            onShowLine={() => {
-              const shown = explanation?.line
+            onShowLine={(i) => {
+              const shown = explanation?.lines[i]
               if (!shown) return
               const from = shown.from === 'after' ? node.id : node.parentId
               if (from) showLineFrom(from, shown.uci)
@@ -934,14 +948,16 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             />
             {!phone && <EvalBar score={score} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
             <Board
-              fen={node.fen}
+              fen={explainView?.fen ?? node.fen}
               orientation={orientation}
-              lastMove={lastMove}
+              lastMove={explainView?.lastMove ?? lastMove}
               shapes={shapes}
               theme={settings.boardTheme}
               coordinates={settings.coordinates}
               onMove={playMove}
-              annotation={settings.classOnBoard ? currentReview?.cls : undefined}
+              annotation={settings.classOnBoard && !explainView ? currentReview?.cls : undefined}
+              // Showing an Explain row's own position: look, don't touch.
+              locked={Boolean(explainView)}
               ends={ends}
               legendary={steppedForward}
             />

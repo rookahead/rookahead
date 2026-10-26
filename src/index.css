@@ -2476,15 +2476,24 @@ button.explain-row {
   color: var(--text);
 }
 
+/* Each line: its name, then the moves with Show beside them. */
 .explain-line {
   margin: 6px 6px 0;
-  padding: 10px 12px;
+  padding: 9px 10px 9px 12px;
   border-radius: 10px;
   background: var(--surface-3);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
+}
+
+.explain-line .explain-label {
+  grid-column: 1 / -1;
+}
+
+.explain-line + .explain-line {
+  margin-top: 4px;
 }
 
 .explain-moves {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { explainMove, lineText, nullMoveFen, type ExplainInput } from './explain'
+import { explainMove, lineText, nullMoveFen, takeFen, type ExplainInput } from './explain'
 
 const cp = (value: number) => ({ type: 'cp' as const, value })
 
@@ -27,7 +27,7 @@ describe('explaining a move', () => {
       'Better: 20…f6 covers e5. White stays only a little better (+0.86).',
     ])
     // The line stops once the pawn is won.
-    expect(explainMove(RAB8)?.line).toEqual({ from: 'after', uci: ['e4e5', 'd8d7', 'e5d6'], text: '21.e5 Rd7 22.exd6' })
+    expect(explainMove(RAB8)?.lines).toEqual([{ label: 'The line', from: 'after', uci: ['e4e5', 'd8d7', 'e5d6'], text: '21.e5 Rd7 22.exd6' }])
   })
 
   it('draws each row on the board', () => {
@@ -87,7 +87,32 @@ describe('explaining a move', () => {
       'The chance: 24.Be5+ wins the d4 pawn. You’d be winning (+6.50).',
       'Ne4: Lets the win slip. After 24…dxe4, it’s about level (+0.03).',
     ])
-    expect(e.line?.from).toBe('before')
+    expect(e.lines[0].from).toBe('before')
+  })
+
+  it('follows a sacrifice the defence declines into the line where it’s taken', () => {
+    // 6.Be3 (MelonLord-009, 2026-10-26): 6.Bxf7+ was there. The engine's defence is 6…Kf8, but the
+    // point is what happens if Black takes: a fork that wins the bishop back.
+    const fenBefore = 'r1bqk1nr/pppp1pp1/2n4p/2b5/2BNP3/8/PPP2PPP/RNBQK2R w KQkq - 1 6'
+    const best = { pv: ['c4f7', 'e8f8', 'd4c6', 'b7c6', 'f7b3', 'd8h4', 'd1f3', 'g8f6'], score: cp(247) }
+    expect(takeFen(fenBefore, best.pv)).toBe('r1bq2nr/pppp1kp1/2n4p/2b5/3NP3/8/PPP2PPP/RNBQK2R w KQ - 0 7')
+    const e = explainMove({
+      fenBefore,
+      uci: 'c1e3',
+      san: 'Be3',
+      cls: 'miss',
+      best,
+      reply: { pv: ['d8f6', 'c2c3', 'g8e7', 'e1g1', 'e8g8', 'c4b3', 'b7b6', 'f1e1'], score: cp(48) },
+      bestTake: { pv: ['d1h5', 'f7f8', 'h5c5', 'd7d6', 'd4c6', 'd8e8', 'c5d4', 'b7c6'], score: cp(292) },
+    })!
+    expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual([
+      'The chance: 6.Bxf7+ sacrifices the bishop with check.',
+      'If 6…Kxf7: 7.Qh5+ forks the king and the bishop on c5, and 8.Qxc5+ wins it back.',
+      'Either way: White ends a pawn up, and Black can’t castle any more (+2.47).',
+      'Be3: Misses 6.Bxf7+. You’re only a little better (+0.48).',
+    ])
+    expect(e.lines.map((l) => `${l.label}: ${l.text}`)).toEqual(['If 6…Kxf7: 6.Bxf7+ Kxf7 7.Qh5+ Kf8 8.Qxc5+', 'Best defence: 6.Bxf7+ Kf8'])
+    expect(e.lines[0]).toMatchObject({ from: 'before', uci: ['c4f7', 'e8f7', 'd1h5', 'f7f8', 'h5c5'] })
   })
 
   it('gives up when the move doesn’t fit the position', () => {
