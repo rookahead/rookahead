@@ -543,7 +543,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const parent = node.parentId ? tree.nodes[node.parentId] : null
     if (!parent || !node.san) {
       return (
-        <CoachCard key={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." stepping={!phone}>
+        <CoachCard textKey={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." stepping={!phone}>
           {next}
         </CoachCard>
       )
@@ -551,7 +551,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (!currentReview) {
       return (
         <CoachCard
-          key={node.id}
+          textKey={node.id}
           kicker={moveNumberLabel(node.ply)}
           title={<San san={node.san} />}
           detail={inVariation ? (side.pending ? 'Checking this move…' : 'You’re exploring a side line. The Analysis tab has the live engine.') : 'Not reviewed yet.'}
@@ -566,7 +566,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
       <CoachCard
-        key={node.id}
+        textKey={node.id}
         icon={<ClassIcon cls={currentReview.cls} size={26} />}
         kicker={moveNumberLabel(node.ply)}
         title={moveHeadline(node.san, currentReview)}

@@ -2299,6 +2299,31 @@ svg {
   min-height: calc(2 * 1.55em);
 }
 
+.coach.stepping .coach-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A new move's verdict comes in word by word, as if being written; the card and its buttons stay still. */
+.coach-word {
+  animation: coach-word 0.24s ease-out backwards;
+  animation-delay: calc(var(--i) * 32ms);
+}
+
+@keyframes coach-word {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-word {
+    animation: none;
+  }
+}
+
 .coach-actions.row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -9665,12 +9690,12 @@ strong.settings-value {
 }
 
 /* ═══════════════ Report this verdict ═══════════════ */
-/* "Disagree?" at the end of the coach's note: a quiet link, there when wanted. */
+/* "Disagree?" in the coach's title row, just before the eval: a quiet link, always in the same spot. */
 .coach-report {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: 8px;
   padding: 0;
   border: 0;
   background: none;
@@ -9678,7 +9703,6 @@ strong.settings-value {
   font: inherit;
   font-size: 13px;
   white-space: nowrap;
-  vertical-align: 1px;
   cursor: pointer;
 }
 
