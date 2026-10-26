@@ -150,6 +150,18 @@ export interface ReviewState {
   fromCloud?: boolean
   /** After the first pass: the positions being searched deeper (backup.ts), so far and in all. */
   checking?: { done: number; total: number }
+  /**
+   * How far the review has got, 0 to 1, for a progress bar: every move searched takes the first 80%,
+   * the double-checks the rest. It never goes back, though a later round of double-checks adds to their total.
+   */
+  share?: number
+}
+
+/** `state` with its progress share brought up to date (never lower than before). */
+function withShare(state: ReviewState): ReviewState {
+  const { checking } = state
+  const share = checking ? 0.8 + 0.2 * (checking.done / Math.max(checking.total, 1)) : 0.8 * (state.progress / Math.max(state.total, 1))
+  return { ...state, share: Math.max(state.share ?? 0, share) }
 }
 
 /**
@@ -313,7 +325,7 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
         const first = !done.has(fen)
         done.add(fen)
         if (entry) evals[fen] = entry
-        setState((s) => ({ ...s, progress: s.progress + (first ? 1 : 0), evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
+        setState((s) => withShare({ ...s, progress: s.progress + (first ? 1 : 0), evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
       }
 
       try {
@@ -354,13 +366,14 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
           const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent).sort((a, b) => (took.get(b) ?? 0) - (took.get(a) ?? 0))
           if (!todo.length) break
           spent += todo.length
-          setState((s) => ({ ...s, checking: { done: 0, total: todo.length } }))
+          // One count across the rounds: a later round adds to the total, never starts again from 0.
+          setState((s) => withShare({ ...s, checking: { done: s.checking?.done ?? 0, total: spent } }))
           await pool(todo, async (eng, fen) => {
             const lines = await deepSearch(eng, fen, depth + DEEPER, ctrl.signal, live)
             if (!live()) return
             // A search that failed is asked for again next round, within the budget.
             if (lines) deep[fen] = lines
-            setState((s) => ({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
+            setState((s) => withShare({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
           })
         }
       } finally {

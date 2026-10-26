@@ -588,11 +588,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }
 
   // ── Summary tab: start a review, follow it, then its report ──
-  // How far the review has got: every move is searched first (most of the time), then the moments
-  // where the eval jumps get a second, deeper look (backup.ts).
-  const reviewProgress = review.checking
-    ? 0.8 + 0.2 * (review.checking.done / Math.max(review.checking.total, 1))
-    : 0.8 * (review.progress / Math.max(review.total, 1))
+  // How far the review has got (useGameReview): the search, then the double-checks; never going back.
+  const reviewProgress = review.share ?? 0
   const gameInfo = (
     <GameInfo
       headers={headers}
