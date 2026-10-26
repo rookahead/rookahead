@@ -475,6 +475,14 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(sacrifice(before, after, ['h2g3', 'h4h1'], 'black')).toBe('material')
   })
 
+  it('does not count taking back only as much through the square the taker left', () => {
+    // 13.Bh4 Nxc3 14.Bxe6: the d5 knight that takes on c3 stood between the c4 bishop and e6, but a knight
+    // for a bishop is a trade, not a sacrifice (MelonLord-009–raufkhan2000).
+    const before = 'r2q1b1r/pp2n1p1/2pkb2p/3np1B1/2BP4/2N2Q2/PPP2PPP/R3R1K1 w - - 0 13'
+    const after = 'r2q1b1r/pp2n1p1/2pkb2p/3np3/2BP3B/2N2Q2/PPP2PPP/R3R1K1 b - - 1 13'
+    expect(isSacrifice(before, after, ['d5c3', 'c4e6', 'd6e6', 'e1e5'], 'white')).toBe(false)
+  })
+
   it('does not count winning something back elsewhere, that was there to take all along', () => {
     // 1.Nxe5 dxe5 2.Qxa4: the rook on a4 could have been taken at once; the knight bought nothing.
     expect(isSacrifice('4k3/8/3p4/4p3/r7/5N2/8/3QK3 w - - 0 1', '4k3/8/3p4/4N3/r7/8/8/3QK3 b - - 0 1', ['d6e5', 'd1a4'], 'white')).toBe(false)
