@@ -12,6 +12,11 @@ interface Props {
   report?: GameReport | null
   /** Pixel height of the plot. */
   height?: number
+  /**
+   * While a review runs, how far it has got (0 to 1): the graph is its progress bar, a stand-in curve
+   * drawing in from the left. The real one replaces it once every verdict is final.
+   */
+  progress?: number | null
 }
 
 const W = 1000
@@ -42,7 +47,7 @@ function smoothPath(pts: [number, number][], pad: number) {
 
 /** White's winning chances over the main line: the light area is White's share. */
 // Memoised: the parent re-renders with every engine update, which leaves the graph unchanged.
-export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, onSelect, report, height = 84 }: Props) {
+export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, onSelect, report, height = 84, progress = null }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const n = Math.max(line.length - 1, 1)
@@ -71,6 +76,19 @@ export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, on
       known: runs.reduce((sum, r) => sum + r.length, 0),
     }
   }, [line, evals, n, pad])
+
+  // The stand-in curve while a review runs: a gentle swell across the game, not real evals.
+  const pending = progress !== null
+  const placeholder = useMemo(() => {
+    if (!pending) return null
+    const pts: [number, number][] = []
+    for (let i = 0; i <= n; i++) {
+      const win = 50 + 13 * Math.sin(i * 0.31) + 7 * Math.sin(i * 0.83 + 1.3) + 4 * Math.sin(i * 1.9 + 0.4)
+      pts.push([(i / n) * W, plotY(win, pad)])
+    }
+    const path = smoothPath(pts, pad)
+    return { stroke: path, area: `${path}L${W},${H}L0,${H}Z` }
+  }, [pending, n, pad])
 
   // Coloured dots for the moves worth looking at.
   const dots = useMemo(() => {
@@ -114,6 +132,18 @@ export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, on
       role="img"
       aria-label="Evaluation graph across the game. Click or drag to jump to a move."
     >
+      {placeholder && progress !== null ? (
+        <>
+          <div className="eval-graph-reveal" style={{ clipPath: `inset(0 ${(1 - progress) * 100}% 0 0)` }}>
+            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
+              <path d={placeholder.area} className="eval-graph-area pending" />
+              <line x1={0} x2={W} y1={H / 2} y2={H / 2} className="eval-graph-mid" />
+              <path d={placeholder.stroke} className="eval-graph-line pending" vectorEffect="non-scaling-stroke" />
+            </svg>
+          </div>
+          <span className="eval-graph-scan" style={{ left: `${progress * 100}%` }} aria-hidden />
+        </>
+      ) : (
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id="eval-graph-fill" x1="0" y1="0" x2="0" y2="1">
@@ -129,15 +159,16 @@ export const EvalGraph = memo(function EvalGraph({ line, evals, currentIndex, on
         )}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={0} y2={H} className="eval-graph-hover" vectorEffect="non-scaling-stroke" />}
       </svg>
+      )}
       {/* Dots are HTML so they stay round while the SVG stretches. */}
-      {dots.map(({ i, cls, top }) => (
+      {progress === null && dots.map(({ i, cls, top }) => (
         <span
           key={i}
           className={`eval-graph-dot ${i === currentIndex ? 'current' : ''}`}
           style={{ left: `clamp(${EDGE}px, ${(i / n) * 100}%, calc(100% - ${EDGE}px))`, top: `${top}%`, background: CLASS_INFO[cls].color }}
         />
       ))}
-      {known === 0 && <span className="eval-graph-empty">The evaluation graph appears once the game is reviewed</span>}
+      {known === 0 && progress === null && <span className="eval-graph-empty">The evaluation graph appears once the game is reviewed</span>}
     </div>
   )
 })

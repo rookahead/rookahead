@@ -588,6 +588,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }
 
   // ── Summary tab: start a review, follow it, then its report ──
+  // How far the review has got: every move is searched first (most of the time), then the moments
+  // where the eval jumps get a second, deeper look (backup.ts).
+  const reviewProgress = review.checking
+    ? 0.8 + 0.2 * (review.checking.done / Math.max(review.checking.total, 1))
+    : 0.8 * (review.progress / Math.max(review.total, 1))
   const gameInfo = (
     <GameInfo
       headers={headers}
@@ -619,9 +624,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     </CoachCard>
   )
   const progressCard = () => {
-    // Every move is searched first, then the moments where the eval jumps get a second, deeper look (backup.ts).
     const { checking } = review
-    const pct = Math.round(checking ? 50 + (checking.done / Math.max(checking.total, 1)) * 50 : (review.progress / Math.max(review.total, 1)) * 50)
     return (
       <CoachCard title="Reviewing the game" detail="The verdicts show once every move is checked, so none of them change on you.">
         <ol className="review-steps">
@@ -637,9 +640,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           </li>
         </ol>
         <div className="review-progress">
-          <div className="progress">
-            <div className="progress-fill" style={{ width: `${pct}%` }} />
-          </div>
+          {/* On desktop the graph below is the progress bar. */}
+          {phone ? (
+            <div className="progress">
+              <div className="progress-fill" style={{ width: `${reviewProgress * 100}%` }} />
+            </div>
+          ) : (
+            <span />
+          )}
           <button className="btn ghost small" onClick={cancelReview}>
             Cancel
           </button>
@@ -664,7 +672,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={null} />
         ) : (
           <>
-            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={null} height={96} />
+            <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={null} height={96} progress={reviewProgress} />
             <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={null} />
           </>
         )}

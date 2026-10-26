@@ -2819,6 +2819,52 @@ svg {
   transform: translate(-50%, -50%) scale(1.5);
 }
 
+/* A review in progress: the graph is its progress bar. A stand-in curve draws in from the left,
+   its leading edge glowing, in step with the review. */
+.eval-graph-reveal {
+  position: absolute;
+  inset: 0;
+  transition: clip-path 0.4s linear;
+}
+
+.eval-graph-area.pending {
+  fill: var(--surface-3);
+  opacity: 0.7;
+}
+
+.eval-graph-line.pending {
+  stroke: var(--muted);
+}
+
+.eval-graph-scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--brand);
+  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--brand) 55%, transparent);
+  transition: left 0.4s linear;
+  animation: eval-scan-glow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes eval-scan-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eval-graph-reveal,
+  .eval-graph-scan {
+    transition: none;
+    animation: none;
+  }
+}
+
 .eval-graph-empty {
   position: absolute;
   inset: 0;
