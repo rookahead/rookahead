@@ -70,16 +70,6 @@ interface Game {
 
 type Tab = 'summary' | 'review' | 'analysis'
 
-/** Live scores shallower than this don't replace the review's on the bar and the lines (a few ms at most with SF19). */
-const BAR_MIN_DEPTH = 12
-
-/**
- * In a sharp position the live engine can take many seconds to get past depth 10 (40M nodes for depth 11
- * after 20…Rxe2+ in HNasser96–MelonLord-009): after this long its lines show at whatever depth they're at,
- * rather than the review's one line.
- */
-const BAR_PATIENCE_MS = 1000
-
 function restoreSession(): {
   game: Game
   orientation: Color
@@ -237,19 +227,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     paused: reviewing || side.pending || loadOpen || shareOpen || !active,
   })
 
-  // During a review, fall back to the review's verdict for positions it has reached. The live engine takes
-  // over once it's past its first few plies, which swing wildly before settling: the bar and the lines
-  // always show the same number.
+  // The live engine's lines as soon as they come (tens of milliseconds after a move), deepening in place
+  // as Lichess's do. Until then, and while the review has the engine, the review's own line for the position.
+  // The bar and the lines always show the same number.
   const reviewEval = review.evals[node.fen] ?? side.evals[node.fen]
-  const [patientFen, setPatientFen] = useState<string | null>(null)
-  useEffect(() => {
-    const timer = setTimeout(() => setPatientFen(node.fen), BAR_PATIENCE_MS)
-    return () => clearTimeout(timer)
-  }, [node.fen])
-  const waited = patientFen === node.fen
   const shown: AnalysisResult | null = useMemo(() => {
-    const top = live.result?.lines[0]
-    if (top && (!reviewEval || top.depth >= BAR_MIN_DEPTH || waited)) return live.result
+    if (live.result?.lines[0]) return live.result
     if (!reviewEval) return null
     return {
       fen: node.fen,
@@ -257,7 +240,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       bestMove: reviewEval.bestMove,
       lines: reviewEval.pv.length ? [{ multipv: 1, depth: reviewEval.depth, score: reviewEval.score, pv: reviewEval.pv }] : [],
     }
-  }, [live.result, reviewEval, node.fen, waited])
+  }, [live.result, reviewEval, node.fen])
 
   const score = terminal?.score ?? shown?.lines[0]?.score ?? reviewEval?.score ?? null
   const reviewed = review.status === 'done' && Boolean(report)
