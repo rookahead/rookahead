@@ -1,0 +1,26 @@
+name: Bug
+description: Something in Rookahead doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      description: The steps that lead to it, if you know them. A link to the game or its PGN helps a lot.
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Android phone, Chrome · Windows, Firefox
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag an image in here if it shows the problem.

@@ -1,0 +1,34 @@
+name: A verdict looks wrong
+description: A move got a verdict you don't agree with.
+labels: [verdict]
+body:
+  - type: markdown
+    attributes:
+      value: You can also flag a verdict straight from the review with the Disagree? flag on the coach card. It sends the position and engine details with it.
+  - type: textarea
+    id: game
+    attributes:
+      label: The game
+      description: A link to the game, or its PGN.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: move
+    attributes:
+      label: The move
+      placeholder: e.g. 14. Nxe5
+    validations:
+      required: true
+  - type: input
+    id: verdict
+    attributes:
+      label: The verdict it got, and the one you'd give
+      placeholder: e.g. Blunder, but I think it's only an Inaccuracy
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The line or idea that makes you think so.
