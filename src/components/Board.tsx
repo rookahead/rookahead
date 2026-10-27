@@ -10,6 +10,7 @@ import { useBoardPrefs } from '../lib/boardPrefs'
 import { ANIMATION_MS, type BoardTheme, type Palette } from '../lib/settings'
 import type { MoveClass } from '../lib/classify'
 import type { EndKind, EndMark } from '../lib/gameEnd'
+import { BOARD_SETTLE, boardResizing } from '../lib/pixelGrid'
 import { playSound } from '../lib/sound'
 import { ClassIcon } from './ClassIcon'
 import { EndChip } from './EndIcon'
@@ -191,6 +192,38 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     }
     return { chess, dests, turn: (chess.turn() === 'w' ? 'white' : 'black') as Color, check: chess.inCheck() }
   }, [fen])
+
+  // The browser snaps a box to whole screen pixels when it paints it, but Chessground's squares only when
+  // their offset is whole pixels too. On a board whose corner falls part-way through a pixel the two round
+  // apart, and a hairline of the square underneath shows along a highlighted square's edge. So the board
+  // sits a fraction of a pixel over, on the screen's pixel grid; its squares are whole pixels already
+  // (src/lib/pixelGrid.ts).
+  useLayoutEffect(() => {
+    const box = root.current
+    if (!box) return
+    // The board's column moves with it, so the eval bar and the player bars stay in line.
+    const column = box.closest<HTMLElement>('.board-column, .play-board') ?? box
+    if (getComputedStyle(column).position === 'static') column.style.position = 'relative'
+    const snap = () => {
+      column.style.left = column.style.top = ''
+      // Mid-resize it follows freely, and settles onto the grid when the resize stops (BOARD_SETTLE).
+      if (boardResizing()) return
+      const r = box.getBoundingClientRect()
+      const unit = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pixel-unit')) || 1
+      const off = (v: number) => Math.round(v / unit) * unit - v
+      column.style.left = `${off(r.left + scrollX)}px`
+      column.style.top = `${off(r.top + scrollY)}px`
+    }
+    snap()
+    // It moves when the layout around it does: the window, the sidebar, the panel beside it.
+    const watch = new ResizeObserver(snap)
+    for (let node: Element | null = box; node && node !== document.body; node = node.parentElement) watch.observe(node)
+    window.addEventListener(BOARD_SETTLE, snap)
+    return () => {
+      watch.disconnect()
+      window.removeEventListener(BOARD_SETTLE, snap)
+    }
+  }, [])
 
   // Mount once, before the first paint; afterwards everything goes through api.set().
   useLayoutEffect(() => {

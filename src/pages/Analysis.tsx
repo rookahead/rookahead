@@ -31,6 +31,7 @@ import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLi
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
+import { setBoardResizing } from '../lib/pixelGrid'
 import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
@@ -928,6 +929,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     let moved = false
     const onMove = (ev: PointerEvent) => {
       moved = true
+      setBoardResizing(true)
       const grow = (0.5 * (ev.clientX - x0) + (ev.clientY - y0)) / 1.25
       size = Math.round(Math.min(Math.max(start + grow, MIN_BOARD), max))
       layout.style.setProperty('--board-user', `${size}px`)
@@ -937,6 +939,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       handle.removeEventListener('pointermove', onMove)
       handle.removeEventListener('pointerup', onUp)
       handle.removeEventListener('pointercancel', onUp)
+      setBoardResizing(false)
       if (moved) saveBoardSize(setBoardSize, size)
     }
     handle.addEventListener('pointermove', onMove)
