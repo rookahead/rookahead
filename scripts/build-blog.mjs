@@ -1,5 +1,5 @@
 // Builds the blog (rookahead.com/blog) from the Markdown posts in blog/: one plain page per post,
-// the list of posts, an Atom feed and the sitemap. Runs before dev and build; the output lands in
+// the list of posts, an Atom feed, the search box's index and the sitemap. Runs before dev and build; the output lands in
 // public/ (git-ignored), where it's served like About and Privacy.
 //
 // A post is blog/<slug>.md with a front block:
@@ -267,15 +267,16 @@ const DISCORD =
 const GITHUB =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
+const SEARCH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
 
 // The look you picked in the app (Settings → Appearance and Board), before the first paint: light, dark or
 // black (else the device's), your colour and your board. Settings read as the app reads them (src/lib/settings.ts):
 // a Graphite board from before the Theme board and a Gold that was only the default for a day are the defaults.
 const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='gold'&&v<3))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
-// Before the first paint too: the announcement gone if you closed it.
+// Before the first paint too: ⌘ for the search shortcut on a Mac, and the announcement gone if you closed it.
 const headScript = (announce) =>
-  `<script>try{var r=document.documentElement;if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
+  `<script>try{var r=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.userAgent))r.setAttribute('data-mac','');if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
 
 // Copy link, closing the announcement, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
@@ -349,6 +350,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
         <a class="brand" href="/" aria-label="Rookahead">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
         <nav class="top-nav" aria-label="Site">${nav.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
         <div class="top-end">
+          <button class="search-btn" type="button" data-search-open aria-label="Search the blog">${SEARCH_ICON}<span class="search-label">Search</span><span class="keys" aria-hidden="true"><kbd class="mod"></kbd><kbd>K</kbd></span></button>
           <a class="icon-link" href="${DISCORD_URL}" rel="noopener" aria-label="Discord" title="Discord">${DISCORD}</a>
           <a class="icon-link" href="https://github.com/rookahead/rookahead" rel="noopener" aria-label="GitHub" title="GitHub">${GITHUB}</a>
           <a class="app-btn" href="/">Open the app</a>
@@ -360,7 +362,14 @@ ${body}
       <span>Rookahead, free chess game review</span>
       <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav>
     </footer>
+    <dialog class="search" aria-label="Search the blog">
+      <form class="search-field" method="dialog">
+        ${SEARCH_ICON}<input type="search" placeholder="Search the blog" aria-label="Search the blog" autocomplete="off" spellcheck="false" /><button type="submit" class="esc">Esc</button>
+      </form>
+      <ul class="results" role="listbox" aria-label="Results"></ul>
+    </dialog>
     ${SCRIPT}
+    <script src="/blog/search.js" defer></script>
   </body>
 </html>
 `
@@ -492,6 +501,34 @@ ${entries}
 `
 }
 
+const plain = (html) =>
+  html
+    .replace(/<svg[\s\S]*?<\/svg>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '’')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+([,.;:])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/** What the search box looks through (blog/search.json): each post's sections, as plain text, under their headings. */
+function searchIndex(posts) {
+  return posts.map((p) => {
+    const { html } = renderPost(p.body, new Set())
+    const [intro, ...rest] = html.split(/(?=<h2 id=")/)
+    const sections = [{ id: '', heading: '', text: plain(intro) }]
+    for (const part of rest) {
+      const [, id, heading] = /^<h2 id="([^"]*)">([\s\S]*?)<\/h2>/.exec(part)
+      sections.push({ id, heading: plain(heading), text: plain(part.slice(part.indexOf('</h2>') + 5)) })
+    }
+    return { slug: p.slug, title: p.title, description: p.description, date: longDate(p.date), sections }
+  })
+}
+
 /**
  * The app's colours for the blog (blog/theme.css), so it follows the theme you picked there: the colour
  * themes' tones, cut from src/index.css, and every board's squares, read from src/components/Board.tsx.
@@ -546,6 +583,8 @@ fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/dm-sans/files
 for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), postPage(post, posts))
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
+fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(searchIndex(posts)))
+fs.copyFileSync(path.join(root, 'scripts/blog-search.js'), path.join(out, 'search.js'))
 fs.writeFileSync(path.join(out, 'theme.css'), themeCss())
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), sitemap(posts))
 console.log(`blog: ${posts.length} posts`)
