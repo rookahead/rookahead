@@ -329,10 +329,12 @@ const announceBar = (post) =>
     : ''
 
 function page({ title, description, canonical, type = 'website', head = '', body, defs = '', current = '', announce = null }) {
+  // Posts opens the newest post with every post listed beside it, as What's new has its own tab.
+  const firstPost = posts.find((p) => p.slug !== 'whats-new') ?? posts[0]
   const nav = [
-    ['/blog', 'Blog'],
-    ['/blog/whats-new', 'What’s new'],
-    ['/about', 'About'],
+    ['posts', firstPost.href, 'Posts'],
+    ['whats-new', '/blog/whats-new', 'What’s new'],
+    ['about', '/about', 'About'],
   ]
   return `<!doctype html>
 <html lang="en">
@@ -363,8 +365,8 @@ function page({ title, description, canonical, type = 'website', head = '', body
     ${announceBar(announce)}
     <header class="top">
       <div class="top-in">
-        <a class="brand" href="/" aria-label="Rookahead">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
-        <nav class="top-nav" aria-label="Site">${nav.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
+        <a class="brand" href="/blog" aria-label="Rookahead blog">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
+        <nav class="top-nav" aria-label="Site">${nav.map(([tab, href, label]) => `<a href="${href}"${tab === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
         <div class="top-end">
           <button class="search-btn" type="button" data-search-open aria-label="Search the blog">${SEARCH_ICON}<span class="search-label">Search</span><span class="keys" aria-hidden="true"><kbd class="mod"></kbd><kbd>K</kbd></span></button>
           <a class="icon-link" href="${DISCORD_URL}" rel="noopener" aria-label="Discord" title="Discord">${DISCORD}</a>
@@ -428,7 +430,6 @@ ${cards}
     title: 'Blog · Rookahead',
     description: 'How Rookahead grades your moves, what’s new, and the thinking behind a free chess game review.',
     canonical: `${SITE}/blog`,
-    current: '/blog',
     body,
     defs: pieceDefs(used),
     announce: latest,
@@ -482,7 +483,7 @@ ${html}
     description: post.description,
     canonical: url,
     type: 'article',
-    current: post.slug === 'whats-new' ? '/blog/whats-new' : '/blog',
+    current: post.slug === 'whats-new' ? 'whats-new' : 'posts',
     head: `\n    <meta property="article:published_time" content="${post.date}" />\n    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
     body,
     defs: used.size ? pieceDefs(used) : '',
@@ -516,7 +517,7 @@ ${html}
     title: `${pg.tab ?? pg.title} · Rookahead`,
     description: pg.description,
     canonical: SITE + pg.href,
-    current: pg.href,
+    current: pg.slug,
     body,
     announce: posts[0],
   })
