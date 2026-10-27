@@ -347,7 +347,8 @@ function winsBack(after: Chess, sq: Square, us: 'w' | 'b', gained: number): bool
 
 /**
  * Does the move take back what the opponent just took: a recapture on the same square, or a
- * capture anywhere that only brings the material back to where it was before their capture?
+ * capture anywhere that brings the material back to where it was before their capture (within a
+ * pawn), and no further? A pawn grabbed a queen down (7.Bxf7+ after 6…Bxd1) takes nothing back.
  * A capture elsewhere by a piece that was under attack is escaping a threat, not taking back
  * (5…Qxg2, the queen out of the f7 fork).
  */
@@ -357,7 +358,9 @@ function takesBack(older: MoveNode | undefined, prev: MoveNode, node: MoveNode, 
   const before = new Chess(prev.fen)
   const piece = node.from && before.get(node.from)
   if (piece && hanging(before, node.from!, piece.type, piece.color)) return false
-  return older !== undefined && materialBalance(node.fen, color) <= materialBalance(older.fen, color)
+  if (older === undefined) return false
+  const was = materialBalance(older.fen, color), now = materialBalance(node.fen, color)
+  return now >= was - 1 && now <= was
 }
 
 function emptyCounts(): Record<MoveClass, number> {
