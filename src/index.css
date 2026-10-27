@@ -1815,6 +1815,17 @@ svg {
   stroke-linejoin: round;
 }
 
+/* Share game: a word, not another icon, so it's the one action that reads at a glance. */
+.panel-share {
+  margin-right: 6px;
+  gap: 6px;
+}
+
+/* Share game: a word, not another icon, so it's the one action that reads at a glance. */
+.panel-share {
+  margin-right: 6px;
+}
+
 .panel-header {
   flex-shrink: 0;
   display: flex;

@@ -1006,6 +1006,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               {!phone && (
                 <div className="panel-top">
                   <h1 className="panel-title">{blank ? 'Analysis board' : 'Game review'}</h1>
+                  {line.length > 1 && (
+                    <button className="btn ghost small panel-share" onClick={() => setShareOpen(true)}>
+                      Share game
+                    </button>
+                  )}
                   <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
                     <svg viewBox="0 0 24 24" aria-hidden>
                       <path d="M8 20V4M4 8l4-4 4 4M16 4v16M12 16l4 4 4-4" />
@@ -1021,13 +1026,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                       <path d={muted ? 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5' : 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'} />
                     </svg>
                   </button>
-                  {line.length > 1 && (
-                    <button className="icon-btn" onClick={() => setShareOpen(true)} aria-label="Share game" title="Share game">
-                      <svg viewBox="0 0 24 24" aria-hidden>
-                        <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
-                      </svg>
-                    </button>
-                  )}
                   <BoardMenu placement="down" noFlip onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />
                 </div>
               )}
