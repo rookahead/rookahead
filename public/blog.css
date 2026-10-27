@@ -34,6 +34,8 @@
   --btn-hover: rgba(255, 255, 255, 0.14);
   --font-display: 'Syne', 'DM Sans', sans-serif;
   --font-ui: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* The sticky header's height: what the post's rails and section links stay clear of. */
+  --top-h: 68px;
 }
 
 :root[data-theme='light'] {
@@ -113,14 +115,80 @@ h3 {
   line-height: 1.15;
 }
 
-/* ── Top bar ─────────────────────────────────────────────── */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Announcement ────────────────────────────────────────── */
+.announce {
+  position: relative;
+  padding: 10px 56px;
+  background: var(--card);
+  box-shadow: inset 0 -1px 0 var(--line);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.announce a {
+  text-decoration: none;
+}
+
+.announce a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.announce button {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.announce button:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+[data-announce-closed] .announce {
+  display: none;
+}
+
+/* ── Top bar: stays at the top, the page showing through it blurred ── */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  box-shadow: inset 0 -1px 0 var(--line);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+
+.top-in {
   display: flex;
   align-items: center;
   gap: 28px;
+  height: var(--top-h);
   max-width: 1320px;
   margin: 0 auto;
-  padding: 18px 24px;
+  padding: 0 24px;
 }
 
 .brand {
@@ -197,6 +265,7 @@ h3 {
   fill: currentColor;
 }
 
+
 .app-btn {
   display: inline-block;
   margin-left: 8px;
@@ -219,27 +288,7 @@ h3 {
 .index {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 24px 24px 80px;
-}
-
-.intro {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-bottom: 28px;
-}
-
-.intro h1 {
-  margin: 0;
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-}
-
-.intro p {
-  max-width: 46ch;
-  margin: 0;
-  color: var(--text-2);
+  padding: 32px 24px 80px;
 }
 
 /* The newest post: the page's one coloured card, its position breaking out of the corner. */
@@ -263,6 +312,23 @@ h3 {
   gap: 14px;
   max-width: 56%;
   padding: 56px 0 56px 56px;
+}
+
+.hero-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.hero-tag svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .hero h2 {
@@ -330,10 +396,11 @@ h3 {
 
 .card {
   display: flex;
-  gap: 22px;
+  flex-direction: column;
+  gap: 8px;
   height: 100%;
-  padding: 18px;
-  border-radius: 18px;
+  padding: 24px 26px;
+  border-radius: 20px;
   background: var(--card);
   box-shadow: var(--card-edge);
   text-decoration: none;
@@ -343,33 +410,15 @@ h3 {
   background: var(--card-hover);
 }
 
-.card-board {
-  flex: none;
-  width: 116px;
-}
-
-.card-board .board {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.card-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
 .card h3 {
-  margin: 2px 0 0;
-  font-size: 20px;
+  margin: 0;
+  font-size: 21px;
 }
 
 .card-desc {
+  flex: 1;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: 15.5px;
   line-height: 1.55;
 }
 
@@ -395,9 +444,9 @@ h3 {
 .side,
 .toc-rail {
   position: sticky;
-  top: 24px;
+  top: calc(var(--top-h) + 24px);
   align-self: start;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100vh - var(--top-h) - 48px);
   overflow: auto;
 }
 
@@ -584,7 +633,7 @@ h3 {
 .prose h2 {
   margin: 44px 0 10px;
   font-size: 27px;
-  scroll-margin-top: 24px;
+  scroll-margin-top: calc(var(--top-h) + 24px);
 }
 
 .prose h3 {
@@ -819,12 +868,6 @@ h3 {
     width: 400px;
     margin-right: -200px;
   }
-
-  .intro {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
 }
 
 @media (max-width: 560px) {
@@ -832,23 +875,49 @@ h3 {
     font-size: 16px;
   }
 
-  .top {
+  :root {
+    --top-h: 60px;
+  }
+
+  .announce {
+    padding: 9px 48px 9px 16px;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .announce button {
+    right: 8px;
+  }
+
+  .top-in {
     gap: 12px;
-    padding: 14px 16px;
+    padding: 0 16px;
   }
 
   .top-end .icon-link {
     display: none;
   }
 
+  .brand svg {
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+  }
+
+  .wordmark {
+    font-size: 18px;
+  }
+
+  .app-btn {
+    margin-left: 4px;
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
   .index,
   .post-layout {
     padding-left: 16px;
     padding-right: 16px;
-  }
-
-  .intro h1 {
-    font-size: 40px;
   }
 
   .hero {
@@ -870,12 +939,8 @@ h3 {
   }
 
   .card {
-    gap: 16px;
-    padding: 14px;
-  }
-
-  .card-board {
-    width: 84px;
+    gap: 6px;
+    padding: 20px;
   }
 
   .card h3 {

@@ -8,6 +8,7 @@
 //   description: One sentence for search results and link previews.
 //   date: 2026-10-22
 //   cover: moves 1.e4 | badge e4 best     (optional: the board on the post's card)
+//   announce: Explain is here             (optional: the bar over the header while it's the newest post)
 //   ---
 // A ```board block draws a position (see boardSvg below).
 import fs from 'node:fs'
@@ -272,8 +273,17 @@ const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
 // a Graphite board from before the Theme board and a Gold that was only the default for a day are the defaults.
 const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='gold'&&v<3))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
-// Copy link, and the table of contents following the section you're reading.
+// Before the first paint too: the announcement gone if you closed it.
+const headScript = (announce) =>
+  `<script>try{var r=document.documentElement;if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
+
+// Copy link, closing the announcement, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
+var announce = document.querySelector('[data-announce]')
+if (announce) announce.querySelector('button').addEventListener('click', function () {
+  document.documentElement.setAttribute('data-announce-closed', '')
+  try { localStorage.setItem('rookahead.blog.announce', announce.dataset.announce) } catch (e) {}
+})
 document.querySelectorAll('[data-copy]').forEach(function (b) {
   b.addEventListener('click', function () {
     navigator.clipboard.writeText(location.origin + location.pathname).then(function () {
@@ -292,7 +302,16 @@ function mark() {
 if (heads.length) { addEventListener('scroll', mark, { passive: true }); mark() }
 </script>`
 
-function page({ title, description, canonical, type = 'website', head = '', body, defs = '', current = '' }) {
+/** The bar over the header: the newest post, its `announce` line if it has one. Not on that post itself. */
+const announceBar = (post) =>
+  post
+    ? `<div class="announce" data-announce="${post.slug}">
+      <a href="/blog/${post.slug}">${escape(post.announce ?? `New post: ${post.title}`)}. Read the post <span aria-hidden="true">→</span></a>
+      <button type="button" aria-label="Close">×</button>
+    </div>`
+    : ''
+
+function page({ title, description, canonical, type = 'website', head = '', body, defs = '', current = '', announce = null }) {
   const nav = [
     ['/blog', 'Blog'],
     ['/blog/whats-new', 'What’s new'],
@@ -304,6 +323,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     ${THEME}
+    ${headScript(announce)}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/blog/fonts/syne.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/blog/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
@@ -323,13 +343,16 @@ function page({ title, description, canonical, type = 'website', head = '', body
   </head>
   <body>
     ${defs}
+    ${announceBar(announce)}
     <header class="top">
-      <a class="brand" href="/" aria-label="Rookahead">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
-      <nav class="top-nav" aria-label="Site">${nav.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
-      <div class="top-end">
-        <a class="icon-link" href="${DISCORD_URL}" rel="noopener" aria-label="Discord" title="Discord">${DISCORD}</a>
-        <a class="icon-link" href="https://github.com/rookahead/rookahead" rel="noopener" aria-label="GitHub" title="GitHub">${GITHUB}</a>
-        <a class="app-btn" href="/">Open the app</a>
+      <div class="top-in">
+        <a class="brand" href="/" aria-label="Rookahead">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
+        <nav class="top-nav" aria-label="Site">${nav.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
+        <div class="top-end">
+          <a class="icon-link" href="${DISCORD_URL}" rel="noopener" aria-label="Discord" title="Discord">${DISCORD}</a>
+          <a class="icon-link" href="https://github.com/rookahead/rookahead" rel="noopener" aria-label="GitHub" title="GitHub">${GITHUB}</a>
+          <a class="app-btn" href="/">Open the app</a>
+        </div>
       </div>
     </header>
 ${body}
@@ -352,23 +375,18 @@ function indexPage(posts) {
     .map(
       (p) => `        <li>
           <a class="card" href="/blog/${p.slug}">
-            <span class="card-board">${cover(p, used)}</span>
-            <span class="card-text">
-              <h3>${escape(p.title)}</h3>
-              <span class="card-desc">${escape(p.description)}</span>
-              ${meta(p)}
-            </span>
+            <h3>${escape(p.title)}</h3>
+            <span class="card-desc">${escape(p.description)}</span>
+            ${meta(p)}
           </a>
         </li>`,
     )
     .join('\n')
   const body = `    <main class="index">
-      <div class="intro">
-        <h1>Blog</h1>
-        <p>How Rookahead grades your moves, what’s new, and the thinking behind a free chess game review.</p>
-      </div>
+      <h1 class="hidden">Rookahead blog</h1>
       <a class="hero" href="/blog/${latest.slug}">
         <span class="hero-text">
+          <span class="hero-tag">${ROOK}Latest post</span>
           <h2>${escape(latest.title)}</h2>
           <span class="hero-desc">${escape(latest.description)}</span>
           ${meta(latest)}
@@ -376,7 +394,7 @@ function indexPage(posts) {
         </span>
         <span class="hero-board">${cover(latest, used)}</span>
       </a>
-      <h2 class="more-title">More posts</h2>
+      <h2 class="more-title">Recent posts</h2>
       <ul class="cards">
 ${cards}
       </ul>
@@ -388,6 +406,7 @@ ${cards}
     current: '/blog',
     body,
     defs: pieceDefs(used),
+    announce: latest,
   })
 }
 
@@ -442,6 +461,7 @@ ${html}
     head: `\n    <meta property="article:published_time" content="${post.date}" />\n    <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`,
     body,
     defs: used.size ? pieceDefs(used) : '',
+    announce: post === posts[0] ? null : posts[0],
   })
 }
 
