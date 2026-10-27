@@ -376,6 +376,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
   </head>
   <body>
     ${defs}
+    <div class="head">
     ${announceBar(announce)}
     <header class="top">
       <div class="top-in">
@@ -389,6 +390,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
         </div>
       </div>
     </header>
+    </div>
 ${body}
     <footer class="foot">
       <span>Rookahead, free chess game review</span>
