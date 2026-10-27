@@ -206,11 +206,11 @@ describe('book, great, brilliant, miss, forced', () => {
       expect(classifyBh3(mate(-5), mate(-6))).toBe('best')
     })
 
-    it('does not call the mating move itself "great"', () => {
+    it('calls the mate "great" only when every other move gives the game away', () => {
       const at = (second: Score) =>
         (({ line, evals }) => classifyGame(line, evals).moves[line[1].id].cls)(game(['d8d1'], [{ score: mate(-1), bestMove: 'd8d1', second }, { score: { type: 'mate', value: 0, mated: 'white' } }], '3r2k1/8/8/8/8/8/5PPP/6K1 b - - 0 1'))
-      expect(at(mate(-5))).toBe('best')
-      expect(at(cp(900))).toBe('best') // even when every other move loses (17.Rd8# in the Opera Game)
+      expect(at(mate(-5))).toBe('best') // other moves mate too
+      expect(at(cp(900))).toBe('great') // every other move loses (17.Rd8# in the Opera Game)
     })
   })
 
