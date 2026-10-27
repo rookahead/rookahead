@@ -1,5 +1,5 @@
 // The blog's search box (copied to /blog/search.js by build-blog.mjs): Ctrl K, ⌘K or / opens it, and it
-// looks through every post's text (/blog/search.json, fetched the first time it's wanted). Each result is
+// looks through every post's text, and About's and Privacy's (/blog/search.json, fetched the first time it's wanted). Each result is
 // a post, or a section of one, with the words you typed marked.
 ;(function () {
   var dialog = document.querySelector('dialog.search')
@@ -58,7 +58,7 @@
     var terms = q.toLowerCase().split(/\s+/).filter(Boolean)
     if (!terms.length)
       return posts.map(function (p) {
-        return { href: '/blog/' + p.slug, title: esc(p.title), sub: esc(p.description) }
+        return { href: p.href, title: esc(p.title), sub: esc(p.description) }
       })
     var found = []
     posts.forEach(function (p, order) {
@@ -70,7 +70,7 @@
         var score = count(p.title, terms) * 6 + count(s.heading, terms) * 3 + (s.id ? 0 : 1) - order * 0.01
         var body = s.id ? s.text : p.description + ' ' + s.text
         found.push({
-          href: '/blog/' + p.slug + (s.id ? '#' + s.id : ''),
+          href: p.href + (s.id ? '#' + s.id : ''),
           title: mark(p.title, terms) + (s.heading ? '<span class="r-sep">›</span>' + mark(s.heading, terms) : ''),
           sub: mark(snippet(body, terms), terms),
           score: score,

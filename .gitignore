@@ -26,9 +26,11 @@ dist-ssr
 # Stockfish builds copied from node_modules (≈200MB)
 public/engine/
 
-# The blog's pages, feed and sitemap, built from blog/ by scripts/build-blog.mjs
+# The blog's pages, feed and sitemap, and About and Privacy, built from blog/ and pages/ by scripts/build-blog.mjs
 public/blog/
 public/blog.html
+public/about.html
+public/privacy.html
 public/sitemap.xml
 
 # Screen recordings for bug reports (local only)

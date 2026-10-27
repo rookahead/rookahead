@@ -682,6 +682,114 @@ kbd {
   margin-top: 20px;
 }
 
+/* ── About and Privacy: one column, the contents beside it ── */
+.page-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) 200px;
+  justify-content: center;
+  gap: 56px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.page-layout .lede {
+  margin-bottom: 8px;
+}
+
+.updated {
+  display: block;
+  margin: 0 0 8px;
+}
+
+/* What Rookahead is, in three cards. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.prose .facts li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.prose .facts li:first-child {
+  background: var(--brand-card);
+  box-shadow: none;
+  color: var(--brand-card-text);
+}
+
+.facts strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+
+.prose .facts li:first-child strong {
+  color: inherit;
+}
+
+.note {
+  margin: 24px 0;
+  padding: 4px 22px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+}
+
+.contact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose .contact a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-edge);
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.prose .contact a:hover {
+  background: var(--card-hover);
+  color: var(--text-2);
+}
+
+.contact svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 10px;
+  fill: var(--text);
+}
+
+.contact strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+
 /* ── Prose ───────────────────────────────────────────────── */
 .prose {
   padding-top: 8px;
@@ -1002,6 +1110,10 @@ kbd {
     grid-template-columns: 220px minmax(0, 720px);
   }
 
+  .page-layout {
+    grid-template-columns: minmax(0, 720px);
+  }
+
   .toc-rail {
     display: none;
   }
@@ -1108,9 +1220,19 @@ kbd {
   }
 
   .index,
-  .post-layout {
+  .post-layout,
+  .page-layout {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .page-layout {
+    padding-top: 28px;
+  }
+
+  .facts,
+  .contact {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero {

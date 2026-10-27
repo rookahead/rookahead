@@ -1,5 +1,6 @@
 // Builds the blog (rookahead.com/blog) from the Markdown posts in blog/: one plain page per post,
-// the list of posts, an Atom feed, the search box's index and the sitemap. Runs before dev and build; the output lands in
+// the list of posts, an Atom feed, the search box's index and the sitemap. About and Privacy come from
+// pages/ the same way, in the blog's look. Runs before dev and build; the output lands in
 // public/ (git-ignored), where it's served like About and Privacy.
 //
 // A post is blog/<slug>.md with a front block:
@@ -20,6 +21,7 @@ import { Marked } from 'marked'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = 'https://rookahead.com'
 const POSTS = path.join(root, 'blog')
+const PAGES = path.join(root, 'pages')
 const PUBLIC = path.join(root, 'public')
 
 // The verdict colours (src/lib/classify.ts). The boards' own colours come from the app (themeCss below).
@@ -234,8 +236,9 @@ function renderPost(markdown, used) {
   return { html, toc }
 }
 
-function readPost(file) {
-  const source = fs.readFileSync(path.join(POSTS, file), 'utf8')
+/** A Markdown file's front block and the text after it. */
+function readFront(dir, file, required) {
+  const source = fs.readFileSync(path.join(dir, file), 'utf8')
   const m = /^---\n([\s\S]*?)\n---\n/.exec(source)
   if (!m) throw new Error(`${file}: no front block`)
   const meta = Object.fromEntries(
@@ -244,14 +247,25 @@ function readPost(file) {
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()]
     }),
   )
-  for (const key of ['title', 'description', 'date']) if (!meta[key]) throw new Error(`${file}: no ${key}`)
+  for (const key of required) if (!meta[key]) throw new Error(`${file}: no ${key}`)
   meta.title = smarten(meta.title)
   meta.description = smarten(meta.description)
+  return { meta, body: source.slice(m[0].length) }
+}
+
+function readPost(file) {
+  const { meta, body } = readFront(POSTS, file, ['title', 'description', 'date'])
   // A cover is a board, written like a ```board block with " | " between its lines.
   meta.cover = meta.cover?.replace(/\s*\|\s*/g, '\n')
-  const body = source.slice(m[0].length)
   const words = body.replace(/```[\s\S]*?```/g, '').split(/\s+/).filter(Boolean).length
-  return { ...meta, slug: file.replace(/\.md$/, ''), body, minutes: Math.max(1, Math.round(words / 220)) }
+  return { ...meta, slug: file.replace(/\.md$/, ''), href: `/blog/${file.replace(/\.md$/, '')}`, body, minutes: Math.max(1, Math.round(words / 220)) }
+}
+
+/** A page of the site (pages/about.md is rookahead.com/about): a title, a `lede` under it, an `updated` date and a shorter `tab` title if it has them. */
+function readPage(file) {
+  const { meta, body } = readFront(PAGES, file, ['title', 'description'])
+  const slug = file.replace(/\.md$/, '')
+  return { ...meta, lede: meta.lede && smarten(meta.lede), slug, href: `/${slug}`, body }
 }
 
 // ── Pages ───────────────────────────────────────────────────────────────────────────────────────
@@ -266,6 +280,8 @@ const DISCORD =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>'
 const GITHUB =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
+const YOUTUBE =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>'
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
 const SEARCH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
 
@@ -474,6 +490,38 @@ ${html}
   })
 }
 
+// Where to find Rookahead, as cards: `<!-- contact -->` in a page.
+const CONTACT = `<ul class="contact">
+  <li><a href="${DISCORD_URL}" rel="noopener">${DISCORD}<strong>Discord</strong><span>Talk chess, ask about a verdict, share an idea</span></a></li>
+  <li><a href="https://github.com/rookahead/rookahead" rel="noopener">${GITHUB}<strong>GitHub</strong><span>Read the code, report a bug</span></a></li>
+  <li><a href="https://www.youtube.com/channel/UCBgLOKhkiQKsYYEhi7mW-1A" rel="noopener">${YOUTUBE}<strong>YouTube</strong><span>Short videos about Rookahead</span></a></li>
+</ul>`
+
+function sitePage(pg, posts) {
+  const { html, toc } = renderPost(pg.body.replace('<!-- contact -->', CONTACT), new Set())
+  const tocList = toc.map((t) => `<li><a href="#${t.id}">${t.text}</a></li>`).join('')
+  const body = `    <div class="page-layout">
+      <main class="post">
+        <h1>${escape(pg.title)}</h1>
+        ${pg.lede ? `<p class="lede">${escape(pg.lede)}</p>` : ''}
+        ${pg.updated ? `<p class="meta updated">Last updated <time datetime="${pg.updated}">${longDate(pg.updated)}</time></p>` : ''}
+        ${toc.length ? `<details class="drop toc-inline"><summary>On this page</summary><ul class="toc">${tocList}</ul></details>` : ''}
+        <div class="prose">
+${html}
+        </div>
+      </main>
+      <aside class="toc-rail" aria-label="On this page">${toc.length ? `<p class="toc-title">On this page</p><ul class="toc">${tocList}</ul>` : ''}</aside>
+    </div>`
+  return page({
+    title: `${pg.tab ?? pg.title} · Rookahead`,
+    description: pg.description,
+    canonical: SITE + pg.href,
+    current: pg.href,
+    body,
+    announce: posts[0],
+  })
+}
+
 function feed(posts) {
   const updated = posts[0]?.date ?? '2026-10-22'
   const entries = posts
@@ -515,9 +563,9 @@ const plain = (html) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-/** What the search box looks through (blog/search.json): each post's sections, as plain text, under their headings. */
-function searchIndex(posts) {
-  return posts.map((p) => {
+/** What the search box looks through (blog/search.json): each post's and page's sections, as plain text, under their headings. */
+function searchIndex(entries) {
+  return entries.map((p) => {
     const { html } = renderPost(p.body, new Set())
     const [intro, ...rest] = html.split(/(?=<h2 id=")/)
     const sections = [{ id: '', heading: '', text: plain(intro) }]
@@ -525,7 +573,7 @@ function searchIndex(posts) {
       const [, id, heading] = /^<h2 id="([^"]*)">([\s\S]*?)<\/h2>/.exec(part)
       sections.push({ id, heading: plain(heading), text: plain(part.slice(part.indexOf('</h2>') + 5)) })
     }
-    return { slug: p.slug, title: p.title, description: p.description, date: longDate(p.date), sections }
+    return { href: p.href, title: p.title, description: p.description, sections }
   })
 }
 
@@ -574,6 +622,11 @@ const posts = fs
   .map(readPost)
   .sort((a, b) => (a.date === b.date ? Number(b.order ?? 0) - Number(a.order ?? 0) : a.date < b.date ? 1 : -1))
 
+const pages = fs
+  .readdirSync(PAGES)
+  .filter((f) => f.endsWith('.md'))
+  .map(readPage)
+
 const out = path.join(PUBLIC, 'blog')
 fs.rmSync(out, { recursive: true, force: true })
 fs.mkdirSync(path.join(out, 'fonts'), { recursive: true })
@@ -583,8 +636,9 @@ fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/dm-sans/files
 for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), postPage(post, posts))
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
-fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(searchIndex(posts)))
+for (const pg of pages) fs.writeFileSync(path.join(PUBLIC, `${pg.slug}.html`), sitePage(pg, posts))
+fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(searchIndex([...posts, ...pages])))
 fs.copyFileSync(path.join(root, 'scripts/blog-search.js'), path.join(out, 'search.js'))
 fs.writeFileSync(path.join(out, 'theme.css'), themeCss())
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), sitemap(posts))
-console.log(`blog: ${posts.length} posts`)
+console.log(`blog: ${posts.length} posts, ${pages.length} pages`)
