@@ -439,13 +439,13 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // may throw in a check that gives more up (22.Nd5 Nbxd5 23.Nc6+ Bxc6), where the game just took back.
       const played = line.slice(i + 1, i + 5).flatMap((n) => (n.uci ? [n.uci] : []))
       const sac = gradable ? offered(after.pv) && (played[0] !== after.pv[0] || played.length < 2 ? offered(after.pv) : offered(played)) : null
-      const mates = node.san?.endsWith('#') ?? false
       const soundSac = sac !== null && (playedBest || loss < LEGENDARY_LOSS) && winAfter >= HOLDS && (winBefore < 97 || sac.declined) && (sac.kind !== 'exchange' || onlyGood)
       if (soundSac || (sac !== null && fastestMate)) {
         cls = 'brilliant'
-      } else if ((onlyMove || onlyMate) && !mates && !takesBack(line[i - 2], parent, node, color)) {
+      } else if ((onlyMove || onlyMate) && !takesBack(line[i - 2], parent, node, color)) {
         // Clutch: the only move, however obvious (a free capture, an attacked piece to its one safe
-        // square), but not taking back what the opponent just took, and not the mating move itself.
+        // square, the mate when every other move gives the game away), but not taking back what the
+        // opponent just took.
         cls = 'great'
       }
 

@@ -115,7 +115,8 @@ Legendary. Replaces Best, Strong or Solid. Either of two ways:
 The only move. Replaces Best, when the move isn't Legendary. It doesn't have to be hard to find: a free
 capture, or an attacked piece moved to its one safe square, counts when nothing else works (10.cxb4
 taking a knight left on b4; 9.Bb3, the bishop's only safe square after 8…b5; 54.Rxb1, taking a queen
-that promoted with check, where everything else is mated). Either of two ways:
+that promoted with check, where everything else is mated; 8.Nd5# in Légal's mate, where every other move
+leaves White a queen down). Either of two ways:
 
 **The only move.** All of:
 1. It's the engine's top move.
@@ -128,8 +129,7 @@ that promoted with check, where everything else is mated). Either of two ways:
 **The only fast mate.** It's the only fast mate.
 
 Never Clutch: taking back what the opponent just took (a recapture on the same square, or a capture
-anywhere that only brings the material back to where it was before their capture), and the mating move
-itself, which is Best. A capture elsewhere by a piece that was under attack isn't taking back: it's
+anywhere that only brings the material back to where it was before their capture). A capture elsewhere by a piece that was under attack isn't taking back: it's
 escaping a threat. 5…Qxg2 takes the queen out of the f7 fork, and it's the only move.
 
 ### Oversight

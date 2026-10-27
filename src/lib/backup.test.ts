@@ -157,10 +157,11 @@ describe('a game that ends in checkmate', () => {
     expect(backed[line[10].fen].score).toEqual(mate(1))
     const report = classifyGame(line, backed)
     expect(report.moves[line[10].id].cls).toBe('blunder')
-    expect(report.moves[line[11].id].cls).toBe('best')
+    // The only move that doesn't give the game away, and it mates.
+    expect(report.moves[line[11].id].cls).toBe('great')
   })
 
-  it('blames the move that allows mate in two, not the mate', () => {
+  it('blames the move that allows mate in two, and the mate is Clutch', () => {
     // Légal's mate: 5…Bxd1?? 6.Bxf7+ Ke7 7.Nd5#, where 5…dxe5 is −2.3.
     const ucis = ['e2e4', 'e7e5', 'g1f3', 'd7d6', 'f1c4', 'c8g4', 'b1c3', 'g7g6', 'f3e5', 'g4d1', 'c4f7', 'e8e7', 'c3d5']
     const { line, evals } = game(ucis, [
@@ -168,13 +169,13 @@ describe('a game that ends in checkmate', () => {
       { score: cp(-225), bestMove: 'd6e5', second: mate(2), secondMove: 'g4d1' },
       { score: mate(2), bestMove: 'c4f7' },
       { score: mate(1), bestMove: 'e8e7' },
-      { score: mate(1), bestMove: 'c3d5' },
+      { score: mate(1), bestMove: 'c3d5', second: cp(-467), secondMove: 'e5d3' },
       { score: mated('black') },
     ])
     const backed = backUp(line, evals, {}).evals
     expect(line.slice(10).map((n) => backed[n.fen].score)).toEqual([mate(2), mate(1), mate(1), mated('black')])
     const report = classifyGame(line, backed)
-    expect(line.slice(10).map((n) => report.moves[n.id].cls)).toEqual(['blunder', 'best', 'forced', 'best'])
+    expect(line.slice(10).map((n) => report.moves[n.id].cls)).toEqual(['blunder', 'best', 'forced', 'great'])
   })
 
   it('grades a review saved with the old back-up, mate scores before the mate, the same', () => {
