@@ -17,6 +17,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Chess } from 'chess.js'
 import { Marked } from 'marked'
+import QRCode from 'qrcode'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = 'https://rookahead.com'
@@ -283,6 +284,7 @@ const GITHUB =
 const YOUTUBE =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>'
 const DISCORD_URL = 'https://discord.gg/ebm3NZNHZH'
+const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.2 0 3.7 1.2 5.3 3 1.6-1.8 3.1-3 5.3-3 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>'
 const SEARCH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
 
 // The look you picked in the app (Settings → Appearance and Board), before the first paint: light, dark or
@@ -349,6 +351,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     ['posts', firstPost.href, 'Posts'],
     ['whats-new', '/blog/whats-new', 'What’s new'],
     ['about', '/about', 'About'],
+    ['donate', '/donate', `${HEART}Donate`],
   ]
   return `<!doctype html>
 <html lang="en">
@@ -381,7 +384,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     <header class="top">
       <div class="top-in">
         <a class="brand" href="/blog" aria-label="Rookahead blog">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
-        <nav class="top-nav" aria-label="Site">${nav.map(([tab, href, label]) => `<a href="${href}"${tab === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
+        <nav class="top-nav" aria-label="Site">${nav.map(([tab, href, label]) => `<a href="${href}"${tab === 'donate' ? ' class="nav-donate"' : ''}${tab === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
         <div class="top-end">
           <button class="search-btn" type="button" data-search-open aria-label="Search the blog">${SEARCH_ICON}<span class="search-label">Search</span><span class="keys" aria-hidden="true"><kbd class="mod"></kbd><kbd>K</kbd></span></button>
           <a class="icon-link" href="${DISCORD_URL}" rel="noopener" aria-label="Discord" title="Discord">${DISCORD}</a>
@@ -394,7 +397,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
 ${body}
     <footer class="foot">
       <span>Rookahead, free chess game review</span>
-      <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav>
+      <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/donate">Donate</a></nav>
     </footer>
     <dialog class="search" aria-label="Search the blog">
       <form class="search-field" method="dialog">
@@ -539,6 +542,120 @@ ${html}
   })
 }
 
+// ── Donate ──────────────────────────────────────────────────────────────────────────────────────
+
+/** The amounts offered for UPI, in rupees; "Other" leaves it to the payer's app. */
+const UPI_AMOUNTS = [100, 250, 500, 1000]
+
+/** A UPI payment link (the NPCI deep link every UPI app opens), for an amount or none. */
+const upiLink = (pg, amount) =>
+  `upi://pay?pa=${pg.upi || 'upi-id-not-set'}&pn=${encodeURIComponent(pg.upiName || 'Rookahead')}&cu=INR&tn=${encodeURIComponent('Rookahead')}${amount ? `&am=${amount}` : ''}`
+
+const qr = (text) => QRCode.toString(text, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' })
+
+/**
+ * pages/donate.md: a banner, a card with the ways to give (UPI for India, with a QR code per amount; the
+ * front block's `github` and `bmc` (Buy Me a Coffee) links for everyone else), its text, and its questions as cards.
+ * Until the front block has a `upi` ID the page says it's a preview, and a build of main stops.
+ */
+async function donatePage(pg, posts) {
+  const ready = Boolean(pg.upi)
+  if (!ready && process.env.CF_PAGES_BRANCH === 'main') throw new Error('donate: no UPI ID in pages/donate.md')
+  const [intro, questions = ''] = pg.body.split(/^## Questions\s*$/m)
+  const introHtml = renderPost(intro, new Set()).html
+  const faq = renderPost(questions, new Set())
+    .html.split(/(?=<h3>)/)
+    .filter((part) => part.startsWith('<h3>'))
+    .map((part) => `<div class="faq-item">${part}</div>`)
+    .join('')
+  const chips = [...UPI_AMOUNTS.map((a) => [a, `₹${a.toLocaleString('en-IN')}`]), [0, 'Other']]
+  const codes = await Promise.all(chips.map(([a]) => qr(upiLink(pg, a))))
+  const intl = [
+    ['github', 'GitHub Sponsors', 'Monthly or one-time, by card'],
+    ['bmc', 'Buy Me a Coffee', 'One-time or monthly, by card'],
+  ].filter(([key]) => pg[key] || (!ready && key === 'github'))
+  const body = `    <main class="donate">
+      ${ready ? '' : '<p class="preview-note">Preview: the UPI ID and the links below aren’t set yet, so nothing here takes a payment.</p>'}
+      <section class="give-hero">
+        <span class="give-mark">${ROOK}</span>
+        <div>
+          <h1>${escape(smarten(pg.heading ?? pg.title))}</h1>
+          ${pg.subheading ? `<p>${escape(smarten(pg.subheading))}</p>` : ''}
+        </div>
+        <span class="give-mark">${ROOK}</span>
+      </section>
+      <div class="give">
+        <div class="give-why prose">
+${introHtml}
+        </div>
+        <div class="give-card">
+          <div class="give-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="true" data-tab="upi">India · UPI</button>
+            <button type="button" role="tab" aria-selected="false" data-tab="intl">Other countries</button>
+          </div>
+          <div class="give-panel" data-panel="upi">
+            <div class="amounts" role="group" aria-label="Amount">${chips
+              .map(([a, label]) => `<button type="button" data-amount="${a}" data-link="${escape(upiLink(pg, a))}"${a === 250 ? ' aria-pressed="true"' : ' aria-pressed="false"'}>${label}</button>`)
+              .join('')}</div>
+            <div class="upi">
+              <div class="qr">${codes.map((svg, i) => `<div data-qr="${chips[i][0]}"${chips[i][0] === 250 ? '' : ' hidden'}>${svg}</div>`).join('')}</div>
+              <div class="upi-text">
+                <strong>Scan with any UPI app</strong>
+                <span>Google Pay, PhonePe, Paytm or your bank’s app.</span>
+                <button type="button" class="upi-id" data-copy-text="${escape(pg.upi || 'upi-id-not-set')}"><span>${escape(pg.upi || 'upi-id-not-set')}</span><em>Copy</em></button>
+              </div>
+            </div>
+            <a class="pay-btn" data-pay href="${escape(upiLink(pg, 250))}">Pay ₹250 with a UPI app</a>
+          </div>
+          <div class="give-panel" data-panel="intl" hidden>
+            <p class="give-note">From outside India, by card:</p>
+            <ul class="intl">${intl
+              .map(([key, name, how]) => `<li><a href="${escape(pg[key] || '#')}" rel="noopener"><strong>${name}</strong><span>${how}</span></a></li>`)
+              .join('')}</ul>
+          </div>
+        </div>
+      </div>
+      ${faq ? `<section class="faq"><h2>Questions</h2><div class="faq-grid">${faq}</div></section>` : ''}
+    </main>
+    <script>
+    (function () {
+      var tabs = document.querySelectorAll('.give-tabs [data-tab]')
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () {
+          tabs.forEach(function (o) { o.setAttribute('aria-selected', String(o === t)) })
+          document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== t.dataset.tab })
+        })
+      })
+      // An amount picks its QR code and the phone button's link.
+      var chips = document.querySelectorAll('.amounts button')
+      var pay = document.querySelector('[data-pay]')
+      chips.forEach(function (c) {
+        c.addEventListener('click', function () {
+          chips.forEach(function (o) { o.setAttribute('aria-pressed', String(o === c)) })
+          document.querySelectorAll('[data-qr]').forEach(function (q) { q.hidden = q.dataset.qr !== c.dataset.amount })
+          pay.href = c.dataset.link
+          pay.textContent = c.dataset.amount === '0' ? 'Pay with a UPI app' : 'Pay ' + c.textContent + ' with a UPI app'
+        })
+      })
+      var id = document.querySelector('[data-copy-text]')
+      id.addEventListener('click', function () {
+        navigator.clipboard.writeText(id.dataset.copyText).then(function () {
+          id.querySelector('em').textContent = 'Copied'
+          setTimeout(function () { id.querySelector('em').textContent = 'Copy' }, 1600)
+        })
+      })
+    })()
+    </script>`
+  return page({
+    title: `${pg.tab ?? pg.title} · Rookahead`,
+    description: pg.description,
+    canonical: SITE + pg.href,
+    current: pg.slug,
+    body,
+    announce: posts[0],
+  })
+}
+
 function feed(posts) {
   const updated = posts[0]?.date ?? '2026-10-22'
   const entries = posts
@@ -622,7 +739,7 @@ function themeCss() {
 }
 
 // The app's own pages that are worth finding from a search, then the blog.
-const APP_PAGES = ['/', '/games', '/puzzles', '/puzzles/daily', '/play', '/legendary', '/board', '/about', '/privacy']
+const APP_PAGES = ['/', '/games', '/puzzles', '/puzzles/daily', '/play', '/legendary', '/board', '/about', '/privacy', '/donate']
 
 function sitemap(posts) {
   const urls = [...APP_PAGES.map((p) => ({ loc: SITE + p })), { loc: `${SITE}/blog`, lastmod: posts[0]?.date }, ...posts.map((p) => ({ loc: `${SITE}/blog/${p.slug}`, lastmod: p.date }))]
@@ -653,7 +770,7 @@ fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/dm-sans/files
 for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), postPage(post, posts))
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
-for (const pg of pages) fs.writeFileSync(path.join(PUBLIC, `${pg.slug}.html`), sitePage(pg, posts))
+for (const pg of pages) fs.writeFileSync(path.join(PUBLIC, `${pg.slug}.html`), pg.layout === 'donate' ? await donatePage(pg, posts) : sitePage(pg, posts))
 fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(searchIndex([...posts, ...pages])))
 fs.copyFileSync(path.join(root, 'scripts/blog-search.js'), path.join(out, 'search.js'))
 fs.writeFileSync(path.join(out, 'theme.css'), themeCss())
