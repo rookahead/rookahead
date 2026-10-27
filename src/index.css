@@ -959,7 +959,14 @@ svg {
   }
 }
 
-/* Wide screens give the review's panel more room: the coach, the report and the move list. */
+/* Wider screens give the review's panel more room: the coach, the report and the move list, and a header
+   whose title and actions fit on one line. */
+@media (min-width: 1400px) {
+  .analysis-page .layout {
+    --panel-w: 440px;
+  }
+}
+
 @media (min-width: 1700px) {
   .analysis-page .layout {
     --panel-w: 480px;
@@ -1800,6 +1807,10 @@ svg {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  /* One line, whatever the panel's width. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .panel-top .icon-btn:hover {
@@ -1819,6 +1830,14 @@ svg {
 .panel-share {
   margin-right: 6px;
   gap: 6px;
+}
+
+.panel-share svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Share game: a word, not another icon, so it's the one action that reads at a glance. */
