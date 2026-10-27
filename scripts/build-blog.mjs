@@ -12,6 +12,7 @@
 //   announce: Explain is here             (optional: the bar over the header while it's the newest post)
 //   ---
 // A ```board block draws a position (see boardSvg below).
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -363,8 +364,8 @@ function page({ title, description, canonical, type = 'website', head = '', body
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/blog/fonts/syne.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/blog/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/blog/theme.css" />
-    <link rel="stylesheet" href="/blog.css" />
+    <link rel="stylesheet" href="${ASSETS.theme}" />
+    <link rel="stylesheet" href="${ASSETS.css}" />
     <link rel="canonical" href="${canonical}" />
     <link rel="alternate" type="application/atom+xml" title="Rookahead blog" href="/blog/feed.xml" />
     <title>${escape(title)}</title>
@@ -406,7 +407,7 @@ ${body}
       <ul class="results" role="listbox" aria-label="Results"></ul>
     </dialog>
     ${SCRIPT}
-    <script src="/blog/search.js" defer></script>
+    <script src="${ASSETS.search}" defer></script>
   </body>
 </html>
 `
@@ -761,6 +762,18 @@ const pages = fs
   .filter((f) => f.endsWith('.md'))
   .map(readPage)
 
+// Pages ask for their stylesheets, script and search index by a hash of their contents: Cloudflare lets
+// browsers keep those files for four hours, and a page drawn with an older copy comes out broken.
+const hash = (text) => crypto.createHash('sha256').update(text).digest('hex').slice(0, 10)
+const theme = themeCss()
+const search = JSON.stringify(searchIndex([...posts, ...pages]))
+const searchJs = fs.readFileSync(path.join(root, 'scripts/blog-search.js'), 'utf8').replace("'/blog/search.json'", `'/blog/search.json?v=${hash(search)}'`)
+const ASSETS = {
+  theme: `/blog/theme.css?v=${hash(theme)}`,
+  css: `/blog.css?v=${hash(fs.readFileSync(path.join(PUBLIC, 'blog.css')))}`,
+  search: `/blog/search.js?v=${hash(searchJs)}`,
+}
+
 const out = path.join(PUBLIC, 'blog')
 fs.rmSync(out, { recursive: true, force: true })
 fs.mkdirSync(path.join(out, 'fonts'), { recursive: true })
@@ -771,8 +784,8 @@ for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), 
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
 for (const pg of pages) fs.writeFileSync(path.join(PUBLIC, `${pg.slug}.html`), pg.layout === 'donate' ? await donatePage(pg, posts) : sitePage(pg, posts))
-fs.writeFileSync(path.join(out, 'search.json'), JSON.stringify(searchIndex([...posts, ...pages])))
-fs.copyFileSync(path.join(root, 'scripts/blog-search.js'), path.join(out, 'search.js'))
-fs.writeFileSync(path.join(out, 'theme.css'), themeCss())
+fs.writeFileSync(path.join(out, 'search.json'), search)
+fs.writeFileSync(path.join(out, 'search.js'), searchJs)
+fs.writeFileSync(path.join(out, 'theme.css'), theme)
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), sitemap(posts))
 console.log(`blog: ${posts.length} posts, ${pages.length} pages`)
