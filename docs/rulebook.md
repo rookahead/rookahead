@@ -129,7 +129,8 @@ leaves White a queen down). Either of two ways:
 **The only fast mate.** It's the only fast mate.
 
 Never Clutch: taking back what the opponent just took (a recapture on the same square, or a capture
-anywhere that only brings the material back to where it was before their capture). A capture elsewhere by a piece that was under attack isn't taking back: it's
+anywhere that brings the material back to where it was before their capture, within a pawn, and no
+further). Grabbing a pawn a queen down isn't taking back: 7.Bxf7+ after 6…Bxd1 is Clutch. A capture elsewhere by a piece that was under attack isn't taking back: it's
 escaping a threat. 5…Qxg2 takes the queen out of the f7 fork, and it's the only move.
 
 ### Oversight

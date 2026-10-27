@@ -167,7 +167,7 @@ describe('a game that ends in checkmate', () => {
     const { line, evals } = game(ucis, [
       ...ucis.slice(0, 9).map((uci) => ({ score: cp(30), bestMove: uci })),
       { score: cp(-225), bestMove: 'd6e5', second: mate(2), secondMove: 'g4d1' },
-      { score: mate(2), bestMove: 'c4f7' },
+      { score: mate(2), bestMove: 'c4f7', second: cp(-328), secondMove: 'e1d1' },
       { score: mate(1), bestMove: 'e8e7' },
       { score: mate(1), bestMove: 'c3d5', second: cp(-467), secondMove: 'e5d3' },
       { score: mated('black') },
@@ -175,7 +175,8 @@ describe('a game that ends in checkmate', () => {
     const backed = backUp(line, evals, {}).evals
     expect(line.slice(10).map((n) => backed[n.fen].score)).toEqual([mate(2), mate(1), mate(1), mated('black')])
     const report = classifyGame(line, backed)
-    expect(line.slice(10).map((n) => report.moves[n.id].cls)).toEqual(['blunder', 'best', 'forced', 'great'])
+    // 6.Bxf7+ grabs a pawn a queen down: that's not taking the queen back, so it can be Clutch.
+    expect(line.slice(10).map((n) => report.moves[n.id].cls)).toEqual(['blunder', 'great', 'forced', 'great'])
   })
 
   it('grades a review saved with the old back-up, mate scores before the mate, the same', () => {
