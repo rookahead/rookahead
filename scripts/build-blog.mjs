@@ -294,7 +294,7 @@ const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.sett
 const headScript = (announce) =>
   `<script>try{var r=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.userAgent))r.setAttribute('data-mac','');if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
 
-// Copy link, closing the announcement, and the table of contents following the section you're reading.
+// Copy link, closing the announcement, the sidebar's highlight, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
 var announce = document.querySelector('[data-announce]')
 if (announce) announce.querySelector('button').addEventListener('click', function () {
@@ -309,6 +309,20 @@ document.querySelectorAll('[data-copy]').forEach(function (b) {
     })
   })
 })
+// The sidebar's highlight slides to the post under the mouse: it fades in where you first point, then follows.
+var sideList = document.querySelector('.side-list')
+if (sideList) {
+  var pill = sideList.querySelector('.pill')
+  sideList.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('pointerenter', function () {
+      pill.classList.toggle('slide', pill.classList.contains('on'))
+      pill.style.translate = '0 ' + a.offsetTop + 'px'
+      pill.style.height = a.offsetHeight + 'px'
+      pill.classList.add('on')
+    })
+  })
+  sideList.addEventListener('pointerleave', function () { pill.classList.remove('on') })
+}
 var heads = [].slice.call(document.querySelectorAll('.prose h2[id]'))
 var links = [].slice.call(document.querySelectorAll('.toc a'))
 function mark() {
@@ -454,7 +468,7 @@ function postPage(post, posts) {
   const body = `    <div class="post-layout">
       <nav class="side" aria-label="Posts">
         <a class="side-title" href="/blog">All posts</a>
-        <ul>${list}</ul>
+        <div class="side-list"><span class="pill" aria-hidden="true"></span><ul>${list}</ul></div>
       </nav>
       <main class="post">
         <details class="drop posts-menu"><summary>All posts</summary><ul>${list}</ul></details>

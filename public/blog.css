@@ -540,10 +540,42 @@ kbd {
   text-decoration: none;
 }
 
-.side a:hover,
+.side a:hover {
+  color: var(--text);
+}
+
 .posts-menu a:hover {
   background: var(--btn);
   color: var(--text);
+}
+
+/* One highlight under the post you point at, sliding from post to post (the script in build-blog.mjs). */
+.side-list {
+  position: relative;
+}
+
+.side-list a {
+  position: relative;
+}
+
+.pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: 10px;
+  background: var(--btn);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill.on {
+  opacity: 1;
+}
+
+.pill.slide {
+  transition-property: opacity, translate, height;
 }
 
 .side a[aria-current],
@@ -1288,6 +1320,10 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pill.slide {
+    transition-property: opacity;
+  }
+
   .hero-board,
   .hero:hover .hero-board {
     transition: none;
