@@ -134,7 +134,7 @@ function DisplayTab({ settings, onChange }: Pick<Props, 'settings' | 'onChange'>
 export function AnalysisSettings({ settings, status, onChange, onClose, initialTab = 'engine' }: Props) {
   const [tab, setTab] = useState<AnalysisSettingsTab>(initialTab)
   return (
-    <SettingsDialog title="Analysis settings" onClose={onClose} top={<Tabs label="Settings" value={tab} onSelect={setTab} items={TABS} />}>
+    <SettingsDialog title="Settings" onClose={onClose} top={<Tabs label="Settings" value={tab} onSelect={setTab} items={TABS} />}>
       {tab === 'engine' && <EngineTab settings={settings} status={status} onChange={onChange} />}
       {tab === 'display' && <DisplayTab settings={settings} onChange={onChange} />}
       {tab === 'board' && <BoardOptions settings={settings} onChange={onChange} preview />}

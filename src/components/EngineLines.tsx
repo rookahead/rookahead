@@ -152,7 +152,7 @@ export function EngineLines({ fen, status, enabled, onToggle, result, searching,
             </>
           )}
         </div>
-        <button className="icon-btn engine-gear" onClick={onOpenSettings} aria-label="Analysis settings" title="Analysis settings">
+        <button className="icon-btn engine-gear" onClick={onOpenSettings} aria-label="Settings" title="Settings">
           <Gear />
         </button>
       </header>

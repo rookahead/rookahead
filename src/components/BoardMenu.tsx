@@ -35,7 +35,7 @@ const ITEMS = [
   },
   {
     id: 'settings',
-    label: 'Analysis settings',
+    label: 'Settings',
     icon: (
       <>
         <circle cx="12" cy="12" r="3" />
