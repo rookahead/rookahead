@@ -15,6 +15,7 @@
 <p align="center">
   <a href="https://rookahead.com"><b>rookahead.com</b></a> ·
   <a href="https://rookahead.com/blog">Blog</a> ·
+  <a href="https://rookahead.com/blog/whats-new">What's new</a> ·
   <a href="https://discord.gg/ebm3NZNHZH">Discord</a> ·
   <a href="https://www.youtube.com/@rookahead">YouTube</a> ·
   <a href="https://rookahead.com/donate">Donate</a>
