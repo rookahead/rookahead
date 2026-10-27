@@ -972,6 +972,16 @@ svg {
   }
 }
 
+/* Desktop: the board rounds down to whole screen pixels (--board-step), so the column can come out a
+   little shorter than the window. Half the room left over goes above it, so it sits in the middle rather
+   than high; a page taller than the window starts at the top as before. */
+@media (min-width: 1001px) {
+  .layout,
+  .play-layout {
+    padding-top: calc(var(--pad-y) + max(0px, (100vh - var(--nav-h) - 2 * var(--pad-y) - var(--column-h)) / 2));
+  }
+}
+
 /* Wider screens give the review's panel more room: the coach, the report and the move list, and a header
    whose title and actions fit on one line. */
 @media (min-width: 1400px) {
