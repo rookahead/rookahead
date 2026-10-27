@@ -108,19 +108,22 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 /** The square colour under a king, by how its game ended. */
 const END_TINT: Record<EndKind, string> = { mate: 'end-loss', resign: 'end-loss', timeout: 'end-loss', winner: 'end-win', draw: 'end-draw' }
 
-/** The board shaking for a Legendary move: a hard jolt that settles over 0.6 s. */
+/**
+ * The board shaking for a Legendary move: a hard jolt that settles in a third of a second. Timed by the
+ * offsets alone (linear between them): an eased ending crept the last pixel back over a third of a second,
+ * a hairline wobble after the shake was over.
+ */
 const QUAKE: Keyframe[] = [
   { translate: '0 0', rotate: '0deg' },
-  { translate: '-8px 5px', rotate: '-0.6deg', offset: 0.08 },
-  { translate: '7px -6px', rotate: '0.5deg', offset: 0.16 },
-  { translate: '-6px -3px', rotate: '-0.4deg', offset: 0.26 },
-  { translate: '5px 4px', rotate: '0.3deg', offset: 0.38 },
-  { translate: '-3px 2px', rotate: '-0.15deg', offset: 0.52 },
-  { translate: '2px -1px', rotate: '0deg', offset: 0.68 },
-  { translate: '-1px 0', rotate: '0deg', offset: 0.84 },
+  { translate: '-8px 5px', rotate: '-0.6deg', offset: 0.1 },
+  { translate: '7px -6px', rotate: '0.5deg', offset: 0.22 },
+  { translate: '-6px -3px', rotate: '-0.4deg', offset: 0.36 },
+  { translate: '5px 4px', rotate: '0.3deg', offset: 0.52 },
+  { translate: '-3px 2px', rotate: '-0.15deg', offset: 0.7 },
+  { translate: '1px -1px', rotate: '0deg', offset: 0.86 },
   { translate: '0 0', rotate: '0deg' },
 ]
-const QUAKE_MS = 600
+const QUAKE_MS = 340
 
 /** A Legendary move begins in slow motion: the piece rises a little off its square before it sets off. */
 const LIFT_MS = 550
@@ -383,7 +386,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       playSound('legendary', soundVolume)
       setLanded(quake)
     }, landing)
-    const motion = root.current?.animate(QUAKE, { duration: QUAKE_MS, delay: landing, easing: 'cubic-bezier(0.3, 0.6, 0.4, 1)' })
+    const motion = root.current?.animate(QUAKE, { duration: QUAKE_MS, delay: landing })
     return () => {
       clearTimeout(impact)
       motion?.cancel()
