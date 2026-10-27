@@ -1,12 +1,29 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-10-23
+date: 2026-10-27
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 27 October 2026
+
+**Rules:** a move is now graded against what the game went on to show, not only the engine's first look. Before a move is called a mistake, every search that ranks it has to agree, and opening positions take their evals from the Lichess cloud.
+
+**Rules:** Clutch is the only move that keeps what you have. It now also counts an only move whose alternatives would all be Blunders, a capture that gets a piece out of a threat, and a checkmate when every other move gives the game away.
+
+**Rules:** a sacrifice is checked against the moves actually played. A deflection counts, even when the material comes straight back. A piece left to a counter-attack doesn't, and neither does a trade through the taking piece's square. A pawn grabbed when you're a queen down no longer counts as taking the queen back, and the move that allows a checkmate is never Best.
+
+- A new review panel with Summary, Review and Analysis tabs. The graph doubles as the review's progress bar, and the board's actions sit in the panel's header.
+- The coach explains every move: why a mistake was a mistake, and a sacrifice through the line where it's taken. Click a row to play its moves on the board, and point at a move in an engine line to preview it.
+- The engine's lines show up as soon as they come, and moves you play on the Analysis board get verdicts too.
+- Think a verdict is wrong? Tap the flag on the coach card to tell us. Bugs, ideas and verdicts can also go in an [issue on GitHub](https://github.com/rookahead/rookahead/issues/new/choose).
+- A new Home on desktop, and a new My games.
+- Reviews run smoother and keep the board responsive, and fall back to a simpler engine on browsers that can't load the fast one.
+- The board resizes smoothly, sits in the middle of the window, and keeps verdict badges inside its edges.
+- The blog has a new look and a search box, and there's a [Donate](/donate) page.
 
 ## 23 October 2026
 
