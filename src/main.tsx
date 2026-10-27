@@ -9,6 +9,7 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { startViewTransition } from './hooks/useSettled'
+import { startPixelGrid } from './lib/pixelGrid'
 import './index.css'
 
 // The app used to be called Outpost: carry its saved settings and game over to the new keys.
@@ -28,6 +29,9 @@ try {
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}))
 }
+
+// Boards line up with the screen's pixels (src/lib/pixelGrid.ts).
+startPixelGrid()
 
 const container = document.getElementById('root')!
 const root = createRoot(container)

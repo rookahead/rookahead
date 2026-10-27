@@ -4,6 +4,9 @@
    screen carry meaning (classifications, the eval, sections). */
 :root {
   color-scheme: dark;
+  /* Eight of the smallest CSS lengths that are whole screen pixels (8px at 100%, 32px at 125%), or free
+     while a board is being resized: src/lib/pixelGrid.ts sets it. */
+  --board-step: 8px;
   --bg: var(--t-surface);
   --surface: var(--t-low);
   --surface-2: var(--t-cont);
@@ -915,14 +918,19 @@ svg {
 
 .layout {
   /* Board | panel. The board takes whatever height and width are left, but never shrinks below
-     360px (short screens scroll instead). */
-  --board-size: max(
-    360px,
-    min(
-      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-      calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
-      880px
-    )
+     360px (short screens scroll instead). A multiple of --board-step, so every square is whole screen
+     pixels (Board.tsx keeps its corner on a whole pixel too). */
+  --board-size: round(
+    down,
+    max(
+      360px,
+      min(
+        calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+        calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+        880px
+      )
+    ),
+    var(--board-step)
   );
   /* Height of the board column. */
   --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
@@ -931,13 +939,18 @@ svg {
 /* A board sized by its corner handle: as big as asked, but never past the width there is or past
    the window's height with both player bars showing. */
 .layout.sized {
-  --board-size: max(
-    280px,
-    min(
-      var(--board-user),
-      calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
-      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px)
-    )
+  --board-size: round(
+    down,
+    max(
+      280px,
+      min(
+        /* The size it was dragged to, to the nearest step: letting go settles it as little as it can. */
+        round(nearest, var(--board-user), var(--board-step)),
+        calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+        calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px)
+      )
+    ),
+    var(--board-step)
   );
 }
 
@@ -6234,13 +6247,17 @@ button.user-avatar.guest:hover {
 
 .play-layout {
   /* The board takes the height, and whatever width the panel leaves. */
-  --board-size: max(
-    280px,
-    min(
-      calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
-      calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)),
-      880px
-    )
+  --board-size: round(
+    down,
+    max(
+      280px,
+      min(
+        calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+        calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)),
+        880px
+      )
+    ),
+    var(--board-step)
   );
   --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
   display: grid;
@@ -7136,9 +7153,10 @@ button.user-avatar.guest:hover {
 @media (min-width: 1001px) {
   /* No player bars: the board takes the height, less a row for the chips under it. */
   .play-layout.puzzle-layout {
-    --board-size: max(
-      280px,
-      min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 40px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)
+    --board-size: round(
+      down,
+      max(280px, min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 40px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)),
+      var(--board-step)
     );
     --column-h: calc(var(--board-size) + 40px);
   }
@@ -9411,8 +9429,8 @@ strong.settings-value {
 /* The dialogs' preview: the board's top three ranks, as wide as the dialog. */
 .board-strip {
   flex-shrink: 0;
-  /* Chessground draws boards in multiples of 8px: so is the strip, or a sliver shows at its edge. */
-  width: round(down, 100%, 8px);
+  /* Squares of whole screen pixels (--board-step): so is the strip, or a sliver shows at its edge. */
+  width: round(down, 100%, var(--board-step));
   align-self: center;
   container-type: inline-size;
   overflow: hidden;
