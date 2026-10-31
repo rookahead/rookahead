@@ -10783,6 +10783,232 @@ a.you-row:active {
   }
 }
 
+.player-eval {
+  display: none;
+}
+
+/* The finished report gets the page to itself. The board stays laid out, out of sight, so it doesn't
+   have to measure itself again; Start review sits where the move controls were. */
+@media (max-width: 1000px) {
+  .analysis-page.report .board-column {
+    /* Over the inline `relative` the board sets for its pixel snapping. */
+    position: absolute !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .analysis-page.report .layout,
+  .analysis-page.report .layout.sized {
+    padding-bottom: 96px;
+  }
+
+  .analysis-page.report .panel {
+    margin-top: 8px;
+  }
+
+  .analysis-page.report .panel-nav {
+    display: none;
+  }
+
+  .analysis-page.report .panel-body > .summary-cta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    animation: none;
+  }
+}
+
+/* Stepping through a game, or on the engine: everything fits one screen and the board stays put; only
+   what's under it scrolls. A screen too short for that, like a phone on its side, scrolls as usual. */
+@media (max-width: 1000px) and (min-height: 560px) {
+  .analysis-page.pinned {
+    --nav-h: 48px;
+    --player-h: 24px;
+    --mobile-nav-h: calc(57px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .analysis-page.pinned .page-header {
+    flex-shrink: 0;
+  }
+
+  .analysis-page.pinned .layout,
+  .analysis-page.pinned .layout.sized {
+    /* What's left once the bars and the coach's lines have their room. */
+    --board-size: min(100vw, 640px, calc(100dvh - 348px));
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 var(--mobile-nav-h);
+  }
+
+  .analysis-page.pinned .board-column {
+    flex-shrink: 0;
+    align-self: center;
+    gap: 0;
+  }
+
+  .analysis-page.pinned .move-strip {
+    margin: 0;
+    padding: 0 8px;
+  }
+
+  .analysis-page.pinned .move-strip-move {
+    height: 30px;
+  }
+
+  .analysis-page.pinned .player-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .analysis-page.pinned .player-bar {
+    gap: 8px;
+  }
+
+  .analysis-page.pinned .player-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analysis-page.pinned .player-name {
+    font-size: 13px;
+  }
+
+  .analysis-page.pinned .player-eval {
+    display: block;
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  .analysis-page.pinned .eval-bar.horizontal {
+    height: 10px;
+    margin: 0 12px 2px;
+    border-radius: 3px;
+  }
+
+  .analysis-page.pinned .eval-bar-chip {
+    display: none;
+  }
+
+  .analysis-page.pinned .panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .analysis-page.pinned .panel-card {
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .analysis-page.pinned .panel-header {
+    border-bottom: 0;
+  }
+
+  .analysis-page.pinned .phone-views {
+    margin: 2px 12px 0;
+    padding: 2px;
+  }
+
+  .analysis-page.pinned .phone-views button {
+    height: 30px;
+  }
+
+  .analysis-page.pinned .panel-body,
+  .analysis-page.pinned .panel-body:has(> .move-list) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .analysis-page.pinned .panel-body > * {
+    animation: none;
+  }
+
+  /* The verdict on one line, its note beside the buttons, so Explain is always in reach. */
+  .analysis-page.pinned .panel-body > .coach {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 12px;
+    padding: 6px 12px;
+  }
+
+  .analysis-page.pinned .coach-head {
+    grid-column: 1 / -1;
+    gap: 8px;
+  }
+
+  .analysis-page.pinned .coach-title {
+    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .analysis-page.pinned .coach-detail {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .analysis-page.pinned .coach-actions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 3px;
+    margin-top: 0;
+  }
+
+  .analysis-page.pinned .coach-actions .btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .analysis-page.pinned .panel-nav {
+    padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .analysis-page.pinned .panel-nav .ctrl {
+    height: 44px;
+  }
+
+  /* The narrowest phones: the score by the board is enough, so the verdict keeps its line. */
+  @media (max-width: 340px) {
+    .analysis-page.pinned .coach .eval-pill {
+      display: none;
+    }
+  }
+
+  /* Explain takes the whole space under the board, and the board doesn't move. */
+  .analysis-page.explaining .panel-body > .coach,
+  .analysis-page.explaining .panel-header,
+  .analysis-page.explaining .board-column > .player-bar:last-child {
+    display: none;
+  }
+
+  .analysis-page.explaining .panel-body > .explain {
+    border-top: 0;
+  }
+}
+
 @media (min-width: 641px) and (max-width: 1000px) {
   .analysis-page .board-cg {
     border-radius: 8px;

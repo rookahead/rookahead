@@ -28,7 +28,7 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onP
     explanation === null
       ? [{ key: 'better', label: 'Better', text: bestText ? `${bestText} was stronger, though not for one reason we can show in a line.` : 'There’s no one reason we can show in a line.' }]
       : explanation?.rows
-  // On a phone it opens below the board: bring it up to where it can be read.
+  // It opens below the coach: bring it up to where it can be read.
   const ref = useRef<HTMLElement>(null)
   useEffect(() => ref.current?.scrollIntoView({ block: 'nearest' }), [])
   return (

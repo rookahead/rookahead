@@ -1,7 +1,7 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
 import { NavIcon } from '../components/NavIcons'
@@ -331,6 +331,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }
   // Phones pick one part at a time under the board, as the tabs do on desktop.
   const phoneView: PhoneView = tab === 'analysis' ? 'engine' : tab === 'review' ? 'coach' : 'summary'
+  // Stepping and the engine hold the board still on one screen; the finished report gets the page to itself.
+  const pinned = phone && tab !== 'summary'
+  const reportPage = phone && tab === 'summary' && reviewed
+  useLayoutEffect(() => {
+    if (active && phone) window.scrollTo(0, 0)
+  }, [active, phone, pinned, reportPage])
   const pickPhoneView = (view: PhoneView) => {
     if (view === 'engine') return setTab('analysis')
     if (view === 'summary') return setTab('summary')
@@ -615,7 +621,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const atGameEnd = Boolean(result && !node.children.length && isMainline(tree, node.id))
   const ends = useMemo(() => endMarks(node.fen, atGameEnd ? { result, termination: headers.Termination } : {}), [node.fen, atGameEnd, result, headers.Termination])
   const resultFor = (c: Color) => (result && node.children.length === 0 && isMainline(tree, node.id) ? (c === 'white' ? result.split('-')[0] : result.split('-')[1]) : undefined)
-  const player = (c: Color) => (
+  const player = (c: Color, end?: React.ReactNode) => (
     <PlayerBar
       color={c}
       name={headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')}
@@ -623,6 +629,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       result={resultFor(c)?.replace('1/2', '½')}
       captured={material.captured[c]}
       advantage={material.advantage[c]}
+      clock={end}
     />
   )
 
@@ -896,9 +903,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             onClose={() => setExplainId(null)}
             onPreview={canHover ? setPreview : undefined}
           />
-        ) : phone ? (
-          <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />
-        ) : (
+        ) : phone ? null : (
           <>
             <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
             <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={72} />
@@ -947,8 +952,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     handle.addEventListener('pointercancel', onUp)
   }
 
+  // The number by the board matches the coach's while stepping, not the live engine's first look.
+  const rowScore = tab === 'review' && currentReview ? currentReview.score : engineOn || reviewEval ? score : null
+
   return (
-    <div className="analysis-page">
+    <div className={`analysis-page${pinned ? ' pinned' : ''}${pinned && explaining ? ' explaining' : ''}${reportPage ? ' report' : ''}`}>
       <PageHeader
         // Desktop has the title and actions in the panel's own header, so the board gets the height.
         phoneOnly
@@ -973,7 +981,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         style={boardSize ? ({ '--board-user': `${boardSize}px` } as React.CSSProperties) : undefined}
       >
         <section className="board-column">
-          {player(orientation === 'white' ? 'black' : 'white')}
+          {pinned && <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />}
+          {player(orientation === 'white' ? 'black' : 'white', pinned && rowScore ? <span className="player-eval">{chipText(rowScore)}</span> : undefined)}
           {phone && <EvalBar horizontal score={score} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
           <div className="board-row">
             <span
@@ -1037,7 +1046,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <PhoneViews
                     value={phoneView}
                     reviewed={reviewed}
-                    score={engineOn && score ? chipText(score) : null}
+                    score={!pinned && engineOn && score ? chipText(score) : null}
                     onSelect={pickPhoneView}
                   />
                 ) : null}
