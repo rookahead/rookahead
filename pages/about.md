@@ -1,8 +1,8 @@
 ---
 title: About Rookahead
 tab: About
-description: Rookahead is a free, open-source chess game review that runs Stockfish 19 in your browser. No sign-up.
-lede: A free chess game review that runs on your own device.
+description: Rookahead is a free, open-source app that reviews your chess games with Stockfish 19 in your browser. No sign-up.
+lede: A free app that reviews your chess games on your own device.
 ---
 
 <ul class="facts">
@@ -11,7 +11,7 @@ lede: A free chess game review that runs on your own device.
 <li><strong>Open source</strong><span>GPL-3.0 or later, with the source on GitHub.</span></li>
 </ul>
 
-Rookahead is a free chess game review. Paste a game, and Stockfish 19 grades every move, from Legendary to Blunder, works out each side's accuracy and picks out the key moments. You can step through the game, explore other moves with the live engine, and share a game or a single move as a link, an image, a GIF or an embedded board.
+Rookahead reviews your chess games for free. Paste a game, and Stockfish 19 grades every move, from Legendary to Blunder, works out each side's accuracy and picks out the key moments. You can step through the game, explore other moves with the live engine, and share a game or a single move as a link, an image, a GIF or an embedded board.
 
 There's no account to create and no limit on how many games you review.
 

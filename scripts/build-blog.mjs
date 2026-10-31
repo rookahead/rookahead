@@ -397,7 +397,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     </div>
 ${body}
     <footer class="foot">
-      <span>Rookahead, free chess game review</span>
+      <span>Rookahead reviews your chess games for free</span>
       <nav aria-label="More"><a href="/blog">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/donate">Donate</a></nav>
     </footer>
     <dialog class="search" aria-label="Search the blog">
@@ -448,7 +448,7 @@ ${cards}
     </main>`
   return page({
     title: 'Blog · Rookahead',
-    description: 'How Rookahead grades your moves, what’s new, and the thinking behind a free chess game review.',
+    description: 'How Rookahead grades your moves, what’s new, and the thinking behind free chess game reviews.',
     canonical: `${SITE}/blog`,
     body,
     defs: pieceDefs(used),
