@@ -952,11 +952,32 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     handle.addEventListener('pointercancel', onUp)
   }
 
+  // Phones read the engine's lines above the board, where they're next to what they describe.
+  const engineOnTop = pinned && tab === 'analysis'
+  const engineLines = (
+    <EngineLines
+      fen={node.fen}
+      status={status}
+      enabled={engineOn}
+      onToggle={() => setEngineOn((on) => !on)}
+      result={engineOn ? shown : null}
+      searching={live.searching}
+      maxLines={settings.lines}
+      terminal={terminal}
+      reviewing={reviewing}
+      onPlayLine={playLine}
+      onOpenSettings={() => setOptionsOpen(true)}
+      onPreview={canHover ? setPreview : undefined}
+    />
+  )
   // The number by the board matches the coach's while stepping, not the live engine's first look.
   const rowScore = tab === 'review' && currentReview ? currentReview.score : engineOn || reviewEval ? score : null
 
   return (
-    <div className={`analysis-page${pinned ? ' pinned' : ''}${pinned && explaining ? ' explaining' : ''}${reportPage ? ' report' : ''}`}>
+    <div
+      className={`analysis-page${pinned ? ' pinned' : ''}${pinned && explaining ? ' explaining' : ''}${reportPage ? ' report' : ''}${engineOnTop ? ' engine-top' : ''}`}
+      style={engineOnTop ? ({ '--engine-rows': settings.lines } as React.CSSProperties) : undefined}
+    >
       <PageHeader
         // Desktop has the title and actions in the panel's own header, so the board gets the height.
         phoneOnly
@@ -981,7 +1002,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         style={boardSize ? ({ '--board-user': `${boardSize}px` } as React.CSSProperties) : undefined}
       >
         <section className="board-column">
-          {pinned && <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />}
+          {engineOnTop ? engineLines : pinned && <MoveStrip tree={tree} currentId={node.id} onSelect={setCurrentId} report={listReport} />}
           {player(orientation === 'white' ? 'black' : 'white', pinned && rowScore ? <span className="player-eval">{chipText(rowScore)}</span> : undefined)}
           {phone && <EvalBar horizontal score={score} orientation={orientation} active={engineOn || Boolean(reviewEval)} theme={settings.boardTheme} />}
           <div className="board-row">
@@ -1074,20 +1095,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   </>
                 ) : tab === 'analysis' ? (
                   <>
-                    <EngineLines
-                      fen={node.fen}
-                      status={status}
-                      enabled={engineOn}
-                      onToggle={() => setEngineOn((on) => !on)}
-                      result={engineOn ? shown : null}
-                      searching={live.searching}
-                      maxLines={settings.lines}
-                      terminal={terminal}
-                      reviewing={reviewing}
-                      onPlayLine={playLine}
-                      onOpenSettings={() => setOptionsOpen(true)}
-                      onPreview={canHover ? setPreview : undefined}
-                    />
+                    {!engineOnTop && engineLines}
                     <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
                     {inVariation && (
                       <div className="variation-actions">
