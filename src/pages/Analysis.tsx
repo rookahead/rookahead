@@ -1066,7 +1066,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 {phone ? (
                   <PhoneViews
                     value={phoneView}
-                    reviewed={reviewed}
                     score={!pinned && engineOn && score ? chipText(score) : null}
                     onSelect={pickPhoneView}
                   />
@@ -1226,10 +1225,10 @@ const NO_EVALS: Record<string, PositionEval> = {}
 const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
 
 /** Phones: the switch under the board between the review's parts. The engine's button carries its score. */
-function PhoneViews({ value, reviewed, score, onSelect }: { value: PhoneView; reviewed: boolean; score: string | null; onSelect: (v: PhoneView) => void }) {
+function PhoneViews({ value, score, onSelect }: { value: PhoneView; score: string | null; onSelect: (v: PhoneView) => void }) {
   const views: [PhoneView, string][] = [
     ['summary', 'Summary'],
-    ['coach', reviewed ? 'Coach' : 'Review'],
+    ['coach', 'Review'],
     ['engine', 'Engine'],
   ]
   return (
