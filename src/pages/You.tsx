@@ -1,14 +1,20 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { boardColors } from '../components/Board'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { FormCard } from '../components/HomeCards'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { PalettePicker } from '../components/PalettePicker'
 import { AvatarFace } from '../components/UserCard'
+import { useMyGames } from '../hooks/useMyGames'
+import { useSettled } from '../hooks/useSettled'
 import { ACCOUNTS_ENABLED, hasUnsynced, logOut, openAccountPage, useAccount } from '../lib/account'
 import { useInstall } from '../lib/install'
 import { DISCORD_URL, YOUTUBE_URL } from '../lib/links'
+import { gameStats } from '../lib/myGames'
+import { loadProgress } from '../lib/puzzleStore'
 import { DEFAULT_SETTINGS, type Appearance, type Settings } from '../lib/settings'
+import { useStoreVersion } from '../lib/syncBus'
 
 interface Props {
   settings: Settings
@@ -21,6 +27,8 @@ const icon = (d: string) => (
   </svg>
 )
 const CHEVRON = icon('M9 6l6 6-6 6')
+/** Reviewed games the accuracy line shows. */
+const RECENT_GAMES = 10
 
 /** Phones: you and your settings in one tab. Quick switches first, then the full settings, the app, and the small print. */
 export function YouPage({ settings, updateSettings }: Props) {
@@ -32,6 +40,19 @@ export function YouPage({ settings, updateSettings }: Props) {
   const signedIn = status === 'signed-in' && account
   const muted = settings.soundVolume === 0
   const board = boardColors(settings.boardTheme, settings.palette)
+  const { games, reviews, loading } = useMyGames({ chesscom: settings.chesscomUser, lichess: settings.lichessUser })
+  const stats = useMemo(() => gameStats(games, reviews), [games, reviews])
+  const recent = useMemo(
+    () =>
+      games
+        .flatMap((g) => reviews[g.key]?.accuracy[g.color] ?? [])
+        .slice(0, RECENT_GAMES)
+        .reverse(),
+    [games, reviews],
+  )
+  const puzzlesVersion = useStoreVersion('puzzles')
+  const progress = useMemo(() => loadProgress(), [puzzlesVersion])
+  const waiting = useSettled(loading && !games.length)
 
   const leave = async () => {
     setLeaving(true)
@@ -84,6 +105,8 @@ export function YouPage({ settings, updateSettings }: Props) {
       <PageHeader phoneOnly />
       <main className="you-page">
         {who}
+
+        <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={recent} progress={progress} />
 
         <section className="home-card you-list" aria-label="Quick settings">
           <div className="you-row">

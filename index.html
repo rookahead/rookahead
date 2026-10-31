@@ -96,7 +96,6 @@
           var played = JSON.parse(localStorage.getItem('rookahead.games.v1') || '[]')
           if (!s.chesscomUser && !s.lichessUser && !(sync && sync.user) && !(played && played.length)) r.dataset.bootFirst = ''
           var saved = JSON.parse(localStorage.getItem('rookahead.reviews.v1') || '{}')
-          for (var k in saved) if (saved[k].brilliant && saved[k].brilliant.white + saved[k].brilliant.black > 0) r.dataset.bootLegendary = ''
           // Reviews to find your mistakes in: the plan has four steps, and My games the colours' key.
           for (var key in saved) {
             r.dataset.bootReviews = ''
@@ -190,13 +189,10 @@
               <span class="skel" style="width: 85%; height: 13px"></span>
             </div>
             <div class="home-card accent-card boot-fill boot-returning" style="--h: 154px"></div>
-            <div class="home-card boot-fill boot-returning" style="--h: 64px"></div>
-            <div class="home-card boot-fill boot-legendary boot-returning"></div>
-            <div class="home-card boot-fill boot-returning" style="--h: 126px"></div>
-            <div class="home-card boot-fill boot-returning" style="--h: 155px"></div>
+            <div class="boot-fill boot-returning" style="--h: 36px"></div>
             <div class="phone-welcome boot-fill boot-first boot-first-welcome"><span class="skel" style="width: 75%; height: 26px"></span></div>
             <div class="home-card accent-card boot-fill boot-first boot-hero"></div>
-            <div class="home-card boot-fill" style="--h: 154px"></div>
+            <div class="home-card boot-fill boot-daily-compact"></div>
           </div>
           <div class="boot-tabs"></div>
         </div>

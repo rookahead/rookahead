@@ -44,7 +44,7 @@ export function UsernameForm({ onSaved, error: initialError }: Props) {
         <input
           className="input"
           aria-label={`${SOURCE_LABEL[site]} username`}
-          placeholder={`Your ${SOURCE_LABEL[site]} username`}
+          placeholder="Your username"
           value={name}
           onChange={(e) => setName(e.target.value)}
           spellCheck={false}

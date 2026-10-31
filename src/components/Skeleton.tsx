@@ -107,9 +107,9 @@ export function DailyCardSkeleton({ compact = false }: { compact?: boolean }) {
             <Skel w="60%" h="16px" />
             <Skel w="40%" h="14px" />
             <Skel w="80%" h="12px" />
+            <Skel w="100%" h="36px" className="skel-button daily-go" />
           </div>
         </div>
-        <Skel w="100%" h="42px" className="skel-button" />
       </section>
     )
   return (

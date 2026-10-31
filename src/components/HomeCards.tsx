@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { IconTile } from './IconTile'
 import { Skel } from './Skeleton'
 import { Link } from './Link'
 import { WEAKEST_MIN_REVIEWED, type Phase } from '../lib/phases'
@@ -13,6 +13,8 @@ const MISTAKES_GOAL = 3
 
 interface Step {
   id: string
+  /** The one word for it in the phone's row. */
+  short: string
   title: string
   sub: string
   done: boolean
@@ -41,7 +43,7 @@ export function PlanCard({
   progress,
   onOpenLatest,
 }: {
-  /** Phones: one row, the next step and its button; the whole list a tap away. */
+  /** Phones: one row of ticks, each a word and a tap away from what it asks for. */
   compact?: boolean
   /** Your mistakes are still being counted and there are reviews to count them in: keep their tile's place. */
   expectMistakes?: boolean
@@ -64,6 +66,7 @@ export function PlanCard({
   const all: Step[] = [
     latest && {
       id: 'review',
+      short: 'Review',
       title: review ? 'Latest game reviewed' : 'Review your latest game',
       sub: review ? `vs ${opponent} · ${review.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy` : `vs ${opponent} · ${dayLabel(latest.endedAt)}`,
       done: !!review,
@@ -73,6 +76,7 @@ export function PlanCard({
     },
     {
       id: 'daily',
+      short: 'Puzzle',
       title: 'Solve the daily puzzle',
       sub: daily === 'solved' ? 'Solved' : daily === 'failed' ? 'Tried today' : 'One position, a new one every day',
       done: !!daily,
@@ -82,6 +86,7 @@ export function PlanCard({
     },
     {
       id: 'mistakes',
+      short: 'Mistakes',
       title: `Fix ${goal || MISTAKES_GOAL} of your mistakes`,
       sub: goal ? `${Math.min(fixed, goal)} of ${goal} today · ${mistakes} waiting` : '',
       done: goal > 0 && fixed >= goal,
@@ -91,6 +96,7 @@ export function PlanCard({
     },
     {
       id: 'play',
+      short: 'Play',
       title: 'Play a game',
       sub: played ? `${played} played today` : 'Against the computer, any level',
       done: played > 0,
@@ -102,7 +108,6 @@ export function PlanCard({
   const steps = all.filter((s) => s.on)
   const done = steps.filter((s) => s.done).length
   const next = steps.find((s) => !s.done)
-  const [open, setOpen] = useState(false)
   const tile = (s: Step) => (
     <button className={`plan-step ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : undefined}>
       <span className="plan-check" aria-hidden>
@@ -124,31 +129,24 @@ export function PlanCard({
 
   if (compact)
     return (
-      <section className={`home-card plan-card compact ${open ? 'open' : ''}`} aria-labelledby="plan-title">
-        <div className="plan-row">
-          <button className="plan-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="plan-steps">
-            <Ring done={done} total={steps.length} />
-            <span className="plan-summary">
-              <small id="plan-title">Today's plan · {done} of {steps.length} done</small>
-              <strong>{next ? next.title : 'All done for today'}</strong>
-            </span>
-            <svg className="plan-chevron" viewBox="0 0 24 24" aria-hidden>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          {next && (
-            <button className="btn plan-next" onClick={next.go}>
-              {next.action}
-            </button>
-          )}
-        </div>
-        {open && (
-          <ol className="plan-steps" id="plan-steps">
-            {steps.map((s) => (
-              <li key={s.id}>{tile(s)}</li>
-            ))}
-          </ol>
-        )}
+      <section className="plan-card compact" aria-labelledby="plan-title">
+        <h2 id="plan-title">Today</h2>
+        <ol className="plan-ticks">
+          {steps.map((s) => (
+            <li key={s.id}>
+              <button className={`plan-tick ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : s.title}>
+                <span className="plan-check" aria-hidden>
+                  {s.done && (
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                  )}
+                </span>
+                {s.short}
+              </button>
+            </li>
+          ))}
+        </ol>
       </section>
     )
 
@@ -172,21 +170,88 @@ export function PlanCard({
   )
 }
 
+/** Phones: how you're playing, in one card split in two. Your accuracy and its trend, beside your puzzle streak and this week. */
+export function FormCard({ pending, accuracy, trend, recent, progress }: { pending: boolean; accuracy: number | null; trend: number | null; recent: number[]; progress: PuzzleProgress }) {
+  const today = localDayNumber(new Date())
+  const streak = dayStreak(progress, today)
+  const best = progress.days?.best ?? 0
+  return (
+    <section className="home-card form-card" aria-label="Your form" aria-busy={pending}>
+      <Link to="/games" className="stat-card accuracy">
+        <span className="stat-head">
+          <IconTile tone="accuracy" size="small" />
+          Accuracy
+        </span>
+        {pending ? (
+          <span className="stat-row">
+            <span className="skel stat-skeleton" aria-label="Loading" />
+          </span>
+        ) : (
+          <>
+            <span className="stat-row">
+              {accuracy != null ? <b className="stat-value">{accuracy.toFixed(1)}</b> : <b className="stat-empty">Not yet</b>}
+              {accuracy != null && <Sparkline values={recent} />}
+            </span>
+            <span className="stat-sub">
+              {accuracy == null ? (
+                'Review a game to see it'
+              ) : trend != null ? (
+                <>
+                  <span className={trend >= 0 ? 'up' : 'down'}>
+                    {trend >= 0 ? '+' : ''}
+                    {trend.toFixed(1)}
+                  </span>{' '}
+                  over your last 10
+                </>
+              ) : (
+                'Your last 10 reviewed'
+              )}
+            </span>
+          </>
+        )}
+      </Link>
+      <Link to={progress.daily?.day === today ? '/puzzles' : '/puzzles/daily'} className="stat-card streak">
+        <span className="stat-head">
+          <IconTile tone="streak" size="small" />
+          Puzzle streak
+        </span>
+        <span className="stat-row">
+          {/* This week's dots only beside a streak: "Start today" needs the room, and the row its one line. */}
+          {streak ? <b className="stat-value">{streak}</b> : <b className="stat-empty">Start today</b>}
+          {streak > 0 && <WeekDots progress={progress} />}
+        </span>
+        <span className="stat-sub">{streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${best ? ` · best ${best}` : ''}` : 'Solve one puzzle'}</span>
+      </Link>
+    </section>
+  )
+}
+
+/** A trend line through the values (oldest first), ending on a dot at the latest one. */
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null
+  const lo = Math.min(...values) - 2
+  const hi = Math.max(...values) + 2
+  const pts = values.map((v, i) => [2 + (i / (values.length - 1)) * 70, 28 - ((v - lo) / (hi - lo)) * 24] as const)
+  const [x, y] = pts[pts.length - 1]
+  return (
+    <svg className="stat-spark" viewBox="0 0 74 30" preserveAspectRatio="none" aria-hidden>
+      <polyline points={pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ')} />
+      <circle cx={x} cy={y} r="3" />
+    </svg>
+  )
+}
+
 /** Today's plan on its way: the same card, with as many tiles as it's about to have. */
 export function PlanCardSkeleton({ compact = false, steps = 3 }: { compact?: boolean; steps?: number }) {
   if (compact)
     return (
-      <section className="home-card plan-card compact skel-group" aria-busy aria-label="Loading today's plan">
-        <div className="plan-row">
-          <span className="plan-toggle">
-            <Skel w="40px" h="40px" className="skel-round" />
-            <span className="plan-summary">
-              <Skel w="120px" h="12px" />
-              <Skel w="160px" h="16px" className="skel-gap" />
-            </span>
-          </span>
-          <Skel w="78px" h="36px" className="skel-pill" />
-        </div>
+      <section className="plan-card compact skel-group" aria-busy aria-label="Loading today's plan">
+        <Skel w="44px" h="15px" />
+        <span className="plan-ticks">
+          {Array.from({ length: steps }, (_, i) => (
+            <Skel key={i} w="68px" h="15px" />
+          ))}
+        </span>
       </section>
     )
   return (

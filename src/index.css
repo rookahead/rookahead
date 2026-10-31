@@ -4706,90 +4706,80 @@ a.see-all {
   text-decoration: none;
 }
 
+/* Phones: today's plan is one quiet row, a tick and a word for each step. */
 .plan-card.compact {
-  gap: 12px;
-  padding: 12px 14px;
-}
-
-.plan-row {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 0 4px;
 }
 
-.plan-toggle {
+.plan-card.compact h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plan-ticks {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: 0;
   padding: 0;
+  list-style: none;
+}
+
+.plan-tick {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
   border: 0;
+  border-radius: 9px;
   background: none;
-  color: inherit;
+  color: var(--text-2);
   font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.plan-card.compact .plan-ring {
-  width: 40px;
-  height: 40px;
-}
-
-.plan-summary {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.plan-summary small {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.plan-summary strong {
-  overflow: hidden;
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
-.plan-chevron {
-  flex-shrink: 0;
+.plan-tick .plan-check {
   width: 16px;
   height: 16px;
-  margin-left: auto;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.2s;
 }
 
-.plan-card.open .plan-chevron {
-  transform: rotate(180deg);
+.plan-tick.next {
+  color: var(--text);
+  font-weight: 600;
 }
 
-.plan-card.compact .plan-go {
-  display: none;
+.plan-tick.done {
+  color: var(--muted);
+}
+
+/* Four words don't fit beside the heading on the narrowest phones. */
+@media (max-width: 340px) {
+  .plan-card.compact h2 {
+    display: none;
+  }
+
+  .plan-ticks {
+    justify-content: space-between;
+  }
+
+  .plan-tick {
+    gap: 3px;
+    padding: 0 2px;
+  }
 }
 
 .skel-lines {
   display: flex;
   flex-direction: column;
-}
-
-.plan-next {
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  background: var(--brand);
-  color: var(--brand-ink);
 }
 
 .week-dots {
@@ -4818,33 +4808,6 @@ a.see-all {
 .week-dots .later {
   background: none;
   border: 1px solid var(--border-strong);
-}
-
-@media (max-width: 1000px) {
-  .plan-steps {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .plan-step {
-    flex-direction: row;
-    align-items: center;
-    padding: 12px;
-  }
-
-  .plan-text strong,
-  .plan-text small {
-    min-height: 0;
-  }
-
-  .plan-step:not(.next) .plan-go {
-    display: none;
-  }
-
-  .plan-go {
-    margin: 0 0 0 auto;
-    white-space: nowrap;
-  }
 }
 
 /* The bottom of Home: the site's pages, where to find us, and that it's open source. */
@@ -7533,38 +7496,35 @@ button.user-avatar.guest:hover {
 
   /* The welcome card's words wrap more on a narrow phone. */
   .boot-first-welcome {
-    --h: 37px;
+    --h: 32px;
   }
 
   .boot-hero {
-    --h: 300.9px;
+    --h: 254px;
   }
 
-  @media (max-width: 590px) {
+  .boot-daily-compact {
+    --h: 148px;
+  }
+
+  @media (max-width: 385px) {
     .boot-hero {
-      --h: 358.9px;
+      --h: 273px;
     }
   }
 
-  @media (max-width: 420px) {
-    .boot-hero {
-      --h: 418.4px;
-    }
-  }
-
-  @media (max-width: 400px) {
+  @media (max-width: 340px) {
     .boot-first-welcome {
-      --h: 68.1px;
+      --h: 59px;
     }
-  }
 
-  /* Your Legendary moves in a row, or the card that says what they are. */
-  .boot-legendary {
-    --h: 119px;
-  }
+    .boot-hero {
+      --h: 302px;
+    }
 
-  :root[data-boot-legendary] .boot-legendary {
-    --h: 199px;
+    .boot-daily-compact {
+      --h: 172px;
+    }
   }
 }
 
@@ -7623,7 +7583,7 @@ button.user-avatar.guest:hover {
   view-transition-name: latest-card;
 }
 
-:root.settling :is(.legendary-strip, .legendary-teaser) {
+:root.settling .legendary-strip {
   view-transition-name: legendary-strip;
 }
 
@@ -7655,7 +7615,7 @@ button.user-avatar.guest:hover {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
+:root.settling :is(.latest-card, .legendary-strip, .mistakes-card, .form-card, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
   view-transition-class: card;
 }
 
@@ -10426,30 +10386,6 @@ a.you-row:active {
 }
 
 /* No Legendary moves yet: what they are, in the same violet. */
-.legendary-teaser {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
-  background: color-mix(in srgb, #8b5cf6 12%, var(--card));
-}
-
-.legendary-teaser h2 {
-  font-size: 17px;
-}
-
-.legendary-teaser p {
-  margin: 4px 0 0;
-  color: var(--text-2);
-  font-size: 13.5px;
-  line-height: 1.45;
-}
-
-.legendary-teaser .class-icon {
-  flex: none;
-}
-
-/* Home's form card on a phone: accuracy and today, two halves of one card. */
 .form-card {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -10483,17 +10419,17 @@ a.you-row:active {
 /* Home's daily puzzle on a phone: a small board beside what it is, the button below, like the latest game. */
 .daily-card.compact {
   gap: 12px;
-  padding: 14px;
+  padding: 12px;
 }
 
 .daily-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 14px;
 }
 
 .daily-card.compact .daily-board {
-  flex: 0 0 72px;
+  flex: 0 0 124px;
 }
 
 .daily-card.compact .daily-board .mini-board,
@@ -10526,8 +10462,43 @@ a.you-row:active {
 }
 
 .daily-go {
-  height: 42px;
-  border-radius: 11px;
+  height: 36px;
+  margin-top: auto;
+  border-radius: 10px;
+}
+
+/* A first visit on a phone: the welcome stays short, so the daily puzzle is on the first screen too. */
+.phone-welcome.first h1 {
+  font-size: 23px;
+}
+
+.phone-home .hero-card {
+  padding: 16px;
+  gap: 10px;
+}
+
+.phone-home .hero-card h2 {
+  font-size: 20px;
+}
+
+.phone-home .hero-card > p {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.phone-home .hero-card .username-row {
+  flex-direction: row;
+}
+
+.phone-home .hero-card .username-row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-home .hero-card .username-row .accent-btn {
+  flex-shrink: 0;
+  width: auto;
+  padding: 0 12px;
 }
 
 /* Home's latest game on a phone: a compact card, the board beside the result. */

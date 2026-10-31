@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { HomeFooter } from '../components/HomeFooter'
-import { FormStrip, PlanCard, PlanCardSkeleton, WeekDots, type AccuracyPoint } from '../components/HomeCards'
+import { FormStrip, PlanCard, PlanCardSkeleton, type AccuracyPoint } from '../components/HomeCards'
 import { HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
 import { OpenGameDialog } from '../components/LoadGameDialog'
@@ -24,7 +24,7 @@ import { sinceFor } from '../lib/legendary'
 import { dayLabel, finalPosition, gameStats, type MyGame } from '../lib/myGames'
 import { weakestPhase, type Phase } from '../lib/phases'
 import { localDayNumber } from '../lib/puzzles'
-import { dayStreak, loadProgress, type PuzzleProgress } from '../lib/puzzleStore'
+import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
 import { decodeSaved } from '../lib/share'
@@ -201,9 +201,9 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   const loadDialog = <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
 
   if (phone) {
-    // Phones: one thing per card, most exciting first. Your latest game to review, your Legendary moves,
-    // your accuracy beside your mistakes to fix, the mistakes themselves, then the daily puzzle that keeps
-    // your streak. Playing, loading a game and the analysis board are the tab bar's job.
+    // Phones: what to do today, all on the first screen. Your latest game, today's plan as one row and the
+    // daily puzzle, then your Legendary moves and your mistakes when you have some. Your numbers are in the You
+    // tab; playing, loading a game and the analysis board are the tab bar's job.
     return (
       <div className="home-page">
         <PageHeader phoneOnly>
@@ -212,7 +212,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           </Link>
         </PageHeader>
         <main className="phone-home">
-          <div className="phone-welcome">
+          <div className={`phone-welcome ${firstVisit ? 'first' : ''}`}>
             {name ? (
               <>
                 <span>{greeting(hour).replace(/^Good (\w+)$/, 'Good $1,')}</span>
@@ -245,10 +245,9 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
           {!waiting && !firstVisit && (
             <PlanCard compact latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
           )}
-          {!firstVisit && <LegendaryStrip pending={arriving} expected={legendaryExpected} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
-          {!firstVisit && <FormCard pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} progress={progress} />}
-          {mistakesCard}
           <DailyCard compact theme={settings.boardTheme} />
+          {!firstVisit && <LegendaryStrip pending={arriving} expected={legendaryExpected} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />}
+          {mistakesCard}
           <HomeFooter />
         </main>
         {loadDialog}
@@ -389,7 +388,7 @@ export function HomePage({ settings, updateSettings, onOpenAnalysis }: Props) {
   )
 }
 
-/** Phones: your Legendary moves as a row of small boards to swipe through, or what they are when there are none yet. */
+/** Phones: your Legendary moves as a row of small boards to swipe through, once you have some. */
 function LegendaryStrip({
   pending,
   expected,
@@ -408,19 +407,10 @@ function LegendaryStrip({
   onOpenAnalysis: () => void
 }) {
   const { moves, loading } = useLegendaryMoves(games, reviews)
-  // Only a row of moves on its way gets the row's placeholder: with none to find, the teaser shows at once.
+  // Only a row of moves on its way gets the row's placeholder.
   const busy = useSettled(expected && (pending || loading) && !moves.length)
   if (busy) return <LegendaryRowSkeleton />
-  if (!moves.length)
-    return (
-      <section className="home-card legendary-teaser" aria-labelledby="legendary-strip">
-        <ClassIcon cls="brilliant" size={36} />
-        <div>
-          <h2 id="legendary-strip">Find your Legendary moves</h2>
-          <p>The rare sacrifice that only works because you saw further. Review a game and any you played collect here.</p>
-        </div>
-      </section>
-    )
+  if (!moves.length) return null
   const week = moves.filter((m) => m.game.endedAt >= sinceFor('7d')).length
   return (
     <section className="home-card legendary-strip" aria-labelledby="legendary-strip">
@@ -457,77 +447,6 @@ function LegendaryStrip({
         })}
       </ul>
     </section>
-  )
-}
-
-/** Phones: how you're playing, in one card split in two. Your accuracy and its trend, beside your puzzle streak and this week. */
-function FormCard({ pending, accuracy, trend, recent, progress }: { pending: boolean; accuracy: number | null; trend: number | null; recent: number[]; progress: PuzzleProgress }) {
-  const today = localDayNumber(new Date())
-  const streak = dayStreak(progress, today)
-  const best = progress.days?.best ?? 0
-  return (
-    <section className="home-card form-card" aria-label="Your form" aria-busy={pending}>
-      <Link to="/games" className="stat-card accuracy">
-        <span className="stat-head">
-          <IconTile tone="accuracy" size="small" />
-          Accuracy
-        </span>
-        {pending ? (
-          <span className="stat-row">
-            <span className="skel stat-skeleton" aria-label="Loading" />
-          </span>
-        ) : (
-          <>
-            <span className="stat-row">
-              {accuracy != null ? <b className="stat-value">{accuracy.toFixed(1)}</b> : <b className="stat-empty">Not yet</b>}
-              {accuracy != null && <Sparkline values={recent} />}
-            </span>
-            <span className="stat-sub">
-              {accuracy == null ? (
-                'Review a game to see it'
-              ) : trend != null ? (
-                <>
-                  <span className={trend >= 0 ? 'up' : 'down'}>
-                    {trend >= 0 ? '+' : ''}
-                    {trend.toFixed(1)}
-                  </span>{' '}
-                  over your last 10
-                </>
-              ) : (
-                'Your last 10 reviewed'
-              )}
-            </span>
-          </>
-        )}
-      </Link>
-      <Link to={progress.daily?.day === today ? '/puzzles' : '/puzzles/daily'} className="stat-card streak">
-        <span className="stat-head">
-          <IconTile tone="streak" size="small" />
-          Puzzle streak
-        </span>
-        <span className="stat-row">
-          {/* This week's dots only beside a streak: "Start today" needs the room, and the row its one line. */}
-          {streak ? <b className="stat-value">{streak}</b> : <b className="stat-empty">Start today</b>}
-          {streak > 0 && <WeekDots progress={progress} />}
-        </span>
-        <span className="stat-sub">{streak ? `${streak === 1 ? 'Day' : 'Days'} in a row${best ? ` · best ${best}` : ''}` : 'Solve one puzzle'}</span>
-      </Link>
-    </section>
-  )
-}
-
-/** A trend line through the values (oldest first), ending on a dot at the latest one. */
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null
-  const lo = Math.min(...values) - 2
-  const hi = Math.max(...values) + 2
-  const pts = values.map((v, i) => [2 + (i / (values.length - 1)) * 70, 28 - ((v - lo) / (hi - lo)) * 24] as const)
-  const [x, y] = pts[pts.length - 1]
-  return (
-    <svg className="stat-spark" viewBox="0 0 74 30" preserveAspectRatio="none" aria-hidden>
-      <polyline points={pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ')} />
-      <circle cx={x} cy={y} r="3" />
-    </svg>
   )
 }
 

@@ -16,7 +16,7 @@ import { DailyCardSkeleton } from './Skeleton'
 let loaded: { day: number; puzzle: Puzzle | null } | null = null
 
 /** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). On phones
- * (`compact`), a short card: a small board beside what it is, the button below. */
+ * (`compact`), a short card: the board beside what it is, with the button under the words. */
 export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compact?: boolean }) {
   const day = dayNumber(new Date())
   // Undefined while it loads; null if it couldn't (offline, say), and the card stays away.
@@ -66,11 +66,11 @@ export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compa
             </h2>
             <strong>{color === 'white' ? 'White' : 'Black'} to play</strong>
             <span className="muted">{status}</span>
+            <button className={`btn daily-go ${done ? 'ghost' : 'primary'}`} onClick={open}>
+              {done ? 'See it' : 'Solve'}
+            </button>
           </div>
         </div>
-        <button className={`btn daily-go ${done ? 'ghost' : 'primary'}`} onClick={open}>
-          {done ? 'See it' : 'Solve'}
-        </button>
       </section>
     )
   return (
