@@ -2,8 +2,9 @@ import type { PositionEval } from '../hooks/useAnalysis'
 import { classifyGame, RULES_VERSION, type GameReport } from './classify'
 import { loadOpeningBook } from './openings'
 import { loadReviews, saveReviews, type CachedReview } from './reviewCache'
-import { decodeShare, encodeShare, fromSharedGame } from './share'
-import { mainline, type MoveNode } from './tree'
+import type { Color } from './evaluation'
+import { decodeShare, encodeShare, fromSharedGame, toSharedGame } from './share'
+import { mainline, type MoveNode, type PgnHeaders } from './tree'
 import type { Score } from './uci'
 
 /**
@@ -33,6 +34,21 @@ export function reviewLines(line: MoveNode[], evals: Record<string, PositionEval
     const e = evals[n.fen]
     return e ? `${e.pv.slice(0, PV_PLIES).join(' ')}|${encodeScore(e.second)}` : ''
   })
+}
+
+/** What's saved of a review that has just finished. `depth` is what it ran at if its first position doesn't say. */
+export async function finishedReview(line: MoveNode[], headers: PgnHeaders, orientation: Color, evals: Record<string, PositionEval>, report: GameReport, depth: number): Promise<CachedReview> {
+  const reviewed = { evals, report, depth: Object.values(evals)[0]?.depth ?? depth }
+  return {
+    token: await encodeShare(toSharedGame(line, headers, orientation, reviewed)),
+    white: headers.White ?? '',
+    black: headers.Black ?? '',
+    accuracy: report.accuracy,
+    brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
+    at: Date.now(),
+    rules: RULES_VERSION,
+    lines: reviewLines(line, evals),
+  }
 }
 
 /** Is this review graded under older rules? */

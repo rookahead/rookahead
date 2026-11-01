@@ -251,11 +251,113 @@ export function depthOfReview(evals: Record<string, PositionEval>): number | nul
   return best
 }
 
+/** A short-lived engine for a review: one thread, the same search as the main engine's. */
+export const reviewEngine = (strength: EngineStrength) => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB, singleThreaded: true })
+
+interface SearchOptions {
+  depth: number
+  cloud: boolean
+  signal: AbortSignal
+  /** False once this run has been cancelled or replaced. */
+  live: () => boolean
+  /** Waited on before each search: a run that shares the device can give way to whatever needs it more. */
+  hold?: () => Promise<void> | undefined
+}
+
 /**
- * Analyses every main-line position at a fixed depth. Positions are handed out
- * in order from one queue to a small pool of single-threaded searches: the main
- * engine plus a few short-lived helpers that are shut down when the review ends.
+ * Analyses every main-line position at a fixed depth, then double-checks the ones the game's continuation
+ * disagrees with. Positions are handed out in order from one queue to every engine in `engines`. `update`
+ * hears the state as it goes. The final evals, or null if the run stopped being live.
  */
+export async function searchGame(
+  line: MoveNode[],
+  engines: StockfishEngine[],
+  { depth, cloud, signal, live, hold }: SearchOptions,
+  update: (change: (state: ReviewState) => ReviewState) => void,
+): Promise<Record<string, PositionEval> | null> {
+  const evals: Record<string, PositionEval> = {}
+  const deep: Record<string, DeepLine[]> = {}
+  // How long each position's own search took. The deeper searches go slowest first, so the last
+  // one to finish isn't a long one running alone while the other engines sit idle.
+  const took = new Map<string, number>()
+
+  /** Hands `fens` out from one queue to every engine that loaded. */
+  const pool = async (fens: string[], each: (eng: StockfishEngine, fen: string) => Promise<void>) => {
+    let next = 0
+    const work = async (eng: StockfishEngine) => {
+      try {
+        await eng.ready
+      } catch {
+        return // A helper that fails to load just doesn't take part.
+      }
+      while (live() && next < fens.length) {
+        await hold?.()
+        if (live() && next < fens.length) await each(eng, fens[next++])
+      }
+    }
+    await Promise.all(engines.map(work))
+  }
+
+  // Every position is counted once, whichever of the cloud and the engine gets to it first.
+  const done = new Set<string>()
+  const found = (fen: string, entry: PositionEval | undefined) => {
+    const first = !done.has(fen)
+    done.add(fen)
+    if (entry) evals[fen] = entry
+    update((s) => withShare({ ...s, progress: s.progress + (first ? 1 : 0), evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
+  }
+
+  // The opening from Lichess's cloud (searched far deeper than a review can) and the engine at the
+  // same time: the cloud from the start, the engine from the end, until they meet.
+  const started = Date.now()
+  const cloudCtrl = new AbortController()
+  signal.addEventListener('abort', () => cloudCtrl.abort())
+  const fromCloud = cloud
+    ? cloudOpening(
+        line.map((n) => n.fen),
+        cloudCtrl.signal,
+        (fen, entry) => live() && found(fen, entry),
+      ).then(() => live() && update((s) => ({ ...s, fromCloud: undefined })))
+    : null
+  if (fromCloud) update((s) => ({ ...s, fromCloud: true }))
+  await pool(
+    line.map((n) => n.fen).reverse(),
+    async (eng, fen) => {
+      if (done.has(fen)) return
+      const began = performance.now()
+      const entry = await reviewSearch(eng, fen, depth, signal, live)
+      took.set(fen, performance.now() - began)
+      // The cloud's eval, if it came meanwhile, is the deeper one.
+      if (live() && !evals[fen]?.cloud) found(fen, entry)
+    },
+  )
+  // The cloud's evals are deeper: give it a little longer to replace the engine's, then go on without it.
+  const left = CLOUD_WAIT_MS - (Date.now() - started)
+  if (fromCloud && left > 0) await Promise.race([fromCloud, new Promise((wait) => setTimeout(wait, left))])
+  cloudCtrl.abort()
+  await fromCloud
+  if (!live()) return null
+  // Then the back-up: wherever the game's continuation disagrees with a position's own search,
+  // that position is searched deeper, until nothing new disagrees or the budget runs out.
+  let spent = 0
+  while (live() && spent < DEEP_BUDGET) {
+    const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent).sort((a, b) => (took.get(b) ?? 0) - (took.get(a) ?? 0))
+    if (!todo.length) break
+    spent += todo.length
+    // One count across the rounds: a later round adds to the total, never starts again from 0.
+    update((s) => withShare({ ...s, checking: { done: s.checking?.done ?? 0, total: spent } }))
+    await pool(todo, async (eng, fen) => {
+      const lines = await deepSearch(eng, fen, depth + DEEPER, signal, live)
+      if (!live()) return
+      // A search that failed is asked for again next round, within the budget.
+      if (lines) deep[fen] = lines
+      update((s) => withShare({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
+    })
+  }
+  return live() ? backUp(line, evals, deep).evals : null
+}
+
+/** The game review on the page: the main engine plus a few short-lived helpers shut down when the review ends. */
 export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewOptions) {
   const [state, setState] = useState<ReviewState>({ status: 'idle', progress: 0, total: 0, evals: {} })
   const runId = useRef(0)
@@ -297,89 +399,14 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
 
       // Helpers search on one thread anyway, so they use the build without shared memory: the threaded
       // one reserves 2 GB apiece up front, more than phones will give a page.
-      const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB, singleThreaded: true }))
+      const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => reviewEngine(strength))
       const live = () => runId.current === id
-      const evals: Record<string, PositionEval> = {}
-      const deep: Record<string, DeepLine[]> = {}
-      // How long each position's own search took. The deeper searches go slowest first, so the last
-      // one to finish isn't a long one running alone while the other engines sit idle.
-      const took = new Map<string, number>()
-
-      /** Hands `fens` out from one queue to every engine that loaded. */
-      const pool = async (fens: string[], each: (eng: StockfishEngine, fen: string) => Promise<void>) => {
-        let next = 0
-        const work = async (eng: StockfishEngine) => {
-          try {
-            await eng.ready
-          } catch {
-            return // A helper that fails to load just doesn't take part.
-          }
-          while (live() && next < fens.length) await each(eng, fens[next++])
-        }
-        await Promise.all([engine, ...helpers].map(work))
-      }
-
-      // Every position is counted once, whichever of the cloud and the engine gets to it first.
-      const done = new Set<string>()
-      const found = (fen: string, entry: PositionEval | undefined) => {
-        const first = !done.has(fen)
-        done.add(fen)
-        if (entry) evals[fen] = entry
-        setState((s) => withShare({ ...s, progress: s.progress + (first ? 1 : 0), evals: entry ? { ...s.evals, [fen]: entry } : s.evals }))
-      }
-
       try {
-        // The opening from Lichess's cloud (searched far deeper than a review can) and the engine at the
-        // same time: the cloud from the start, the engine from the end, until they meet.
-        const started = Date.now()
-        const cloudCtrl = new AbortController()
-        ctrl.signal.addEventListener('abort', () => cloudCtrl.abort())
-        const fromCloud = cloud
-          ? cloudOpening(
-              line.map((n) => n.fen),
-              cloudCtrl.signal,
-              (fen, entry) => live() && found(fen, entry),
-            ).then(() => live() && setState((s) => ({ ...s, fromCloud: undefined })))
-          : null
-        if (fromCloud) setState((s) => ({ ...s, fromCloud: true }))
-        await pool(
-          line.map((n) => n.fen).reverse(),
-          async (eng, fen) => {
-            if (done.has(fen)) return
-            const began = performance.now()
-            const entry = await reviewSearch(eng, fen, depth, ctrl.signal, live)
-            took.set(fen, performance.now() - began)
-            // The cloud's eval, if it came meanwhile, is the deeper one.
-            if (live() && !evals[fen]?.cloud) found(fen, entry)
-          },
-        )
-        // The cloud's evals are deeper: give it a little longer to replace the engine's, then go on without it.
-        const left = CLOUD_WAIT_MS - (Date.now() - started)
-        if (fromCloud && left > 0) await Promise.race([fromCloud, new Promise((wait) => setTimeout(wait, left))])
-        cloudCtrl.abort()
-        await fromCloud
-        if (!live()) return
-        // Then the back-up: wherever the game's continuation disagrees with a position's own search,
-        // that position is searched deeper, until nothing new disagrees or the budget runs out.
-        let spent = 0
-        while (live() && spent < DEEP_BUDGET) {
-          const todo = backUp(line, evals, deep).need.slice(0, DEEP_BUDGET - spent).sort((a, b) => (took.get(b) ?? 0) - (took.get(a) ?? 0))
-          if (!todo.length) break
-          spent += todo.length
-          // One count across the rounds: a later round adds to the total, never starts again from 0.
-          setState((s) => withShare({ ...s, checking: { done: s.checking?.done ?? 0, total: spent } }))
-          await pool(todo, async (eng, fen) => {
-            const lines = await deepSearch(eng, fen, depth + DEEPER, ctrl.signal, live)
-            if (!live()) return
-            // A search that failed is asked for again next round, within the budget.
-            if (lines) deep[fen] = lines
-            setState((s) => withShare({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
-          })
-        }
+        const evals = await searchGame(line, [engine, ...helpers], { depth, cloud, signal: ctrl.signal, live }, setState)
+        if (evals) setState((s) => ({ ...s, status: 'done', progress: line.length, checking: undefined, evals }))
       } finally {
         helpers.forEach((h) => h.terminate())
       }
-      if (live()) setState((s) => ({ ...s, status: 'done', progress: line.length, checking: undefined, evals: backUp(line, evals, deep).evals }))
     },
     [engine, ready, depth, strength, cloud],
   )

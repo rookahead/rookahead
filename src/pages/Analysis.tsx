@@ -34,12 +34,12 @@ import { endMarks } from '../lib/gameEnd'
 import { setBoardResizing } from '../lib/pixelGrid'
 import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
-import { CLASS_INFO, classifyGame, RULES_VERSION, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
+import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
-import { reviewLines } from '../lib/regrade'
+import { finishedReview } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
 import { useImmersive } from '../lib/immersive'
@@ -388,19 +388,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (review.status !== 'done' || !reviewRan.current || !report || line.length < 2) return
     reviewRan.current = false
     const key = gameKey(headers, line)
-    const depth = Object.values(review.evals)[0]?.depth ?? settings.reviewDepth
-    void encodeShare(toSharedGame(line, headers, orientation, { evals: review.evals, report, depth })).then((token) =>
-      saveReview(key, {
-        token,
-        white: headers.White ?? '',
-        black: headers.Black ?? '',
-        accuracy: report.accuracy,
-        brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
-        at: Date.now(),
-        rules: RULES_VERSION,
-        lines: reviewLines(line, review.evals),
-      }),
-    )
+    void finishedReview(line, headers, orientation, review.evals, report, settings.reviewDepth).then((entry) => saveReview(key, entry))
   }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])
 
   const runReview = useCallback(() => {
