@@ -379,6 +379,18 @@ body {
 
 /* The scrollbar's room is kept on every page, so going from one that fits (Settings) to one that scrolls
    (Home) doesn't narrow the page mid-transition and squeeze the one fading out. */
+/* No square flash on a tap: what you touch dims instead (below). */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) {
+  button:active:not(:disabled),
+  a:active {
+    opacity: 0.7;
+  }
+}
+
 html {
   scrollbar-gutter: stable;
 }
@@ -883,7 +895,6 @@ svg {
 }
 
 .tab-item {
-  -webkit-tap-highlight-color: transparent;
   min-height: 48px;
   display: flex;
   flex-direction: column;
