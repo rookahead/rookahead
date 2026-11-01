@@ -24,6 +24,8 @@ import { DayStreak, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, S
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
+  /** Phones: it's the page sliding away. */
+  leaving?: boolean
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
   /** A game or position has been put in the session: show it in Analysis. */
@@ -31,8 +33,10 @@ interface Props {
 }
 
 /** Puzzles: rated Lichess puzzles, Puzzle Sprint, today's daily puzzle, and your own mistakes. */
-export function PuzzlesPage({ settings, updateSettings, onOpenAnalysis }: Props) {
-  const pathname = usePathname()
+export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenAnalysis }: Props) {
+  // Sliding away, it stays the list of modes: the address has already moved on.
+  const live = usePathname()
+  const pathname = leaving ? '/puzzles' : live
   const tab = puzzleTab(pathname)
   // Phones: plain /puzzles lists the modes; a mode opens full screen, with Back to that list.
   const phone = useMediaQuery('(max-width: 1000px)')
@@ -73,7 +77,7 @@ export function PuzzlesPage({ settings, updateSettings, onOpenAnalysis }: Props)
   )
 }
 
-const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Your mistakes' }
+const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Fix your mistakes' }
 
 function PuzzleTabs({ tab, solved }: { tab: PuzzleTab; solved: string[] }) {
   const mistakes = useMistakes()
@@ -87,7 +91,7 @@ function PuzzleTabs({ tab, solved }: { tab: PuzzleTab; solved: string[] }) {
         { id: 'rated', to: '/puzzles', label: 'Rated', icon: TAB_ICONS.rated, tone: 'sky' },
         { id: 'sprint', to: '/puzzles/sprint', label: 'Sprint', icon: TAB_ICONS.sprint, tone: 'amber' },
         { id: 'daily', to: '/puzzles/daily', label: 'Daily', icon: TAB_ICONS.daily, tone: 'violet' },
-        { id: 'mistakes', to: '/puzzles/mistakes', label: 'Your mistakes', icon: TAB_ICONS.mistakes, tone: 'rose', badge: waiting },
+        { id: 'mistakes', to: '/puzzles/mistakes', label: 'Fix your mistakes', icon: TAB_ICONS.mistakes, tone: 'rose', badge: waiting },
       ]}
     />
   )

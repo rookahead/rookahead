@@ -172,7 +172,7 @@ export default function App() {
           )}
           {appRoute === 'home' && <HomePage active settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'games' && (
-            <GamesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+            <GamesPage active settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
           )}
           {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'puzzles' && <PuzzlesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}

@@ -7,7 +7,7 @@ import { localDayNumber } from '../../lib/puzzles'
 import { dayStreak, type PuzzleProgress } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 
-/** Phones' Puzzles tab: your streaks, today's puzzle, and the ways in. Each mode then opens full screen. */
+/** Phones' Puzzles tab: your streaks, today's puzzle, and the ways in as one row, all on one screen. Each mode then opens full screen. */
 export function PuzzleHub({ progress, settings }: { progress: PuzzleProgress; settings: Settings }) {
   const mistakes = useMistakes()
   const waiting = mistakes?.filter((m) => !progress.mistakesSolved.includes(m.id)).length ?? 0
@@ -16,7 +16,7 @@ export function PuzzleHub({ progress, settings }: { progress: PuzzleProgress; se
   const modes = [
     { to: '/puzzles/rated', tone: 'sky', icon: TAB_ICONS.rated, title: 'Rated puzzles', sub: `At your level · rating ${progress.rating}` },
     { to: '/puzzles/sprint', tone: 'amber', icon: TAB_ICONS.sprint, title: 'Puzzle Sprint', sub: sprintBest ? `3 min · 5 min · Survival · best ${sprintBest}` : '3 min · 5 min · Survival' },
-    { to: '/puzzles/mistakes', tone: 'rose', icon: TAB_ICONS.mistakes, title: 'Your mistakes', sub: 'Positions from your own games', badge: waiting },
+    { to: '/puzzles/mistakes', tone: 'rose', icon: TAB_ICONS.mistakes, title: 'Fix your mistakes', sub: 'Positions from your own games', badge: waiting },
   ]
   return (
     <main className="puzzle-hub">
@@ -47,20 +47,14 @@ export function PuzzleHub({ progress, settings }: { progress: PuzzleProgress; se
 
       <DailyCard theme={settings.boardTheme} />
 
-      <nav className="home-card you-list hub-modes" aria-label="Puzzle modes">
+      <nav className="hub-modes" aria-label="Puzzle modes">
         {modes.map((m) => (
-          <Link key={m.to} to={m.to} className={`you-row hub-mode ${m.tone}`}>
+          <Link key={m.to} to={m.to} className={`home-card hub-mode ${m.tone}`} title={m.sub}>
             <span className="hub-mode-icon" aria-hidden>
               <svg viewBox="0 0 24 24">{m.icon}</svg>
             </span>
-            <span className="hub-mode-text">
-              <strong>{m.title}</strong>
-              <span>{m.sub}</span>
-            </span>
+            <strong>{m.title}</strong>
             {m.badge ? <span className="hub-badge">{m.badge}</span> : null}
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M9 6l6 6-6 6" />
-            </svg>
           </Link>
         ))}
       </nav>

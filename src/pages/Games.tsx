@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { OpeningsCard, RecordStrip, TimeControlsCard } from '../components/GamesCards'
 import { GameDays, GameDaysSkeleton, QualityKey } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
-import { Link } from '../components/Link'
 import { OpenGameDialog } from '../components/LoadGameDialog'
 import { PageHeader } from '../components/PageHeader'
 import { Skel } from '../components/Skeleton'
@@ -18,6 +17,8 @@ import { navigate } from '../lib/router'
 import type { Settings } from '../lib/settings'
 
 const PAGE = 40
+/** A phone shows a few at a time, so it has a much shorter list to draw before the page can open. */
+const PHONE_PAGE = 15
 /** Reviewed games the accuracy bars show. */
 const RECENT_GAMES = 10
 
@@ -35,6 +36,8 @@ type Picked = { kind: 'time' | 'opening'; key: string; label: string } | null
 const matches = (g: MyGame, s: Show, reviews: Record<string, CachedReview>) => (s === 'all' ? true : s === 'unreviewed' ? !reviews[g.key] : g.result === s)
 
 interface Props {
+  /** It stays mounted: whether it's the page on screen. */
+  active: boolean
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
   onOpenAnalysis: () => void
@@ -42,16 +45,17 @@ interface Props {
 }
 
 /** Every game in one list, newest first and grouped by day, wherever it was played; your record across them beside. */
-export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSettings }: Props) {
+export function GamesPage({ active, settings, updateSettings, onOpenAnalysis, onOpenSettings }: Props) {
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
-  const { games, reviews, loading, errors } = useMyGames(users)
+  const { games, reviews, loading, errors } = useMyGames(users, active)
   // Placeholders until the games come, then they turn into them (useSettled).
   const busy = useSettled(loading && !games.length)
   const [show, setShow] = useState<Show>('all')
   const [source, setSource] = useState<SourceFilter>('all')
   const [picked, setPicked] = useState<Picked>(null)
-  const [shown, setShown] = useState(PAGE)
   const phone = useMediaQuery('(max-width: 1000px)')
+  const pageSize = phone ? PHONE_PAGE : PAGE
+  const [shown, setShown] = useState(pageSize)
 
   // The source and a picked group narrow the list; the chips' counts are of what's left.
   const narrowed = useMemo(
@@ -66,9 +70,11 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
   const filtered = useMemo(() => narrowed.filter((g) => matches(g, show, reviews)), [narrowed, show, reviews])
   // Filtered, a day's heading counts the games that match, and leaves out a rating the other games moved too.
   const narrow = show !== 'all' || source !== 'all' || !!picked
+  // In the list's deps: left open overnight, Today has become Yesterday.
+  const today = new Date().toDateString()
   const days = useMemo(
     () => gameDays(filtered.slice(0, shown), narrow ? filtered : games).map((d) => (narrow ? { ...d, rating: null } : d)),
-    [filtered, shown, games, narrow],
+    [filtered, shown, games, narrow, today],
   )
   const count = (s: Show) => narrowed.filter((g) => matches(g, s, reviews)).length
   const sources = (['chesscom', 'lichess', 'rookahead'] as const).filter((s) => games.some((g) => g.source === s))
@@ -93,7 +99,7 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
   }
   const [loadOpen, setLoadOpen] = useState(false)
   const loadGame = () => setLoadOpen(true)
-  const reset = () => setShown(PAGE)
+  const reset = () => setShown(pageSize)
   const pick = (kind: 'time' | 'opening', label: (key: string) => string) => (key: string | null) => {
     setPicked(key ? { kind, key, label: label(key) } : null)
     reset()
@@ -114,7 +120,7 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
       }}
     >
       {label}
-      {id !== 'all' && <span className="filter-count">{count(id)}</span>}
+      {id !== 'all' && !phone && <span className="filter-count">{count(id)}</span>}
     </button>
   )
 
@@ -134,10 +140,10 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
       <header className="home-card-head games-toolbar">
         <div className="filter-chips" role="radiogroup" aria-label="Show">
           {chip('all', 'All')}
-          {chip('unreviewed', 'Not reviewed')}
-          {chip('win', 'Wins')}
-          {chip('loss', 'Losses')}
-          {chip('draw', 'Draws')}
+          {chip('unreviewed', phone ? 'To review' : 'Not reviewed')}
+          {chip('win', phone ? 'Won' : 'Wins')}
+          {chip('loss', phone ? 'Lost' : 'Losses')}
+          {chip('draw', phone ? 'Drawn' : 'Draws')}
         </div>
         {sources.length > 1 && (
           <div className="filter-chips games-sources" role="radiogroup" aria-label="Where from">
@@ -187,7 +193,7 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
         </div>
       )}
       {filtered.length > shown && (
-        <button className="btn ghost games-older" onClick={() => setShown((n) => n + PAGE)}>
+        <button className="btn ghost games-older" onClick={() => setShown((n) => n + pageSize)}>
           Show older games
         </button>
       )}
@@ -208,27 +214,20 @@ export function GamesPage({ settings, updateSettings, onOpenAnalysis, onOpenSett
                   {SOURCE_LABEL[s]} <strong>{users[s]}</strong> ·{' '}
                 </span>
               ))}
-              games played here ·{' '}
+              {!phone && 'games played here · '}
               <button className="link-btn" onClick={onOpenSettings}>
                 {accounts.length ? 'Change' : 'Add your usernames'}
               </button>
             </span>
           </header>
 
-          {/* Phones: the Review tab is also where a game is loaded and the analysis board opened. */}
+          {/* Phones: the Review tab is also where a game is loaded. */}
           {phone && (
             <div className="games-start">
               <button className="btn accent-btn" onClick={loadGame}>
                 {LOAD_ICON}
                 Load a game
               </button>
-              <Link to="/board" className="btn ghost">
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d="M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6" />
-                  <path className="icon-fill" d="M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z" />
-                </svg>
-                Analysis board
-              </Link>
             </div>
           )}
 
