@@ -863,21 +863,27 @@ svg {
   gap: 8px;
 }
 
-/* Phones: a tab bar along the bottom instead of the sidebar. */
+/* Phones: a tab bar floating above the bottom edge instead of the sidebar, in a tint of your colour. */
 .tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 35;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  background: var(--side);
-  border-top: 1px solid var(--border);
+  max-width: 616px;
+  margin-inline: auto;
+  padding: 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: translate 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
 }
 
 .tab-item {
+  -webkit-tap-highlight-color: transparent;
   min-height: 48px;
   display: flex;
   flex-direction: column;
@@ -3534,7 +3540,7 @@ button.explain-row {
 @media (max-width: 1000px) {
   :root {
     --pad-x: 16px;
-    --tabbar-h: calc(61px + env(safe-area-inset-bottom));
+    --tabbar-h: calc(70px + env(safe-area-inset-bottom));
   }
 
   .layout,
@@ -6124,10 +6130,13 @@ button.user-avatar.guest:hover {
   animation: none;
 }
 
-/* The tab bar crossfades quickly: the board screens hide it, and it shouldn't hang on while they come. */
-::view-transition-old(tabbar),
+/* The tab bar stays live through a page change, so its pill keeps gliding and it can slide off for a board. */
+::view-transition-old(tabbar) {
+  display: none;
+}
+
 ::view-transition-new(tabbar) {
-  animation-duration: 0.15s;
+  animation: none;
 }
 
 ::view-transition-old(page) {
@@ -6136,6 +6145,107 @@ button.user-avatar.guest:hover {
 
 ::view-transition-new(page) {
   animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
+}
+
+/* One phone tab to another: the two pages slide along together, like a track, towards the tab you chose. These
+   are the real pages (App.tsx), moved by the screen's own compositor, so the tab bar's pill never waits for them. */
+.page-leaving,
+.page-arriving {
+  will-change: transform;
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.15, 1);
+  animation-fill-mode: both;
+}
+
+.page-leaving {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100dvh;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shell-page:has(.page-arriving) {
+  overflow-x: clip;
+}
+
+/* It keeps the place you scrolled to, its bar still at the top. */
+.page-leaving > * {
+  translate: 0 var(--left-at);
+}
+
+.page-leaving .page-header {
+  position: relative;
+  top: calc(var(--left-at) * -1);
+}
+
+.page-leaving.forward {
+  animation-name: slide-to-left;
+}
+
+.page-arriving.forward {
+  animation-name: slide-from-right;
+}
+
+.page-leaving.back {
+  animation-name: slide-to-right;
+}
+
+.page-arriving.back {
+  animation-name: slide-from-left;
+}
+
+/* Going to Analyze: the same slide, as a view transition. */
+:root[data-slide]::view-transition-old(page),
+:root[data-slide]::view-transition-new(page) {
+  mix-blend-mode: normal;
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.15, 1);
+  animation-delay: 0s;
+  animation-fill-mode: both;
+}
+
+:root[data-slide='forward']::view-transition-old(page) {
+  animation-name: slide-to-left;
+}
+
+:root[data-slide='forward']::view-transition-new(page) {
+  animation-name: slide-from-right;
+}
+
+:root[data-slide='back']::view-transition-old(page) {
+  animation-name: slide-to-right;
+}
+
+:root[data-slide='back']::view-transition-new(page) {
+  animation-name: slide-from-left;
+}
+
+@keyframes slide-to-left {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-from-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-to-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-from-left {
+  from {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes page-out {
@@ -6150,7 +6260,6 @@ button.user-avatar.guest:hover {
     transform: translateY(10px);
   }
 }
-
 
 /* Browsers without view transitions: the page just fades in. A page kept mounted (Play, Analysis)
    restarts its fade each time it's shown, since [hidden] clears the animation. */
@@ -7220,12 +7329,12 @@ button.user-avatar.guest:hover {
   .boot-tabs {
     display: block;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: var(--tabbar-h);
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    height: 60px;
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--brand) 12%, var(--surface));
   }
 }
 
@@ -7369,7 +7478,17 @@ button.user-avatar.guest:hover {
   }
 
   :root[data-boot-user] .boot-phone-welcome {
-    --h: 108.3px;
+    --h: 81px;
+  }
+
+  .boot-play {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--tabbar-h) + 10px);
+    height: 46px;
+    border-radius: 13px;
+    background: var(--surface-3);
   }
 
   /* The welcome card's words wrap more on a narrow phone. */
@@ -9652,11 +9771,24 @@ strong.settings-value {
   border-radius: 15px;
   display: grid;
   place-items: center;
-  transition: background 0.15s;
 }
 
-.tab-item.active .tab-icon {
+/* The current tab: one pill, the whole tab's size, that glides from tab to tab. */
+.tab-pill {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px) / 5);
+  border-radius: 17px;
   background: color-mix(in srgb, var(--brand) 15%, transparent);
+  translate: calc(var(--tab) * 100%) 0;
+  transition: translate 0.28s cubic-bezier(0.25, 0.1, 0.15, 1);
+  will-change: translate;
+}
+
+.tab-item {
+  position: relative;
 }
 
 /* Your photo as the You tab's icon: a ring shows it's the tab you're on. */
@@ -9680,10 +9812,6 @@ strong.settings-value {
   object-fit: cover;
 }
 
-.tab-item.active .tab-icon:has(.tab-photo) {
-  background: none;
-}
-
 .tab-item.active .tab-photo {
   box-shadow: 0 0 0 2px var(--brand);
 }
@@ -9700,8 +9828,11 @@ strong.settings-value {
     --tabbar-h: 0px;
   }
 
+  /* It slides away for a full-screen board, and back. */
   :root[data-immersive] .tabbar {
-    display: none;
+    translate: 0 calc(100% + 20px);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .page-header.has-back {
@@ -10485,6 +10616,68 @@ a.you-row:active {
 
 .phone-home .games-card h2 {
   font-size: 15px;
+}
+
+/* Play, floating over the page just above the tabs. */
+.phone-play {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--tabbar-h) + 10px);
+  z-index: 30;
+  box-sizing: border-box;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.phone-play .btn {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 608px;
+  height: 46px;
+  margin: 0 auto;
+  border-radius: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 16px;
+  font-weight: 700;
+  pointer-events: auto;
+}
+
+/* A first visit on a phone: the welcome stays short, so the daily puzzle is on the first screen too. */
+.phone-welcome.first h1 {
+  font-size: 23px;
+}
+
+.phone-home .hero-card {
+  padding: 16px;
+  gap: 10px;
+}
+
+.phone-home .hero-card h2 {
+  font-size: 20px;
+}
+
+.phone-home .hero-card > p {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.phone-home .hero-card .username-row {
+  flex-direction: row;
+}
+
+.phone-home .hero-card .username-row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-home .hero-card .username-row .accent-btn {
+  flex-shrink: 0;
+  width: auto;
+  padding: 0 12px;
 }
 
 /* Phones' Review tab: load a game or open the analysis board, above your games. */

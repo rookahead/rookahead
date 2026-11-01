@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { startViewTransition } from '../hooks/useSettled'
+import { slidesByHand, tabSlide } from './nav'
 
 export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
@@ -57,14 +58,19 @@ let shownPage = typeof location === 'undefined' ? 'home' : pageOf(location.pathn
 // the page you're leaving, and the transition would then fade the new page into itself.
 let shownPath = typeof location === 'undefined' ? '/' : location.pathname
 
+// How far down the page you left was scrolled: a page sliding away keeps its place.
+let leftAt = 0
+export const scrollLeftAt = () => leftAt
+
 /**
  * Tells the app the address changed (running `first` just before it redraws). Going to another page plays
  * as one view transition (index.css, ::view-transition-*(page)): the page fades out and the next rises in,
- * the sidebar staying put. The sign-in pages have their own slide, so they and reduced motion just switch.
+ * or they slide along together between a phone's tabs, the sidebar staying put. The sign-in pages have their own slide, so they and reduced motion just switch.
  */
 function notify(first?: () => void) {
   const from = shownPage
   shownPage = pageOf(location.pathname)
+  if (typeof window !== 'undefined') leftAt = window.scrollY
   const update = () => {
     first?.()
     shownPath = location.pathname
@@ -77,8 +83,17 @@ function notify(first?: () => void) {
     typeof document !== 'undefined' &&
     'startViewTransition' in document &&
     !matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (animate) startViewTransition(() => flushSync(update), 'page-change')
-  else update()
+  const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 1000px)').matches
+  if (animate && phone && slidesByHand(shownPath, location.pathname)) flushSync(update)
+  else if (animate) {
+    // On a phone, going to Analyze slides the two pages along together (index.css, :root[data-slide]).
+    const root = document.documentElement
+    const slide = phone ? tabSlide(shownPath, location.pathname) : null
+    if (slide) root.dataset.slide = slide
+    void startViewTransition(() => flushSync(update), 'page-change')
+      .finished.catch(() => {})
+      .finally(() => delete root.dataset.slide)
+  } else update()
 }
 if (typeof window !== 'undefined') window.addEventListener('popstate', () => notify())
 

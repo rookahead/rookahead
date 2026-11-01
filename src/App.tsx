@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
 import { faviconUrl } from './components/RookLogo'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
@@ -6,11 +6,13 @@ import { UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useOnline } from './hooks/useOnline'
+import { transitionsDone } from './hooks/useSettled'
 import { openAccountPage, startAccounts, useAccount } from './lib/account'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
-import { navigate, usePathname, useRoute, type Route } from './lib/router'
+import { slidesByHand, tabSlide } from './lib/nav'
+import { navigate, routeFor, scrollLeftAt, usePathname, useRoute, type Route } from './lib/router'
 import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
@@ -28,6 +30,10 @@ const SIDEBAR_KEY = 'rookahead.sidebar'
 /** How long the account page takes to slide in, and out (the .auth-layer animations in index.css). */
 const AUTH_ENTER_MS = 600
 const AUTH_LEAVE_MS = 420
+/** How long after opening a phone starts drawing the Review tab in the background. */
+const GAMES_EARLY_MS = 1500
+/** A little longer than the pages' slide (index.css, .page-leaving). */
+const SLIDE_MS = 320
 
 const readRail = () => {
   try {
@@ -68,6 +74,19 @@ export default function App() {
   const [playMounted, setPlayMounted] = useState(route === 'play')
   if (route === 'play' && !playMounted) setPlayMounted(true)
 
+  // Home and My games read your whole history to draw, so they stay mounted too: going back to one just shows it.
+  const [homeMounted, setHomeMounted] = useState(route === 'home')
+  if (route === 'home' && !homeMounted) setHomeMounted(true)
+  const [gamesMounted, setGamesMounted] = useState(route === 'games')
+  if (route === 'games' && !gamesMounted) setGamesMounted(true)
+
+  // A phone's Review tab is drawn soon after the app opens, once things are quiet, so even the first tap on it is instant.
+  useEffect(() => {
+    if (!phone || gamesMounted) return
+    const t = setTimeout(() => void transitionsDone().then(() => setGamesMounted(true)), GAMES_EARLY_MS)
+    return () => clearTimeout(t)
+  }, [phone, gamesMounted])
+
   // The account page has the window to itself: no sidebar or tab bar.
   const auth = route === 'auth'
   // On the way into the account page, the page you were on stays underneath for a moment while it slides
@@ -98,6 +117,30 @@ export default function App() {
   // The app page on screen: none once the account page has fully arrived.
   const appRoute = auth ? under : route
   const systemLight = useMediaQuery('(prefers-color-scheme: light)')
+
+  // Going from one phone tab to another, the page you left stays on screen just long enough to slide away beside
+  // the next one (index.css, .page-leaving). These are the real pages, so nothing else on screen has to wait for them.
+  const path = usePathname()
+  const [slidPath, setSlidPath] = useState(path)
+  const [sliding, setSliding] = useState<{ route: Route; slide: 'forward' | 'back'; y: number } | null>(null)
+  if (path !== slidPath) {
+    setSlidPath(path)
+    const slide = phone && !reducedMotion && slidesByHand(slidPath, path) ? tabSlide(slidPath, path) : null
+    setSliding(slide ? { route: routeFor(slidPath), slide, y: scrollLeftAt() } : null)
+  }
+  useEffect(() => {
+    if (!sliding) return
+    const t = setTimeout(() => setSliding(null), SLIDE_MS)
+    return () => clearTimeout(t)
+  }, [sliding])
+  const slideHost = (page: Route) => {
+    const goes = sliding?.route === page
+    return {
+      hidden: appRoute !== page && !goes,
+      className: `page-host ${goes ? `page-leaving ${sliding.slide}` : sliding && appRoute === page ? `page-arriving ${sliding.slide}` : ''}`,
+      style: goes ? ({ '--left-at': `${-sliding.y}px` } as CSSProperties) : undefined,
+    }
+  }
   const online = useOnline()
   const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance === 'black' ? 'dark' : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
@@ -170,14 +213,28 @@ export default function App() {
               You’re offline. Saved games still work.
             </p>
           )}
-          {appRoute === 'home' && <HomePage active settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
-          {appRoute === 'games' && (
-            <GamesPage active settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+          {homeMounted && (
+            <div {...slideHost('home')}>
+              <HomePage active={appRoute === 'home'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
+            </div>
+          )}
+          {gamesMounted && (
+            <div {...slideHost('games')}>
+              <GamesPage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+            </div>
           )}
           {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
-          {appRoute === 'puzzles' && <PuzzlesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
+          {(appRoute === 'puzzles' || sliding?.route === 'puzzles') && (
+            <div {...slideHost('puzzles')}>
+              <PuzzlesPage leaving={sliding?.route === 'puzzles'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
+            </div>
+          )}
           {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
-          {appRoute === 'you' && phone && <YouPage settings={settings} updateSettings={updateSettings} />}
+          {(appRoute === 'you' || sliding?.route === 'you') && phone && (
+            <div {...slideHost('you')}>
+              <YouPage settings={settings} updateSettings={updateSettings} />
+            </div>
+          )}
           {playMounted && (
             <div className="page-host" hidden={appRoute !== 'play'}>
               <PlayPage active={route === 'play'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
