@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ClassIcon } from '../components/ClassIcon'
+import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
@@ -25,8 +25,8 @@ const PERIODS: [Period, string][] = [
 
 const KINDS: LegendaryKind[] = ['queen', 'rook', 'bishop', 'knight', 'pawn', 'underpromotion', 'king']
 
-/** "Name (1550)": a player as the cards show them. */
-const player = (p: { name: string; rating?: number }) => (p.rating ? `${p.name} (${p.rating})` : p.name)
+/** "Name 1550": a player as the cards show them. */
+const player = (p: { name: string; rating?: number }) => (p.rating ? `${p.name} ${p.rating}` : p.name)
 
 /** Every Legendary move you've played in your reviewed games, as small boards, like Chess.com's brilliant moves page. */
 export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
@@ -50,89 +50,97 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
   }
 
   const busy = useSettled((loading || gamesLoading) && !moves.length)
+  const unreviewed = games.filter((g) => !reviews[g.key]).length
   return (
     <div className="home-page">
-      <PageHeader back="/" phoneTitle="Legendary moves" />
-      <main className="games-page legendary-page">
-        <header className="games-head">
-          <div className="games-title legendary-title">
-            <ClassIcon cls="brilliant" size={34} />
-            <div>
-              <h1>Legendary moves</h1>
-              <p>Every Legendary move you've played in a reviewed game. Tap one to see it in the game.</p>
-            </div>
-          </div>
-          {moves.length > 0 && (
-            <dl className="games-totals">
-              <div>
-                <dt>{period === 'all' ? 'all time' : `last ${PERIODS.find((p) => p[0] === period)![1]}`}</dt>
-                <dd>{inPeriod.length}</dd>
-              </div>
-            </dl>
+      <PageHeader phoneOnly back="/" phoneTitle="Legendary moves" />
+      <main className="home games-page legendary-page">
+        <div className="home-main">
+          <header className="home-welcome games-title">
+            <h1>Legendary moves</h1>
+            <span>{moves.length ? `${inPeriod.length} ${period === 'all' ? 'in all' : `in the last ${PERIODS.find((p) => p[0] === period)![1]}`} · Open one to see it in the game` : 'Every Legendary move you play in a reviewed game collects here'}</span>
+          </header>
+
+          {busy && (
+            <section className="home-card games-card">
+              <LegendaryGridSkeleton />
+            </section>
           )}
-        </header>
+          {!busy && moves.length === 0 && (
+            <section className="home-card legendary-empty">
+              <h2>No Legendary moves yet</h2>
+              <p>Review your games and every Legendary move you find (usually a brilliant sacrifice) collects here.</p>
+              <Link to="/games" className="btn accent-btn">
+                Review a game
+              </Link>
+            </section>
+          )}
+          {!busy && moves.length > 0 && (
+            <section className="home-card games-card" aria-label="Your Legendary moves">
+              <header className="home-card-head games-toolbar">
+                <div className="filter-chips" role="radiogroup" aria-label="Kind of move">
+                  {(['all', ...kinds] as const).map((k) => (
+                    <button key={k} role="radio" aria-checked={kind === k} className={`filter-chip all ${kind === k ? 'on' : ''}`} onClick={() => setKind(k)}>
+                      {k === 'all' ? 'All' : KIND_LABEL[k]}
+                      <span className="filter-count">{k === 'all' ? inPeriod.length : inPeriod.filter((m) => m.kind === k).length}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="filter-chips games-sources" role="radiogroup" aria-label="When">
+                  {PERIODS.map(([p, text]) => (
+                    <button key={p} role="radio" aria-checked={period === p} className={`filter-chip all ${period === p ? 'on' : ''}`} onClick={() => setPeriod(p)}>
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </header>
+              {shown.length ? (
+                <ul className="legendary-grid">
+                  {shown.map((m) => {
+                    const them = m.game.color === 'white' ? m.game.black : m.game.white
+                    return (
+                      <li key={m.id}>
+                        <button className="legendary-card" onClick={() => void open(m)}>
+                          <MiniBoard fen={m.fen} orientation={m.game.color} theme={settings.boardTheme} lastMove={[m.from, m.to]} grade="brilliant" label={`${m.label} against ${them.name}`} />
+                          <span className="legendary-meta">
+                            <strong>{m.label}</strong>
+                            <span>{dayLabel(m.game.endedAt)}</span>
+                          </span>
+                          <span className="legendary-vs">vs {player(them)}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <div className="games-empty">
+                  <svg viewBox="0 0 24 24" aria-hidden>
+                    <path d="M8 3v3M16 3v3M4 9h16M5 5h14v15H5z" />
+                  </svg>
+                  <p>
+                    <strong>None in this range</strong>
+                    <span>Try a longer stretch of time, or All time.</span>
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
 
-        {moves.length > 0 && (
-          <div className="legendary-filters">
-            <div className="filter-chips" role="radiogroup" aria-label="Kind of move">
-              {(['all', ...kinds] as const).map((k) => (
-                <button key={k} role="radio" aria-checked={kind === k} className={`filter-chip ${kind === k ? 'on' : ''}`} onClick={() => setKind(k)}>
-                  {k === 'all' ? 'All' : KIND_LABEL[k]}
-                  <span className="filter-count">{k === 'all' ? inPeriod.length : inPeriod.filter((m) => m.kind === k).length}</span>
-                </button>
-              ))}
-            </div>
-            <div className="filter-chips" role="radiogroup" aria-label="When">
-              {PERIODS.map(([p, text]) => (
-                <button key={p} role="radio" aria-checked={period === p} className={`filter-chip ${period === p ? 'on' : ''}`} onClick={() => setPeriod(p)}>
-                  {text}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {busy && <LegendaryGridSkeleton />}
-        {!busy && moves.length === 0 && (
-          <section className="home-card legendary-empty">
-            <h2>No Legendary moves yet</h2>
-            <p>Review your games and every Legendary move you find (usually a brilliant sacrifice) collects here.</p>
-            <Link to="/games" className="btn accent-btn">
-              Review a game
+          {!busy && moves.length > 0 && unreviewed > 0 && (
+            <Link to="/games" className="home-card quick-card">
+              <IconTile tone="legendary" size="big" />
+              <span className="quick-lines">
+                <strong>Find more Legendary moves</strong>
+                <small>
+                  {unreviewed} of your games {unreviewed === 1 ? 'isn’t' : 'aren’t'} reviewed yet
+                </small>
+              </span>
+              <span className="quick-go" aria-hidden>
+                ›
+              </span>
             </Link>
-          </section>
-        )}
-        {!busy && moves.length > 0 && shown.length === 0 && (
-          <div className="home-card games-empty">
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M8 3v3M16 3v3M4 9h16M5 5h14v15H5z" />
-            </svg>
-            <p>
-              <strong>None in this range</strong>
-              <span>Try a longer stretch of time, or All time.</span>
-            </p>
-          </div>
-        )}
-
-        <ul className="legendary-grid">
-          {shown.map((m) => {
-            const you = m.game.color === 'white' ? m.game.white : m.game.black
-            const them = m.game.color === 'white' ? m.game.black : m.game.white
-            return (
-              <li key={m.id}>
-                <button className="legendary-card" onClick={() => void open(m)}>
-                  <span className="legendary-player">{player(them)}</span>
-                  <MiniBoard fen={m.fen} orientation={m.game.color} theme={settings.boardTheme} lastMove={[m.from, m.to]} grade="brilliant" label={`${m.label} against ${them.name}`} />
-                  <span className="legendary-player you">{player(you)}</span>
-                  <span className="legendary-meta">
-                    <strong>{m.label}</strong>
-                    <span>{dayLabel(m.game.endedAt)}</span>
-                  </span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+          )}
+        </div>
       </main>
     </div>
   )
