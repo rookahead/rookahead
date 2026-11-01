@@ -77,3 +77,11 @@ describe('weakestPhase', () => {
     expect(weakestPhase(games)).toBeNull()
   })
 })
+
+describe('phaseMoves', () => {
+  it('reads a game once for each side', () => {
+    const shared = game(START, ['e2e4', 'e7e5'], [cp(20), cp(10), cp(15)])
+    expect(phaseMoves(shared, 'white')).toBe(phaseMoves(shared, 'white'))
+    expect(phaseMoves(shared, 'black')).not.toBe(phaseMoves(shared, 'white'))
+  })
+})

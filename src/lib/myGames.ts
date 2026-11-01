@@ -1,5 +1,6 @@
 // "My games": one list, newest first, of games played here and games imported by username from
 // Chess.com and Lichess. Each row carries where it came from, like a phone's call log.
+import { Chess } from 'chess.js'
 import * as chesscom from './chesscom'
 import { clockLabel } from './clock'
 import type { Color } from './evaluation'
@@ -186,7 +187,7 @@ export interface GameStats {
   accuracy: number | null
   /** Change against the 10 before them (needs at least 3 of those). */
   trend: number | null
-  /** Your Legendary moves in games reviewed in the last 7 days. */
+  /** Your Legendary moves in games played in the last 7 days. */
   legendary: number
   /** Your Legendary moves in all your reviewed games: the Legendary moves page. */
   legendaryAll: number
@@ -199,13 +200,14 @@ export function gameStats(games: MyGame[], reviews: Record<string, CachedReview>
   const mine = games.flatMap((g) => {
     const review = reviews[g.key]
     const accuracy = review?.accuracy[g.color]
-    return review ? [{ key: g.key, review, accuracy, color: g.color }] : []
+    return review ? [{ key: g.key, review, accuracy, color: g.color, endedAt: g.endedAt }] : []
   })
   const accuracies = mine.flatMap((m) => (m.accuracy == null ? [] : [m.accuracy]))
   const last = accuracies.slice(0, 10)
   const before = accuracies.slice(10, 20)
   const weekAgo = now - 7 * 86400000
-  const thisWeek = mine.filter((m) => m.review.at > weekAgo)
+  // By when the game was played, like the Legendary moves page: a review's own date moves when it's graded again.
+  const thisWeek = mine.filter((m) => m.endedAt >= weekAgo)
   return {
     accuracy: last.length ? mean(last) : null,
     trend: last.length && before.length >= 3 ? mean(last) - mean(before) : null,
@@ -216,6 +218,10 @@ export function gameStats(games: MyGame[], reviews: Record<string, CachedReview>
   }
 }
 
+// One of each: making a formatter is the slow part of formatting a date, and a list of games asks hundreds of times.
+const SHORT_DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+const LONG_DATE = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
 /** "Today", "Yesterday", or "Oct 16" (with the year when it isn't this one): for grouping rows by day. */
 export function dayLabel(ms: number, now = new Date()): string {
   const d = new Date(ms)
@@ -223,10 +229,11 @@ export function dayLabel(ms: number, now = new Date()): string {
   const days = Math.round((startOf(now) - startOf(d)) / 86400000)
   if (days === 0) return 'Today'
   if (days === 1) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(d.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }) })
+  return (d.getFullYear() === now.getFullYear() ? SHORT_DATE : LONG_DATE).format(d)
 }
 
-// Each game's final position, worked out once (replaying a PGN is the slow part of drawing a row).
+// Each game's final position, worked out once. Reading the PGN is the slow part of drawing a row, so it stops at
+// the last position instead of building the whole game's tree: a list opens with dozens of these at a time.
 const finals = new Map<string, { fen: string; lastMove?: [string, string] } | null>()
 
 /** Where the game ended, and its last move, for a small board picture. */
@@ -234,9 +241,11 @@ export function finalPosition(game: MyGame): { fen: string; lastMove?: [string, 
   const id = `${game.source}:${game.key}`
   if (!finals.has(id)) {
     try {
-      const line = mainline(treeFromPgn(game.pgn).tree)
-      const last = line[line.length - 1]
-      finals.set(id, { fen: last.fen, lastMove: last.uci ? [last.uci.slice(0, 2), last.uci.slice(2, 4)] : undefined })
+      const chess = new Chess()
+      chess.loadPgn(game.pgn.trim())
+      const fen = chess.fen()
+      const last = chess.undo()
+      finals.set(id, { fen, lastMove: last ? [last.from, last.to] : undefined })
     } catch {
       finals.set(id, null)
     }

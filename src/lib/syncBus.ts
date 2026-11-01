@@ -51,6 +51,8 @@ export function setChangeHook(hook: (() => void) | undefined): void {
 
 /** A store was saved on this device: remember it needs pushing. Guests have nothing to push. */
 export function markChanged(key: StoreKey, storage = defaultStorage()): void {
+  // Home and My games stay mounted, so they have to hear about this device's own games and reviews too.
+  if (key === 'games' || key === 'reviews') storesReplaced([key])
   const meta = readMeta(storage)
   if (!meta.user) return
   meta.dirty[key] = Date.now()
@@ -58,7 +60,8 @@ export function markChanged(key: StoreKey, storage = defaultStorage()): void {
   changeHook?.()
 }
 
-// Each store's version goes up when a sync pass rewrites it, so pages holding it re-read.
+// Each store's version goes up when a sync pass rewrites it (or, for games and reviews, this device saves one), so
+// pages holding it re-read.
 const versions: Record<StoreKey, number> = { settings: 0, puzzles: 0, games: 0, reviews: 0 }
 const listeners = new Set<() => void>()
 
@@ -68,7 +71,7 @@ export function storesReplaced(keys: StoreKey[]): void {
   listeners.forEach((l) => l())
 }
 
-/** Bumps when a sync pass replaces `key` on this device: put it in the deps of whatever reads it. */
+/** Bumps when `key` is replaced on this device: put it in the deps of whatever reads it. */
 export function useStoreVersion(key: StoreKey): number {
   return useSyncExternalStore(
     (l) => {

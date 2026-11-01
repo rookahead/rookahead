@@ -13,9 +13,15 @@ const ENDGAME_PIECES = 6
 
 const pieces = (fen: string) => (fen.split(' ')[0].match(/[nbrqNBRQ]/g) ?? []).length
 
+// Replaying a game is the slow part, and a decoded game stays the same object: each side's moves are read once.
+const read = new WeakMap<SharedGame, Partial<Record<Color, Record<Phase, number[]>>>>()
+
 /** Your per-move accuracies in one game, sorted by the phase each move was played in. */
 export function phaseMoves(game: SharedGame, color: Color): Record<Phase, number[]> {
+  const known = read.get(game)?.[color]
+  if (known) return known
   const out: Record<Phase, number[]> = { opening: [], middlegame: [], endgame: [] }
+  read.set(game, { ...read.get(game), [color]: out })
   const scores = game.review?.scores
   if (!scores || scores.length < game.moves.length + 1) return out
   const chess = new Chess(game.startFen)

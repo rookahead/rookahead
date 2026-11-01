@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChesscomGame } from './chesscom'
 import type { PlayedGame } from './games'
 import type { LichessGame } from './lichess'
-import { cachedFor, dayLabel, FRESH_MS, gameStats, importGames, isFresh, loadImportCache, myGames, type ImportCache, type MyGame } from './myGames'
+import { cachedFor, dayLabel, finalPosition, FRESH_MS, gameStats, importGames, isFresh, loadImportCache, myGames, type ImportCache, type MyGame } from './myGames'
+import { mainline, treeFromPgn } from './tree'
 import type { CachedReview } from './reviewCache'
 
 function memoryStorage(): Storage {
@@ -141,13 +142,13 @@ describe('gameStats', () => {
 
   it('averages your side over the last 10 reviewed and compares with the 10 before', () => {
     const now = 100 * 86400000
-    const games = Array.from({ length: 14 }, (_, i) => game(`g${i}`, 'white'))
+    const games = Array.from({ length: 14 }, (_, i) => ({ ...game(`g${i}`, 'white'), endedAt: now - i * 86400000 - 1000 }))
     const reviews = Object.fromEntries(games.map((g, i) => [g.key, review(i < 10 ? 80 : 70, 10, now - i * 86400000, 1)]))
     const stats = gameStats(games, reviews, now)
     expect(stats.accuracy).toBe(80)
     expect(stats.trend).toBe(10)
     expect(stats.reviewed).toBe(14)
-    expect(stats.legendary).toBe(7) // reviewed within the last 7 days: days 0–6
+    expect(stats.legendary).toBe(7) // played within the last 7 days: days 0–6
     expect(stats.recent).toHaveLength(10)
     expect(stats.legendaryAll).toBe(14) // in every reviewed game, for the Legendary moves page
   })
@@ -165,5 +166,54 @@ describe('dayLabel', () => {
     expect(dayLabel(new Date(2026, 9, 17, 23, 0).getTime(), now)).toBe('Yesterday')
     expect(dayLabel(new Date(2026, 9, 15, 12, 0).getTime(), now)).toBe('Oct 15')
     expect(dayLabel(new Date(2025, 11, 31, 12, 0).getTime(), now)).toBe('Dec 31, 2025')
+  })
+})
+
+describe('gameStats, the week', () => {
+  const now = 100 * 86400000
+  const game = (key: string, endedAt: number) => ({ key, source: 'chesscom', color: 'white', endedAt }) as MyGame
+  const saved = (at: number, legendary: number) => ({ accuracy: { white: 80, black: 80 }, brilliant: { white: legendary, black: 0 }, at }) as CachedReview
+
+  it('counts Legendary moves by when the game was played, not when its review was last saved', () => {
+    const games = [game('new', now - 86400000), game('old', now - 60 * 86400000)]
+    // Grading a review again under new rules saves it again, however old the game.
+    const reviews = { new: saved(now - 3600000, 1), old: saved(now - 3600000, 3) }
+    const stats = gameStats(games, reviews, now)
+    expect(stats.legendary).toBe(1)
+    expect(stats.legendaryAll).toBe(4)
+  })
+})
+
+describe('finalPosition', () => {
+  const game = (pgn: string, key: string) => ({ source: 'chesscom', key, pgn }) as MyGame
+  const viaTree = (pgn: string) => {
+    const line = mainline(treeFromPgn(pgn).tree)
+    const last = line[line.length - 1]
+    return { fen: last.fen, lastMove: last.uci ? [last.uci.slice(0, 2), last.uci.slice(2, 4)] : undefined }
+  }
+  const pgns: [string, string][] = [
+    ['clock comments', '[White "a"]\n[Black "b"]\n[Result "1-0"]\n\n1. e4 {[%clk 0:09:58.1]} 1... e5 {[%clk 0:09:57]} 2. Qh5 {[%clk 0:09:50]} Nc6 3. Bc4 Nf6 4. Qxf7# 1-0'],
+    ['a promotion', '[Result "*"]\n\n1. a4 b5 2. axb5 a6 3. bxa6 Bb7 4. axb7 Nc6 5. bxa8=N *'],
+    ['a set-up position', '[FEN "4k3/P7/8/8/8/8/8/4K3 w - - 0 1"]\n[SetUp "1"]\n[Result "*"]\n\n1. a8=Q+ Kd7 *'],
+    ['side lines', '[Result "*"]\n\n1. e4 e5 (1... c5 2. Nf3) 2. Nf3 *'],
+    ['no moves', '[White "a"]\n[Result "*"]\n\n*'],
+  ]
+  for (const [name, pgn] of pgns) {
+    it(`matches a full replay with ${name}`, () => {
+      expect(finalPosition(game(pgn, name))).toEqual(viaTree(pgn))
+    })
+  }
+
+  it('has nothing to show for a game it cannot read', () => {
+    expect(finalPosition(game('1. e4 e5 2. Ke7', 'broken'))).toBeNull()
+  })
+})
+
+describe('dayLabel on a long list', () => {
+  it('formats a year of games quickly', () => {
+    const now = new Date(2026, 9, 18, 12)
+    const started = performance.now()
+    for (let i = 0; i < 5000; i++) dayLabel(now.getTime() - i * 3600000 * 2, now)
+    expect(performance.now() - started).toBeLessThan(150)
   })
 })

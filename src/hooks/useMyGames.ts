@@ -22,8 +22,9 @@ function refresh(site: ImportSite, user: string): Promise<void> {
   return p
 }
 
-/** My games (played here + imported), their saved reviews, and the state of the imports. Refetches stale imports. */
-export function useMyGames(users: Usernames) {
+/** My games (played here + imported), their saved reviews, and the state of the imports. Refetches stale imports,
+ * each time the page is shown if it stays mounted (`active`). */
+export function useMyGames(users: Usernames, active = true) {
   const gamesVersion = useStoreVersion('games')
   const reviewsVersion = useStoreVersion('reviews')
   const [cacheVersion, setCacheVersion] = useState(0)
@@ -36,6 +37,7 @@ export function useMyGames(users: Usernames) {
   const [errors, setErrors] = useState<Partial<Record<ImportSite, string>>>({})
 
   useEffect(() => {
+    if (!active) return
     let live = true
     const cache = loadImportCache()
     for (const site of SITES) {
@@ -56,7 +58,7 @@ export function useMyGames(users: Usernames) {
     return () => {
       live = false
     }
-  }, [users.chesscom, users.lichess])
+  }, [users.chesscom, users.lichess, active])
 
   const games = useMemo(() => myGames(users, loadImportCache()), [users.chesscom, users.lichess, cacheVersion, gamesVersion])
   const reviews = useMemo(() => loadReviews(), [reviewsVersion])
