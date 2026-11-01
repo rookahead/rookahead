@@ -11,7 +11,7 @@ github: https://github.com/sponsors/bijoyv9
 bmc: https://buymeacoffee.com/bijoyv9i
 ---
 
-Rookahead is made by one developer in India, and everything in it is free for everyone: every review, every puzzle, every feature.
+Everything in Rookahead is free for everyone: every review, every puzzle, every feature.
 
 If Rookahead helps your chess, a small donation keeps it growing. There's no obligation, and the app stays the same whether you give or not.
 
