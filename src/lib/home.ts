@@ -47,24 +47,35 @@ export function greeting(hour: number, name?: string | null): string {
   return `Good evening${who}`
 }
 
+/** Games the win count needs before it says anything. */
+const NUDGE_MIN_GAMES = 5
+/** Rating points worth mentioning. */
+const NUDGE_MIN_POINTS = 10
+
 export interface NudgeInput {
-  /** The newest game, if it hasn't been reviewed: who it was against and when it ended (ms). */
-  unreviewed?: { opponent: string; endedAt: number }
   mistakes: number
   /** The puzzle streak, and whether today already counts. */
   streak: number
   solvedToday: boolean
+  /** Legendary moves in the last 7 days. */
+  legendary: number
+  /** How far your rating has climbed, when it has: the points, the time control and the span. */
+  ratingUp: { points: number; time: string; over: string } | null
   /** Accuracy change over the last 10 reviewed games. */
   trend: number | null
+  /** Your latest games, and how many of them you won. */
+  won: number
+  played: number
   hasGames: boolean
-  now?: number
 }
 
-/** The one line under the greeting: the most useful next thing to do. */
-export function nudge({ unreviewed, mistakes, streak, solvedToday, trend, hasGames, now = Date.now() }: NudgeInput): string {
-  if (unreviewed && now - unreviewed.endedAt < 3 * 86400000) return `Your game vs ${unreviewed.opponent} is ready to review.`
-  if (mistakes > 0) return mistakes === 1 ? 'A mistake from your games is waiting as a puzzle.' : `${mistakes} mistakes from your games are waiting as puzzles.`
-  if (streak > 0 && !solvedToday) return `Solve a puzzle today to keep your ${streak}-day puzzle streak.`
+/** The one line under the greeting: how you're doing. What to do next is the buttons' job; only a streak about to end comes first. */
+export function nudge({ mistakes, streak, solvedToday, legendary, ratingUp, trend, won, played, hasGames }: NudgeInput): string {
+  if (streak > 0 && !solvedToday) return `Solve today's puzzle to keep your ${streak}-day streak.`
+  if (legendary > 0) return `${legendary} Legendary ${legendary === 1 ? 'move' : 'moves'} this week.`
+  if (ratingUp && ratingUp.points >= NUDGE_MIN_POINTS) return `Up ${ratingUp.points} points in ${ratingUp.time} ${ratingUp.over}.`
   if (trend != null && trend >= 0.5) return `Your accuracy is up ${trend.toFixed(1)} over your last 10 games.`
+  if (played >= NUDGE_MIN_GAMES && won * 2 >= played) return `You won ${won} of your last ${played} games.`
+  if (mistakes > 0) return mistakes === 1 ? 'A mistake from your games is waiting as a puzzle.' : `${mistakes} mistakes from your games are waiting as puzzles.`
   return hasGames ? 'Pick a game and see where it turned.' : 'Load a game and see where it turned.'
 }

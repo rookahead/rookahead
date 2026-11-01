@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { Skel } from './Skeleton'
+import { CLASS_INFO } from '../lib/classify'
 import { Link } from './Link'
 import { WEAKEST_MIN_REVIEWED, type Phase } from '../lib/phases'
 import { dayLabel, type MyGame } from '../lib/myGames'
@@ -13,6 +13,8 @@ const MISTAKES_GOAL = 3
 
 interface Step {
   id: string
+  /** The one word for it in the phone's row. */
+  short: string
   title: string
   sub: string
   done: boolean
@@ -41,7 +43,7 @@ export function PlanCard({
   progress,
   onOpenLatest,
 }: {
-  /** Phones: one row, the next step and its button; the whole list a tap away. */
+  /** Phones: one row of ticks, each a word and a tap away from what it asks for. */
   compact?: boolean
   /** Your mistakes are still being counted and there are reviews to count them in: keep their tile's place. */
   expectMistakes?: boolean
@@ -64,6 +66,7 @@ export function PlanCard({
   const all: Step[] = [
     latest && {
       id: 'review',
+      short: 'Review',
       title: review ? 'Latest game reviewed' : 'Review your latest game',
       sub: review ? `vs ${opponent} · ${review.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy` : `vs ${opponent} · ${dayLabel(latest.endedAt)}`,
       done: !!review,
@@ -73,6 +76,7 @@ export function PlanCard({
     },
     {
       id: 'daily',
+      short: 'Puzzle',
       title: 'Solve the daily puzzle',
       sub: daily === 'solved' ? 'Solved' : daily === 'failed' ? 'Tried today' : 'One position, a new one every day',
       done: !!daily,
@@ -82,6 +86,7 @@ export function PlanCard({
     },
     {
       id: 'mistakes',
+      short: 'Mistakes',
       title: `Fix ${goal || MISTAKES_GOAL} of your mistakes`,
       sub: goal ? `${Math.min(fixed, goal)} of ${goal} today · ${mistakes} waiting` : '',
       done: goal > 0 && fixed >= goal,
@@ -91,6 +96,7 @@ export function PlanCard({
     },
     {
       id: 'play',
+      short: 'Play',
       title: 'Play a game',
       sub: played ? `${played} played today` : 'Against the computer, any level',
       done: played > 0,
@@ -102,7 +108,6 @@ export function PlanCard({
   const steps = all.filter((s) => s.on)
   const done = steps.filter((s) => s.done).length
   const next = steps.find((s) => !s.done)
-  const [open, setOpen] = useState(false)
   const tile = (s: Step) => (
     <button className={`plan-step ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : undefined}>
       <span className="plan-check" aria-hidden>
@@ -124,31 +129,24 @@ export function PlanCard({
 
   if (compact)
     return (
-      <section className={`home-card plan-card compact ${open ? 'open' : ''}`} aria-labelledby="plan-title">
-        <div className="plan-row">
-          <button className="plan-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="plan-steps">
-            <Ring done={done} total={steps.length} />
-            <span className="plan-summary">
-              <small id="plan-title">Today's plan · {done} of {steps.length} done</small>
-              <strong>{next ? next.title : 'All done for today'}</strong>
-            </span>
-            <svg className="plan-chevron" viewBox="0 0 24 24" aria-hidden>
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          {next && (
-            <button className="btn plan-next" onClick={next.go}>
-              {next.action}
-            </button>
-          )}
-        </div>
-        {open && (
-          <ol className="plan-steps" id="plan-steps">
-            {steps.map((s) => (
-              <li key={s.id}>{tile(s)}</li>
-            ))}
-          </ol>
-        )}
+      <section className="plan-card compact" aria-labelledby="plan-title">
+        <h2 id="plan-title">Today</h2>
+        <ol className="plan-ticks">
+          {steps.map((s) => (
+            <li key={s.id}>
+              <button className={`plan-tick ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : s.title}>
+                <span className="plan-check" aria-hidden>
+                  {s.done && (
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                  )}
+                </span>
+                {s.short}
+              </button>
+            </li>
+          ))}
+        </ol>
       </section>
     )
 
@@ -176,17 +174,13 @@ export function PlanCard({
 export function PlanCardSkeleton({ compact = false, steps = 3 }: { compact?: boolean; steps?: number }) {
   if (compact)
     return (
-      <section className="home-card plan-card compact skel-group" aria-busy aria-label="Loading today's plan">
-        <div className="plan-row">
-          <span className="plan-toggle">
-            <Skel w="40px" h="40px" className="skel-round" />
-            <span className="plan-summary">
-              <Skel w="120px" h="12px" />
-              <Skel w="160px" h="16px" className="skel-gap" />
-            </span>
-          </span>
-          <Skel w="78px" h="36px" className="skel-pill" />
-        </div>
+      <section className="plan-card compact skel-group" aria-busy aria-label="Loading today's plan">
+        <Skel w="44px" h="15px" />
+        <span className="plan-ticks">
+          {Array.from({ length: steps }, (_, i) => (
+            <Skel key={i} w="68px" h="15px" />
+          ))}
+        </span>
       </section>
     )
   return (
@@ -249,17 +243,6 @@ function weekDays(progress: PuzzleProgress, weeks: number) {
   })
 }
 
-/** This week as a row of small dots, for the phone's streak half-card. */
-export function WeekDots({ progress }: { progress: PuzzleProgress }) {
-  return (
-    <span className="week-dots" aria-hidden>
-      {weekDays(progress, 1).map((d) => (
-        <i key={d.day} className={d.state} />
-      ))}
-    </span>
-  )
-}
-
 export interface AccuracyPoint {
   game: MyGame
   review: CachedReview
@@ -281,6 +264,7 @@ export function FormStrip({
   progress,
   weakest,
   reviewed,
+  legendary,
 }: {
   /** Your games are on their way. */
   pending?: boolean
@@ -293,6 +277,8 @@ export function FormStrip({
   weakest: { phase: Phase; accuracy: number } | null | undefined
   /** Reviewed games the phases come from. */
   reviewed: number
+  /** Phones: your Legendary moves as one more card in the row; desktop has its own strip. */
+  legendary?: { all: number; week: number }
 }) {
   const today = localDayNumber(new Date())
   const streak = dayStreak(progress, today)
@@ -327,7 +313,7 @@ export function FormStrip({
               bars.map((v, i) => <i key={i} className={i === bars.length - 1 ? 'last' : ''} style={{ height: `${18 + ((v - lo) / (hi - lo || 1)) * 82}%` }} />)}
           </span>
         </span>
-        <span className="form-sub">{pending ? <Skel w="60%" h="11px" /> : accuracy == null ? 'Review a game to see it' : trend != null ? 'Against the 10 before' : 'Your reviewed games'}</span>
+        <span className="form-sub">{pending ? <Skel w="60%" h="11px" /> : accuracy == null ? 'Review a game' : trend != null ? 'Against the 10 before' : 'Your reviewed games'}</span>
       </Link>
       <Link to={dailyDone ? '/puzzles' : '/puzzles/daily'} className="form-part form-streak">
         <span className="form-col">
@@ -344,7 +330,7 @@ export function FormStrip({
               <b className="form-value empty">Start today</b>
             )}
           </span>
-          <span className="form-sub">{pending ? <Skel w="50px" h="11px" /> : best ? `Best ${best}` : 'Solve one to start'}</span>
+          <span className="form-sub">{pending ? <Skel w="50px" h="11px" /> : best ? `Best ${best}` : 'Solve one'}</span>
         </span>
         <ol className="form-week" aria-label="This week">
           {weekDays(progress, 1).map((d) => (
@@ -359,6 +345,23 @@ export function FormStrip({
           ))}
         </ol>
       </Link>
+      {legendary && (
+        <Link to="/legendary" className="form-part">
+          <span className="form-label">Legendary moves</span>
+          <span className="form-row">
+            {pending ? (
+              <Skel w="56px" h="24px" />
+            ) : legendary.all ? (
+              <b className="form-value" style={{ color: CLASS_INFO.brilliant.color }}>
+                {legendary.all}
+              </b>
+            ) : (
+              <b className="form-value empty">Not yet</b>
+            )}
+          </span>
+          <span className="form-sub">{pending ? <Skel w="70%" h="11px" /> : !legendary.all ? 'Review to find them' : legendary.week ? `${legendary.week} this week ›` : 'See them all ›'}</span>
+        </Link>
+      )}
       <div className="form-part">
         <span className="form-label">Weakest phase</span>
         <span className="form-row">
@@ -379,9 +382,9 @@ export function FormStrip({
           ) : weakest ? (
             `Last ${reviewed} reviews`
           ) : reviewed < WEAKEST_MIN_REVIEWED ? (
-            `Review ${WEAKEST_MIN_REVIEWED - reviewed} more ${WEAKEST_MIN_REVIEWED - reviewed === 1 ? 'game' : 'games'} to see it`
+            `Review ${WEAKEST_MIN_REVIEWED - reviewed} more`
           ) : (
-            'Needs more games past the opening'
+            'Needs longer games'
           )}
         </span>
       </div>

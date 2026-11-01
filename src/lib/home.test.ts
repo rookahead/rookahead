@@ -52,19 +52,30 @@ describe('greeting', () => {
 })
 
 describe('nudge', () => {
-  const now = 10 * 86400000
-  const base = { mistakes: 0, streak: 0, solvedToday: false, trend: null, hasGames: true, now }
+  const base = { mistakes: 0, streak: 0, solvedToday: false, legendary: 0, ratingUp: null, trend: null, won: 0, played: 0, hasGames: true }
 
-  it('points at a fresh unreviewed game first', () => {
-    expect(nudge({ ...base, mistakes: 5, unreviewed: { opponent: 'knightowl', endedAt: now - 3600000 } })).toBe('Your game vs knightowl is ready to review.')
+  it('keeps a streak that is about to end above everything else', () => {
+    expect(nudge({ ...base, streak: 4, legendary: 2 })).toBe("Solve today's puzzle to keep your 4-day streak.")
   })
 
-  it('skips an old unreviewed game for the mistakes, then the streak, then the trend', () => {
-    const old = { opponent: 'x', endedAt: now - 5 * 86400000 }
-    expect(nudge({ ...base, unreviewed: old, mistakes: 14 })).toBe('14 mistakes from your games are waiting as puzzles.')
+  it('then says how you are playing, the best news first', () => {
+    const solved = { ...base, streak: 4, solvedToday: true }
+    expect(nudge({ ...solved, legendary: 1, ratingUp: { points: 20, time: '10 min', over: 'this month' } })).toBe('1 Legendary move this week.')
+    expect(nudge({ ...solved, legendary: 3 })).toBe('3 Legendary moves this week.')
+    expect(nudge({ ...solved, ratingUp: { points: 20, time: '10 min', over: 'this month' }, trend: 2.14 })).toBe('Up 20 points in 10 min this month.')
+    expect(nudge({ ...solved, ratingUp: { points: 12, time: 'Blitz', over: 'over your last 30 games' } })).toBe('Up 12 points in Blitz over your last 30 games.')
+    expect(nudge({ ...solved, trend: 2.14, won: 7, played: 10 })).toBe('Your accuracy is up 2.1 over your last 10 games.')
+    expect(nudge({ ...solved, won: 7, played: 10 })).toBe('You won 7 of your last 10 games.')
+  })
+
+  it('leaves out a losing run and a handful of games', () => {
+    expect(nudge({ ...base, won: 3, played: 10 })).toBe('Pick a game and see where it turned.')
+    expect(nudge({ ...base, won: 3, played: 4 })).toBe('Pick a game and see where it turned.')
+  })
+
+  it('offers your mistakes when there is nothing to report', () => {
+    expect(nudge({ ...base, mistakes: 14 })).toBe('14 mistakes from your games are waiting as puzzles.')
     expect(nudge({ ...base, mistakes: 1 })).toBe('A mistake from your games is waiting as a puzzle.')
-    expect(nudge({ ...base, streak: 4 })).toBe('Solve a puzzle today to keep your 4-day puzzle streak.')
-    expect(nudge({ ...base, streak: 4, solvedToday: true, trend: 2.14 })).toBe('Your accuracy is up 2.1 over your last 10 games.')
   })
 
   it('falls back to an invitation', () => {

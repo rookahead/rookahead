@@ -170,7 +170,7 @@ export default function App() {
               You’re offline. Saved games still work.
             </p>
           )}
-          {appRoute === 'home' && <HomePage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
+          {appRoute === 'home' && <HomePage active settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />}
           {appRoute === 'games' && (
             <GamesPage settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
           )}

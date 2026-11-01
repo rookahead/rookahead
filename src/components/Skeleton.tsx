@@ -16,44 +16,6 @@ export function SkelBoard({ className = '' }: { className?: string }) {
   return <span className={`skel skel-board ${className}`} aria-hidden />
 }
 
-/** Phones: Home's latest game, on its way. */
-export function LatestCardSkeleton() {
-  return (
-    <section className="home-card accent-card latest-card compact skel-group" aria-busy aria-label="Loading your latest game">
-      <div className="latest-body">
-        <div className="latest-board">
-          <SkelBoard />
-        </div>
-        <div className="latest-text">
-          <Skel w="60%" h="12px" />
-          <Skel w="85%" h="16px" />
-          <Skel w="70%" h="12px" />
-        </div>
-      </div>
-      <Skel w="100%" h="42px" className="skel-button" />
-    </section>
-  )
-}
-
-/** Learn from your mistakes (the compact card), while your mistakes are worked out from your reviews. */
-export function MistakesCardSkeleton() {
-  return (
-    <section className="home-card mistakes-card compact skel-group" aria-busy aria-label="Loading your mistakes">
-      <div className="mistakes-row">
-        <span className="mistakes-board">
-          <SkelBoard />
-        </span>
-        <div className="mistakes-text">
-          <Skel w="80%" h="16px" />
-          <Skel w="60%" h="12px" />
-          <Skel w="70%" h="22px" className="skel-pill" />
-        </div>
-      </div>
-      <Skel w="100%" h="42px" className="skel-button" />
-    </section>
-  )
-}
-
 /** Home's row of Legendary moves, on its way. */
 export function LegendaryRowSkeleton() {
   return (
@@ -83,10 +45,9 @@ export function LegendaryGridSkeleton({ cards = 6 }: { cards?: number }) {
       {Array.from({ length: cards }, (_, i) => (
         <li key={i}>
           <span className="legendary-card">
-            <Skel w="64%" h="13px" />
             <SkelBoard />
-            <Skel w="52%" h="13px" />
-            <Skel w="40%" h="12px" />
+            <Skel w="60%" h="13px" />
+            <Skel w="80%" h="11px" />
           </span>
         </li>
       ))}
@@ -107,9 +68,9 @@ export function DailyCardSkeleton({ compact = false }: { compact?: boolean }) {
             <Skel w="60%" h="16px" />
             <Skel w="40%" h="14px" />
             <Skel w="80%" h="12px" />
+            <Skel w="100%" h="36px" className="skel-button daily-go" />
           </div>
         </div>
-        <Skel w="100%" h="42px" className="skel-button" />
       </section>
     )
   return (

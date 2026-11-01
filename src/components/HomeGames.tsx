@@ -12,6 +12,8 @@ import { Skel, SkelBoard } from './Skeleton'
 
 /** Games on Home. */
 export const HOME_GAMES = 6
+/** Lines in a phone's list; All is a tap away. */
+const PHONE_GAMES = 5
 
 type Filter = 'all' | 'unreviewed' | 'loss'
 
@@ -37,6 +39,61 @@ interface Props {
   onOpen: (game: MyGame, review?: CachedReview) => void
   /** Your games couldn't be fetched just now (the ones from before still show). */
   error?: string
+}
+
+/** Phones: your latest games as plain lines, with the result, who, and your accuracy or the way to review. */
+export function GameLines({ games, reviews, onOpen, error }: Pick<Props, 'games' | 'reviews' | 'onOpen' | 'error'>) {
+  return (
+    <>
+      <header className="home-card-head">
+        <h2 id="my-games">My games</h2>
+        <button className="link-btn see-all" onClick={() => navigate('/games')}>
+          All {games.length} ›
+        </button>
+      </header>
+      {error && <p className="games-error">{error}</p>}
+      <ul className="game-lines">
+        {games.slice(0, PHONE_GAMES).map((g) => {
+          const opponent = g.color === 'white' ? g.black : g.white
+          const review = reviews[g.key]
+          const mine = review?.accuracy[g.color]
+          return (
+            <li key={`${g.source}:${g.key}`}>
+              <button className="game-line" onClick={() => onOpen(g, review)} aria-label={`${WORD[g.result]} against ${opponent.name}, ${g.time}. ${review ? 'Open the review' : 'Review it'}`}>
+                <i className={`home-game-result ${g.result}`}>{RESULT[g.result]}</i>
+                <span className="game-line-who">
+                  <strong>{opponent.name}</strong>
+                  {opponent.rating != null && <span> {opponent.rating}</span>}
+                </span>
+                <span className="game-line-time">{g.time}</span>
+                {review ? <span className="game-line-end">{mine != null ? mine.toFixed(1) : 'Open'}</span> : <span className="game-line-end review">Review ›</span>}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </>
+  )
+}
+
+/** Your games as plain lines on their way. */
+export function GameLinesSkeleton() {
+  return (
+    <div className="skel-group" aria-busy aria-label="Loading your games">
+      <header className="home-card-head">
+        <h2>My games</h2>
+      </header>
+      <ul className="game-lines">
+        {Array.from({ length: PHONE_GAMES }, (_, i) => (
+          <li key={i}>
+            <span className="game-line">
+              <Skel w={`${64 - (i % 3) * 10}%`} h="13px" />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 /** "6 games · 4 won, 1 lost, 1 drawn · 3 min: 3127 → 3165" */

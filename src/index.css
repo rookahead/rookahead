@@ -1687,8 +1687,6 @@ svg {
   height: 100%;
 }
 
-
-
 .board .cg-wrap coords {
   font-family: var(--font-ui);
   font-weight: 600;
@@ -3563,7 +3561,6 @@ button.explain-row {
     display: none;
   }
 
-
   .settings-layer {
     left: 16px;
     right: 16px;
@@ -4314,6 +4311,7 @@ button.explain-row {
 .form-phase.empty {
   color: var(--text-2);
   font-size: 18px;
+  white-space: nowrap;
 }
 
 .form-phase {
@@ -4450,7 +4448,6 @@ button.explain-row {
     padding: 16px 16px calc(var(--tabbar-h) + 24px);
     gap: 14px;
   }
-
 
   /* One column: the latest-game card first, then welcome, stats and games. */
   .home-main {
@@ -4706,145 +4703,80 @@ a.see-all {
   text-decoration: none;
 }
 
+/* Phones: today's plan is one quiet row, a tick and a word for each step. */
 .plan-card.compact {
-  gap: 12px;
-  padding: 12px 14px;
-}
-
-.plan-row {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 0 4px;
 }
 
-.plan-toggle {
+.plan-card.compact h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plan-ticks {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: 0;
   padding: 0;
+  list-style: none;
+}
+
+.plan-tick {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
   border: 0;
+  border-radius: 9px;
   background: none;
-  color: inherit;
+  color: var(--text-2);
   font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.plan-card.compact .plan-ring {
-  width: 40px;
-  height: 40px;
-}
-
-.plan-summary {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.plan-summary small {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.plan-summary strong {
-  overflow: hidden;
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
-.plan-chevron {
-  flex-shrink: 0;
+.plan-tick .plan-check {
   width: 16px;
   height: 16px;
-  margin-left: auto;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform 0.2s;
 }
 
-.plan-card.open .plan-chevron {
-  transform: rotate(180deg);
+.plan-tick.next {
+  color: var(--text);
+  font-weight: 600;
 }
 
-.plan-card.compact .plan-go {
-  display: none;
+.plan-tick.done {
+  color: var(--muted);
+}
+
+/* Four words don't fit beside the heading on the narrowest phones. */
+@media (max-width: 340px) {
+  .plan-card.compact h2 {
+    display: none;
+  }
+
+  .plan-ticks {
+    justify-content: space-between;
+  }
+
+  .plan-tick {
+    gap: 3px;
+    padding: 0 2px;
+  }
 }
 
 .skel-lines {
   display: flex;
   flex-direction: column;
-}
-
-.plan-next {
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 10px;
-  background: var(--brand);
-  color: var(--brand-ink);
-}
-
-.week-dots {
-  display: flex;
-  gap: 4px;
-  padding-bottom: 4px;
-}
-
-.week-dots i {
-  width: 8px;
-  height: 8px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--text) 10%, transparent);
-}
-
-.week-dots .solved {
-  background: var(--streak);
-}
-
-.week-dots .today {
-  background: none;
-  border: 1.5px solid var(--streak);
-}
-
-.week-dots .later {
-  background: none;
-  border: 1px solid var(--border-strong);
-}
-
-@media (max-width: 1000px) {
-  .plan-steps {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .plan-step {
-    flex-direction: row;
-    align-items: center;
-    padding: 12px;
-  }
-
-  .plan-text strong,
-  .plan-text small {
-    min-height: 0;
-  }
-
-  .plan-step:not(.next) .plan-go {
-    display: none;
-  }
-
-  .plan-go {
-    margin: 0 0 0 auto;
-    white-space: nowrap;
-  }
 }
 
 /* The bottom of Home: the site's pages, where to find us, and that it's open source. */
@@ -4907,16 +4839,6 @@ a.see-all {
   width: 16px;
   height: 16px;
   fill: currentColor;
-}
-
-.phone-home .home-footer {
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.phone-home .home-footer-logos {
-  margin-left: 0;
 }
 
 /* User card: who you are and the way into settings, at the sidebar's foot. */
@@ -7184,87 +7106,6 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* ═══════════════ My games: Home's form card, the games table, the Games page ═══════════════ */
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 15px;
-  text-align: left;
-  --tone: var(--text-2);
-}
-
-.stat-card.accuracy {
-  --tone: var(--brand);
-}
-
-.stat-card.streak {
-  --tone: var(--streak);
-}
-
-.stat-head {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 550;
-}
-
-.stat-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 36px;
-}
-
-.stat-value {
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.stat-card.streak .stat-value {
-  color: var(--tone);
-}
-
-.stat-empty {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: var(--muted);
-}
-
-.stat-spark {
-  flex: 0 1 60px;
-  min-width: 0;
-  height: 28px;
-}
-
-
-.stat-spark polyline {
-  fill: none;
-  stroke: var(--tone);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.stat-spark circle {
-  fill: var(--tone);
-}
-
-.stat-sub {
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
 /* ═══════════════ Placeholders while content is on its way (Skeleton.tsx) ═══════════════
    Shaped like what's coming, in a faint tint of the text colour (so they suit every theme), with a soft
    highlight sweeping across each. The highlight is its own layer moved by transform, so it runs on the
@@ -7522,7 +7363,7 @@ button.user-avatar.guest:hover {
   }
 
   .boot-phone-welcome {
-    --h: 86.5px;
+    --h: 59px;
     justify-content: flex-end;
     gap: 14px;
   }
@@ -7533,38 +7374,35 @@ button.user-avatar.guest:hover {
 
   /* The welcome card's words wrap more on a narrow phone. */
   .boot-first-welcome {
-    --h: 37px;
+    --h: 32px;
   }
 
   .boot-hero {
-    --h: 300.9px;
+    --h: 254px;
   }
 
-  @media (max-width: 590px) {
+  .boot-daily-compact {
+    --h: 126px;
+  }
+
+  @media (max-width: 385px) {
     .boot-hero {
-      --h: 358.9px;
+      --h: 273px;
     }
   }
 
-  @media (max-width: 420px) {
-    .boot-hero {
-      --h: 418.4px;
-    }
-  }
-
-  @media (max-width: 400px) {
+  @media (max-width: 340px) {
     .boot-first-welcome {
-      --h: 68.1px;
+      --h: 59px;
     }
-  }
 
-  /* Your Legendary moves in a row, or the card that says what they are. */
-  .boot-legendary {
-    --h: 119px;
-  }
+    .boot-hero {
+      --h: 302px;
+    }
 
-  :root[data-boot-legendary] .boot-legendary {
-    --h: 199px;
+    .boot-daily-compact {
+      --h: 145px;
+    }
   }
 }
 
@@ -7604,11 +7442,6 @@ button.user-avatar.guest:hover {
   pointer-events: none;
 }
 
-.skel-group .latest-text {
-  flex: 1;
-  gap: 8px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .skel::after {
     animation: none;
@@ -7619,20 +7452,8 @@ button.user-avatar.guest:hover {
 /* When what was loading arrives (useSettled), each placeholder morphs into the card that takes its place,
    sharing its name, and the cards around slide to where they now sit, while the contents crossfade.
    The names only exist while that runs (:root.settling), so a change of page moves the page as one. */
-:root.settling .latest-card {
-  view-transition-name: latest-card;
-}
-
 :root.settling :is(.legendary-strip, .legendary-teaser) {
   view-transition-name: legendary-strip;
-}
-
-:root.settling .mistakes-card {
-  view-transition-name: mistakes-card;
-}
-
-:root.settling .form-card {
-  view-transition-name: form-card;
 }
 
 :root.settling .daily-card {
@@ -7655,7 +7476,7 @@ button.user-avatar.guest:hover {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.latest-card, .legendary-strip, .legendary-teaser, .mistakes-card, .form-card, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
+:root.settling :is(.legendary-strip, .legendary-teaser, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
   view-transition-class: card;
 }
 
@@ -7674,23 +7495,6 @@ button.user-avatar.guest:hover {
 ::view-transition-group(.card) {
   overflow: clip;
   border-radius: 18px;
-}
-
-/* A number on its way: a placeholder where it goes, then the number rises in. */
-.stat-skeleton {
-  width: 58%;
-  height: 30px;
-  border-radius: 8px;
-}
-
-.stat-sub .up {
-  color: var(--win);
-  font-weight: 600;
-}
-
-.stat-sub .down {
-  color: var(--danger);
-  font-weight: 600;
 }
 
 .see-all {
@@ -7991,39 +7795,8 @@ button.home-game:hover .home-game-go.review {
   border-radius: 2px;
 }
 
-/* The coloured card: your latest game. */
-.latest-card {
-  gap: 14px;
-}
-
-.latest-card h2 {
-  font-size: 24px;
-}
-
-.latest-body {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.latest-board {
-  flex: 0 0 120px;
-  border-radius: 9px;
-  overflow: hidden;
-}
-
-.latest-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  font-size: 14px;
-}
-
 /* One line each, cut short rather than wrapped (a long opening name), so the board sets the card's height
    and its placeholder matches. */
-.latest-text > *,
-.latest-card > div > p,
 .daily-foot .muted {
   overflow: hidden;
   white-space: nowrap;
@@ -8034,31 +7807,9 @@ button.home-game:hover .home-game-go.review {
   min-width: 0;
 }
 
-.latest-result {
-  font-weight: 700;
-}
-
-.latest-result.win {
-  color: var(--win);
-}
-
-.latest-result.loss {
-  color: var(--danger);
-}
-
-.muted-on-brand {
-  opacity: 0.72;
-  font-weight: 400;
-  font-size: 13px;
-}
-
 .latest-accuracy {
   font-family: var(--font-mono);
   font-size: 13px;
-}
-
-.latest-card .accent-btn {
-  margin-top: 0;
 }
 
 .latest-more {
@@ -8241,96 +7992,6 @@ button.home-game:hover .home-game-go.review {
   color: var(--danger);
   font-size: 13.5px;
   font-weight: 500;
-}
-
-/* Learn from your mistakes. */
-.mistakes-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 22px;
-}
-
-.mistakes-board {
-  flex: 0 0 168px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.mistakes-text {
-  flex: 1 1 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mistakes-text p {
-  margin: 0;
-  color: var(--text-2);
-}
-
-.mistakes-go {
-  align-self: flex-start;
-  margin-top: 4px;
-}
-
-/* Phones: the board small beside the counts, the button full width below. */
-.mistakes-card.compact {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  padding: 14px;
-}
-
-.mistakes-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.mistakes-card.compact .mistakes-board {
-  flex: 0 0 72px;
-  border-radius: 7px;
-}
-
-.mistakes-card.compact .mistakes-text {
-  flex: 1;
-  min-width: 0;
-  gap: 4px;
-}
-
-.mistakes-card.compact h2 {
-  font-size: 16px;
-}
-
-.mistakes-card.compact p {
-  font-size: 13px;
-}
-
-.mistakes-card.compact .chip-row {
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.mistakes-card.compact .chip {
-  padding: 2px 8px;
-  font-size: 12px;
-}
-
-.mistakes-card.compact .mistakes-go {
-  align-self: stretch;
-  height: 42px;
-  margin: 0;
-  border-radius: 11px;
-}
-
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .chip {
@@ -8733,7 +8394,6 @@ button.group-row:hover {
   font-variant-numeric: tabular-nums;
 }
 
-
 /* ═══════════════ Brand type: Syne headings and wordmark, DM Sans text, DM Mono numbers ═══════════════ */
 :root {
   /* DM Mono comes in 400 and 500 only: never fake a bolder weight. */
@@ -8741,9 +8401,7 @@ button.group-row:hover {
 }
 
 h1,
-h2,
-.stat-value,
-.stat-empty {
+h2 {
   font-family: var(--font-display);
   font-variant-numeric: lining-nums;
 }
@@ -8874,7 +8532,6 @@ h2 {
   stroke-width: 1.8;
   stroke-linejoin: round;
 }
-
 
 /* ═══════════════ Settings page ═══════════════ */
 .settings-page {
@@ -10291,7 +9948,8 @@ a.you-row:active {
   box-sizing: border-box;
   max-width: 640px;
   margin: 0 auto;
-  padding: 14px 16px calc(var(--tabbar-h) + 24px);
+  /* Room for the tabs and Play. */
+  padding: 14px 16px calc(var(--tabbar-h) + 76px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -10321,16 +9979,15 @@ a.you-row:active {
 }
 
 .phone-welcome p {
-  margin: 6px 0 0;
+  margin: 2px 0 0;
   color: var(--text-2);
-  font-size: 15px;
-  /* Two lines kept for it, as long or short as it is, so the cards below don't move when it comes. */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-size: 14px;
+  /* A line kept for it, so the cards below don't move when it comes. */
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   line-height: 1.45;
-  min-height: calc(2em * 1.45);
+  min-height: 1.45em;
 }
 
 .phone-welcome p.skel-lines {
@@ -10342,9 +9999,60 @@ a.you-row:active {
   text-decoration: none;
 }
 
-/* Home's Legendary moves on a phone: small boards in a row you swipe through, running off the card's edge. */
+/* Home's daily puzzle on a phone: a small board beside what it is, the button below, like the latest game. */
+.daily-card.compact {
+  gap: 12px;
+  padding: 12px;
+}
+
+.daily-row {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.daily-card.compact .daily-board {
+  flex: 0 0 124px;
+}
+
+.daily-card.compact .daily-board .mini-board,
+.daily-card.compact .daily-board .skel-board {
+  border-radius: 7px;
+}
+
+.daily-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.daily-text h2 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+
+.daily-text h2 .muted {
+  margin-left: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.daily-text > .muted {
+  font-size: 13px;
+}
+
+.daily-go {
+  height: 36px;
+  margin-top: auto;
+  border-radius: 10px;
+}
+
+/* Home's Legendary moves on desktop: a slim strip of small boards. */
 .legendary-strip {
-  padding: 16px 0 10px;
+  padding: 12px 0 6px;
 }
 
 .legendary-strip .home-card-head {
@@ -10358,28 +10066,18 @@ a.you-row:active {
   font-size: 17px;
 }
 
-/* Three boards fit inside the card's margins exactly; more are a swipe away. The room above and below
-   keeps a lifted board's ring from being cut off by the scrolling row. */
+/* The row's room keeps the ring from being cut off. */
 .legendary-row {
   list-style: none;
   margin: 0;
-  padding: 4px 16px;
+  padding: 7px 16px;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 2 * 12px) / 3);
+  grid-auto-columns: calc((100% - 7 * 12px) / 8);
   gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 16px;
-  scrollbar-width: none;
-}
-
-.legendary-row::-webkit-scrollbar {
-  display: none;
 }
 
 .legendary-row > li {
-  scroll-snap-align: start;
   min-width: 0;
 }
 
@@ -10388,8 +10086,12 @@ a.you-row:active {
 }
 
 .legendary-row .legendary-meta {
-  margin-top: 4px;
-  font-size: 13px;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.legendary-row .legendary-vs {
+  display: none;
 }
 
 .legendary-vs {
@@ -10424,134 +10126,364 @@ a.you-row:active {
   flex: none;
 }
 
-/* Home's form card on a phone: accuracy and today, two halves of one card. */
-.form-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 0;
-  overflow: hidden;
+@media (min-width: 1001px) {
+  .boot-legendary {
+    --h: 80px;
+  }
+
+  :root[data-boot-legendary] .boot-legendary {
+    --h: 170px;
+  }
 }
 
-.form-card .stat-card {
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-  transition: background 0.12s;
+/* Home on a phone: every part as short as it can be, so the page has an end. Game review is the big way in. */
+.phone-home {
+  gap: 10px;
 }
 
-.form-card .stat-card:hover {
-  background: var(--card-hover);
-}
-
-.form-card .stat-card + .stat-card {
-  border-left: 1px solid var(--border);
-}
-
-.form-card .stat-empty {
-  font-size: 17px;
-}
-
-.legendary-strip .see-all {
-  text-decoration: none;
-}
-
-/* Home's daily puzzle on a phone: a small board beside what it is, the button below, like the latest game. */
-.daily-card.compact {
+.phone-home .quick-card {
   gap: 12px;
   padding: 14px;
 }
 
-.daily-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.daily-card.compact .daily-board {
-  flex: 0 0 72px;
-}
-
-.daily-card.compact .daily-board .mini-board,
-.daily-card.compact .daily-board .skel-board {
-  border-radius: 7px;
-}
-
-.daily-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 14px;
-}
-
-.daily-text h2 {
-  margin: 0 0 2px;
+.phone-home .quick-card strong {
   font-size: 16px;
 }
 
-.daily-text h2 .muted {
-  margin-left: 4px;
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
-.daily-text > .muted {
-  font-size: 13px;
-}
-
-.daily-go {
-  height: 42px;
-  border-radius: 11px;
-}
-
-/* Home's latest game on a phone: a compact card, the board beside the result. */
-.phone-home .latest-card {
-  padding: 16px;
-  gap: 12px;
-}
-
-.phone-home .latest-card h2 {
-  font-size: 19px;
-}
-
-.phone-home .latest-card p {
-  font-size: 13px;
-}
-
-.phone-home .latest-board {
-  flex-basis: 104px;
-}
-
-.phone-home .latest-card .accent-btn {
-  height: 48px;
-}
-
-/* Compact: the board small, three lines beside it, a shorter button. */
-.phone-home .latest-card.compact {
-  padding: 14px;
-  gap: 12px;
-}
-
-.phone-home .latest-card.compact .latest-board {
-  flex-basis: 72px;
-  border-radius: 7px;
-}
-
-.phone-home .latest-card.compact .latest-text {
-  gap: 2px;
-}
-
-.phone-home .latest-card.compact .latest-text strong {
+.phone-home .quick-card small {
   overflow: hidden;
-  font-size: 15px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.phone-home .latest-card.compact .accent-btn {
+/* Game review: the big card, in your colour. */
+.phone-home .game-review {
+  flex-direction: row;
+  gap: 14px;
+  padding: 18px 16px;
+  border-radius: 20px;
+}
+
+.phone-home .game-review:hover {
+  background: var(--brand-card);
+}
+
+.phone-home .game-review .icon-tile.big {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.phone-home .game-review strong {
+  color: var(--brand-card-text);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.phone-home .game-review small {
+  color: color-mix(in srgb, var(--brand-card-text) 78%, transparent);
+  font-size: 13.5px;
+}
+
+.phone-home .game-review .quick-go {
+  color: var(--brand-card-text);
+  font-size: 22px;
+}
+
+.phone-swipe .quick-card {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.phone-swipe .quick-card .icon-tile.big {
+  width: 34px;
+  height: 34px;
+}
+
+.phone-swipe .quick-card strong {
+  font-size: 14px;
+}
+
+/* Sign up as one line of its own. */
+.phone-home .save-nudge {
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 8px 6px 8px 12px;
+}
+
+.phone-home .save-nudge-icon,
+.phone-home .save-nudge-text span {
+  display: none;
+}
+
+.phone-home .save-nudge-text {
+  flex: 1;
+}
+
+.phone-home .save-nudge-text strong {
+  font-size: 13px;
+}
+
+.phone-home .save-nudge-cta {
+  order: 0;
+  width: auto;
+  height: 34px;
+  padding: 0 12px;
+}
+
+.phone-home .daily-card.compact {
+  padding: 10px;
+}
+
+.phone-home .daily-card.compact .daily-board {
+  flex-basis: 104px;
+}
+
+/* Rows you swipe. Each is wider than the screen, so the next card runs off the edge and fades: that's the hint.
+   The room on the right lets the last card clear the fade. */
+.phone-swipe,
+.phone-home .form-strip {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 0 32px 0 16px;
+  overflow-x: auto;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.phone-swipe::-webkit-scrollbar,
+.phone-home .form-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-swipe > *,
+.phone-home .form-part {
+  flex: none;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+}
+
+.phone-swipe > .daily-card.compact {
+  width: 282px;
+}
+
+.phone-swipe .daily-text h2 .muted {
+  display: none;
+}
+
+.phone-swipe .daily-text > .muted {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.phone-swipe > .quick-card {
+  width: 168px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.phone-swipe .quick-lines {
+  width: 100%;
+}
+
+.phone-swipe .quick-go {
+  display: none;
+}
+
+/* Your numbers: each its own card. */
+.phone-home .form-strip {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.phone-home .form-part,
+.phone-home .form-part + .form-part {
+  width: 144px;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.phone-home .form-part:last-child {
+  width: 172px;
+}
+
+.phone-home .form-part.form-streak {
+  width: 196px;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.phone-home .form-week {
+  gap: 2px;
+}
+
+.phone-home .form-week i {
+  width: 8px;
+  height: 8px;
+}
+
+.phone-home .form-week .today i {
+  border-width: 1.5px;
+}
+
+.phone-home .form-week li {
+  gap: 4px;
+  font-size: 9px;
+}
+
+.phone-home .form-row {
+  height: 26px;
+}
+
+.phone-home .form-value {
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.phone-home .form-value.empty,
+.phone-home .form-phase {
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.phone-home .form-bars {
+  display: none;
+}
+
+/* The Review tab on a phone: one row of plain filters, and a day's heading on one line. */
+.games-toolbar .filter-chip {
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .games-page:not(.legendary-page) .games-toolbar .filter-chips:first-child {
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .games-page:not(.legendary-page) .games-toolbar .filter-chip {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 8px;
+  }
+
+  .games-page:not(.legendary-page) .games-toolbar .filter-chip:not(.all)::before {
+    content: none;
+  }
+
+  .games-page .games-card,
+  .games-page .home-day {
+    min-width: 0;
+  }
+
+  .games-page .home-day-head b {
+    flex: none;
+  }
+
+  .games-page .home-day-head span {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 340px) {
+  .games-page:not(.legendary-page) .games-toolbar .filter-chip {
+    padding: 0 5px;
+    font-size: 12px;
+  }
+}
+
+/* Your games as plain lines. */
+.game-lines {
+  margin: 0;
+  padding: 0 12px 4px;
+  list-style: none;
+}
+
+.game-lines li + li {
+  border-top: 1px solid var(--border);
+}
+
+.game-line {
+  width: 100%;
   height: 42px;
-  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.game-line .home-game-result {
+  position: static;
+  flex: none;
+}
+
+.game-line-who {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.game-line-who strong {
+  font-weight: 600;
+}
+
+.game-line-who span,
+.game-line-time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.game-line-end {
+  flex: none;
+  width: 60px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: right;
+}
+
+.game-line-end.review {
+  color: var(--brand);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.phone-home .games-card {
+  padding-top: 10px;
+}
+
+.phone-home .games-card .home-card-head {
+  padding: 0 12px 4px;
+}
+
+.phone-home .games-card h2 {
   font-size: 15px;
 }
 
