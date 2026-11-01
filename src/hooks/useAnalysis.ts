@@ -252,7 +252,7 @@ export function depthOfReview(evals: Record<string, PositionEval>): number | nul
 }
 
 /** A short-lived engine for a review: one thread, the same search as the main engine's. */
-export const reviewEngine = (strength: EngineStrength) => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB, singleThreaded: true })
+export const reviewEngine = (strength: EngineStrength, { singleThreaded = true } = {}) => new StockfishEngine(strength, { threads: 1, hashMb: REVIEW_HASH_MB, singleThreaded })
 
 interface SearchOptions {
   depth: number

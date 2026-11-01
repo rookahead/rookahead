@@ -8,6 +8,7 @@ import { useMediaQuery } from './hooks/useMediaQuery'
 import { useOnline } from './hooks/useOnline'
 import { transitionsDone } from './hooks/useSettled'
 import { openAccountPage, startAccounts, useAccount } from './lib/account'
+import { holdBatch } from './lib/batchReview'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
@@ -83,6 +84,9 @@ export default function App() {
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
   // /board (Analyze) is the same page, opened on a clean board.
   const onBoard = route === 'analysis' || route === 'board'
+  // Reviewing many games waits while a page needs the device for its own engine.
+  const needsEngine = onBoard || route === 'play' || /^\/puzzles\/mistakes/.test(pathname)
+  useEffect(() => holdBatch('page', needsEngine), [needsEngine])
   const [analysisMounted, setAnalysisMounted] = useState(onBoard)
   const [analysisKey, setAnalysisKey] = useState(0)
   if (onBoard && !analysisMounted) setAnalysisMounted(true)

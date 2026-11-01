@@ -9,6 +9,7 @@ import { OpenGameDialog } from '../components/LoadGameDialog'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
+import { BatchCard, ReviewGamesDialog } from '../components/ReviewGamesDialog'
 import { LegendaryRowSkeleton, Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
 import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
@@ -17,6 +18,7 @@ import { transitionsDone, useSettled } from '../hooks/useSettled'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
+import { MAX_BATCH, unreviewed, useBatchActive } from '../lib/batchReview'
 import type { Color } from '../lib/evaluation'
 import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
 import { greeting, nudge } from '../lib/home'
@@ -124,6 +126,11 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
   }
   const [loadOpen, setLoadOpen] = useState(false)
   const loadGame = () => setLoadOpen(true)
+  const [batchOpen, setBatchOpen] = useState(false)
+  const batchActive = useBatchActive()
+  // Desktop only: a long run is no use on a phone, so its card stays as it is there.
+  const toReview = useMemo(() => (phone ? [] : unreviewed(games, reviews)), [phone, games, reviews])
+  const several = toReview.length > 1
 
   const hasUsers = !!(users.chesscom || users.lichess)
   const firstVisit = games.length === 0 && !loading && !waiting
@@ -202,13 +209,24 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
 
   const latestReview = latest && reviews[latest.key]
   const openLatest = () => latest && void open(latest, reviews[latest.key])
+  // With one game left to review, the card goes to that one, whether or not it's your latest.
+  const next = toReview.length === 1 ? toReview[0] : latest
+  const nextReview = next && reviews[next.key]
+  const openNext = () => next && void open(next, reviews[next.key])
   const hasReviews = Object.keys(reviews).length > 0
-  const loadDialog = <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
+  const loadDialog = (
+    <>
+      <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
+      {batchOpen && <ReviewGamesDialog games={games} reviews={reviews} settings={settings} onClose={() => setBatchOpen(false)} />}
+    </>
+  )
 
   const opponentOf = (g: MyGame) => (g.color === 'white' ? g.black : g.white).name
   // Phones: the page's one big card.
   const reviewStyle = phone ? 'accent-card game-review' : ''
-  const reviewAction = waiting ? (
+  const reviewAction = batchActive ? (
+    <BatchCard />
+  ) : waiting ? (
     <div className={`home-card quick-card skel-group ${reviewStyle}`} aria-busy aria-label="Loading your latest game">
       <IconTile tone="review" size="big" />
       <span className="quick-lines">
@@ -216,16 +234,27 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         <Skel w="200px" h="12px" />
       </span>
     </div>
-  ) : latest ? (
-    <button className={`home-card quick-card ${reviewStyle}`} onClick={openLatest}>
+  ) : several ? (
+    <button className={`home-card quick-card ${reviewStyle}`} onClick={() => setBatchOpen(true)}>
+      <IconTile tone="review" size="big" />
+      <span className="quick-lines">
+        <strong>{phone ? 'Game review' : 'Review latest games'}</strong>
+        <small>{toReview.length > MAX_BATCH ? `${MAX_BATCH}+` : toReview.length} games not reviewed</small>
+      </span>
+      <span className="quick-go" aria-hidden>
+        ›
+      </span>
+    </button>
+  ) : next ? (
+    <button className={`home-card quick-card ${reviewStyle}`} onClick={openNext}>
       <IconTile tone="review" size="big" />
       <span className="quick-lines">
         <strong>{phone ? 'Game review' : 'Review latest game'}</strong>
         <small>
-          vs {opponentOf(latest)} ·{' '}
-          {latestReview
-            ? `${latestReview.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy`
-            : `${latest.result === 'win' ? 'won' : latest.result === 'loss' ? 'lost' : 'drawn'}, ${latest.moves} ${latest.moves === 1 ? 'move' : 'moves'}`}
+          vs {opponentOf(next)} ·{' '}
+          {nextReview
+            ? `${nextReview.accuracy[next.color]?.toFixed(1) ?? '–'} accuracy`
+            : `${next.result === 'win' ? 'won' : next.result === 'loss' ? 'lost' : 'drawn'}, ${next.moves} ${next.moves === 1 ? 'move' : 'moves'}`}
         </small>
       </span>
       <span className="quick-go" aria-hidden>

@@ -4243,6 +4243,93 @@ button.explain-row {
   gap: 2px;
 }
 
+/* Reviewing many games: Home's review card with a bar along its foot. */
+.batch-card {
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+
+.batch-card:hover {
+  background: var(--card);
+}
+
+.batch-action {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.batch-bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  border-radius: 0;
+}
+
+.batch-bar .progress-fill {
+  border-radius: 0;
+  background: var(--brand);
+}
+
+.batch-card strong {
+  white-space: nowrap;
+}
+
+/* The dialog that starts it. */
+.batch-count {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 16px 0 0;
+}
+
+.batch-count strong {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.batch-count span {
+  font-size: 13.5px;
+}
+
+.batch-time {
+  margin: 12px 0 0;
+  color: var(--text);
+}
+
+/* The caution: it has to be read before starting. */
+.batch-note {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.batch-note strong {
+  font-weight: 600;
+}
+
+.batch-note svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Desktop Home's two ways in under the greeting, side by side; each keeps to one line of detail. */
 .home-actions {
   display: grid;

@@ -42,6 +42,7 @@ import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { finishedReview } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
+import { holdBatch } from '../lib/batchReview'
 import { useImmersive } from '../lib/immersive'
 import { sendVerdictReport } from '../lib/reports'
 import { navigate } from '../lib/router'
@@ -168,6 +169,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     cloud: settings.cloudEvals,
   })
   const reviewing = review.status === 'running'
+  // Analysis stays mounted, so this review can still be running on another page: a batch waits for it.
+  useEffect(() => {
+    holdBatch('review', reviewing)
+    return () => holdBatch('review', false)
+  }, [reviewing])
 
   useEffect(() => {
     if (restored && Object.keys(restored.evals).length) hydrateReview(restored.evals)

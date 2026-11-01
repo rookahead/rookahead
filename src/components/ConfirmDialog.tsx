@@ -10,12 +10,14 @@ interface Props {
   cancel?: string
   /** The confirming button in the danger colour (for something that can't be undone). */
   danger?: boolean
+  /** Nothing to confirm yet. */
+  disabled?: boolean
   onConfirm: () => void
   onClose: () => void
 }
 
 /** Asks before doing something final. Confirming closes the dialog first, then acts once it has faded. */
-export function ConfirmDialog({ title, children, confirm, cancel = 'Cancel', danger, onConfirm, onClose }: Props) {
+export function ConfirmDialog({ title, children, confirm, cancel = 'Cancel', danger, disabled, onConfirm, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const confirmed = useRef(false)
 
@@ -47,6 +49,7 @@ export function ConfirmDialog({ title, children, confirm, cancel = 'Cancel', dan
           </button>
           <button
             className={`btn big ${danger ? 'danger-btn' : 'primary'}`}
+            disabled={disabled}
             onClick={() => {
               confirmed.current = true
               dialog.current?.close()
