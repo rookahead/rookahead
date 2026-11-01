@@ -30,6 +30,22 @@ const SIDEBAR_KEY = 'rookahead.sidebar'
 /** How long the account page takes to slide in, and out (the .auth-layer animations in index.css). */
 const AUTH_ENTER_MS = 600
 const AUTH_LEAVE_MS = 420
+const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+
+/** The phone's status bar follows what's under it: the page, or a tab's top bar once that has filled in (index.css). */
+function paintStatusBar() {
+  const root = document.documentElement
+  const css = getComputedStyle(root)
+  const bg = css.getPropertyValue('--bg').trim()
+  const brand = css.getPropertyValue('--brand').trim()
+  const surface = css.getPropertyValue('--surface').trim()
+  const tabHeader = [...document.querySelectorAll<HTMLElement>('.page-header:not(.has-back)')].some((h) => h.offsetParent)
+  const filled = root.hasAttribute('data-scrolled') && tabHeader && brand.startsWith('#') && surface.startsWith('#')
+  // The same mix as the bar's own background.
+  const bar = filled ? channels(surface).map((c, i) => Math.round(c * 0.88 + channels(brand)[i] * 0.12).toString(16).padStart(2, '0')) : null
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar ? `#${bar.join('')}` : bg)
+}
+
 /** How long after opening a phone starts drawing the Review tab in the background. */
 const GAMES_EARLY_MS = 1500
 /** A little longer than the pages' slide (index.css, .page-leaving). */
@@ -86,6 +102,25 @@ export default function App() {
     const t = setTimeout(() => void transitionsDone().then(() => setGamesMounted(true)), GAMES_EARLY_MS)
     return () => clearTimeout(t)
   }, [phone, gamesMounted])
+
+  // Phones: a tab's top bar fills in once the page has scrolled (index.css, :root[data-scrolled]).
+  useEffect(() => {
+    if (!phone) return
+    const root = document.documentElement
+    const mark = () => {
+      const scrolled = window.scrollY > 0
+      if (scrolled === root.hasAttribute('data-scrolled')) return
+      root.toggleAttribute('data-scrolled', scrolled)
+      paintStatusBar()
+    }
+    mark()
+    window.addEventListener('scroll', mark, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', mark)
+      root.removeAttribute('data-scrolled')
+      paintStatusBar()
+    }
+  }, [phone])
 
   // The account page has the window to itself: no sidebar or tab bar.
   const auth = route === 'auth'
@@ -153,7 +188,7 @@ export default function App() {
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
     // The browser's (and an installed app's) bars take the page's own background, and the tab's icon your colour.
     const css = getComputedStyle(root)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', css.getPropertyValue('--bg').trim())
+    paintStatusBar()
     document.querySelector('link[rel="icon"]')?.setAttribute('href', faviconUrl(css.getPropertyValue('--brand').trim(), css.getPropertyValue('--brand-ink').trim()))
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 

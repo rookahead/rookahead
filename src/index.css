@@ -3559,6 +3559,17 @@ button.explain-row {
     border-bottom: 1px solid var(--border);
   }
 
+  /* A tab's page: the logo sits on the page itself until you scroll, then the bar fills in behind it, in the tab
+     bar's colour. It stays at the top either way. */
+  .page-header:not(.has-back) {
+    border-bottom: 0;
+    background: none;
+  }
+
+  :root[data-scrolled] .page-header:not(.has-back) {
+    background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  }
+
   .page-header-home {
     display: flex;
   }
