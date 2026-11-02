@@ -35,6 +35,9 @@ const JUMP = 10
 /** The move played falls this far short of the engine's (win %): look deeper before calling it an error. */
 const SHORT = 5
 
+/** The move played falls this far short (win %): look deeper, it may be a Slip that this depth can't show (26…Qg3). */
+const LOOK = 3
+
 const turnOf = (fen: string): Color => (fen.split(' ')[1] === 'b' ? 'black' : 'white')
 const moverWin = (score: Score, color: Color) => (color === 'white' ? winPercent(score) : 100 - winPercent(score))
 
@@ -110,7 +113,7 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
     const gap = moverWin(own.score, color) - moverWin(played, color)
     const views = [ownView(own, node.uci)]
     // A cloud eval (cloudEval.ts) is already far deeper than our deeper look would be: it stands as it is.
-    if (!own.cloud && (Math.abs(gap) >= JUMP || (own.bestMove !== node.uci && gap >= SHORT))) {
+    if (!own.cloud && (Math.abs(gap) >= JUMP || (own.bestMove !== node.uci && gap >= LOOK))) {
       const lines = deep[parent.fen]
       if (lines?.length) views.push(deepView(lines, node.uci, color))
       else need.push(parent.fen)

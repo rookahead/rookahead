@@ -201,6 +201,13 @@ describe('a game that ends in checkmate', () => {
     expect(cls('Rh6+', 64)).toBe('best') // carries out the mate Rd6 started
   })
 
+  it('looks again at a move close to a Slip: 26…Qg3, where only a deeper search shows what 26…Bxg2+ is worth', () => {
+    const { line, evals, deep } = recorded(rilt)
+    expect(backUp(line, evals, {}).need).toContain(line[51].fen)
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    expect(report.moves[at(line, 'Qg3', 52).id].cls).toBe('inaccuracy')
+  })
+
   it('makes 11…Nxb4 Clutch: the only move that keeps the game level', () => {
     const { line, evals, deep } = recorded(rilt)
     const report = classifyGame(line, backUp(line, evals, deep).evals)

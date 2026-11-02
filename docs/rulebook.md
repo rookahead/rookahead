@@ -179,5 +179,8 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | Oversight: back to where you were, within | 5% |
 | Missed win | from 80%+ to 60% or less |
 
+A move that falls 3% or more short of the engine's is searched deeper before its verdict is given: at
+review depth a stronger move can look closer than it is (26…Qg3, Solid until 26…Bxg2+ is searched deeper).
+
 When a rule changes, saved reviews are graded again with it (RULES_VERSION in classify.ts). Share links
 keep the verdicts they were made with.
