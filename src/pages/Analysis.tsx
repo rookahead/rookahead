@@ -135,12 +135,17 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
   const [loadOpen, setLoadOpen] = useState(false)
-  const [optionsOpen, setOptionsOpen] = useState(false)
+  // The engine strip's gear opens Stockfish's settings; the board's menu, the rest.
+  const [optionsOpen, setOptionsOpen] = useState<'engine' | 'view' | null>(null)
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
   // Analyze's clean board opens on the engine; Game review on its Summary tab, where a review starts and
   // its report shows (Load game is there when it's empty). A position loaded on another page opens on the engine too.
-  const [tab, setTab] = useState<Tab>(() => (restored?.engine ? 'analysis' : (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'summary' : 'analysis'))
+  const [chosenTab, setTab] = useState<Tab>(() => (restored?.engine ? 'analysis' : (restored && (Object.keys(restored.evals).length || restored.review)) || !blank ? 'summary' : 'analysis'))
+  // A phone's Analyze tab is a plain board with the engine: no Summary or Review (a game loaded there opens as a review).
+  const plainBoard = phone && blank
+  const tab: Tab = plainBoard ? 'analysis' : chosenTab
+  const lines = plainBoard ? settings.boardLines : settings.lines
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
   const [sharedClasses, setSharedClasses] = useState<Record<string, MoveClass> | null>(() => restored?.classes ?? null)
@@ -191,8 +196,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
 
   const inVariation = !isMainline(tree, node.id)
-  // The Analysis board grades the moves played on it as they're played, until the game is reviewed.
-  const gradingBoard = blank && review.status === 'idle'
+  // The Analysis board grades the moves played on it as they're played, until the game is reviewed. Not a phone's
+  // plain Analyze board: grading each move held up the engine's lines there (one engine, and a phone's is slow).
+  const gradingBoard = blank && review.status === 'idle' && !plainBoard
   // Moves tried in a side line after the review get verdicts too, from the same kind of search.
   const sideLine = useMemo(() => {
     if (!inVariation && !gradingBoard) return []
@@ -307,7 +313,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     ready,
     fen: node.fen,
     enabled: engineOn,
-    multiPv: settings.lines,
+    multiPv: lines,
     depth: settings.liveDepth,
     // Dialogs pause the live engine: it frees the CPU for their animations and they don't need it.
     paused: reviewing || side.pending || explainSearch.pending || takeSearch.pending || loadOpen || shareOpen || !active,
@@ -364,14 +370,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (!settings.showArrows || !engineOn || !shown || terminal) return []
     const seen = new Set<string>()
     const out: DrawShape[] = []
-    shown.lines.slice(0, Math.min(settings.lines, 3)).forEach((l, i) => {
+    shown.lines.slice(0, Math.min(lines, 3)).forEach((l, i) => {
       const uci = l.pv[0]
       if (!uci || seen.has(uci.slice(0, 4))) return
       seen.add(uci.slice(0, 4))
       out.push({ orig: uci.slice(0, 2) as Key, dest: uci.slice(2, 4) as Key, brush: i === 0 ? 'best' : 'alt' })
     })
     return out
-  }, [reviewArrows, explaining, explainPlay, explanation, explainRow, currentReview, settings.showArrows, settings.lines, engineOn, shown, terminal])
+  }, [reviewArrows, explaining, explainPlay, explanation, explainRow, currentReview, settings.showArrows, lines, engineOn, shown, terminal])
 
   // Persist the session so a refresh doesn't lose the game. Writing the PGN replays the game in chess.js:
   // only when the moves change, not on every step through them.
@@ -956,11 +962,11 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       onToggle={() => setEngineOn((on) => !on)}
       result={engineOn ? shown : null}
       searching={live.searching}
-      maxLines={settings.lines}
+      maxLines={lines}
       terminal={terminal}
       reviewing={reviewing}
       onPlayLine={playLine}
-      onOpenSettings={() => setOptionsOpen(true)}
+      onOpenSettings={() => setOptionsOpen('engine')}
       onPreview={canHover ? setPreview : undefined}
     />
   )
@@ -970,7 +976,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   return (
     <div
       className={`analysis-page${pinned ? ' pinned' : ''}${pinned && explaining ? ' explaining' : ''}${reportPage ? ' report' : ''}${engineOnTop ? ' engine-top' : ''}`}
-      style={engineOnTop ? ({ '--engine-rows': settings.lines } as React.CSSProperties) : undefined}
+      style={engineOnTop ? ({ '--engine-rows': lines } as React.CSSProperties) : undefined}
     >
       <PageHeader
         // Desktop has the title and actions in the panel's own header, so the board gets the height.
@@ -988,7 +994,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             <span className="page-header-label">Share</span>
           </button>
         )}
-        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
+        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen('view')} />}
       </PageHeader>
 
       <main
@@ -1053,10 +1059,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                       <path d={muted ? 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5' : 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'} />
                     </svg>
                   </button>
-                  <BoardMenu placement="down" noFlip onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />
+                  <BoardMenu placement="down" noFlip onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen('view')} />
                 </div>
               )}
-              <header className="panel-header">
+              {!plainBoard && <header className="panel-header">
                 {phone ? (
                   <PhoneViews
                     value={phoneView}
@@ -1074,7 +1080,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                     { id: 'analysis', label: 'Analysis', icon: TAB_ICONS.analysis, tone: 'green' },
                   ]}
                 />}
-              </header>
+              </header>}
 
               <div className={`panel-body ${tab}`}>
                 {tab === 'summary' ? (
@@ -1187,7 +1193,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         />
       )}
 
-      {optionsOpen && <AnalysisSettings settings={settings} status={status} onChange={updateSettings} onClose={() => setOptionsOpen(false)} />}
+      {optionsOpen && <AnalysisSettings settings={settings} status={status} onChange={updateSettings} onClose={() => setOptionsOpen(null)} board={plainBoard} part={optionsOpen} />}
 
       <LoadGameDialog
         open={loadOpen}

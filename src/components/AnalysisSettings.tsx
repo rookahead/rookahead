@@ -15,6 +15,10 @@ interface Props {
   onChange: (patch: Partial<Settings>) => void
   onClose: () => void
   initialTab?: AnalysisSettingsTab
+  /** Opened from a phone's Analyze board, which keeps its own number of lines. */
+  board?: boolean
+  /** Just Stockfish's settings (the gear on the engine's strip), or everything but (the board's menu). */
+  part?: 'engine' | 'view'
 }
 
 const TABS: { id: AnalysisSettingsTab; label: string; icon: ReactNode }[] = [
@@ -56,7 +60,7 @@ function threadOptions(): [number, string][] {
   return [[0, `Auto · ${autoThreads()}`], ...counts.map((n) => [n, String(n)] as [number, string]), [cores, String(cores)]]
 }
 
-function EngineTab({ settings, status, onChange }: Omit<Props, 'onClose' | 'initialTab'>) {
+function EngineTab({ settings, status, onChange, board }: Omit<Props, 'onClose' | 'initialTab'>) {
   const isolated = typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated
   return (
     <>
@@ -78,7 +82,12 @@ function EngineTab({ settings, status, onChange }: Omit<Props, 'onClose' | 'init
         </div>
       )}
       <OptionRow label="Lines" hint="Best moves shown side by side.">
-        <Segmented label="Lines" value={settings.lines} options={[1, 2, 3, 4, 5].map((n) => [n, String(n)] as [number, string])} onChange={(lines) => onChange({ lines })} />
+        <Segmented
+          label="Lines"
+          value={board ? settings.boardLines : settings.lines}
+          options={[1, 2, 3, 4, 5].map((n) => [n, String(n)] as [number, string])}
+          onChange={(lines) => onChange(board ? { boardLines: lines } : { lines })}
+        />
       </OptionRow>
       <OptionRow label="Depth" hint="The engine stops here: higher is slower, more exact.">
         <Segmented
@@ -131,11 +140,18 @@ function DisplayTab({ settings, onChange }: Pick<Props, 'settings' | 'onChange'>
 }
 
 /** Analysis settings, Chess.com style: Engine, Display and Board tabs. Changes apply as you make them. */
-export function AnalysisSettings({ settings, status, onChange, onClose, initialTab = 'engine' }: Props) {
-  const [tab, setTab] = useState<AnalysisSettingsTab>(initialTab)
+export function AnalysisSettings({ settings, status, onChange, onClose, initialTab = 'engine', board, part }: Props) {
+  const tabs = part === 'view' ? TABS.filter((t) => t.id !== 'engine') : TABS
+  const [tab, setTab] = useState<AnalysisSettingsTab>(part === 'engine' ? 'engine' : part === 'view' && initialTab === 'engine' ? 'display' : initialTab)
+  if (part === 'engine')
+    return (
+      <SettingsDialog title="Stockfish" onClose={onClose}>
+        <EngineTab settings={settings} status={status} onChange={onChange} board={board} />
+      </SettingsDialog>
+    )
   return (
-    <SettingsDialog title="Settings" onClose={onClose} top={<Tabs label="Settings" value={tab} onSelect={setTab} items={TABS} />}>
-      {tab === 'engine' && <EngineTab settings={settings} status={status} onChange={onChange} />}
+    <SettingsDialog title="Settings" onClose={onClose} top={<Tabs label="Settings" value={tab} onSelect={setTab} items={tabs} />}>
+      {tab === 'engine' && <EngineTab settings={settings} status={status} onChange={onChange} board={board} />}
       {tab === 'display' && <DisplayTab settings={settings} onChange={onChange} />}
       {tab === 'board' && <BoardOptions settings={settings} onChange={onChange} preview />}
     </SettingsDialog>

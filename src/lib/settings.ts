@@ -32,6 +32,8 @@ export interface Settings {
   engine: EngineStrength
   /** Number of engine lines shown in live analysis. */
   lines: number
+  /** Engine lines on a phone's Analyze board: a plain board with the engine, so one line unless you ask for more. */
+  boardLines: number
   /** Live analysis stops at this depth (it's always resumable by going deeper). */
   liveDepth: number
   /** Depth used for each position during a full-game review. */
@@ -68,6 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
   palette: 'sky',
   engine: 'lite',
   lines: 3,
+  boardLines: 1,
   liveDepth: 30,
   reviewDepth: 16,
   showArrows: true,
