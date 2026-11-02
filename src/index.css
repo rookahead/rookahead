@@ -6042,11 +6042,12 @@ button.user-avatar.guest:hover {
   text-underline-offset: 2px;
 }
 
-/* Phones and narrow windows: a short brand band on top (logo and the line), the form below; no tour. */
+/* Phones and narrow windows: the logo on top, the form below; no line, no tour. */
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    min-height: var(--app-h);
   }
 
   .auth-brand {
@@ -6054,8 +6055,14 @@ button.user-avatar.guest:hover {
     height: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 20px 20px 24px;
+    align-items: center;
+    padding: 48px 20px 8px;
+    background: none;
+  }
+
+  .auth-brand .auth-intro,
+  .auth-brand .tour-cards {
+    display: none;
   }
 
   .auth-brand[data-phase] .auth-mark {
@@ -9854,6 +9861,9 @@ strong.settings-value {
   inset: 0;
   z-index: 60;
   overflow: hidden;
+  /* Below the status bar while it slides, as it sits once it's in (the page's own top, in the app). */
+  box-sizing: border-box;
+  padding-top: var(--safe-top);
 }
 
 .auth-layer.leaving {
