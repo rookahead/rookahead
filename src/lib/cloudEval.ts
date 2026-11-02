@@ -1,4 +1,6 @@
+import { Chess, type Square } from 'chess.js'
 import type { PositionEval } from '../hooks/useAnalysis'
+import { uciToMove } from './tree'
 import type { Score } from './uci'
 
 /**
@@ -25,6 +27,26 @@ interface CloudPv {
 /** Scores in the cloud are from White's point of view, as ours are. */
 const scoreOf = (pv: CloudPv): Score => (pv.mate !== undefined ? { type: 'mate', value: pv.mate } : { type: 'cp', value: pv.cp ?? 0 })
 
+/** Lichess writes castling as the king taking its own rook; the engine, and everything here, as the king's move. */
+const CASTLING: Record<string, string> = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' }
+
+/** A cloud line in the engine's notation, as far as it can be played. */
+function standardMoves(fen: string, moves: string): string[] {
+  const chess = new Chess(fen)
+  const out: string[] = []
+  for (const uci of moves.split(' ')) {
+    const kingMoves = chess.get(uci.slice(0, 2) as Square)?.type === 'k'
+    const move = (kingMoves && CASTLING[uci]) || uci
+    try {
+      chess.move(uciToMove(move))
+    } catch {
+      break
+    }
+    out.push(move)
+  }
+  return out
+}
+
 /** The cloud's eval of one position: null when it has none (or too shallow), 'stop' when Lichess can't be asked. */
 export async function cloudEval(fen: string, signal: AbortSignal): Promise<PositionEval | null | 'stop'> {
   if (Date.now() < pausedUntil) return 'stop'
@@ -36,8 +58,8 @@ export async function cloudEval(fen: string, signal: AbortSignal): Promise<Posit
     const data = (await res.json()) as { depth: number; pvs: CloudPv[] }
     const [top, second] = data.pvs ?? []
     if (!top || data.depth < MIN_DEPTH) return null
-    const pv = top.moves.split(' ')
-    return { score: scoreOf(top), bestMove: pv[0], pv, depth: data.depth, second: second && scoreOf(second), secondMove: second?.moves.split(' ')[0], cloud: true }
+    const pv = standardMoves(fen, top.moves)
+    return { score: scoreOf(top), bestMove: pv[0], pv, depth: data.depth, second: second && scoreOf(second), secondMove: second && standardMoves(fen, second.moves)[0], cloud: true }
   } catch {
     return 'stop'
   }
