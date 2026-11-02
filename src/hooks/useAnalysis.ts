@@ -439,11 +439,16 @@ interface SideLineOptions {
 export function useSideLineReview({ engine, ready, evals, fens, depth, enabled }: SideLineOptions) {
   const [extra, setExtra] = useState<Record<string, PositionEval>>({})
   const [pending, setPending] = useState(false)
-  const missing = enabled ? fens.filter((f) => !evals[f] && !extra[f]) : []
+  // Positions the engine couldn't finish: without them what's waiting would wait for ever.
+  const [gaveUp, setGaveUp] = useState<ReadonlySet<string>>(() => new Set())
+  const missing = enabled ? fens.filter((f) => !evals[f] && !extra[f] && !gaveUp.has(f)) : []
   const wanted = missing.join(',')
 
   // A new game or review starts over (positions repeat between games, but the depth may not).
-  useEffect(() => setExtra({}), [evals, depth])
+  useEffect(() => {
+    setExtra({})
+    setGaveUp(new Set())
+  }, [evals, depth])
 
   useEffect(() => {
     if (!engine || !ready || !wanted) {
@@ -458,6 +463,7 @@ export function useSideLineReview({ engine, ready, evals, fens, depth, enabled }
         const entry = await reviewSearch(engine, fen, depth, controller.signal, () => !cancelled)
         if (cancelled) return
         if (entry) setExtra((x) => ({ ...x, [fen]: entry }))
+        else setGaveUp((g) => new Set(g).add(fen))
       }
       if (!cancelled) setPending(false)
     })()
