@@ -30,7 +30,9 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onP
       : explanation?.rows
   // It opens below the coach: bring it up to where it can be read.
   const ref = useRef<HTMLElement>(null)
-  useEffect(() => ref.current?.scrollIntoView({ block: 'nearest' }), [])
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: 'nearest' })
+  }, [])
   return (
     <section ref={ref} className="explain" aria-label={title} aria-busy={explanation === undefined}>
       <header className="explain-head">
