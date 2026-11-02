@@ -460,7 +460,11 @@ function sacrificeStory(
   // Either way: where the main line ends up.
   const played = playLine(fen, line.pv)
   const end = new Chess(fen)
-  for (const uci of line.pv.slice(0, 2)) end.move(uciToMove(uci))
+  try {
+    for (const uci of line.pv.slice(0, 2)) end.move(uciToMove(uci))
+  } catch {
+    // A line that can't be played this far: the sacrifice's rows still stand.
+  }
   const canCastle = (f: string) => (them === 'white' ? /[KQ]/ : /[kq]/).test(f.split(' ')[2])
   const lostCastling = canCastle(fen) && !canCastle(end.fen())
   const ahead = played.gain >= 1 ? `${sideName(side)} ends ${amount(played.gain)} up` : null

@@ -90,6 +90,12 @@ describe('explaining a move', () => {
     expect(e.lines[0].from).toBe('before')
   })
 
+  it('doesn’t fall over on a line it can’t play to the end of', () => {
+    const fenBefore = 'r1bqk1nr/pppp1pp1/2n4p/2b5/2BNP3/8/PPP2PPP/RNBQK2R w KQkq - 1 6'
+    const input = { fenBefore, uci: 'c1e3', san: 'Be3', cls: 'miss' as const, reply: { pv: ['d8f6'], score: cp(48) } }
+    expect(() => explainMove({ ...input, best: { pv: ['c4f7', 'e8h8', 'd4c6'], score: cp(247) } })).not.toThrow()
+  })
+
   it('follows a sacrifice the defence declines into the line where it’s taken', () => {
     // 6.Be3 (MelonLord-009, 2026-10-26): 6.Bxf7+ was there. The engine's defence is 6…Kf8, but the
     // point is what happens if Black takes: a fork that wins the bishop back.
