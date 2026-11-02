@@ -9,6 +9,7 @@ import kasparov from './fixtures/backup-kasparov-topalov.json'
 import kasparovCloud from './fixtures/backup-kasparov-topalov-cloud.json'
 import melonlord from './fixtures/backup-melonlord.json'
 import centerGame from './fixtures/backup-melonlord-center-game.json'
+import rilt from './fixtures/backup-melonlord-rilt.json'
 
 const cp = (value: number): Score => ({ type: 'cp', value })
 
@@ -159,6 +160,45 @@ describe('a game that ends in checkmate', () => {
     expect(report.moves[line[10].id].cls).toBe('blunder')
     // The only move that doesn't give the game away, and it mates.
     expect(report.moves[line[11].id].cls).toBe('great')
+  })
+
+  it('keeps the longer defence as the best move when both moves get mated', () => {
+    // Walking into mate in 2 where the engine's move holds out for 6: both are 0%, but they aren't equal.
+    const { line, evals } = game(UCIS, [
+      { score: mate(6), bestMove: 'e2e4' },
+      { score: mate(6), bestMove: 'e7e5' },
+      { score: mate(6), bestMove: 'g1f3' },
+      { score: mate(6), bestMove: 'g8f6', second: mate(2), secondMove: 'b8c6' },
+      { score: mate(2) },
+    ])
+    const backed = backUp(line, evals, {}).evals
+    expect(backed[line[3].fen]).toMatchObject({ score: mate(6), bestMove: 'g8f6' })
+    expect(classifyGame(line, backed).moves[line[4].id].cls).not.toBe('best')
+  })
+
+  it('keeps the faster mate as the best move when the game took a slower one', () => {
+    const { line, evals } = game(UCIS, [
+      { score: mate(-2), bestMove: 'e2e4' },
+      { score: mate(-2), bestMove: 'e7e5' },
+      { score: mate(-2), bestMove: 'g1f3' },
+      { score: mate(-2), bestMove: 'g8f6', second: mate(-6), secondMove: 'b8c6' },
+      { score: mate(-6) },
+    ])
+    const backed = backUp(line, evals, {}).evals
+    expect(backed[line[3].fen]).toMatchObject({ score: mate(-2), bestMove: 'g8f6' })
+    const review = classifyGame(line, backed).moves[line[4].id]
+    expect(review.cls).not.toBe('best')
+    expect(review.fasterMate).toBe(2)
+  })
+
+  it('grades the end of rilt1019–MelonLord-009: no sacrifice where the queens only trade, or the bishop is never taken', () => {
+    const { line, evals, deep } = recorded(rilt)
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    const cls = (san: string, ply: number) => report.moves[at(line, san, ply).id].cls
+    expect(cls('Qg5', 58)).toBe('best') // 30.Nxd5 Qxc1 31.Nf6+ gxf6 32.Rxc1 gives nothing up
+    expect(cls('Rd6', 62)).toBe('great') // the only forced mate, and 32.Rf2 doesn't take the bishop
+    expect(cls('Rxd5', 63)).toBe('excellent') // 32.Rf2 holds out longer
+    expect(cls('Rh6+', 64)).toBe('great')
   })
 
   it('blames the move that allows mate in two, and the mate is Clutch', () => {

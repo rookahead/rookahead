@@ -92,6 +92,10 @@ wobble by a tenth of a pawn or two from one search to the next, so "it came out 
 trusted. From a level game: drifting to −0.3 is Solid, −1 (about a pawn) is a Slip, −2 a Mistake, −3 (a piece)
 a Blunder. The same drop costs less when the game is already decided: +5 → +4 is Solid, +8 → +5 a Slip.
 
+Two mates are the same winning chance, so between them the distance decides which move is the engine's:
+the faster mate, or the longer defence. A slower mate, or walking into a mate the engine would put off, is
+never Best.
+
 Then three verdicts can replace the one from the scale.
 
 ### Legendary

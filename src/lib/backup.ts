@@ -56,6 +56,13 @@ function aMoveEarlier(score: Score, color: Color): Score {
   return { type: 'mate', value: whiteMates ? moves : -moves }
 }
 
+/** Is the mate `a` better than the mate `b` for `color`: sooner when it mates, further off when it's mated? */
+function fartherAhead(a: Score, b: Score, color: Color) {
+  if (a.type !== 'mate' || b.type !== 'mate') return false
+  const side = color === 'white' ? 1 : -1
+  return a.value * b.value > 0 && side * a.value < side * b.value
+}
+
 /** One search's view of a position: its best move other than the one played, and the one played if it lists it. */
 interface View {
   other: DeepLine | null
@@ -122,10 +129,14 @@ export function backUp(line: MoveNode[], evals: Record<string, PositionEval>, de
     const other = sound?.other ?? views.findLast((v) => v.other)?.other ?? null
     const gaps = views.flatMap((v) => (v.other && v.mine ? [moverWin(v.other.score, color) - moverWin(v.mine, color)] : []))
     const otherScore = other && (sound ? other.score : gaps.length ? shifted(played, Math.min(...gaps), color) : other.score)
+    // Two mates are the same winning chance, so the gap can't tell them apart: the deepest search that ranks
+    // the other move above the one played stands as it is (32.Rxd5 walking into mate in 2, where 32.Rf2 holds out longer).
+    const ranked = views.findLast((v) => v.other)
+    const mateAhead = ranked?.other && fartherAhead(ranked.other.score, ranked.mine ?? played, color) && fartherAhead(ranked.other.score, played, color)
     // Never worth more than its own search says.
-    const worth = other && otherScore && (moverWin(otherScore, color) > moverWin(other.score, color) ? other.score : otherScore)
+    const worth = mateAhead ? ranked.other!.score : other && otherScore && (moverWin(otherScore, color) > moverWin(other.score, color) ? other.score : otherScore)
 
-    const better = worth !== null && moverWin(worth, color) > moverWin(played, color)
+    const better = worth !== null && (moverWin(worth, color) > moverWin(played, color) || Boolean(mateAhead))
     out[parent.fen] = {
       ...own,
       score: better ? worth! : played,
