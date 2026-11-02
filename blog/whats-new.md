@@ -1,12 +1,38 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-10-27
+date: 2026-11-02
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 2 November 2026
+
+**Rules:** a capture through the square the taking piece left is a deflection only if you keep what you won. If the piece that captures is taken straight back, it was a trade, not a sacrifice.
+
+**Rules:** between two checkmates, the distance counts. Walking into a faster mate isn't Best, and neither is a slower mate when a faster one was there. A piece left hanging while you force mate isn't a sacrifice if the best defence never takes it.
+
+**Rules:** Clutch needs every other move to give up at least 9% of your winning chance, down from 10%. Only the move that starts a forced mate is Clutch; the moves that carry it out are Best.
+
+**Rules:** a move that falls 3% or more short of the engine's best is searched deeper before it gets a verdict (it was 5%). A stronger move can look closer than it is at review depth. Checked against a much stronger engine on recent games, more than twice as many of the verdicts this changed now agree with it.
+
+Saved reviews are graded again with the new rules. The deeper search can't be redone from what a review saves, so a game reviewed before today is reviewed again the first time you open it.
+
+- Reviews on a desktop run up to eight engines at once, and take about a third less time.
+- Review many games at once on desktop. With two or more games unreviewed, Home's button becomes Review latest games: pick a date range, see how many games that is and about how long they'll take, and each game is saved as it finishes.
+- Explain no longer gets stuck on a position, and leaving it no longer blanks the page in newer versions of Chrome.
+- If a page does crash, it now says what went wrong instead of showing a blank screen.
+
+## 1 November 2026
+
+- A new phone app. Home leads with a big Game review card, then rows of stats and puzzles you can swipe, today's plan and your latest games.
+- The Review tab has one Load button, short filters (All, To review, Won, Lost, Drawn) and shows games 15 at a time. Puzzles fits on one screen.
+- The tab bar floats above the page, and pages slide as you move between tabs. A tab's header is part of the page until you scroll.
+- The review page is reworked for phones, and the Legendary moves page is rebuilt in Home's layout.
+- Taps dim what you touch instead of flashing a square.
+- Your games load faster, and this week's Legendary moves count the games you played this week.
 
 ## 27 October 2026
 
