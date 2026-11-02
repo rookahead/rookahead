@@ -39,7 +39,7 @@ arrow b3b7
 caption 7.Qb3, Clutch. The queen hits f7, next to the king, and b7 at the same time.
 ```
 
-"The only move" means every other move throws away at least 10% of your winning chance. Here the next best kept White about a pawn better instead of two and a half.
+"The only move" means every other move throws away at least 9% of your winning chance. Here the next best kept White about a pawn better instead of two and a half.
 
 It doesn't have to be hard to find. 7.Qb3 is a quiet queen move that only works because of two threats at once, and Morphy found two more like it later in the game, 12.O-O-O and 14.Rd1, which are Clutch too. But an obvious move counts just as well when nothing else works.
 
@@ -51,7 +51,7 @@ caption 10.cxb4, Clutch. Black has just put a knight where the c-pawn can take i
 
 Everyone would play 10.cxb4, and it's still Clutch: what counts is that nothing else worked. So is taking a queen that has just promoted with check, when every other move gets you mated.
 
-Two moves are never Clutch, however necessary: taking back what your opponent just took, which is simply the game going on, and the checkmating move itself, which is Best.
+Taking back what your opponent just took is never Clutch, however necessary: that's simply the game going on. And once you've found a forced mate, the moves that carry it out are Best. The Clutch went to the move that started it. A checkmate is Clutch only when every other move would give the game away.
 
 ## Legendary: a sacrifice that works
 
