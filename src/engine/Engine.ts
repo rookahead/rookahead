@@ -32,6 +32,8 @@ export interface AnalysisResult {
   bestMove: string | null
   nodes?: number
   nps?: number
+  /** The watchdog ended this search: it's only as far as it got, not what its limits would have found. */
+  cutShort?: boolean
 }
 
 export interface AnalyzeRequest {
@@ -226,6 +228,7 @@ export class StockfishEngine {
       if (now - this.stopSentAt > STOP_TIMEOUT_MS) this.restart()
     } else if (now - this.lastOutputAt > SILENCE_TIMEOUT_MS) {
       console.warn('[engine] search went silent; stopping it')
+      this.current.result = { ...this.current.result, cutShort: true }
       this.stopCurrent()
     }
   }

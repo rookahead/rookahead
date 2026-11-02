@@ -210,7 +210,8 @@ async function reviewSearch(eng: StockfishEngine, fen: string, depth: number, si
       signal,
     })
     const [top, second] = result?.lines ?? []
-    if (top) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score, secondMove: second?.pv[0] }
+    // A search cut short (a computer that slept, a page the browser paused) would change the verdict.
+    if (top && !result!.cutShort) return { score: top.score, bestMove: result!.bestMove, pv: top.pv, depth: top.depth, second: second?.score, secondMove: second?.pv[0] }
   }
   return undefined
 }
@@ -237,7 +238,7 @@ async function deepSearch(eng: StockfishEngine, fen: string, depth: number, sign
       fresh: true,
       signal,
     })
-    if (result?.lines.length) return result.lines.filter((l) => l.pv.length).map((l) => ({ move: l.pv[0], score: l.score, pv: l.pv }))
+    if (result?.lines.length && !result.cutShort) return result.lines.filter((l) => l.pv.length).map((l) => ({ move: l.pv[0], score: l.score, pv: l.pv }))
   }
   return undefined
 }

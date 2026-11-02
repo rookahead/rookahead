@@ -174,6 +174,27 @@ describe('StockfishEngine', () => {
     expect(await engine.analyze({ fen: START, multiPv: 1, signal: pre.signal })).toBeNull()
   })
 
+  it('says when the watchdog cut a search short', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
+    const engine = new StockfishEngine('lite')
+    await engine.ready
+    const w = FakeWorker.last
+    const search = engine.analyze({ fen: START, multiPv: 1, depth: 16 })
+    await flush()
+    w.emit('info depth 7 multipv 1 score cp 20 pv e2e4')
+    vi.advanceTimersByTime(SILENCE_TIMEOUT_MS + 1500)
+    await flush()
+    expect((await search)?.cutShort).toBe(true)
+
+    const next = engine.analyze({ fen: AFTER_E4, multiPv: 1, depth: 16 })
+    await flush()
+    w.emit('info depth 16 multipv 1 score cp 20 pv e7e5')
+    w.finish('e7e5')
+    expect((await next)?.cutShort).toBeUndefined()
+    engine.terminate()
+    vi.useRealTimers()
+  })
+
   it('stops a silent search, and replaces a worker that ignores stop', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
     const engine = new StockfishEngine('full')
