@@ -550,7 +550,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   /** The share-link token for the main line (and its review, when finished). */
   const makeShareToken = () => {
-    const reviewed = review.status === 'done' && report ? { evals: review.evals, report, depth: Object.values(review.evals)[0]?.depth ?? settings.reviewDepth } : null
+    const reviewed = review.status === 'done' && report ? { evals: review.evals, report, depth: reviewDepth } : null
     return encodeShare(toSharedGame(line, headers, orientation, reviewed))
   }
 

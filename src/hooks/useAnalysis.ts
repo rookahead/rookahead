@@ -243,10 +243,13 @@ async function deepSearch(eng: StockfishEngine, fen: string, depth: number, sign
   return undefined
 }
 
+/** The deepest a review searches. Anything deeper is the cloud's: older saved reviews carry it for every position. */
+const MAX_REVIEW_DEPTH = 20
+
 /** The depth a finished review ran at: most positions reach it exactly (the rest hit the node cap first). */
 export function depthOfReview(evals: Record<string, PositionEval>): number | null {
   const tally = new Map<number, number>()
-  for (const e of Object.values(evals)) if (e.pv.length && !e.cloud) tally.set(e.depth, (tally.get(e.depth) ?? 0) + 1)
+  for (const e of Object.values(evals)) if (e.pv.length && !e.cloud && e.depth <= MAX_REVIEW_DEPTH) tally.set(e.depth, (tally.get(e.depth) ?? 0) + 1)
   let best: number | null = null
   for (const [d, n] of tally) if (best === null || n > tally.get(best)! || (n === tally.get(best) && d > best)) best = d
   return best

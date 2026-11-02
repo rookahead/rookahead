@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PositionEval } from '../hooks/useAnalysis'
 import { classifyGame, RULES_VERSION } from './classify'
-import { isStale, regrade, reviewLines } from './regrade'
+import { finishedReview, isStale, regrade, reviewLines } from './regrade'
 import type { CachedReview } from './reviewCache'
 import { decodeShare, encodeShare, toSharedGame } from './share'
 import { addLine, createTree, mainline, ROOT_ID } from './tree'
@@ -22,6 +22,14 @@ describe('regrade', () => {
     const token = await encodeShare(toSharedGame(line, {}, 'white', { evals, report, depth: 16 }))
     return { token, white: '', black: '', accuracy: report.accuracy, brilliant: { white: 0, black: 0 }, at: 1, rules: RULES_VERSION - 1, lines: lines ? reviewLines(line, evals) : undefined }
   }
+
+  it('saves the depth the review searched at, not the cloud’s for the first position', async () => {
+    const start = { score: { type: 'cp', value: 100 }, bestMove: 'd1d5', pv: ['d1d5'], depth: 75, cloud: true } as PositionEval
+    const withCloud = { [line[0].fen]: start, [line[1].fen]: evals[line[1].fen] }
+    const entry = await finishedReview(line, {}, 'white', withCloud, classifyGame(line, withCloud), 12)
+    const shared = await decodeShare(entry.token)
+    expect('error' in shared ? null : shared.review?.depth).toBe(16)
+  })
 
   it("grades a review saved under older rules again from what it saved, as a fresh review would", async () => {
     const old = await oldReview()

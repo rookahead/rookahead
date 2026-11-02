@@ -14,6 +14,11 @@ describe('depthOfReview', () => {
     expect(depthOfReview({ a: at(12), b: at(20, []), c: at(20, []) })).toBe(12)
   })
 
+  it('ignores a depth no review runs at: saved reviews could carry the cloud’s for every position', () => {
+    expect(depthOfReview({ a: at(75), b: at(75) })).toBeNull()
+    expect(depthOfReview({ a: at(55, ['e2e4']), b: at(16), c: at(16) })).toBe(16)
+  })
+
   it('is null with nothing reviewed', () => {
     expect(depthOfReview({})).toBeNull()
   })

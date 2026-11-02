@@ -1,4 +1,4 @@
-import type { PositionEval } from '../hooks/useAnalysis'
+import { depthOfReview, type PositionEval } from '../hooks/useAnalysis'
 import { classifyGame, RULES_VERSION, type GameReport } from './classify'
 import { loadOpeningBook } from './openings'
 import { loadReviews, saveReviews, type CachedReview } from './reviewCache'
@@ -36,9 +36,9 @@ export function reviewLines(line: MoveNode[], evals: Record<string, PositionEval
   })
 }
 
-/** What's saved of a review that has just finished. `depth` is what it ran at if its first position doesn't say. */
+/** What's saved of a review that has just finished. `depth` is what it ran at if its positions don't say. */
 export async function finishedReview(line: MoveNode[], headers: PgnHeaders, orientation: Color, evals: Record<string, PositionEval>, report: GameReport, depth: number): Promise<CachedReview> {
-  const reviewed = { evals, report, depth: Object.values(evals)[0]?.depth ?? depth }
+  const reviewed = { evals, report, depth: depthOfReview(evals) ?? depth }
   return {
     token: await encodeShare(toSharedGame(line, headers, orientation, reviewed)),
     white: headers.White ?? '',
