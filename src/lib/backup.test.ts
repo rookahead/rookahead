@@ -201,6 +201,12 @@ describe('a game that ends in checkmate', () => {
     expect(cls('Rh6+', 64)).toBe('great')
   })
 
+  it('makes 11…Nxb4 Clutch: the only move that keeps the game level', () => {
+    const { line, evals, deep } = recorded(rilt)
+    const report = classifyGame(line, backUp(line, evals, deep).evals)
+    expect(report.moves[at(line, 'Nxb4', 22).id].cls).toBe('great')
+  })
+
   it('blames the move that allows mate in two, and the mate is Clutch', () => {
     // Légal's mate: 5…Bxd1?? 6.Bxf7+ Ke7 7.Nd5#, where 5…dxe5 is −2.3.
     const ucis = ['e2e4', 'e7e5', 'g1f3', 'd7d6', 'f1c4', 'c8g4', 'b1c3', 'g7g6', 'f3e5', 'g4d1', 'c4f7', 'e8e7', 'c3d5']

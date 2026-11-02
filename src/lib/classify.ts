@@ -67,6 +67,9 @@ export const RULES_VERSION = 11
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
 
+/** Clutch's only move: the second-best move gives up at least this much (expected points). */
+const ONLY_MOVE_LOSS = 0.09
+
 /** Clutch also counts holding a worse game that isn't lost: about −2.3 or better. */
 const HOLDING = 30
 
@@ -426,9 +429,9 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       let fastestMate = false
       if (playedBest && before.second && legalMoves > 1) {
         const secondWin = moverWin(before.second, color)
-        const worse = (winBefore - secondWin) / 100 >= LOSS_BANDS.inaccuracy
-        onlyMove = winAfter >= HOLDING && worse && (standing(secondWin) < standing(winBefore) || (winBefore - secondWin) / 100 >= LOSS_BANDS.mistake)
-        onlyGood = winAfter >= HOLDING && worse && secondWin < 85
+        const gap = (winBefore - secondWin) / 100
+        onlyMove = winAfter >= HOLDING && gap >= ONLY_MOVE_LOSS && (standing(secondWin) < standing(winBefore) || gap >= LOSS_BANDS.mistake)
+        onlyGood = winAfter >= HOLDING && gap >= LOSS_BANDS.inaccuracy && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)
         onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)

@@ -16,7 +16,7 @@ counts however obvious it is.
   A move the engine rates as good as its own (or better) loses nothing.
 - **Standing**: what the position is for you: an advantage (55% or more, about +0.5), level (45% or
   more), worse but holding (30% or more, about −2.3), or lost.
-- **Only move**: the second-best move gives up at least 10% winning chance and leaves you a step down:
+- **Only move**: the second-best move gives up at least 9% winning chance and leaves you a step down:
   an advantage gone, a level game worse, a worse game lost. Another move that keeps even a little of an
   advantage means it isn't the only move: 39.Qxh8 taking a rook isn't, when 39.Qc2 still keeps +2.8.
 - **Only good move**: the second-best move gives up at least 10% winning chance, and doesn't still leave
@@ -163,7 +163,8 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 | --- | --- |
 | Material already lost: eval below material by | 2 pawns or more |
 | Advantage | 55% (about +0.5) |
-| Only move, only good move: second-best gives up at least | 10% |
+| Only move (Clutch): second-best gives up at least | 9% |
+| Only good move: second-best gives up at least | 10% |
 | …and doesn't still leave you at | 85% or more |
 | Only move (Clutch), even keeping an advantage: second-best gives up at least | 20% (a Blunder) |
 | Level or better | 45% (about −0.5) |
