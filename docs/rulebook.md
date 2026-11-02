@@ -43,8 +43,10 @@ counts however obvious it is.
     sacrifice is what opened the line: 11…Nxg3 12.hxg3 Qxh1 pulls the h2 pawn off the h-file and wins the
     rook behind it (and if White doesn't take, 12…Nxh1 wins it anyway). Taking back only as much is a
     trade: 13.Bh4 Nxc3 14.Bxe6, a knight for a bishop, though the c3 knight's taker had blocked the way to
-    e6. Nor is taking back something you could have taken all along: 1.Nxe5 dxe5 2.Qxa4, when the rook on
-    a4 was there for the taking before.
+    e6. So is taking back more with a piece that's taken in turn: 29…Qg5 30.Nxd5 Qxc1 31.Nf6+ gxf6 32.Rxc1
+    is a trade of queens and a bishop for a knight, though the e3 knight had stood between the queens. Nor
+    is taking back something you could have taken all along: 1.Nxe5 dxe5 2.Qxa4, when the rook on a4 was
+    there for the taking before.
   - Where the game went the engine's way (the opponent answered as the engine expected), the game's own
     moves have to show the sacrifice too. The engine's line may throw in a check that gives more away,
     where the player simply took back: 22.Nd5 Nbxd5 (Kasparov–Topalov) is a trade, because the game went

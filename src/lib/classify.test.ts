@@ -483,6 +483,14 @@ describe('book, great, brilliant, miss, forced', () => {
     expect(isSacrifice(before, after, ['d5c3', 'c4e6', 'd6e6', 'e1e5'], 'white')).toBe(false)
   })
 
+  it('does not count a capture through the taker\'s square when the piece that captures is taken back', () => {
+    // 29…Qg5 30.Nxd5 Qxc1 31.Nf6+ gxf6 32.Rxc1: the e3 knight stood between the queens, but the queen on c1
+    // is lost straight back, so the bishop only went for a knight (rilt1019–MelonLord-009).
+    const before = 'r2r2k1/ppp2ppp/8/3b4/1P4q1/2P1N3/1R4P1/2QR2K1 b - - 3 29'
+    const after = 'r2r2k1/ppp2ppp/8/3b2q1/1P6/2P1N3/1R4P1/2QR2K1 w - - 4 30'
+    expect(isSacrifice(before, after, ['e3d5', 'g5c1', 'd5f6', 'g7f6', 'd1c1'], 'black')).toBe(false)
+  })
+
   it('does not count winning something back elsewhere, that was there to take all along', () => {
     // 1.Nxe5 dxe5 2.Qxa4: the rook on a4 could have been taken at once; the knight bought nothing.
     expect(isSacrifice('4k3/8/3p4/4p3/r7/5N2/8/3QK3 w - - 0 1', '4k3/8/3p4/4N3/r7/8/8/3QK3 b - - 0 1', ['d6e5', 'd1a4'], 'white')).toBe(false)

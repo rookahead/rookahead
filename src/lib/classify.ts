@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 10
+export const RULES_VERSION = 11
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -259,8 +259,13 @@ function acceptedSacrifice(beforeFen: string, afterFen: string, pv: string[], co
     // Our next move doesn't take back as much (still a pawn or more behind): a sacrifice. All of it: a trade,
     // unless it takes back more than was given through the square the taker left: the sacrifice pulled it
     // off that line (11…Nxg3 12.hxg3 Qxh1, the h2 pawn deflected from between the queen and the rook).
-    // Only as much back is still a trade (13.Bh4 Nxc3 14.Bxe6, a knight for a bishop).
-    if (ours && pieceTaken) return balance() <= baseline - 1 || (move.captured && takerFrom && crosses(move.from, move.to, takerFrom) && balance() > baseline) ? kind() : null
+    // Only as much back is still a trade (13.Bh4 Nxc3 14.Bxe6, a knight for a bishop), and so is more, if
+    // the piece that took it is taken in turn (29…Qg5 30.Nxd5 Qxc1 31.Nf6+ gxf6 32.Rxc1).
+    if (ours && pieceTaken) {
+      if (balance() <= baseline - 1) return kind()
+      const retaken = chess.attackers(move.to, move.color === 'w' ? 'b' : 'w').length > 0
+      return move.captured && takerFrom && crosses(move.from, move.to, takerFrom) && balance() - (retaken ? VALUES[move.piece] : 0) > baseline ? kind() : null
+    }
     // Once the mover captures something itself, a new exchange begins: what's lost after it
     // belongs to that move, not this one (8…Bxc3 9.Bxc3 Nxe4 10.Qxe4: the knight is 9…Nxe4's).
     if (ours && move.captured) return null
