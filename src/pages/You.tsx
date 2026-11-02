@@ -47,7 +47,18 @@ export function YouPage({ settings, updateSettings }: Props) {
   ]
 
   let who: ReactNode = null
-  if (signedIn) {
+  if (status === 'loading' && !signedIn) {
+    // A sign-in finishing (back from Google, say): you, on the way, rather than a guest's card for a moment.
+    who = (
+      <section className="you-who" aria-label="You" aria-busy>
+        <span className="user-avatar you-avatar" aria-hidden />
+        <span className="you-name">
+          <strong>{username ?? 'Signing in…'}</strong>
+          <span>Signing in</span>
+        </span>
+      </section>
+    )
+  } else if (signedIn) {
     who = (
       <section className="you-who" aria-label="You">
         <span className="user-avatar you-avatar" aria-hidden>
@@ -68,10 +79,10 @@ export function YouPage({ settings, updateSettings }: Props) {
         <h2 id="you-guest">Save your progress</h2>
         <p>You’re a guest, so your games, reviews and puzzles live in this browser only. A free account keeps them on every device.</p>
         <div className="you-guest-actions">
-          <button className="btn accent-btn" disabled={status === 'loading'} onClick={() => openAccountPage('signup')}>
+          <button className="btn accent-btn" onClick={() => openAccountPage('signup')}>
             Sign up, it’s free
           </button>
-          <button className="btn ghost" disabled={status === 'loading'} onClick={() => openAccountPage('login')}>
+          <button className="btn ghost" onClick={() => openAccountPage('login')}>
             Log in
           </button>
         </div>

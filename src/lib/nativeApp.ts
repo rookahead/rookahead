@@ -55,16 +55,19 @@ export async function appReturnUrl(url: string): Promise<string> {
   return u.href
 }
 
+/** After the Chrome tab goes, how long a sign-in coming back with it has to arrive before the page moves on. */
+const RETURN_GRACE_MS = 1000
+
 /**
  * In the app: opens an address in a Chrome tab over the app, and settles once that tab has gone (done with, or
- * closed). False when there's no app to do it.
+ * closed) and a sign-in coming back with it has had a moment to arrive. False when there's no app to do it.
  */
 export async function openInBrowser(url: string): Promise<boolean> {
   if (!has('Browser')) return false
   const closed = new Promise<void>((resolve) => {
     const listener = bridge()!.addListener('Browser', 'browserFinished', () => {
       void listener.remove()
-      resolve()
+      setTimeout(resolve, RETURN_GRACE_MS)
     })
   })
   await call('Browser', 'open', { url })

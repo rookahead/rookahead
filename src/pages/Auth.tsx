@@ -171,8 +171,12 @@ export function AuthPage() {
   // Back from Google, on the way to the page you were headed for: nothing to show here.
   if (pathname.startsWith('/auth/google')) return null
 
+  // The Android app, off to Google in a Chrome tab: just that, until the sign-in comes back (or the tab closes).
+  const awayAtGoogle = googling && inApp()
   let body: ReactNode
-  if (status === 'loading' && !busy) {
+  if (awayAtGoogle) {
+    body = <p className="auth-wait">Signing in with Google…</p>
+  } else if (status === 'loading' && !busy) {
     body = <p className="auth-wait">Signing you in…</p>
   } else if (status === 'signed-in' && resetLink && !passwordSaved) {
     // Arrived from the reset email's link: signed in for this one purpose.
@@ -366,7 +370,7 @@ export function AuthPage() {
             </p>
           )}
           {notice && !shown && <p className="auth-notice">{notice}</p>}
-          {status === 'guest' && (
+          {status === 'guest' && !awayAtGoogle && (
             <Link to={nextPath()} className="auth-guest">
               Not now, continue as a guest
             </Link>

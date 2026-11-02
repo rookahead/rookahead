@@ -150,10 +150,14 @@ export default function App() {
   const [shownRoute, setShownRoute] = useState(route)
   const [under, setUnder] = useState<Route | null>(null)
   const [leaving, setLeaving] = useState(false)
+  // A sign-in handed back by the Android app's Chrome tab: the page you were headed for, at once, rather than the
+  // account page sliding away over it (it was already showing when the tab closed).
+  const [backFromApp, setBackFromApp] = useState(false)
   if (route !== shownRoute) {
     setShownRoute(route)
+    if (backFromApp) setBackFromApp(false)
     if (!reducedMotion && auth && shownRoute !== 'auth') setUnder(shownRoute)
-    if (!reducedMotion && !auth && shownRoute === 'auth') {
+    if (!reducedMotion && !backFromApp && !auth && shownRoute === 'auth') {
       setUnder(null)
       setLeaving(true)
     }
@@ -216,7 +220,14 @@ export default function App() {
 
   useEffect(() => void startAccounts(), [])
   // The Android app: a sign-in finished in its Chrome tab comes back here.
-  useEffect(() => listenForReturns((path) => void finishAppSignIn(path)), [])
+  useEffect(
+    () =>
+      listenForReturns((path) => {
+        setBackFromApp(true)
+        void finishAppSignIn(path)
+      }),
+    [],
+  )
 
   // Saved reviews follow the verdict rules: any graded under older ones (here, or synced in) are graded again.
   const reviewsVersion = useStoreVersion('reviews')
