@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AnalysisResult, AnalyzeRequest, StockfishEngine } from '../engine/Engine'
 import { mainline, treeFromPgn } from '../lib/tree'
-import { depthOfReview, searchGame, type PositionEval } from './useAnalysis'
+import { depthOfReview, extraReviewEngines, searchGame, type PositionEval } from './useAnalysis'
 
 const at = (depth: number, pv = ['e2e4']): PositionEval => ({ score: { type: 'cp', value: 0 }, bestMove: pv[0] ?? null, pv, depth })
 
@@ -55,5 +55,44 @@ describe('searchGame', () => {
   it('leaves a position out rather than keep a search that never finished', async () => {
     const evals = await searchGame(line, [engine(({ fen }) => result(fen, 7, true))], options, () => {})
     expect(Object.keys(evals!)).toEqual([])
+  })
+})
+
+describe('how many extra engines a review starts', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function device(hardwareConcurrency: number, { deviceMemory, touch = false }: { deviceMemory?: number; touch?: boolean } = {}) {
+    vi.stubGlobal('navigator', { hardwareConcurrency, deviceMemory })
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: touch && query === '(pointer: coarse)' }))
+  }
+
+  it('fills two thirds of a desktop with Lite engines, which are small', () => {
+    device(12) // Firefox doesn't report its memory.
+    expect(extraReviewEngines('lite')).toBe(7)
+  })
+
+  it('stops at eight engines, however many cores there are', () => {
+    device(32)
+    expect(extraReviewEngines('lite')).toBe(7)
+  })
+
+  it('keeps to two for the Full engine, about 600 MB each', () => {
+    device(12)
+    expect(extraReviewEngines('full')).toBe(2)
+  })
+
+  it('keeps to two for a batch, whose threaded engines reserve 2 GB each', () => {
+    device(12)
+    expect(extraReviewEngines()).toBe(2)
+  })
+
+  it('keeps to two on a phone, whatever it reports', () => {
+    device(8, { deviceMemory: 8, touch: true })
+    expect(extraReviewEngines('lite')).toBe(2)
+  })
+
+  it('starts none where memory is short', () => {
+    device(8, { deviceMemory: 2 })
+    expect(extraReviewEngines('lite')).toBe(0)
   })
 })

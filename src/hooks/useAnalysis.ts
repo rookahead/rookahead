@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { StockfishEngine, type AnalysisResult, type EngineStrength } from '../engine/Engine'
+import { autoThreads, StockfishEngine, type AnalysisResult, type EngineStrength } from '../engine/Engine'
 import { backUp, type DeepLine } from '../lib/backup'
 import { cloudOpening } from '../lib/cloudEval'
 import { checkmatedScore, type Color } from '../lib/evaluation'
@@ -176,17 +176,24 @@ export function reviewNodeCap(depth: number) {
 /** Every review search uses the same hash size, whichever engine runs it: the size changes the result. */
 const REVIEW_HASH_MB = 32
 
+/** The most engines a review runs at once: past this, more only fight over the same cores. */
+const MOST_REVIEW_ENGINES = 8
+
 /**
  * How many extra engines to start for a review. Fixed-depth searches finish far
  * sooner on several single-threaded engines than on one multi-threaded one
  * (benchmarked: 3×1 thread is ~10× faster than 1×11 threads in WASM), but each
- * full engine costs ~600 MB, so stay modest.
+ * full engine costs ~600 MB, so stay modest. Lite engines are small: a desktop
+ * reviewing by hand (`strength` given) can run as many as it has threads to spare.
+ * Batches leave `strength` out: they run threaded engines, which reserve 2 GB each.
  */
-export function extraReviewEngines(): number {
+export function extraReviewEngines(strength?: EngineStrength): number {
   const cores = navigator.hardwareConcurrency || 4
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
   if (memory !== undefined && memory < 4) return 0
-  if (cores >= 6 && (memory === undefined || memory >= 8)) return 2
+  const roomy = memory === undefined || memory >= 8
+  if (strength === 'lite' && roomy && !globalThis.matchMedia?.('(pointer: coarse)').matches) return Math.min(autoThreads(), MOST_REVIEW_ENGINES) - 1
+  if (cores >= 6 && roomy) return 2
   return cores >= 4 ? 1 : 0
 }
 
@@ -403,7 +410,7 @@ export function useGameReview({ engine, ready, depth, strength, cloud }: ReviewO
 
       // Helpers search on one thread anyway, so they use the build without shared memory: the threaded
       // one reserves 2 GB apiece up front, more than phones will give a page.
-      const helpers = Array.from({ length: Math.min(extraReviewEngines(), line.length - 1) }, () => reviewEngine(strength))
+      const helpers = Array.from({ length: Math.min(extraReviewEngines(strength), line.length - 1) }, () => reviewEngine(strength))
       const live = () => runId.current === id
       try {
         const evals = await searchGame(line, [engine, ...helpers], { depth, cloud, signal: ctrl.signal, live }, setState)
