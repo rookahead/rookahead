@@ -47,9 +47,6 @@ export function GameLines({ games, reviews, onOpen, error }: Pick<Props, 'games'
     <>
       <header className="home-card-head">
         <h2 id="my-games">My games</h2>
-        <button className="link-btn see-all" onClick={() => navigate('/games')}>
-          All {games.length} ›
-        </button>
       </header>
       {error && <p className="games-error">{error}</p>}
       <ul className="game-lines">
@@ -72,6 +69,10 @@ export function GameLines({ games, reviews, onOpen, error }: Pick<Props, 'games'
           )
         })}
       </ul>
+      {/* Phones have no My games tab: the whole list opens from here. */}
+      <button className="game-lines-all" onClick={() => navigate('/games')}>
+        All {games.length} games ›
+      </button>
     </>
   )
 }
@@ -92,6 +93,9 @@ export function GameLinesSkeleton() {
           </li>
         ))}
       </ul>
+      <span className="game-lines-all">
+        <Skel w="96px" h="13px" />
+      </span>
     </div>
   )
 }

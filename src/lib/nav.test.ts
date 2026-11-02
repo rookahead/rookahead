@@ -4,7 +4,7 @@ import { tabSlide } from './nav'
 describe('tabSlide', () => {
   it('slides towards the tab you go to', () => {
     expect(tabSlide('/', '/puzzles')).toBe('forward')
-    expect(tabSlide('/you', '/games')).toBe('back')
+    expect(tabSlide('/you', '/blog')).toBe('back')
   })
 
   it('leaves everything that is not one tab to another alone', () => {

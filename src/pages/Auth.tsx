@@ -17,6 +17,7 @@ import {
   signInWithPassword,
   useAccount,
 } from '../lib/account'
+import { inApp } from '../lib/install'
 import { afterSignIn, navigate, usePathname } from '../lib/router'
 import { Brand } from './auth/Brand'
 import { GoogleG, PasswordField, UsernameField } from './auth/fields'
@@ -112,9 +113,10 @@ export function AuthPage() {
   }
 
   const google = async () => {
-    // On success the page is leaving for Google; only an error comes back here.
+    // On success the page is leaving for Google; only an error comes back here. (In the Android app, Google opens in
+    // a Chrome tab, and this comes back when that tab goes: signed in and on your way, or closed.)
     setGoogling(true)
-    if (!(await run(signInWithGoogle))) setGoogling(false)
+    if (!(await run(signInWithGoogle)) || inApp()) setGoogling(false)
   }
 
   const submitForm = async (e: FormEvent) => {

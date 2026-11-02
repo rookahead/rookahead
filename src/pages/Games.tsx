@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { OpeningsCard, RecordStrip, TimeControlsCard } from '../components/GamesCards'
 import { GameDays, GameDaysSkeleton, QualityKey } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
@@ -13,6 +13,7 @@ import { byOpening, byTimeControl, openingKey, ratingLine, results, timeKey } fr
 import { gameDays } from '../lib/homeGames'
 import { gameStats, SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import type { CachedReview } from '../lib/reviewCache'
+import { LOAD_GAME_EVENT } from '../lib/nav'
 import { navigate } from '../lib/router'
 import type { Settings } from '../lib/settings'
 
@@ -21,12 +22,6 @@ const PAGE = 40
 const PHONE_PAGE = 15
 /** Reviewed games the accuracy bars show. */
 const RECENT_GAMES = 10
-
-const LOAD_ICON = (
-  <svg viewBox="0 0 24 24" aria-hidden>
-    <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-  </svg>
-)
 
 type Show = 'all' | 'unreviewed' | MyGame['result']
 type SourceFilter = 'all' | GameSource
@@ -99,6 +94,11 @@ export function GamesPage({ active, settings, updateSettings, onOpenAnalysis, on
   }
   const [loadOpen, setLoadOpen] = useState(false)
   const loadGame = () => setLoadOpen(true)
+  // Phones: Load a game is the tab bar's button on this page (TabBar.tsx).
+  useEffect(() => {
+    window.addEventListener(LOAD_GAME_EVENT, loadGame)
+    return () => window.removeEventListener(LOAD_GAME_EVENT, loadGame)
+  }, [])
   const reset = () => setShown(pageSize)
   const pick = (kind: 'time' | 'opening', label: (key: string) => string) => (key: string | null) => {
     setPicked(key ? { kind, key, label: label(key) } : null)
@@ -220,16 +220,6 @@ export function GamesPage({ active, settings, updateSettings, onOpenAnalysis, on
               </button>
             </span>
           </header>
-
-          {/* Phones: the Review tab is also where a game is loaded. */}
-          {phone && (
-            <div className="games-start">
-              <button className="btn accent-btn" onClick={loadGame}>
-                {LOAD_ICON}
-                Load a game
-              </button>
-            </div>
-          )}
 
           {none ? (
             <section className="home-card accent-card hero-card" aria-labelledby="games-hero">

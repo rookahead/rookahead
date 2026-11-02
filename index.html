@@ -85,6 +85,8 @@
         var s = JSON.parse(localStorage.getItem('rookahead.settings.v2') || '{}')
         var a = s.appearance || 'dark'
         var r = document.documentElement
+        // The Android app (it adds RookaheadApp to its user agent): the page draws under the phone's bars.
+        if (/RookaheadApp/.test(navigator.userAgent)) r.dataset.app = ''
         try {
           // Home's loading screen is Home's own shape (.boot-home): the sidebar as it was left, and the greeting
           // a signed-in visitor gets.
@@ -199,8 +201,7 @@
             <div class="home-card accent-card boot-fill boot-first boot-hero"></div>
             <div class="home-card boot-fill boot-first boot-daily-compact"></div>
           </div>
-          <div class="boot-play"></div>
-          <div class="boot-tabs"></div>
+          <div class="boot-tabs"><div class="boot-play"></div></div>
         </div>
       </div>
     </div>

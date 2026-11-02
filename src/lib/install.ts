@@ -24,9 +24,13 @@ if (typeof window !== 'undefined') {
   })
 }
 
-/** Already running as the installed app (from the home screen). */
+/** The Android app from the Play Store, which shows the site in its own WebView (it adds this to its user agent). */
+export const inApp = () => typeof navigator !== 'undefined' && /RookaheadApp/.test(navigator.userAgent)
+
+/** Already running as the installed app (from the home screen, or the Android app). */
 export const runningInstalled = () =>
-  typeof window !== 'undefined' && (matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true)
+  typeof window !== 'undefined' &&
+  (inApp() || matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true)
 
 const ios = () => typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)
 

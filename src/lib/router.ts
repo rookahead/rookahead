@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom'
 import { startViewTransition } from '../hooks/useSettled'
 import { slidesByHand, tabSlide } from './nav'
 
-export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'auth'
+export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 export type SettingsSection = 'profile' | 'linked' | 'board' | 'appearance' | 'account'
 
@@ -18,6 +18,8 @@ export function routeFor(pathname: string): Route {
   if (/^\/board\/?$/.test(pathname)) return 'board'
   if (/^\/puzzles(\/(rated|sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
   if (/^\/you\/?$/.test(pathname)) return 'you'
+  // Phones' Blog tab; on desktop these addresses are the blog itself (App.tsx).
+  if (/^\/blog(\/[a-z0-9-]+)?\/?$/.test(pathname)) return 'blog'
   if (new RegExp(`^/settings(/(${SECTIONS}))?/?$`).test(pathname)) return 'settings'
   if (/^\/(signup|login|reset-password|auth\/google)\/?$/.test(pathname)) return 'auth'
   return 'home'

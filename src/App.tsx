@@ -8,8 +8,10 @@ import { useEngine } from './hooks/useEngine'
 import { useMediaQuery } from './hooks/useMediaQuery'
 import { useOnline } from './hooks/useOnline'
 import { transitionsDone } from './hooks/useSettled'
-import { openAccountPage, startAccounts, useAccount } from './lib/account'
+import { finishAppSignIn, openAccountPage, startAccounts, useAccount } from './lib/account'
 import { holdBatch } from './lib/batchReview'
+import { runningInstalled } from './lib/install'
+import { listenForReturns, setBarIcons } from './lib/nativeApp'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
@@ -19,6 +21,7 @@ import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
+import { BlogPage } from './pages/Blog'
 import { GamesPage } from './pages/Games'
 import { HomePage } from './pages/Home'
 import { LegendaryPage } from './pages/Legendary'
@@ -34,18 +37,29 @@ const AUTH_ENTER_MS = 600
 const AUTH_LEAVE_MS = 420
 const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
 
-/** The phone's status bar follows what's under it: the page, or a tab's top bar once that has filled in (index.css). */
+let statusFrame = 0
+
+/**
+ * The phone's status bar follows what's under it: the page, or, in the installed app, a tab's top bar once that has
+ * filled in (index.css). A browser tab keeps the page's colour, as its own address bar sits between the two.
+ */
 function paintStatusBar() {
-  const root = document.documentElement
-  const css = getComputedStyle(root)
-  const bg = css.getPropertyValue('--bg').trim()
-  const brand = css.getPropertyValue('--brand').trim()
-  const surface = css.getPropertyValue('--surface').trim()
-  const tabHeader = [...document.querySelectorAll<HTMLElement>('.page-header:not(.has-back)')].some((h) => h.offsetParent)
-  const filled = root.hasAttribute('data-scrolled') && tabHeader && brand.startsWith('#') && surface.startsWith('#')
-  // The same mix as the bar's own background.
-  const bar = filled ? channels(surface).map((c, i) => Math.round(c * 0.88 + channels(brand)[i] * 0.12).toString(16).padStart(2, '0')) : null
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar ? `#${bar.join('')}` : bg)
+  // Two frames on, so the bar changes with the header drawn under it rather than a moment before.
+  cancelAnimationFrame(statusFrame)
+  statusFrame = requestAnimationFrame(() => {
+    statusFrame = requestAnimationFrame(() => {
+      const root = document.documentElement
+      const css = getComputedStyle(root)
+      const bg = css.getPropertyValue('--bg').trim()
+      const brand = css.getPropertyValue('--brand').trim()
+      const surface = css.getPropertyValue('--surface').trim()
+      const tabHeader = [...document.querySelectorAll<HTMLElement>('.page-header:not(.has-back)')].some((h) => h.offsetParent)
+      const filled = root.hasAttribute('data-installed') && root.hasAttribute('data-scrolled') && tabHeader && brand.startsWith('#') && surface.startsWith('#')
+      // The same mix as the bar's own background.
+      const bar = filled ? channels(surface).map((c, i) => Math.round(c * 0.88 + channels(brand)[i] * 0.12).toString(16).padStart(2, '0')) : null
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar ? `#${bar.join('')}` : bg)
+    })
+  })
 }
 
 /** How long after opening a phone starts drawing the Review tab in the background. */
@@ -190,14 +204,19 @@ export default function App() {
     root.dataset.palette = settings.palette
     // Black is the dark theme on a true black page (index.css, :root[data-black]).
     root.toggleAttribute('data-black', settings.appearance === 'black')
+    // Opened from the home screen rather than in a browser tab (index.css, the tabs' top bar).
+    root.toggleAttribute('data-installed', runningInstalled())
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
     // The browser's (and an installed app's) bars take the page's own background, and the tab's icon your colour.
     const css = getComputedStyle(root)
     paintStatusBar()
+    setBarIcons(theme === 'dark')
     document.querySelector('link[rel="icon"]')?.setAttribute('href', faviconUrl(css.getPropertyValue('--brand').trim(), css.getPropertyValue('--brand-ink').trim()))
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 
   useEffect(() => void startAccounts(), [])
+  // The Android app: a sign-in finished in its Chrome tab comes back here.
+  useEffect(() => listenForReturns((path) => void finishAppSignIn(path)), [])
 
   // Saved reviews follow the verdict rules: any graded under older ones (here, or synced in) are graded again.
   const reviewsVersion = useStoreVersion('reviews')
@@ -233,6 +252,8 @@ export default function App() {
   useEffect(() => {
     if (!phone && route === 'you') navigate('/settings', { replace: true })
     if (phone && location.pathname.replace(/\/$/, '') === '/settings') navigate('/you', { replace: true })
+    // The blog is its own site on desktop (public/blog, built by scripts/build-blog.mjs).
+    if (!phone && route === 'blog' && import.meta.env.PROD) location.reload()
   }, [phone, route])
 
   return (
@@ -271,6 +292,11 @@ export default function App() {
               </div>
             )}
             {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
+            {(appRoute === 'blog' || sliding?.route === 'blog') && phone && (
+              <div {...slideHost('blog')}>
+                <BlogPage settings={settings} />
+              </div>
+            )}
             {(appRoute === 'you' || sliding?.route === 'you') && phone && (
               <div {...slideHost('you')}>
                 <YouPage settings={settings} updateSettings={updateSettings} />

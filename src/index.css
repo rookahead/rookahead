@@ -81,6 +81,12 @@
   /* Room taken by the sidebar (set from data-side by the shell) and by the phone's tab bar. */
   --side-w: 0px;
   --tabbar-h: 0px;
+  /* The phone's own bars over the page. A browser keeps the status bar out of the page; the Android app
+     (data-app, set in index.html) draws under both, and is told their sizes (--safe-area-inset-*). */
+  --safe-top: 0px;
+  --safe-bottom: env(safe-area-inset-bottom);
+  /* The height a full-screen page has, below the status bar. */
+  --app-h: 100dvh;
 
   font-family: var(--font-ui);
   font-size: 14px;
@@ -398,6 +404,35 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--bg);
+}
+
+:root[data-app] {
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom));
+  --app-h: calc(100dvh - var(--safe-top));
+}
+
+/* The app: the page starts below the status bar, and the status bar shows the page's colour, or the top bar's
+   when that has filled in (the .page-header::before below). */
+:root[data-app] body {
+  box-sizing: border-box;
+  padding-top: var(--safe-top);
+}
+
+/* Pages as tall as the screen, less the status bar, so nothing scrolls by its height. */
+:root[data-app] :is(.shell, .boot) {
+  min-height: var(--app-h);
+}
+
+:root[data-app] body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 19;
+  height: var(--safe-top);
   background: var(--bg);
 }
 
@@ -836,7 +871,7 @@ svg {
 /* The bar at the top of a page: title and actions (on phones also the logo and the avatar). */
 .page-header {
   position: sticky;
-  top: 0;
+  top: var(--safe-top);
   z-index: 20;
   height: var(--nav-h);
   display: flex;
@@ -849,6 +884,22 @@ svg {
 .page-header.phone-only,
 .page-header-home {
   display: none;
+}
+
+/* In the app, the bar carries on up behind the status bar. */
+/* A page that scrolls inside itself (the review on a phone): its bar is already below the status bar. */
+.analysis-page .page-header {
+  top: 0;
+}
+
+:root[data-app] .page-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: var(--safe-top);
+  background: inherit;
 }
 
 .page-header-home {
@@ -875,23 +926,45 @@ svg {
   gap: 8px;
 }
 
-/* Phones: a tab bar floating above the bottom edge instead of the sidebar, in a tint of your colour. */
+/* Phones: a tab bar along the bottom edge instead of the sidebar, in a tint of your colour. */
 .tabbar {
   position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 8px calc(6px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  transition: translate 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+/* On a wide phone or a tablet, Play and the tabs keep to the middle. */
+.tabbar > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+.tabbar-tabs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  max-width: 616px;
-  margin-inline: auto;
-  padding: 5px;
-  border: 1px solid var(--border-strong);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  transition: translate 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+/* Home's Play the computer, in the bar above the tabs. */
+.tabbar .tabbar-play {
+  height: 46px;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  text-decoration: none;
 }
 
 .tab-item {
@@ -3551,7 +3624,12 @@ button.explain-row {
 @media (max-width: 1000px) {
   :root {
     --pad-x: 16px;
-    --tabbar-h: calc(70px + env(safe-area-inset-bottom));
+    --tabbar-h: calc(61px + var(--safe-bottom));
+  }
+
+  /* Home's bar is taller by its Play button. */
+  :root:has(.tabbar-play) {
+    --tabbar-h: calc(115px + var(--safe-bottom));
   }
 
   .layout,
@@ -3570,15 +3648,25 @@ button.explain-row {
     border-bottom: 1px solid var(--border);
   }
 
-  /* A tab's page: the logo sits on the page itself until you scroll, then the bar fills in behind it, in the tab
-     bar's colour. It stays at the top either way. */
+  /* A tab's page: the logo sits on the page itself. Once you scroll, a hairline sets the bar off from what's going
+     under it; in the installed app, where the status bar sits right above it, the bar fills in instead, in the tab
+     bar's colour, and the status bar with it (App.tsx). It stays at the top either way. */
   .page-header:not(.has-back) {
     border-bottom: 0;
-    background: none;
+    background: var(--bg);
   }
 
   :root[data-scrolled] .page-header:not(.has-back) {
+    box-shadow: 0 1px 0 var(--border);
+  }
+
+  :root[data-installed] .page-header:not(.has-back) {
+    background: none;
+  }
+
+  :root[data-installed][data-scrolled] .page-header:not(.has-back) {
     background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+    box-shadow: none;
   }
 
   .page-header-home {
@@ -7481,11 +7569,10 @@ button.user-avatar.guest:hover {
   .boot-tabs {
     display: block;
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
-    height: 60px;
-    border-radius: 22px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(61px + var(--safe-bottom));
     background: color-mix(in srgb, var(--brand) 12%, var(--surface));
   }
 }
@@ -7633,13 +7720,18 @@ button.user-avatar.guest:hover {
     --h: 81px;
   }
 
+  /* Home's tab bar, with Play the computer in it above the tabs. */
+  .boot-phone .boot-tabs {
+    height: calc(115px + var(--safe-bottom));
+  }
+
   .boot-play {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    bottom: calc(var(--tabbar-h) + 10px);
+    /* The real bar's border and padding. */
+    width: calc(100% - 16px);
+    max-width: 600px;
+    margin: 7px auto 0;
     height: 46px;
-    border-radius: 13px;
+    border-radius: 12px;
     background: var(--surface-3);
   }
 
@@ -9916,27 +10008,17 @@ strong.settings-value {
   font-weight: 650;
 }
 
-/* The icon sits in a pill that fills in for the tab you're on. */
+.tab-item.active svg {
+  stroke-width: 2.3;
+}
+
+/* The tab you're on is in your colour, its icon drawn a little bolder; the others are quiet. */
 .tab-icon {
   width: 52px;
   height: 30px;
   border-radius: 15px;
   display: grid;
   place-items: center;
-}
-
-/* The current tab: one pill, the whole tab's size, that glides from tab to tab. */
-.tab-pill {
-  position: absolute;
-  top: 5px;
-  bottom: 5px;
-  left: 5px;
-  width: calc((100% - 10px) / 5);
-  border-radius: 17px;
-  background: color-mix(in srgb, var(--brand) 15%, transparent);
-  translate: calc(var(--tab) * 100%) 0;
-  transition: translate 0.28s cubic-bezier(0.25, 0.1, 0.15, 1);
-  will-change: translate;
 }
 
 .tab-item {
@@ -10231,8 +10313,8 @@ a.you-row:active {
   box-sizing: border-box;
   max-width: 640px;
   margin: 0 auto;
-  /* Room for the tabs and Play. */
-  padding: 14px 16px calc(var(--tabbar-h) + 76px);
+  /* Room for the tabs, Play among them. */
+  padding: 14px 16px calc(var(--tabbar-h) + 24px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -10705,6 +10787,24 @@ a.you-row:active {
   border-top: 1px solid var(--border);
 }
 
+/* The way to the whole list, under the latest games. */
+.game-lines-all {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .game-line {
   width: 100%;
   height: 42px;
@@ -10770,34 +10870,6 @@ a.you-row:active {
   font-size: 15px;
 }
 
-/* Play, floating over the page just above the tabs. */
-.phone-play {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--tabbar-h) + 10px);
-  z-index: 30;
-  box-sizing: border-box;
-  padding: 0 16px;
-  pointer-events: none;
-}
-
-.phone-play .btn {
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 608px;
-  height: 46px;
-  margin: 0 auto;
-  border-radius: 13px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  font-size: 16px;
-  font-weight: 700;
-  pointer-events: auto;
-}
-
 /* A first visit on a phone: the welcome stays short, so the daily puzzle is on the first screen too. */
 .phone-welcome.first h1 {
   font-size: 23px;
@@ -10833,30 +10905,6 @@ a.you-row:active {
 }
 
 /* Phones' Review tab: load a game or open the analysis board, above your games. */
-.games-start {
-  display: grid;
-}
-
-.games-start .btn {
-  height: 44px;
-  margin: 0;
-  gap: 8px;
-  padding: 0 10px;
-  text-decoration: none;
-  font-size: 15px;
-}
-
-.games-start svg {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 /* ── Game review and Analyze on a phone: the board edge to edge, the rest under it ── */
 .board-menu.down .board-menu-list {
   top: calc(100% + 6px);
@@ -11013,7 +11061,7 @@ a.you-row:active {
   .analysis-page .panel-nav {
     grid-template-columns: 1fr 1fr 1fr 2.2fr 1fr;
     gap: 8px;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 12px calc(10px + var(--safe-bottom));
     border-top: 1px solid var(--border);
   }
 
@@ -11066,7 +11114,7 @@ a.you-row:active {
     right: 0;
     bottom: 0;
     z-index: 30;
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding: 10px 12px calc(10px + var(--safe-bottom));
     border-top: 1px solid var(--border);
     background: var(--surface);
     animation: none;
@@ -11079,10 +11127,10 @@ a.you-row:active {
   .analysis-page.pinned {
     --nav-h: 48px;
     --player-h: 24px;
-    --mobile-nav-h: calc(57px + env(safe-area-inset-bottom));
+    --mobile-nav-h: calc(57px + var(--safe-bottom));
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    height: var(--app-h);
     overflow: hidden;
   }
 
@@ -11093,7 +11141,7 @@ a.you-row:active {
   .analysis-page.pinned .layout,
   .analysis-page.pinned .layout.sized {
     /* What's left once the bars and the coach's lines have their room. */
-    --board-size: min(100vw, 640px, calc(100dvh - 348px));
+    --board-size: min(100vw, 640px, calc(var(--app-h) - var(--safe-bottom) - 348px));
     flex: 1;
     min-height: 0;
     display: flex;
@@ -11233,7 +11281,7 @@ a.you-row:active {
   }
 
   .analysis-page.pinned .panel-nav {
-    padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+    padding: 6px 12px calc(6px + var(--safe-bottom));
   }
 
   .analysis-page.pinned .panel-nav .ctrl {
@@ -11244,7 +11292,7 @@ a.you-row:active {
      board doesn't jump when the engine goes off or the game ends. */
   .analysis-page.engine-top .layout,
   .analysis-page.engine-top .layout.sized {
-    --board-size: min(100vw, 640px, calc(100dvh - 293px - var(--engine-rows) * 26px));
+    --board-size: min(100vw, 640px, calc(var(--app-h) - var(--safe-bottom) - 293px - var(--engine-rows) * 26px));
   }
 
   .analysis-page.pinned .board-column > .engine-panel {
@@ -11413,6 +11461,120 @@ a.you-row:active {
 }
 
 /* ── Phones' Puzzles tab: streaks, today's puzzle, the modes ── */
+/* ── Phones' Blog tab (src/pages/Blog.tsx) ── */
+.blog-list {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 16px calc(var(--tabbar-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blog-heading {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.blog-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+a.blog-card {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.blog-card.latest {
+  flex-direction: column;
+}
+
+.blog-card-board {
+  flex-shrink: 0;
+  width: 104px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.latest .blog-card-board {
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
+}
+
+.blog-card-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.latest .blog-card-text {
+  padding: 0 4px 4px;
+}
+
+/* Beside a small board, the summary keeps to three lines. */
+a.blog-card:not(.latest) .blog-card-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.latest strong {
+  font-size: 20px;
+}
+
+.blog-card strong {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.blog-card-meta {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.blog-card-desc {
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.blog-card-skel {
+  display: block;
+  height: 128px;
+}
+
+.blog-card-skel.latest {
+  height: 480px;
+}
+
+/* A post: the blog's own page, between the bar with Back and the tabs. */
+.blog-page.reading {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: var(--app-h);
+  padding-bottom: var(--tabbar-h);
+}
+
+.blog-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--bg);
+}
+
 .puzzle-hub {
   box-sizing: border-box;
   max-width: 640px;
@@ -11489,63 +11651,94 @@ a.you-row:active {
   color: var(--streak);
 }
 
-/* The ways in as one row of three, so all of them are on the first screen. */
-.hub-modes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.hub-mode {
-  position: relative;
+/* Puzzles' buttons in the tab bar: the modes menu's square beside Solve, and the modes over the page above them. */
+.tabbar-play-row {
   display: flex;
-  flex-direction: column;
   gap: 8px;
-  padding: 10px;
-  color: inherit;
-  text-decoration: none;
-  font-size: 13px;
-  line-height: 1.25;
 }
 
-.hub-mode strong {
-  font-weight: 600;
+.tabbar-play-row .tabbar-play {
+  flex: 1;
 }
 
-.hub-mode-icon {
-  --tone: var(--brand);
+.tabbar-more {
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
-  color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
-.hub-mode.amber .hub-mode-icon {
-  --tone: var(--tone-amber);
-}
-
-.hub-mode.rose .hub-mode-icon {
-  --tone: var(--tone-rose);
-}
-
-.hub-mode-icon svg {
-  width: 19px;
-  height: 19px;
+.tabbar-more svg {
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.tabbar-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* A mode: a button like Solve below it, and in its colour. Opening, they rise out from behind Solve. */
+.tabbar-mode {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  animation: mode-rise 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mode-rise {
+  from {
+    translate: 0 calc(var(--from) * 52px);
+    opacity: 0;
+  }
+}
+
+/* Solve stays in front while they come out from behind it. */
+.tabbar-play-row {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar-mode {
+    animation: none;
+  }
+}
+
+.tabbar-mode-icon {
+  display: grid;
+}
+
+.tabbar-mode-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.hub-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+.tabbar-mode-badge {
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
@@ -11553,16 +11746,181 @@ a.you-row:active {
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: var(--tone-rose);
-  color: #2a0710;
+  background: var(--brand-ink);
+  color: var(--brand);
   font-size: 12px;
   font-weight: 800;
 }
 
-/* The daily puzzle's board gives way on a short phone, so Solve stays above the tabs. */
-.puzzle-hub .daily-board {
-  align-self: center;
-  width: min(100%, max(200px, calc(100dvh - 537px)));
+.tabbar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* The puzzle path: tiles in your board's colours, swinging side to side, the furthest ahead at the top. Done ones
+   are filled in your colour; mistakes from your own games are in rose. */
+.path-intro {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.path-intro strong {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.puzzle-path {
+  --tile: 58px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.path-stop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  translate: calc(var(--swing) * 62px) 0;
+}
+
+.path-stop.current {
+  --tile: 74px;
+}
+
+.path-tile-link {
+  display: block;
+  border-radius: 16px;
+  text-decoration: none;
+}
+
+.path-tile {
+  position: relative;
+  box-sizing: border-box;
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.path-tile.ahead.light {
+  background: var(--sq-light);
+}
+
+.path-tile.ahead.dark {
+  background: var(--sq-dark);
+}
+
+.path-tile.ahead {
+  opacity: 0.6;
+}
+
+.path-tile.done,
+.path-tile.current {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.path-tile.current {
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+.path-tile svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.path-tile.current {
+  font-size: 24px;
+}
+
+/* The chapter you're on: a marker sitting on its top edge. */
+.path-marker {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.path-tile .path-marker svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* A chapter's puzzles, as dots under its tile. */
+.path-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.path-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.path-dots i.on {
+  background: var(--brand);
+}
+
+
+
+/* What a stop is, beside its tile: on the side with room. */
+.path-label {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.path-stop .path-label {
+  top: calc(var(--tile) / 2);
+}
+
+.label-right .path-label {
+  left: calc(50% + var(--tile) / 2 + 18px);
+}
+
+.label-left .path-label {
+  right: calc(50% + var(--tile) / 2 + 18px);
+  text-align: right;
+}
+
+.path-label strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
 }
 
 /* Solving on a phone: the board edge to edge, like a game. */

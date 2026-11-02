@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GameReport, MoveClass } from '../lib/classify'
 import type { Color } from '../lib/evaluation'
 import { download } from '../lib/download'
+import { canShare, shareLink } from '../lib/nativeApp'
 import { exportPgn, pgnFileName } from '../lib/pgn'
 import type { BoardTheme } from '../lib/settings'
 import { EMBED_SIZES, embedUrl, gameShareText, iframeSnippet, momentShareText, moveLabel, shareUrl, type EmbedSize } from '../lib/share'
@@ -161,8 +162,8 @@ export function ShareDialog({ onClose, line, currentNode, headers, orientation, 
             <input className="input mono" readOnly value={url || 'Making link…'} aria-label="Share link" onFocus={(e) => e.target.select()} />
             <CopyButton text={url} label="Copy link" />
           </div>
-          {typeof navigator.share === 'function' && (
-            <button className="btn ghost" disabled={!url} onClick={() => void navigator.share({ title: 'Rookahead', text, url }).catch(() => {})}>
+          {canShare() && (
+            <button className="btn ghost" disabled={!url} onClick={() => void shareLink({ title: 'Rookahead', text, url }).catch(() => {})}>
               <ShareIcon />
               Share…
             </button>

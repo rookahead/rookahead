@@ -9,6 +9,7 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { startViewTransition } from './hooks/useSettled'
+import { forwardToApp } from './lib/nativeApp'
 import { startPixelGrid } from './lib/pixelGrid'
 import './index.css'
 
@@ -30,17 +31,20 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}))
 }
 
-// Boards line up with the screen's pixels (src/lib/pixelGrid.ts).
-startPixelGrid()
+// A sign-in started in the Android app, back in the Chrome tab it opened: it goes on to the app (nativeApp.ts).
+if (!forwardToApp()) {
+  // Boards line up with the screen's pixels (src/lib/pixelGrid.ts).
+  startPixelGrid()
 
-const container = document.getElementById('root')!
-const root = createRoot(container)
-const app = (
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
-// The placeholder page from index.html fades into the app rather than cutting to it.
-const fade = container.querySelector('.boot') && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches
-if (fade) startViewTransition(() => flushSync(() => root.render(app)))
-else root.render(app)
+  const container = document.getElementById('root')!
+  const root = createRoot(container)
+  const app = (
+    <StrictMode>
+      <App />
+    </StrictMode>
+  )
+  // The placeholder page from index.html fades into the app rather than cutting to it.
+  const fade = container.querySelector('.boot') && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (fade) startViewTransition(() => flushSync(() => root.render(app)))
+  else root.render(app)
+}

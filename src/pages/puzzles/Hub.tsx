@@ -1,25 +1,32 @@
-import { DailyCard } from '../../components/DailyCard'
+import type { CSSProperties } from 'react'
+import { boardColors } from '../../components/Board'
 import { Link } from '../../components/Link'
 import { Flame } from '../../components/PuzzleIcons'
-import { TAB_ICONS } from '../../components/Tabs'
-import { useMistakes } from '../../hooks/useMistakes'
+import { PER_STOP, puzzlePath, type Stop } from '../../lib/puzzlePath'
 import { localDayNumber } from '../../lib/puzzles'
 import { dayStreak, type PuzzleProgress } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 
-/** Phones' Puzzles tab: your streaks, today's puzzle, and the ways in as one row, all on one screen. Each mode then opens full screen. */
+/** Done stops kept on screen under the current one. */
+const BEHIND = 8
+/** The path's sideways swing, in steps of a tile's width, stop by stop. */
+const SWING = [0, 0.8, 1.3, 0.8, 0, -0.8, -1.3, -0.8]
+
+const CHECK = 'M5 12.5 10 17.5 19 7'
+// The marker over the chapter you're on.
+const ROOK = 'M7 4h2v2h2V4h2v2h2V4h2v4l-2 1.5V14l2 2v3H7v-3l2-2V9.5L7 8z'
+
+/**
+ * Phones' Puzzles tab: your streaks and your path of chapters, five rated puzzles each;
+ * the tab bar's button goes on from the current one, and its menu has the other modes (TabBar.tsx).
+ */
 export function PuzzleHub({ progress, settings }: { progress: PuzzleProgress; settings: Settings }) {
-  const mistakes = useMistakes()
-  const waiting = mistakes?.filter((m) => !progress.mistakesSolved.includes(m.id)).length ?? 0
+  const path = puzzlePath(progress.played)
   const days = dayStreak(progress, localDayNumber(new Date()))
-  const sprintBest = Math.max(0, ...Object.values(progress.sprintBest).map(Number))
-  const modes = [
-    { to: '/puzzles/rated', tone: 'sky', icon: TAB_ICONS.rated, title: 'Rated puzzles', sub: `At your level · rating ${progress.rating}` },
-    { to: '/puzzles/sprint', tone: 'amber', icon: TAB_ICONS.sprint, title: 'Puzzle Sprint', sub: sprintBest ? `3 min · 5 min · Survival · best ${sprintBest}` : '3 min · 5 min · Survival' },
-    { to: '/puzzles/mistakes', tone: 'rose', icon: TAB_ICONS.mistakes, title: 'Fix your mistakes', sub: 'Positions from your own games', badge: waiting },
-  ]
+  const { light, dark } = boardColors(settings.boardTheme, settings.palette)
+  const shown = path.stops.slice(Math.max(0, path.current - BEHIND)).reverse()
   return (
-    <main className="puzzle-hub">
+    <main className="puzzle-hub" style={{ '--sq-light': light, '--sq-dark': dark } as CSSProperties}>
       <header className="puzzle-hub-head">
         <h1>Puzzles</h1>
         <span>
@@ -45,19 +52,64 @@ export function PuzzleHub({ progress, settings }: { progress: PuzzleProgress; se
         </div>
       </section>
 
-      <DailyCard theme={settings.boardTheme} />
-
-      <nav className="hub-modes" aria-label="Puzzle modes">
-        {modes.map((m) => (
-          <Link key={m.to} to={m.to} className={`home-card hub-mode ${m.tone}`} title={m.sub}>
-            <span className="hub-mode-icon" aria-hidden>
-              <svg viewBox="0 0 24 24">{m.icon}</svg>
-            </span>
-            <strong>{m.title}</strong>
-            {m.badge ? <span className="hub-badge">{m.badge}</span> : null}
-          </Link>
+      <p className="path-intro">
+        Your path: <strong>5 rated puzzles</strong> to a chapter.
+      </p>
+      <ol className="puzzle-path" aria-label="Your puzzle path">
+        {shown.map((stop) => (
+          <PathStop key={stop.index} stop={stop} />
         ))}
-      </nav>
+      </ol>
     </main>
+  )
+}
+
+function PathStop({ stop }: { stop: Stop }) {
+  const lean = SWING[stop.index % SWING.length]
+  const swing = { '--swing': lean } as CSSProperties
+  const square = stop.index % 2 ? 'dark' : 'light'
+  const chapter = stop.index + 1
+  // Its five puzzles as dots under the tile, filled as you play them.
+  const filled = stop.state === 'done' ? PER_STOP : (stop.inStop ?? 0)
+  const tile = (
+    <span className={`path-tile ${stop.state} ${square}`}>
+      {stop.state === 'done' ? (
+        <svg viewBox="0 0 24 24" aria-hidden>
+          <path d={CHECK} />
+        </svg>
+      ) : (
+        chapter
+      )}
+      {stop.state === 'current' && (
+        <span className="path-marker" aria-hidden>
+          <svg viewBox="0 0 24 24">
+            <path d={ROOK} />
+          </svg>
+        </span>
+      )}
+    </span>
+  )
+  const what = `${stop.inStop ?? 0} of ${PER_STOP} puzzles`
+  return (
+    <li className={`path-stop ${stop.state} label-${lean > 0 ? 'left' : 'right'}`} style={swing} aria-current={stop.state === 'current' ? 'step' : undefined}>
+      {stop.state === 'current' ? (
+        <Link to="/puzzles/rated" className="path-tile-link" aria-label={`Chapter ${chapter}: ${what}`}>
+          {tile}
+        </Link>
+      ) : (
+        tile
+      )}
+      <span className="path-dots" aria-hidden>
+        {Array.from({ length: PER_STOP }, (_, i) => (
+          <i key={i} className={i < filled ? 'on' : undefined} />
+        ))}
+      </span>
+      {stop.state === 'current' && (
+        <span className="path-label">
+          <strong>Chapter {chapter}</strong>
+          <span>{what}</span>
+        </span>
+      )}
+    </li>
   )
 }

@@ -4,6 +4,8 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { useSyncExternalStore } from 'react'
 import { avatarBlob } from './avatar'
 import { googleAuthUrl, randomHex, readGoogleReturn, sha256Hex } from './googleSignIn'
+import { inApp } from './install'
+import { appReturnTarget, appReturnUrl, appState, openInBrowser } from './nativeApp'
 import { afterSignIn, navigate } from './router'
 import { deviceLook, restoreLook } from './settings'
 import { forgetLocal, syncOnce, type Remote } from './sync'
@@ -104,7 +106,8 @@ function signInReturning(): boolean {
  * the address becomes the page you were headed for, sign-in params and all (Supabase reads them from any
  * page), so the account page never shows. `landedOn` is that account page, for showing a failure. */
 let landedOn: string | null = null
-if (ACCOUNTS_ENABLED && typeof location !== 'undefined' && /^\/(login|signup)\/?$/.test(location.pathname)) {
+// (Not a sign-in from the Android app, back in its Chrome tab: that goes on to the app as it came, nativeApp.ts.)
+if (ACCOUNTS_ENABLED && typeof location !== 'undefined' && /^\/(login|signup)\/?$/.test(location.pathname) && !appReturnTarget()) {
   const url = new URL(location.href)
   const callback = CALLBACK_PARAMS.filter((p) => url.searchParams.has(p)).map((p) => [p, url.searchParams.get(p)!] as const)
   if (callback.length) {
@@ -318,6 +321,36 @@ export async function startAccounts(): Promise<void> {
   if (callback && !data.session && landedOn) navigate(landedOn, { replace: true })
 }
 
+/**
+ * The Android app: a sign-in finished in its Chrome tab, handed back (nativeApp.ts) as the address it returned to.
+ * It finishes here, in the page that started it (where Supabase kept its half of the exchange), and the page you
+ * were headed for opens at once.
+ */
+export async function finishAppSignIn(path: string): Promise<void> {
+  const url = new URL(path, location.origin)
+  if (url.pathname === GOOGLE_RETURN_PATH) {
+    history.replaceState(history.state, '', url.pathname + url.hash)
+    return finishGoogle()
+  }
+  const code = url.searchParams.get('code')
+  const failed = url.searchParams.get('error_description') ?? url.searchParams.get('error')
+  url.searchParams.delete('app')
+  CALLBACK_PARAMS.forEach((p) => url.searchParams.delete(p))
+  const back = url.pathname + url.search
+  setState({ status: 'loading' })
+  navigate(afterSignIn(back), { replace: true })
+  finishingSignIn = true
+  const c = await client()
+  const result = code ? await c.auth.exchangeCodeForSession(code) : null
+  const { data } = await c.auth.getSession()
+  finishingSignIn = false
+  applySession(data.session)
+  if (!data.session) {
+    setState({ error: callbackError(failed ?? result?.error?.message ?? '') })
+    navigate(back, { replace: true })
+  }
+}
+
 /** Back from Google: hand its ID token to Supabase. The page you were headed for opens at once (signing in
  * shows there); only a failure goes back to the account page, to say what went wrong. */
 async function finishGoogle(): Promise<void> {
@@ -437,17 +470,24 @@ const returnUrl = () => location.origin + location.pathname + location.search
 export async function signInWithGoogle(): Promise<string | null> {
   if (GOOGLE_CLIENT_ID && GOOGLE_HOSTS.includes(location.hostname)) {
     const nonce = randomHex()
-    const state = randomHex(16)
+    // The app's Google sign-in opens in a Chrome tab, and its return goes on to the app (nativeApp.ts).
+    const state = inApp() ? await appState(randomHex(16)) : randomHex(16)
     try {
       sessionStorage.setItem(GOOGLE_PENDING_KEY, JSON.stringify({ state, nonce, back: location.pathname + location.search }))
     } catch {
       return 'Your browser is blocking storage, which signing in needs.'
     }
-    location.assign(googleAuthUrl({ clientId: GOOGLE_CLIENT_ID, redirectUri: location.origin + GOOGLE_RETURN_PATH, nonce: await sha256Hex(nonce), state }))
+    const url = googleAuthUrl({ clientId: GOOGLE_CLIENT_ID, redirectUri: location.origin + GOOGLE_RETURN_PATH, nonce: await sha256Hex(nonce), state })
+    if (!(await openInBrowser(url))) location.assign(url)
     return null
   }
   // Elsewhere (other previews): Supabase's own Google sign-in.
   const c = await client()
+  if (inApp()) {
+    const { data, error } = await c.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: await appReturnUrl(returnUrl()), skipBrowserRedirect: true } })
+    if (data.url) await openInBrowser(data.url)
+    return error?.message ?? null
+  }
   const { error } = await c.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: returnUrl() } })
   return error?.message ?? null
 }

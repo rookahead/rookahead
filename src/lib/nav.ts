@@ -37,7 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 /** The phone's tab bar: My games and Game review share the Review tab; You holds the profile and settings. Playing starts from Home's button. */
 export interface PhoneTab {
-  id: 'home' | 'review' | 'puzzles' | 'analyze' | 'you'
+  id: 'home' | 'puzzles' | 'analyze' | 'blog' | 'you'
   label: string
   path: string
   icon: string
@@ -46,8 +46,7 @@ export interface PhoneTab {
 }
 
 export const PHONE_TABS: PhoneTab[] = [
-  { id: 'home', label: 'Home', path: '/', icon: 'M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5', routes: ['home', 'legendary', 'play'] },
-  { id: 'review', label: 'Review', path: '/games', icon: 'M4 20V10M10 20V4M16 20v-8M22 20H2', routes: ['games', 'analysis'] },
+  { id: 'home', label: 'Home', path: '/', icon: 'M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5', routes: ['home', 'legendary', 'play', 'games', 'analysis'] },
   {
     id: 'puzzles',
     label: 'Puzzles',
@@ -56,11 +55,21 @@ export const PHONE_TABS: PhoneTab[] = [
     routes: ['puzzles'],
   },
   { id: 'analyze', label: 'Analyze', path: '/board', icon: 'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z', routes: ['board'] },
+  { id: 'blog', label: 'Blog', path: '/blog', icon: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11M9 8h6M9 11h4', routes: ['blog'] },
   { id: 'you', label: 'You', path: '/you', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0', routes: ['you', 'settings'] },
 ]
 
+/** Review's Load a game, asked for from the tab bar. */
+export const LOAD_GAME_EVENT = 'rookahead:load-game'
+
+/** Each phone tab's main thing to do, as a big button in the tab bar above the tabs. */
+export const PHONE_ACTIONS: Partial<Record<Route, { label: string; to?: string; event?: string }>> = {
+  home: { label: 'Play the computer', to: '/play' },
+  games: { label: 'Load a game', event: LOAD_GAME_EVENT },
+}
+
 /** The tabs whose pages slide as real elements (App.tsx). Analyze is full screen and has its bar to send away. */
-const HAND_SLID = new Set(['/', '/games', '/puzzles', '/you'])
+const HAND_SLID = new Set(['/', '/puzzles', '/blog', '/you'])
 
 /**
  * Whether going from one tab to another slides the real pages rather than a view transition. A view transition
