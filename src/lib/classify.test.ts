@@ -709,6 +709,24 @@ describe('withClasses', () => {
   })
 })
 
+describe('the only fast mate', () => {
+  // 1.e4 e5 2.Qh5 Nc6 3.Bc4 Nf6 with three made-up mates on the board, none of them the only move by winning chance.
+  const UCIS = ['e2e4', 'e7e5', 'd1h5', 'b8c6', 'f1c4', 'g8f6']
+  const cls = (entries: (Partial<ReviewedPosition> & { score: Score })[], ply: number) => {
+    const { line, evals } = game(UCIS, entries)
+    return classifyGame(line, evals).moves[line[ply].id].cls
+  }
+  const quiet = { score: cp(300), bestMove: 'e2e4' }
+
+  it('is Clutch on the move that starts the mate', () => {
+    expect(cls([quiet, quiet, quiet, { ...quiet, bestMove: 'b8c6' }, { score: mate(3), bestMove: 'f1c4', second: cp(900) }, { score: mate(2), bestMove: 'g8f6' }, { score: mate(2) }], 5)).toBe('great')
+  })
+
+  it('is Best on a move that carries out a mate already on the board', () => {
+    expect(cls([quiet, quiet, quiet, { score: mate(3), bestMove: 'b8c6' }, { score: mate(3), bestMove: 'f1c4', second: cp(900) }, { score: mate(2), bestMove: 'g8f6' }, { score: mate(2) }], 5)).toBe('best')
+  })
+})
+
 describe('a deflection', () => {
   it('marks 11…Nxg3 Legendary: 12.hxg3 opens the h-file to the h1 rook, and anything else loses it too', () => {
     const { line, evals, deep } = (() => {

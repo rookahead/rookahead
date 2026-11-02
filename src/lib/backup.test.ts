@@ -198,7 +198,7 @@ describe('a game that ends in checkmate', () => {
     expect(cls('Qg5', 58)).toBe('best') // 30.Nxd5 Qxc1 31.Nf6+ gxf6 32.Rxc1 gives nothing up
     expect(cls('Rd6', 62)).toBe('great') // the only forced mate, and 32.Rf2 doesn't take the bishop
     expect(cls('Rxd5', 63)).toBe('excellent') // 32.Rf2 holds out longer
-    expect(cls('Rh6+', 64)).toBe('great')
+    expect(cls('Rh6+', 64)).toBe('best') // carries out the mate Rd6 started
   })
 
   it('makes 11…Nxb4 Clutch: the only move that keeps the game level', () => {

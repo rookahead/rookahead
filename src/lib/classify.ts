@@ -419,7 +419,8 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
       // The only move (Clutch): every other move gives up what we have, an advantage, a level game or a
       // worse one that holds, or would be a Blunder even where it keeps some advantage (+6.0 to +0.9).
       // Another move that keeps most of an advantage leaves it no Clutch.
-      // Or it's the only fast mate (the next-best move doesn't mate, or takes 3+ moves longer).
+      // Or it's the only fast mate (the next-best move doesn't mate, or takes 3+ moves longer), when it
+      // starts the mate: the moves that carry out one already on the board stay Best (32…Rh6+ after 31…Rd6).
       // The only good move (for giving up the exchange): every alternative would be a mistake or worse,
       // short of leaving us clearly winning. A mating sacrifice only needs the fastest mate, 2+ moves
       // ahead of the next-best.
@@ -434,7 +435,9 @@ export function classifyGame(line: MoveNode[], evals: Record<string, ReviewedPos
         onlyGood = winAfter >= HOLDING && gap >= LOSS_BANDS.inaccuracy && secondWin < 85
         const mate = mateIn(before.score, color)
         const secondMate = mateIn(before.second, color)
-        onlyMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 3)
+        const older = line[i - 2] && evals[line[i - 2].fen]
+        const mateRunning = older !== undefined && mateIn(older.score, color) !== null
+        onlyMate = mate !== null && mate >= 2 && !mateRunning && (secondMate === null || secondMate >= mate + 3)
         fastestMate = mate !== null && mate >= 2 && (secondMate === null || secondMate >= mate + 2)
       }
 

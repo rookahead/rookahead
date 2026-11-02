@@ -132,7 +132,9 @@ leaves White a queen down). Either of two ways:
 3. Afterwards you're level or better, or holding a worse game that isn't lost: 30% or more (about −2.3).
    Below that, it only loses more slowly.
 
-**The only fast mate.** It's the only fast mate.
+**The only fast mate.** It's the only fast mate, and it starts the mate. The moves that carry out a mate
+already on the board stay Best: after 31…Rd6, Clutch for finding it, 32…Rh6+ is only the next step. The
+mate that's the only move by winning chance is still Clutch (8.Nd5#).
 
 Never Clutch: taking back what the opponent just took (a recapture on the same square, or a capture
 anywhere that brings the material back to where it was before their capture, within a pawn, and no
