@@ -1721,3 +1721,13 @@ kbd {
     transform: rotate(-8deg);
   }
 }
+
+/* Inside the app's Blog tab: the post alone; the app has the bars and the list of posts. */
+[data-framed] .head,
+[data-framed] .side,
+[data-framed] .toc-rail,
+[data-framed] .posts-menu,
+[data-framed] .try,
+[data-framed] .foot {
+  display: none;
+}

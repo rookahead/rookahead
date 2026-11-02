@@ -293,9 +293,13 @@ const SEARCH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11"
 // a Graphite board from before the Theme board and a Gold that was only the default for a day are the defaults.
 const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='gold'&&v<3))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
+// Inside the app's Blog tab (a frame on a phone, src/pages/Blog.tsx): just the post, in the app's look, and a link asks
+// the app to open it.
+const FRAMED = `if(window!==top){r.setAttribute('data-framed','');var p=parent.document.documentElement;r.dataset.theme=p.dataset.theme;r.toggleAttribute('data-black',p.hasAttribute('data-black'));if(p.dataset.palette)r.dataset.palette=p.dataset.palette;document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||(a.hash&&a.pathname===location.pathname))return;e.preventDefault();parent.postMessage({rookaheadOpen:a.href},location.origin)})}`
+
 // Before the first paint too: ⌘ for the search shortcut on a Mac, and the announcement gone if you closed it.
 const headScript = (announce) =>
-  `<script>try{var r=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.userAgent))r.setAttribute('data-mac','');if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
+  `<script>try{var r=document.documentElement;if(/Mac|iPhone|iPad/.test(navigator.userAgent))r.setAttribute('data-mac','');${FRAMED}if(localStorage.getItem('rookahead.blog.announce')===${JSON.stringify(announce?.slug ?? '')})r.setAttribute('data-announce-closed','')}catch(e){}</script>`
 
 // Copy link, closing the announcement, the sidebar's highlight, and the table of contents following the section you're reading.
 const SCRIPT = `<script>
@@ -414,6 +418,33 @@ ${body}
 }
 
 const cover = (p, used) => boardSvg(p.cover ?? DEFAULT_COVER, used, null, { bare: true })
+
+/** A post's cover as the app draws it (src/pages/Blog.tsx, with its MiniBoard): the position, its last move, the badge. */
+function coverData(spec = DEFAULT_COVER) {
+  const opts = {}
+  for (const line of spec.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const [key, ...rest] = line.split(/\s+/)
+    if (key === 'fen') opts.fen = rest.join(' ')
+    else if (key === 'moves') opts.moves = rest.join(' ')
+    else if (key === 'last') opts.last = rest[0]
+    else if (key === 'badge') opts.badge = { sq: rest[0], cls: rest[1] }
+    else if (key === 'flip') opts.flip = true
+  }
+  const chess = new Chess(opts.fen)
+  if (opts.moves) {
+    let move
+    for (const san of opts.moves.replace(/\d+\.(\.\.)?/g, ' ').split(/\s+/).filter(Boolean)) move = chess.move(san)
+    if (move && !opts.last) opts.last = move.from + move.to
+  }
+  const last = opts.last ? [opts.last.slice(0, 2), opts.last.slice(2, 4)] : undefined
+  return {
+    fen: chess.fen(),
+    last,
+    // The badge, when it marks the last move (the app puts a grade on the square the last move went to).
+    grade: opts.badge && last && opts.badge.sq === last[1] ? opts.badge.cls : undefined,
+    flip: opts.flip ?? undefined,
+  }
+}
 
 function indexPage(posts) {
   const used = new Set()
@@ -785,6 +816,8 @@ fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))
 fs.writeFileSync(path.join(out, 'feed.xml'), feed(posts))
 for (const pg of pages) fs.writeFileSync(path.join(PUBLIC, `${pg.slug}.html`), pg.layout === 'donate' ? await donatePage(pg, posts) : sitePage(pg, posts))
 fs.writeFileSync(path.join(out, 'search.json'), search)
+// The app's Blog tab lists the posts from this.
+fs.writeFileSync(path.join(out, 'posts.json'), JSON.stringify(posts.map((p) => ({ slug: p.slug, title: p.title, description: p.description, date: p.date, minutes: p.minutes, cover: coverData(p.cover) }))))
 fs.writeFileSync(path.join(out, 'search.js'), searchJs)
 fs.writeFileSync(path.join(out, 'theme.css'), theme)
 fs.writeFileSync(path.join(PUBLIC, 'sitemap.xml'), sitemap(posts))
