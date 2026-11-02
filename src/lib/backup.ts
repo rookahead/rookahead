@@ -29,6 +29,13 @@ export interface BackedUp {
   need: string[]
 }
 
+/**
+ * How a review searches and backs up its evals. Bump it when a change here or in searchGame can change a verdict:
+ * a saved review keeps only the final scores, so it can't follow that without the engine, and is reviewed again
+ * when it's next opened. A change to the rules alone is RULES_VERSION's: those reviews are graded again at once.
+ */
+export const SEARCH_VERSION = 1
+
 /** The position's own search and the game's continuation disagree by this much (win %): look deeper. */
 const JUMP = 10
 

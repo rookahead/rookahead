@@ -18,6 +18,8 @@ export interface CachedReview {
   at: number
   /** The RULES_VERSION that graded it; missing on reviews saved before the rules had versions. */
   rules?: number
+  /** The SEARCH_VERSION that searched it; missing on reviews saved before searches had versions. */
+  search?: number
   /** What a new set of rules needs to grade it again without the engine (regrade.ts); missing on older reviews. */
   lines?: ReviewLines
 }

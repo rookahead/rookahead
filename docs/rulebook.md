@@ -182,5 +182,7 @@ These are where the rules draw their lines. Tuning them on real games is allowed
 A move that falls 3% or more short of the engine's is searched deeper before its verdict is given: at
 review depth a stronger move can look closer than it is (26…Qg3, Solid until 26…Bxg2+ is searched deeper).
 
-When a rule changes, saved reviews are graded again with it (RULES_VERSION in classify.ts). Share links
+When a rule changes, saved reviews are graded again with it (RULES_VERSION in classify.ts). When the
+search changes, they keep only final scores to go on, so a game is reviewed again the next time it's opened
+(SEARCH_VERSION in backup.ts). Share links
 keep the verdicts they were made with.

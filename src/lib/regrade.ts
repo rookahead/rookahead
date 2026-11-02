@@ -1,4 +1,5 @@
 import { depthOfReview, type PositionEval } from '../hooks/useAnalysis'
+import { SEARCH_VERSION } from './backup'
 import { classifyGame, RULES_VERSION, type GameReport } from './classify'
 import { loadOpeningBook } from './openings'
 import { loadReviews, saveReviews, type CachedReview } from './reviewCache'
@@ -47,12 +48,16 @@ export async function finishedReview(line: MoveNode[], headers: PgnHeaders, orie
     brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
     at: Date.now(),
     rules: RULES_VERSION,
+    search: SEARCH_VERSION,
     lines: reviewLines(line, evals),
   }
 }
 
 /** Is this review graded under older rules? */
 export const isStale = (review: CachedReview) => review.rules !== RULES_VERSION
+
+/** Was this review searched an older way? Only the engine can bring it up to date. */
+export const isOutdated = (review: CachedReview) => review.search !== SEARCH_VERSION
 
 /**
  * Grades a saved review again under today's rules, from what it saved: no engine. Null when it can't

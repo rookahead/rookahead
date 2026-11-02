@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PositionEval } from '../hooks/useAnalysis'
+import { openMyGame } from '../hooks/useMyGames'
 import { classifyGame, RULES_VERSION } from './classify'
-import { finishedReview, isStale, regrade, reviewLines } from './regrade'
+import type { MyGame } from './myGames'
+import { finishedReview, isOutdated, isStale, regrade, reviewLines } from './regrade'
 import type { CachedReview } from './reviewCache'
+import { readSession } from './session'
 import { decodeShare, encodeShare, toSharedGame } from './share'
 import { addLine, createTree, mainline, ROOT_ID } from './tree'
 
@@ -45,5 +48,40 @@ describe('regrade', () => {
 
   it('needs the engine again for a review saved before reviews kept their lines', async () => {
     expect(await regrade(await oldReview(false), () => false)).toBeNull()
+  })
+
+  it('marks a finished review as searched the way reviews search today', async () => {
+    expect(isOutdated(await finishedReview(line, {}, 'white', evals, classifyGame(line, evals), 16))).toBe(false)
+  })
+
+  it('needs the engine again for a review searched the old way, even once it is regraded', async () => {
+    const old = await oldReview()
+    expect(isOutdated(old)).toBe(true)
+    expect(isOutdated((await regrade(old, () => false))!.review)).toBe(true)
+  })
+
+  describe('opening a saved game', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    /** A device with nothing saved: what `openMyGame` writes for Analysis is read back from here. */
+    function device() {
+      const items = new Map<string, string>()
+      vi.stubGlobal('localStorage', { getItem: (k: string) => items.get(k) ?? null, setItem: (k: string, v: string) => void items.set(k, v), removeItem: (k: string) => void items.delete(k) })
+    }
+    const game = { key: 'pgn:1', pgn: '[SetUp "1"]\n[FEN "6k1/8/8/4p3/8/8/8/3R2K1 w - - 0 1"]\n\n1. Rd4 *', color: 'white' } as MyGame
+
+    it('shows a review searched the way reviews search today', async () => {
+      device()
+      await openMyGame(game, await finishedReview(line, {}, 'white', evals, classifyGame(line, evals), 16), { ply: 1 })
+      expect(readSession()).toMatchObject({ currentPly: 1, evals: { [line[1].fen]: { score: { type: 'cp', value: 95 } } } })
+      expect(readSession()?.review).toBeUndefined()
+    })
+
+    it('reviews a game searched the old way again, on the move it was opened at', async () => {
+      device()
+      await openMyGame(game, await oldReview(), { ply: 1 })
+      expect(readSession()).toMatchObject({ review: true, currentPly: 1 })
+      expect(readSession()?.evals).toEqual({})
+    })
   })
 })
