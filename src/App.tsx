@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { faviconUrl } from './components/RookLogo'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
@@ -252,47 +253,49 @@ export default function App() {
               You’re offline. Saved games still work.
             </p>
           )}
-          {homeMounted && (
-            <div {...slideHost('home')}>
-              <HomePage active={appRoute === 'home'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
-            </div>
-          )}
-          {gamesMounted && (
-            <div {...slideHost('games')}>
-              <GamesPage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
-            </div>
-          )}
-          {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
-          {(appRoute === 'puzzles' || sliding?.route === 'puzzles') && (
-            <div {...slideHost('puzzles')}>
-              <PuzzlesPage leaving={sliding?.route === 'puzzles'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
-            </div>
-          )}
-          {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
-          {(appRoute === 'you' || sliding?.route === 'you') && phone && (
-            <div {...slideHost('you')}>
-              <YouPage settings={settings} updateSettings={updateSettings} />
-            </div>
-          )}
-          {playMounted && (
-            <div className="page-host" hidden={appRoute !== 'play'}>
-              <PlayPage active={route === 'play'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
-            </div>
-          )}
-          {analysisMounted && (
-            <div className="analysis-host" hidden={appRoute !== 'analysis' && appRoute !== 'board'}>
-              <AnalysisPage
-                key={analysisKey}
-                settings={settings}
-                updateSettings={updateSettings}
-                engine={engine}
-                status={status}
-                active={onBoard}
-                blank={route === 'board'}
+          <ErrorBoundary>
+            {homeMounted && (
+              <div {...slideHost('home')}>
+                <HomePage active={appRoute === 'home'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
+              </div>
+            )}
+            {gamesMounted && (
+              <div {...slideHost('games')}>
+                <GamesPage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+              </div>
+            )}
+            {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
+            {(appRoute === 'puzzles' || sliding?.route === 'puzzles') && (
+              <div {...slideHost('puzzles')}>
+                <PuzzlesPage leaving={sliding?.route === 'puzzles'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
+              </div>
+            )}
+            {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
+            {(appRoute === 'you' || sliding?.route === 'you') && phone && (
+              <div {...slideHost('you')}>
+                <YouPage settings={settings} updateSettings={updateSettings} />
+              </div>
+            )}
+            {playMounted && (
+              <div className="page-host" hidden={appRoute !== 'play'}>
+                <PlayPage active={route === 'play'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
+              </div>
+            )}
+            {analysisMounted && (
+              <div className="analysis-host" hidden={appRoute !== 'analysis' && appRoute !== 'board'}>
+                <AnalysisPage
+                  key={analysisKey}
+                  settings={settings}
+                  updateSettings={updateSettings}
+                  engine={engine}
+                  status={status}
+                  active={onBoard}
+                  blank={route === 'board'}
                
-              />
-            </div>
-          )}
+                />
+              </div>
+            )}
+          </ErrorBoundary>
         </div>
         {phone && appRoute && <TabBar route={appRoute} />}
       </div>
