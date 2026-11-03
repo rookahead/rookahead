@@ -103,7 +103,7 @@ export function YouPage({ settings, updateSettings }: Props) {
               {(
                 [
                   ['dark', 'Dark'],
-                  ['black', 'Black'],
+                  ['black', 'AMOLED'],
                   ['light', 'Light'],
                   ['system', 'Auto'],
                 ] as [Appearance, string][]

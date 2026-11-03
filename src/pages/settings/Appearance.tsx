@@ -4,7 +4,7 @@ import { Section } from './shared'
 
 const THEMES: [Appearance, string, string][] = [
   ['dark', 'Dark', 'Dark, tinted with your colour.'],
-  ['black', 'Black', 'True black, for AMOLED screens.'],
+  ['black', 'AMOLED', 'Dark, on a true black page.'],
   ['light', 'Light', 'Bright, tinted with your colour.'],
   ['system', 'System', 'Follows your device.'],
 ]
@@ -34,7 +34,7 @@ function Sketch({ theme }: { theme: Appearance }) {
   )
 }
 
-/** Dark, black, light, or whatever the device uses. */
+/** Dark, AMOLED (true black), light, or whatever the device uses. */
 export function AppearanceSection({ settings, onChange }: { settings: Settings; onChange: (patch: Partial<Settings>) => void }) {
   return (
     <Section title="Appearance" lead="Choose how Rookahead looks.">

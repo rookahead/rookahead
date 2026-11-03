@@ -10504,6 +10504,13 @@ a.you-row:active {
   padding: 0 12px;
 }
 
+/* AMOLED is the longest of the four: on the narrowest phones they share the row tighter. */
+@media (max-width: 359px) {
+  .you-theme button {
+    padding: 0 8px;
+  }
+}
+
 .you-install {
   flex-direction: row;
   align-items: center;
