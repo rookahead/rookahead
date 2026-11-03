@@ -10,6 +10,11 @@ This page lists every change to the verdict rules, so you can see why a move's v
 
 ## 3 November 2026
 
+**Rules:** a piece you couldn't have saved isn't a sacrifice. If a fork with check wins one of your pieces whatever you do, the move that answers the check doesn't give it up. Neither does letting go of a pawn your opponent has just attacked. Both used to be called Legendary and are now graded like any other move. Thanks to whoever reported it. Saved reviews are graded again with the new rules.
+
+- A new colour theme, Lime: a soft lime on near-black greys, with a lime board to match.
+- Gold, Coral and Lime are calmer on the dark themes, and Gold stands out more on Light.
+- The Black appearance is now called AMOLED: the Dark theme on a true black page.
 - Premoves when you play the computer: pick up a piece while it's thinking and make your move, and it's played the moment the computer has moved. Turn them off in Board settings.
 - Choose what a pawn promotes to, from a column beside the board, or turn on Always promote to queen in Board settings (hold Alt to choose).
 - A bigger board on desktop. A game no longer has a bar above it, so the board takes that room, and it sits in the middle of the window's height.
