@@ -1274,7 +1274,8 @@ svg {
 .player-avatar {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
+  /* A rounded square, like the photos people upload; the corners scale with the size. */
+  border-radius: 24%;
   display: grid;
   place-items: center;
   flex-shrink: 0;
