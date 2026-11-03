@@ -62,7 +62,7 @@ const HOLDS = 45
  * The verdict rules' version. Bump it whenever docs/rulebook.md changes a verdict: a saved review graded
  * under older rules is reviewed again when it's opened, rather than showing verdicts the rules no longer give.
  */
-export const RULES_VERSION = 11
+export const RULES_VERSION = 12
 
 /** A Legendary sacrifice may fall this far short of the best move (expected points). */
 export const LEGENDARY_LOSS = 0.035
@@ -203,7 +203,10 @@ function findSacrifice(beforeFen: string, afterFen: string, pv: string[], color:
   const us = color === 'white' ? 'w' : 'b'
   const before = new Chess(beforeFen)
   const older = olderFen ? new Chess(olderFen) : null
-  const hungAlready = (sq: Square, type: string) => !stillHanging && hanging(before, sq, type, us) && (!older || hanging(older, sq, type, us))
+  // Lost already: a piece that hung before the opponent's last move too, a pawn they just attacked, or
+  // anything no move could have saved (a piece forked with the king, 29…Ne4+ 30.Kf4).
+  const hungAlready = (sq: Square, type: string) =>
+    hanging(before, sq, type, us) && (type === 'p' || (!stillHanging && (!older || hanging(older, sq, type, us))) || !savable(before, sq, type, us))
   const accepted = acceptedSacrifice(beforeFen, afterFen, pv, color, expected, hungAlready)
   if (accepted) return { kind: accepted, declined: false }
   const offered = offeredSacrifice(beforeFen, afterFen, pv, color, hungAlready)
@@ -214,6 +217,15 @@ function findSacrifice(beforeFen: string, afterFen: string, pv: string[], color:
 function hanging(chess: Chess, sq: Square, type: string, us: 'w' | 'b'): boolean {
   const piece = chess.get(sq)
   return Boolean(piece && piece.color === us && piece.type === type && enPrise(chess, sq, us, chess.attackers(sq, us === 'w' ? 'b' : 'w')))
+}
+
+/** Does some legal move leave our piece on `sq` (or wherever it goes) safe from being won? */
+function savable(chess: Chess, sq: Square, type: string, us: 'w' | 'b'): boolean {
+  return chess.moves({ verbose: true }).some((m) => {
+    const next = new Chess(chess.fen())
+    next.move(m)
+    return !hanging(next, m.from === sq ? m.to : sq, type, us)
+  })
 }
 
 export function isSacrifice(beforeFen: string, afterFen: string, pv: string[], color: Color, expected = Infinity, stillHanging = false): boolean {

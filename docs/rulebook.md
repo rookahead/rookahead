@@ -60,7 +60,10 @@ counts however obvious it is.
     compensation, as in 12.dxe5, a bishop given for a pawn while a pawn up at 0.00); a check that leaves
     a piece attacked but gives the opponent no time to take it; a piece that has been hanging since before
     the opponent's last move and is left hanging again, unless the move is also the only good move;
-    a piece left where it stands while the move attacks as much: if the opponent takes it, your next move
+    a pawn the opponent has just attacked and you let go (35…Ng3 leaves h7 to 36.Rxh7+, and
+    37.Rxg7+ takes a second pawn: that's not a sacrifice of two pawns); a piece that no move could save
+    (29…Ne4+ forks the king and the d6 bishop, so 30.Kf4 doesn't give the bishop up: every answer to the
+    check loses it); a piece left where it stands while the move attacks as much: if the opponent takes it, your next move
     wins back as much (5…Qxg2 in the Blackburne Shilling Gambit leaves the h8 rook to the f7 knight, but
     6.Nxh8 Qxh1+ is a rook for a rook). The piece that moved is still offered, whatever comes back: a
     person takes a queen they're given (14.Qxh3 Bxh3 15.Bxg5+).

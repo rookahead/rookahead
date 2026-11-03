@@ -533,6 +533,39 @@ describe('book, great, brilliant, miss, forced', () => {
     })
   })
 
+  describe('material the move could not keep', () => {
+    // A reported line, 2026: 28…Rh1+ 29.Kg3 Ne4+ forks the king and the d6 bishop, and 35.Rh8 attacks h7.
+    const start = '5R2/pp4pp/2pB2k1/5p2/1P6/P2N2KP/2P2nP1/7r b - - 5 29'
+
+    it('is not a sacrifice when no move saves the piece', () => {
+      // 30.Kf4: every answer to the check leaves the bishop, so it isn't given up.
+      const { line, evals } = game(
+        ['f2e4', 'g3f4'],
+        [
+          { score: cp(18), bestMove: 'f2e4', second: cp(374) },
+          { score: cp(15), bestMove: 'g3f4', second: cp(-7) },
+          { score: cp(24), pv: ['e4d6', 'f4e5', 'd6c4', 'e5e6'] },
+        ],
+        start,
+      )
+      expect(classifyGame(line, evals).moves[line[2].id].cls).toBe('best')
+    })
+
+    it('is not a sacrifice to let a pawn go that was just attacked', () => {
+      // 35…Ng3 threatens …Rh1#; 36.Rxh7+ Kg5 37.Rxg7+ takes two pawns, but h7 was simply left to the rook.
+      const { line, evals } = game(
+        ['d8h8', 'e4g3'],
+        [
+          { score: cp(-272), bestMove: 'e5f3', second: cp(-307) },
+          { score: cp(-577), bestMove: 'e4g3', second: cp(-404) },
+          { score: cp(-633), pv: ['h8h7', 'h5g5', 'h7g7', 'g5f6'] },
+        ],
+        '3R4/pp4pp/2p5/4N2k/1P2np2/P6P/2P3PK/5r2 w - - 0 35',
+      )
+      expect(classifyGame(line, evals).moves[line[2].id].cls).toBe('best')
+    })
+  })
+
   it('does not count an even trade left on offer as a sacrifice', () => {
     // Bxf6: the pawn can take back, but bishop for knight is a trade, not a sacrifice.
     expect(isSacrifice('4k3/6p1/5n2/8/8/8/1B6/4K3 w - - 0 1', '4k3/6p1/5B2/8/8/8/8/4K3 b - - 0 1', ['e8f7'], 'white')).toBe(false)
