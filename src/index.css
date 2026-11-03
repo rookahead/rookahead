@@ -6684,6 +6684,97 @@ button.user-avatar.guest:hover {
     /* Centred in the window's height, like Analysis: the padding above wins over the shared rule that does it. */
     padding-top: calc(var(--pad-y) + max(0px, (100vh - var(--nav-h) - 2 * var(--pad-y) - var(--column-h)) / 2));
   }
+
+  /* Focus (Play's ⤢), like Chess.com's: no sidebar, and the players and their clocks in a column beside
+     the board, so the board takes the window's whole height. */
+  :root[data-focus] {
+    --side-w: 0px;
+  }
+
+  :root[data-focus] .sidebar {
+    display: none;
+  }
+
+  :root[data-focus] .play-layout.play-game {
+    --pad-y: 16px;
+    --players-w: 180px;
+    --board-size: round(
+      down,
+      max(
+        280px,
+        min(
+          calc(100vh - 2 * var(--pad-y)),
+          calc(100cqw - var(--players-w) - var(--panel-w) - 2 * var(--gap) - 2 * var(--pad-x)),
+          1000px
+        )
+      ),
+      var(--board-step)
+    );
+    --column-h: var(--board-size);
+    grid-template-columns: var(--players-w) auto var(--panel-w);
+  }
+
+  /* The opponent at the top, you at the bottom, the two clocks meeting in the middle. */
+  .play-players {
+    height: var(--column-h);
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .play-players .player-bar {
+    height: auto;
+    padding: 0;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .play-players .player-bar:first-child .player-clock {
+    margin-top: auto;
+  }
+
+  /* You sit level with the board's bottom edge, with a clock or without one (an untimed game). */
+  .play-players .player-bar:last-child {
+    justify-content: flex-end;
+  }
+
+  .play-players .player-bar:last-child .player-clock {
+    order: -1;
+    margin-bottom: auto;
+  }
+
+  .play-players .player-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+  }
+
+  .play-players .player-info {
+    align-items: center;
+  }
+
+  .play-players .player-name {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .play-players .player-clock {
+    margin-left: 0;
+    min-width: 128px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 32px;
+    text-align: center;
+  }
+
+  .play-focus-close {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 40;
+  }
 }
 
 .play-panel-title {

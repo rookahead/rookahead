@@ -295,6 +295,22 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const showPly = useCallback((ply: number) => setViewPly(ply >= lastPly ? null : Math.max(0, ply)), [lastPly])
   const [flipped, setFlipped] = useState(false)
   const orientation = flipped ? other(game.color) : game.color
+  // Focus (desktop): the sidebar steps aside and the board takes the room. Remembered for the next game.
+  const [focus, setFocus] = useState(readFocus)
+  const toggleFocus = () =>
+    setFocus((f) => {
+      writeFocus(!f)
+      return !f
+    })
+  const focused = focus && active && !phone
+  useEffect(() => {
+    if (!focused) return
+    const root = document.documentElement
+    root.dataset.focus = ''
+    return () => {
+      delete root.dataset.focus
+    }
+  }, [focused])
 
   useEffect(() => {
     if (!active) return
@@ -308,6 +324,9 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
         ArrowDown: () => showPly(lastPly),
         End: () => showPly(lastPly),
         f: () => setFlipped((f) => !f),
+        Escape: () => {
+          if (focus) toggleFocus()
+        },
       }
       const action = actions[e.key]
       if (action) {
@@ -317,7 +336,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, showPly, shownPly, lastPly])
+  }, [active, showPly, shownPly, lastPly, focus])
 
   /** Plays a move for whoever is to move, pressing the clock and checking for the end. */
   const play = useCallback(
@@ -560,8 +579,20 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           getToken={() => encodeShare(toSharedGame(line, headers, orientation, null))}
         />
       )}
+      {focused && (
+        <>
+          <button className="icon-btn play-focus-close" onClick={toggleFocus} aria-label="Leave focus" title="Leave focus (Esc)">
+            <ToolIcon name="abort" />
+          </button>
+          {/* Focus: the players and their clocks stand beside the board, which takes the window's height. */}
+          <aside className="play-players">
+            {bar(other(orientation))}
+            {bar(orientation)}
+          </aside>
+        </>
+      )}
       <section className="play-board">
-        {bar(other(orientation))}
+        {!focused && bar(other(orientation))}
         <Board
           fen={shown.fen}
           orientation={orientation}
@@ -576,7 +607,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           autoQueen={settings.autoQueen}
           ends={ends}
         />
-        {bar(orientation)}
+        {!focused && bar(orientation)}
       </section>
 
       <aside className="panel play-panel">
@@ -598,6 +629,13 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
               </button>
             )}
             {!phone && gear}
+            {!phone && (
+              <button className={`icon-btn panel-gear ${focus ? 'active' : ''}`} onClick={toggleFocus} aria-pressed={focus} aria-label="Focus" title={focus ? 'Leave focus (Esc)' : 'Focus: a bigger board, nothing else around it'}>
+                <svg viewBox="0 0 24 24" aria-hidden>
+                  <path d={focus ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'} />
+                </svg>
+              </button>
+            )}
           </header>
           <div className="panel-body">
             {phone ? (
@@ -655,6 +693,25 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       </aside>
     </main>
   )
+}
+
+const FOCUS_KEY = 'rookahead.playFocus'
+
+function readFocus(): boolean {
+  try {
+    return localStorage.getItem(FOCUS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeFocus(on: boolean) {
+  try {
+    if (on) localStorage.setItem(FOCUS_KEY, '1')
+    else localStorage.removeItem(FOCUS_KEY)
+  } catch {
+    // Storage unavailable: not remembered.
+  }
 }
 
 // Material Icons (Apache 2.0), 24×24, drawn in the button's colour like NavIcon.
