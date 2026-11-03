@@ -10,9 +10,10 @@ import { MoveStrip } from '../components/MoveStrip'
 import { NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
+import { ROOK } from '../components/RookLogo'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { ShareDialog } from '../components/ShareDialog'
-import { Gear } from '../components/UserCard'
+import { AvatarFace, Gear } from '../components/UserCard'
 import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -31,6 +32,7 @@ import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type L
 import { onReselect } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
+import { useAccount } from '../lib/account'
 import type { Settings } from '../lib/settings'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
 
@@ -485,6 +487,15 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
 
   const material = materialState(shown.fen)
   const computerName = `Rookahead · Level ${level.level}`
+  // You: your username and photo once signed in (else "You" and its initial); the computer: the Rookahead rook.
+  const { account, username } = useAccount()
+  const yourName = username ?? 'You'
+  const yourFace = username ? <AvatarFace account={account} /> : undefined
+  const computerFace = (
+    <svg className="player-avatar-mark" viewBox="0 0 24 24" fill="currentColor">
+      <path d={ROOK} />
+    </svg>
+  )
   const clockOf = (c: Color) =>
     game.clock && (
       <span className={`player-clock ${game.clock.running === c && !game.outcome ? 'running' : ''} ${remaining(game.clock, c, now) < 30000 ? 'low' : ''}`}>
@@ -494,8 +505,9 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const bar = (c: Color) => (
     <PlayerBar
       color={c}
-      name={c === game.color ? 'You' : computerName}
+      name={c === game.color ? yourName : computerName}
       rating={c === game.color ? undefined : String(level.rating)}
+      avatar={c === game.color ? yourFace : computerFace}
       captured={material.captured[c]}
       advantage={material.advantage[c]}
       clock={clockOf(c)}

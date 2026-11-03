@@ -13,6 +13,8 @@ interface Props {
   advantage: number
   /** A clock, shown at the bar's right end (games with a time control). */
   clock?: React.ReactNode
+  /** A picture for the avatar (your photo, the computer's mark) instead of the name's initial. */
+  avatar?: React.ReactNode
 }
 
 function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
@@ -38,12 +40,12 @@ function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
   )
 }
 
-export function PlayerBar({ color, name, rating, result, captured, advantage, clock }: Props) {
+export function PlayerBar({ color, name, rating, result, captured, advantage, clock, avatar }: Props) {
   const opponent: Color = color === 'white' ? 'black' : 'white'
   return (
     <div className="player-bar">
       <div className={`player-avatar ${color}`} aria-hidden>
-        {name.trim()[0]?.toUpperCase() ?? '?'}
+        {avatar ?? name.trim()[0]?.toUpperCase() ?? '?'}
       </div>
       <div className="player-info">
         <div className="player-name">
