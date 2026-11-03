@@ -2,7 +2,7 @@
 // Every sound is built from two parts: a "tap" (a wooden piece meeting the board) and
 // a "chime" (a soft bell, for the moments that deserve a little ceremony).
 
-export type SoundKind = 'move' | 'capture' | 'castle' | 'check' | 'promote' | 'end' | 'success' | 'fail' | 'legendary' | 'swell'
+export type SoundKind = 'move' | 'premove' | 'capture' | 'castle' | 'check' | 'promote' | 'end' | 'success' | 'fail' | 'legendary' | 'swell'
 
 /** The sound for a move, read off its SAN. A check outranks everything else it might also be. */
 export function moveSoundKind(san: string): SoundKind {
@@ -235,6 +235,10 @@ export function playSound(kind: SoundKind, volume: number, lengthMs = 800) {
     switch (kind) {
       case 'move':
         tap(out, t)
+        break
+      case 'premove':
+        // A light, high click: the move is queued, not played.
+        tap(out, t, { gain: 0.35, pitch: 1.7, bright: 1.6, contact: 0.5 })
         break
       case 'capture':
         // Two pieces meeting: a harder, brighter, higher crack.

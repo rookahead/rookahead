@@ -84,8 +84,13 @@ interface Props {
   annotation?: MoveClass
   /** No moving pieces, ever (the embed viewer). Fixed for the board's lifetime: Chessground only reads it when it builds the board. */
   viewOnly?: boolean
-  /** No moving pieces right now (e.g. the computer is thinking); unlike viewOnly, this can change at any time. */
+  /** No moving pieces right now (e.g. looking back through a game); unlike viewOnly, this can change at any time. */
   locked?: boolean
+  /** Your colour, against the computer: while it's thinking you can pick up a piece and queue one move, played the
+   * moment it's your turn (if it's still legal). */
+  premove?: Color
+  /** A pawn reaching the last rank becomes a queen without asking; holding Alt as it lands asks after all. */
+  autoQueen?: boolean
   /** A puzzle's verdict on the last move: a ✓ or ✗ badge on its square. */
   mark?: 'correct' | 'wrong'
   /** How the game ended, marked on the kings (see endMarks). */
@@ -143,6 +148,14 @@ const END_INTRO_MS = 1800
 const PROMOTION_PIECES = ['q', 'n', 'r', 'b'] as const
 const ROLE: Record<string, string> = { q: 'queen', n: 'knight', r: 'rook', b: 'bishop' }
 
+const lastRank = (square: string) => square[1] === '8' || square[1] === '1'
+
+/** How many half-moves into the game a position is, from its FEN's move number and side to move. */
+function plyOf(fen: string) {
+  const [, turn, , , , move] = fen.split(' ')
+  return (Number(move) - 1) * 2 + (turn === 'b' ? 1 : 0)
+}
+
 /** Percent offsets of a square's top-left corner for the given orientation. */
 function squarePosition(square: Square, orientation: Color) {
   const file = square.charCodeAt(0) - 97
@@ -150,19 +163,38 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, mark, ends, legendary = false }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, premove, autoQueen = false, mark, ends, legendary = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const onMoveRef = useRef(onMove)
-  const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color } | null>(null)
+  // The promotion picker; for a premove it asks as the move is queued, and the piece waits with it (premovePiece).
+  const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color; premove?: boolean } | null>(null)
+  const premovePiece = useRef<string | null>(null)
+  // Alt held, read as a piece lands: it brings the picker back when promotions go straight to a queen.
+  const altHeld = useRef(false)
+  useEffect(() => {
+    const track = (e: KeyboardEvent | PointerEvent) => (altHeld.current = e.altKey)
+    const release = () => (altHeld.current = false)
+    const events = ['keydown', 'keyup', 'pointerdown', 'pointerup'] as const
+    for (const e of events) window.addEventListener(e, track, true)
+    window.addEventListener('blur', release)
+    return () => {
+      for (const e of events) window.removeEventListener(e, track, true)
+      window.removeEventListener('blur', release)
+    }
+  }, [])
   const { highlightLastMove, showLegalMoves, animation, moveEffects, soundVolume, palette } = useBoardPrefs()
   // How long a piece takes to slide to its square. The classification badge waits for it to land.
   const slideMs = reducedMotion() ? 0 : ANIMATION_MS[animation]
 
-  useEffect(() => {
+  // Before the board update below, which can play a queued premove: it has to reach this render's onMove.
+  useLayoutEffect(() => {
     onMoveRef.current = onMove
   })
+  // The position on the board before this one: a queued premove is played only when the game moves one ply on
+  // into your turn (the computer's reply), and dropped when it goes anywhere else (a takeback).
+  const shownFen = useRef(fen)
 
   // Pages build a fresh lastMove array on every render: key it by its squares, so a re-render
   // with the same move (e.g. an engine update) doesn't reconfigure the board mid-slide.
@@ -303,23 +335,45 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       },
       movable: {
         showDests: showLegalMoves,
-        color: locked ? undefined : position.turn,
+        // With premoves on, your pieces can be picked up on the computer's turn too.
+        color: locked ? undefined : premove ?? position.turn,
         dests: locked ? new Map() : position.dests,
         events: {
-          after: (orig, dest) => {
+          after: (orig, dest, meta) => {
             const piece = position.chess.get(orig as Square)
-            const lastRank = dest[1] === '8' || dest[1] === '1'
-            if (piece?.type === 'p' && lastRank) {
-              setPromotion({ from: orig as Square, to: dest as Square, color: position.turn })
-            } else {
-              onMoveRef.current({ from: orig, to: dest })
-            }
+            if (piece?.type !== 'p' || !lastRank(dest)) return onMoveRef.current({ from: orig, to: dest })
+            // A premove's piece was picked as it was queued (if the picker was still open, it asks now).
+            const pick = meta.premove ? premovePiece.current : autoQueen && !altHeld.current ? 'q' : null
+            premovePiece.current = null
+            if (pick) onMoveRef.current({ from: orig, to: dest, promotion: pick })
+            else setPromotion({ from: orig as Square, to: dest as Square, color: position.turn })
+          },
+        },
+      },
+      premovable: {
+        enabled: Boolean(premove) && !locked,
+        showDests: showLegalMoves,
+        events: {
+          set: (orig, dest) => {
+            playSound('premove', soundVolume)
+            premovePiece.current = null
+            const pawn = api.current?.state.pieces.get(orig)
+            if (pawn?.role !== 'pawn' || !lastRank(dest)) return
+            if (autoQueen && !altHeld.current) premovePiece.current = 'q'
+            else setPromotion({ from: orig as Square, to: dest as Square, color: pawn.color, premove: true })
           },
         },
       },
     })
     setPromotion(null)
-  }, [fen, viewOnly, locked, orientation, position, move, coordinates, annotation, highlightLastMove, showLegalMoves, slideMs, endList, introducing, holdVerdict])
+    const before = shownFen.current
+    shownFen.current = fen
+    if (locked) api.current?.cancelPremove()
+    else if (before !== fen && position.turn === premove) {
+      if (plyOf(fen) === plyOf(before) + 1) api.current?.playPremove()
+      else api.current?.cancelPremove()
+    }
+  }, [fen, viewOnly, locked, premove, orientation, position, move, coordinates, annotation, highlightLastMove, showLegalMoves, soundVolume, autoQueen, slideMs, endList, introducing, holdVerdict])
 
   // Chessground draws the file and rank labels only when it builds the board: rebuild it when they're
   // switched on or off (the update above has just told it which).
@@ -353,6 +407,13 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     '--slow-ms': `${landing}ms`,
     '--end-intro': `${END_INTRO_MS}ms`,
   } as CSSProperties
+
+  // Called off (the ✕, or a click away): a queued premove is dropped, a move just made goes back.
+  const cancelPromotion = () => {
+    if (promotion?.premove) api.current?.cancelPremove()
+    else api.current?.set({ fen })
+    setPromotion(null)
+  }
 
   // The picker drops down from the promotion square, toward the centre of the board.
   const pickerFile = promotion ? promotion.to.charCodeAt(0) - 97 : 0
@@ -468,10 +529,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       {promotion && (
         <div
           className="promotion"
-          onClick={() => {
-            setPromotion(null)
-            api.current?.set({ fen })
-          }}
+          onClick={cancelPromotion}
         >
           <div
             className={`promotion-choices ${fromTop ? 'top' : 'bottom'}`}
@@ -484,13 +542,20 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
                 className="promotion-piece"
                 aria-label={`Promote to ${ROLE[p]}`}
                 onClick={() => {
-                  onMoveRef.current({ from: promotion.from, to: promotion.to, promotion: p })
+                  if (promotion.premove) premovePiece.current = p
+                  else onMoveRef.current({ from: promotion.from, to: promotion.to, promotion: p })
                   setPromotion(null)
                 }}
               >
                 <PieceIcon role={ROLE[p]} color={promotion.color} />
               </button>
             ))}
+            {/* At the far end from the promotion square, as on Chess.com. */}
+            <button className="promotion-cancel" aria-label="Cancel promotion" title="Cancel" onClick={cancelPromotion}>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
           </div>
         </div>
       )}

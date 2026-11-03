@@ -127,7 +127,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
       </PageHeader>
       {boardSettings && (
         <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
-          <BoardOptions settings={settings} onChange={updateSettings} preview />
+          <BoardOptions settings={settings} onChange={updateSettings} preview play />
         </SettingsDialog>
       )}
       {game ? (
@@ -549,7 +549,10 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           theme={settings.boardTheme}
           coordinates={settings.coordinates}
           onMove={onMove}
-          locked={!yourTurn || viewPly !== null}
+          // With premoves off, the board waits for your turn.
+          locked={Boolean(game.outcome) || viewPly !== null || (!settings.premoves && !yourTurn)}
+          premove={settings.premoves ? game.color : undefined}
+          autoQueen={settings.autoQueen}
           ends={ends}
         />
         {bar(orientation)}

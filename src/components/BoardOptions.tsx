@@ -9,6 +9,8 @@ interface Props {
   onChange: (patch: Partial<Settings>) => void
   /** A strip of board at the top that shows the choices as they're made (dialogs; Settings has a whole board beside). */
   preview?: boolean
+  /** Playing the computer: adds the Premoves and queen switches, which only apply there. */
+  play?: boolean
 }
 
 /** After 1.e4 e5 2.Nf3 Nc6: the top three ranks hold a full back rank and the last move (b8–c6). */
@@ -16,7 +18,7 @@ const STRIP_FEN = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 
 const STRIP_MOVE: [Square, Square] = ['b8', 'c6']
 
 /** The board's look, feel and sound: one set of controls for Settings → Board and the analysis dialog's Board tab. */
-export function BoardOptions({ settings, onChange, preview }: Props) {
+export function BoardOptions({ settings, onChange, preview, play }: Props) {
   return (
     <div className="board-options">
       {preview && (
@@ -45,6 +47,22 @@ export function BoardOptions({ settings, onChange, preview }: Props) {
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
       <SwitchRow label="Highlight last move" checked={settings.highlightLastMove} onChange={(highlightLastMove) => onChange({ highlightLastMove })} />
       <SwitchRow label="Show legal moves" hint="Dots on the squares a piece you pick up can go to." checked={settings.showLegalMoves} onChange={(showLegalMoves) => onChange({ showLegalMoves })} />
+      {play && (
+        <SwitchRow
+          label="Premoves"
+          hint="Queue your next move while the computer thinks."
+          checked={settings.premoves}
+          onChange={(premoves) => onChange({ premoves })}
+        />
+      )}
+      {play && (
+        <SwitchRow
+          label="Always promote to queen"
+          hint="Hold Alt as you promote to choose another piece."
+          checked={settings.autoQueen}
+          onChange={(autoQueen) => onChange({ autoQueen })}
+        />
+      )}
       <SwitchRow label="Move effects" hint="The board shakes when you step onto a Legendary move." checked={settings.moveEffects} onChange={(moveEffects) => onChange({ moveEffects })} />
 
       <OptionRow label="Piece animation">

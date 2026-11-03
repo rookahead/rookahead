@@ -60,6 +60,10 @@ export interface Settings {
   highlightLastMove: boolean
   /** Dots on the squares a picked-up piece can go to. */
   showLegalMoves: boolean
+  /** Playing the computer: queue your next move on its turn (Board's premove). */
+  premoves: boolean
+  /** Playing the computer: promotions go straight to a queen (hold Alt to choose). */
+  autoQueen: boolean
   animation: Animation
   /** How far the settings have come with the theme changes (see load); missing on settings from before them. */
   themes?: number
@@ -87,6 +91,8 @@ export const DEFAULT_SETTINGS: Settings = {
   notation: 'figurine',
   highlightLastMove: true,
   showLegalMoves: true,
+  premoves: true,
+  autoQueen: false,
   animation: 'normal',
 }
 

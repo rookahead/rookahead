@@ -1513,6 +1513,24 @@ svg {
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* Premoves, on the computer's turn: the same dots, and the queued move's squares in a raspberry red,
+   cooler than the check glow and clear on every board. */
+.board cg-board square.premove-dest {
+  background: radial-gradient(rgba(0, 0, 0, 0.18) 19%, rgba(0, 0, 0, 0) 20%);
+}
+
+.board cg-board square.oc.premove-dest {
+  background: radial-gradient(transparent 0%, transparent 78%, rgba(0, 0, 0, 0.18) 79%);
+}
+
+.board cg-board square.premove-dest:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.board cg-board square.current-premove {
+  background-color: rgba(200, 30, 70, 0.62);
+}
+
 .board cg-board square.check {
   background: radial-gradient(ellipse at center, rgba(255, 40, 40, 0.95) 0%, rgba(231, 0, 0, 0.75) 30%, rgba(169, 0, 0, 0) 75%);
 }
@@ -1828,20 +1846,21 @@ svg {
   color: var(--sq-dark);
 }
 
+/* The board stays as it is while you choose (no dimming); the layer only catches a click away, which calls it off. */
 .promotion {
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: var(--scrim);
   border-radius: 8px;
 }
 
+/* A light column in every theme, so white and black pieces both read on it. */
 .promotion-choices {
   position: absolute;
   width: 12.5%;
   display: flex;
   flex-direction: column;
-  background: var(--surface-2);
+  background: #f4f4f2;
   border-radius: 8px;
   box-shadow: var(--shadow-pop);
   overflow: hidden;
@@ -1865,7 +1884,37 @@ svg {
 }
 
 .promotion-piece:hover {
-  background: var(--accent-soft);
+  background: #dcdcd8;
+}
+
+/* A short strip below the pieces (above them when the picker rises from the bottom). */
+.promotion-cancel {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2.2;
+  border: 0;
+  border-top: 1px solid #e2e2de;
+  background: #eaeae6;
+  color: #6b6b66;
+  transition: background 0.12s, color 0.12s;
+}
+
+.promotion-choices.bottom .promotion-cancel {
+  border-top: 0;
+  border-bottom: 1px solid #e2e2de;
+}
+
+.promotion-cancel:hover {
+  background: #dcdcd8;
+  color: #2b2b28;
+}
+
+.promotion-cancel svg {
+  width: 30%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
 }
 
 .piece-icon {
