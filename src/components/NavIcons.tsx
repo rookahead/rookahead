@@ -26,3 +26,37 @@ export function FlipIcon() {
     </svg>
   )
 }
+
+/** Sounds on or off: the speaker, crossed out when muted. */
+export function SoundIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+      <path d={muted ? 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5' : 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'} />
+    </svg>
+  )
+}
+
+export function ShareIcon() {
+  return (
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+    </svg>
+  )
+}
+
+export function NewBoardIcon() {
+  return (
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+    </svg>
+  )
+}
+
+export function LoadIcon() {
+  return (
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+    </svg>
+  )
+}

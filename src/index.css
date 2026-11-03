@@ -6853,7 +6853,7 @@ button.user-avatar.guest:hover {
 .play-nav {
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) 50px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   padding: 8px 12px;
   border-top: 1px solid var(--border);
@@ -6875,6 +6875,20 @@ button.user-avatar.guest:hover {
 
 .play-tools .ctrl {
   position: relative;
+}
+
+/* The view's actions (Share, Sound, Flip…): plain icons in a row at the panel's foot, on Play and Analysis. */
+.panel-strip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+
+/* Where the row's right-hand group starts. */
+.panel-strip-end {
+  margin-left: auto;
 }
 
 .play-tools .ctrl svg {

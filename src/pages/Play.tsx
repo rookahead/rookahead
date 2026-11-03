@@ -7,7 +7,7 @@ import { BoardOptions } from '../components/BoardOptions'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
-import { FlipIcon, NavIcon } from '../components/NavIcons'
+import { FlipIcon, NavIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
 import { ROOK } from '../components/RookLogo'
@@ -33,7 +33,7 @@ import { onReselect } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import { useAccount } from '../lib/account'
-import type { Settings } from '../lib/settings'
+import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
 
 interface Props {
@@ -119,14 +119,6 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
         phoneTitle={game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
         phoneSub={game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
       >
-        {game && game.moves.length > 0 && (
-          <button className="btn ghost small page-header-action" onClick={() => setShareOpen(true)} title="Share game" aria-label="Share game">
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
-            </svg>
-            <span className="page-header-label">Share</span>
-          </button>
-        )}
         {phone && game && gear}
       </PageHeader>
       {boardSettings && (
@@ -142,6 +134,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
           gear={gear}
           sharing={shareOpen}
           onShare={() => setShareOpen(true)}
+          onToggleSound={() => updateSettings({ soundVolume: settings.soundVolume === 0 ? DEFAULT_SETTINGS.soundVolume : 0 })}
           onCloseShare={() => setShareOpen(false)}
           game={game}
           setGame={setGame}
@@ -257,14 +250,16 @@ interface GameViewProps {
   gear: ReactNode
   /** Share was clicked: show the share dialog for this game. */
   sharing: boolean
-  /** Desktop's Share, in the panel's heading (phones have it in the page header). */
+  /** Share, in the row at the panel's foot. */
   onShare: () => void
+  /** Sounds on or off, in the same row. */
+  onToggleSound: () => void
   onCloseShare: () => void
-  /** Phones: Share and Board settings are in the page header, and the moves are a strip. */
+  /** Phones: Board settings are in the page header, and the moves are a strip. */
   phone: boolean
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onCloseShare, phone }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onToggleSound, onCloseShare, phone }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
@@ -295,6 +290,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const showPly = useCallback((ply: number) => setViewPly(ply >= lastPly ? null : Math.max(0, ply)), [lastPly])
   const [flipped, setFlipped] = useState(false)
   const orientation = flipped ? other(game.color) : game.color
+  const muted = settings.soundVolume === 0
   // Focus (desktop): the sidebar steps aside and the board takes the room. Remembered for the next game.
   const [focus, setFocus] = useState(readFocus)
   const toggleFocus = () =>
@@ -621,21 +617,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
                 {openingText}
               </span>
             </div>
-            {!phone && (
-              <button className="icon-btn panel-gear" onClick={onShare} disabled={game.moves.length === 0} aria-label="Share game" title="Share game">
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
-                </svg>
-              </button>
-            )}
             {!phone && gear}
-            {!phone && (
-              <button className={`icon-btn panel-gear ${focus ? 'active' : ''}`} onClick={toggleFocus} aria-pressed={focus} aria-label="Focus" title={focus ? 'Leave focus (Esc)' : 'Focus: a bigger board, nothing else around it'}>
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  <path d={focus ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'} />
-                </svg>
-              </button>
-            )}
           </header>
           <div className="panel-body">
             {phone ? (
@@ -656,9 +638,6 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
             </button>
             <button className="ctrl" onClick={() => showPly(lastPly)} disabled={viewPly === null} aria-label="Last move" title="Back to the game (↓)">
               <NavIcon name="last" />
-            </button>
-            <button className="ctrl flip" onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)">
-              <FlipIcon />
             </button>
           </nav>
           {game.outcome ? (
@@ -689,6 +668,25 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
               )}
             </div>
           )}
+          {/* The view's actions, quiet at the foot, as on Chess.com: Share and Focus on the left, Sound and Flip on the right. */}
+          <div className="panel-strip">
+            <button className="icon-btn" onClick={onShare} disabled={game.moves.length === 0} aria-label="Share game" title="Share game">
+              <ShareIcon />
+            </button>
+            {!phone && (
+              <button className={`icon-btn ${focus ? 'active' : ''}`} onClick={toggleFocus} aria-pressed={focus} aria-label="Focus" title={focus ? 'Leave focus (Esc)' : 'Focus: a bigger board, nothing else around it'}>
+                <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+                  <path d={focus ? 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' : 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'} />
+                </svg>
+              </button>
+            )}
+            <button className="icon-btn panel-strip-end" onClick={onToggleSound} aria-label={muted ? 'Sounds on' : 'Sounds off'} title={muted ? 'Sounds on' : 'Sounds off'}>
+              <SoundIcon muted={muted} />
+            </button>
+            <button className="icon-btn" onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)">
+              <FlipIcon />
+            </button>
+          </div>
         </div>
       </aside>
     </main>
