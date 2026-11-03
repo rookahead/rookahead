@@ -2248,8 +2248,9 @@ svg {
   margin-left: 6px;
 }
 
-/* The flip icon is drawn in strokes wherever it sits, even in buttons whose other icons are filled. */
-.flip-icon path {
+/* Line icons (NavIcons.tsx, Play's tools): drawn in strokes wherever they sit, even in a button that
+   fills its icons, at one weight; a part marked .solid is filled too (Play). */
+.line-icon * {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -2257,7 +2258,11 @@ svg {
   stroke-linejoin: round;
 }
 
-.ctrl .flip-icon {
+.line-icon .solid {
+  fill: currentColor;
+}
+
+.ctrl .line-icon {
   width: 20px;
   height: 20px;
 }
@@ -6879,7 +6884,8 @@ button.user-avatar.guest:hover {
 
 .play-tool-half {
   font-size: 20px;
-  font-weight: 700;
+  /* About the weight of the line icons beside it. */
+  font-weight: 500;
   line-height: 1;
 }
 

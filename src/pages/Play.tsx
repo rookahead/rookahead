@@ -714,17 +714,17 @@ function writeFocus(on: boolean) {
   }
 }
 
-// Material Icons (Apache 2.0), 24×24, drawn in the button's colour like NavIcon.
+// Drawn in lines like the move controls above them (index.css, .line-icon).
 const TOOL_PATHS = {
-  takeback: 'M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z',
-  hint: 'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z',
-  resign: 'M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z',
-  abort: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  takeback: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
+  hint: 'M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8v.3h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z',
+  resign: 'M6 21V4m0 0h11l-2.5 4.5L17 13H6',
+  abort: 'm6 6 12 12M18 6 6 18',
 }
 
 function ToolIcon({ name }: { name: keyof typeof TOOL_PATHS }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden>
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
       <path d={TOOL_PATHS[name]} />
     </svg>
   )
