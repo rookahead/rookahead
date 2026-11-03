@@ -10,11 +10,11 @@ export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'lime' | 
 
 export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
   { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
-  { id: 'gold', label: 'Gold', swatch: '#f2b33d' },
+  { id: 'gold', label: 'Gold', swatch: '#e9b95c' },
   { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
-  { id: 'coral', label: 'Coral', swatch: '#ff7a59' },
+  { id: 'coral', label: 'Coral', swatch: '#f28f76' },
   { id: 'forest', label: 'Forest', swatch: '#34d399' },
-  { id: 'lime', label: 'Lime', swatch: '#a3e635' },
+  { id: 'lime', label: 'Lime', swatch: '#b0d77a' },
   { id: 'ivory', label: 'Ivory', swatch: '#ededed' },
 ]
 

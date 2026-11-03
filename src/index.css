@@ -149,19 +149,19 @@
    from Tonal Spot, as Vibrant turns some neon). Ivory is its Monochrome scheme: no colour at all.
    Verdict, result and section colours stay the same in every theme: they mean something. */
 :root[data-palette='gold'] {
-  --t-surface: #1a1206;
-  --t-lowest: #140d03;
-  --t-low: #221a0d;
-  --t-cont: #271e11;
-  --t-high: #32291a;
-  --t-highest: #3d3324;
-  --t-on: #f1e0ca;
-  --t-on-var: #d6c4aa;
-  --t-primary: #ffba34;
-  --t-on-primary: #422c00;
-  --t-pc: #5f4100;
-  --t-opc: #ffdeac;
-  --t-sc: #55442a;
+  --t-surface: #16130d;
+  --t-lowest: #110e09;
+  --t-low: #1d1a14;
+  --t-cont: #221e17;
+  --t-high: #2c2821;
+  --t-highest: #37322b;
+  --t-on: #ede3d3;
+  --t-on-var: #d0c5b4;
+  --t-primary: #efc570;
+  --t-on-primary: #3d2b00;
+  --t-pc: #4b3a19;
+  --t-opc: #f6dfb2;
+  --t-sc: #4a4031;
   --t-osc: #f8dfbb;
 }
 
@@ -174,10 +174,10 @@
   --t-highest: #f1e0ca;
   --t-on: #221a0d;
   --t-on-var: #514531;
-  --t-primary: #7e5700;
+  --t-primary: #8a5c00;
   --t-on-primary: #ffffff;
-  --t-pc: #ffdeac;
-  --t-opc: #5f4100;
+  --t-pc: #fdd481;
+  --t-opc: #3f2c00;
   --t-sc: #f8dfbb;
   --t-osc: #55442a;
 }
@@ -261,10 +261,10 @@
   --t-highest: #42312c;
   --t-on: #f9dcd6;
   --t-on-var: #e0bfb8;
-  --t-primary: #ffb4a2;
+  --t-primary: #f6b8a9;
   --t-on-primary: #621100;
-  --t-pc: #723425;
-  --t-opc: #ffdad2;
+  --t-pc: #5f3a30;
+  --t-opc: #fbdcd4;
   --t-sc: #5d4038;
   --t-osc: #ffdad2;
 }
@@ -278,7 +278,7 @@
   --t-highest: #f9dcd6;
   --t-on: #271814;
   --t-on-var: #58413c;
-  --t-primary: #b42800;
+  --t-primary: #a3432b;
   --t-on-primary: #ffffff;
   --t-pc: #ffdad2;
   --t-opc: #723425;
@@ -363,10 +363,10 @@
   --t-highest: #2a2a2e;
   --t-on: #f0f0f0;
   --t-on-var: #a7adb7;
-  --t-primary: #a3e635;
-  --t-on-primary: #1a2e05;
-  --t-pc: #2c4a08;
-  --t-opc: #d9f99d;
+  --t-primary: #bcdc8a;
+  --t-on-primary: #213400;
+  --t-pc: #34441f;
+  --t-opc: #dcecc3;
   --t-sc: #2a2a2e;
   --t-osc: #e4e4e7;
 }
@@ -380,10 +380,10 @@
   --t-highest: #dfe2d7;
   --t-on: #18181b;
   --t-on-var: #464b52;
-  --t-primary: #4d7c0f;
+  --t-primary: #4f7417;
   --t-on-primary: #ffffff;
-  --t-pc: #d9f99d;
-  --t-opc: #1f3a05;
+  --t-pc: #dcecbc;
+  --t-opc: #22380a;
   --t-sc: #e2e6d6;
   --t-osc: #2a3320;
 }
