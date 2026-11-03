@@ -11573,6 +11573,57 @@ a.you-row:active {
   }
 }
 
+/* A phone tall enough for it: the game fills the screen, and the move controls and the game's actions sit
+   at the bottom edge, under your thumb, rather than leaving a gap there. A short screen scrolls as before. */
+@media (max-width: 1000px) and (min-height: 560px) {
+  .play-page:has(> .play-game) {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--app-h);
+  }
+
+  .play-page:has(> .play-game) > .page-header {
+    flex-shrink: 0;
+  }
+
+  .play-layout.play-game {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    row-gap: 8px;
+    padding-bottom: calc(6px + var(--safe-bottom));
+  }
+
+  /* As wide as the board, less the edges' 12px. */
+  .play-game > .play-panel {
+    flex: 1;
+    width: calc(var(--board-size) - 24px);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .play-game .panel-card {
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .play-game .play-panel-head {
+    border-bottom: 0;
+  }
+
+  .play-game .play-nav {
+    margin-top: auto;
+    border-top: 0;
+  }
+
+  .play-game .result-card {
+    border-top: 0;
+  }
+}
+
 /* ── Phones' Puzzles tab: streaks, today's puzzle, the modes ── */
 /* ── Phones' Blog tab (src/pages/Blog.tsx) ── */
 .blog-list {
