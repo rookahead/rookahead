@@ -354,6 +354,40 @@
   --t-osc: #1b1b1b;
 }
 
+:root[data-palette='lime'] {
+  --t-surface: #0a0a0b;
+  --t-lowest: #050506;
+  --t-low: #111113;
+  --t-cont: #161618;
+  --t-high: #202023;
+  --t-highest: #2a2a2e;
+  --t-on: #f0f0f0;
+  --t-on-var: #a7adb7;
+  --t-primary: #a3e635;
+  --t-on-primary: #1a2e05;
+  --t-pc: #2c4a08;
+  --t-opc: #d9f99d;
+  --t-sc: #2a2a2e;
+  --t-osc: #e4e4e7;
+}
+
+:root[data-palette='lime'][data-theme='light'] {
+  --t-surface: #f7f8f3;
+  --t-lowest: #ffffff;
+  --t-low: #f1f3eb;
+  --t-cont: #ebeee4;
+  --t-high: #e5e8dd;
+  --t-highest: #dfe2d7;
+  --t-on: #18181b;
+  --t-on-var: #464b52;
+  --t-primary: #4d7c0f;
+  --t-on-primary: #ffffff;
+  --t-pc: #d9f99d;
+  --t-opc: #1f3a05;
+  --t-sc: #e2e6d6;
+  --t-osc: #2a3320;
+}
+
 /* ═══════════════ Black: true black for AMOLED screens, cards just lifted off it ═══════════════ */
 :root[data-black] {
   --bg: #000000;

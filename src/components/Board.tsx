@@ -56,6 +56,7 @@ const THEME_BOARDS: Record<Palette, BoardColors> = {
   indigo: { light: '#d3cff3', dark: '#7d70dc', label: 'Theme', lastMove: 'rgba(238, 150, 232, 0.62)' },
   coral: { light: '#ffdad2', dark: '#c97d6a', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)', arrow: '#3b82f6' },
   forest: { light: '#cfe9d9', dark: '#5d9d7f', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  lime: { light: '#e3efc9', dark: '#86a356', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
   ivory: { light: '#e2e2e2', dark: '#919191', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.55)' },
 }
 

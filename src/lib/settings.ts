@@ -6,7 +6,7 @@ import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
 export type Appearance = 'dark' | 'black' | 'light' | 'system'
 
 /** The app's colour: its accent, and a tint to match in the backgrounds (index.css, :root[data-palette]). */
-export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'ivory'
+export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'lime' | 'ivory'
 
 export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
   { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
@@ -14,6 +14,7 @@ export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
   { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
   { id: 'coral', label: 'Coral', swatch: '#ff7a59' },
   { id: 'forest', label: 'Forest', swatch: '#34d399' },
+  { id: 'lime', label: 'Lime', swatch: '#a3e635' },
   { id: 'ivory', label: 'Ivory', swatch: '#ededed' },
 ]
 
