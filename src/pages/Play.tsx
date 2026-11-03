@@ -25,7 +25,7 @@ import { saveGame } from '../lib/games'
 import { useImmersive } from '../lib/immersive'
 import { ALL_MOVES, LEVELS, levelInfo, searchLimits } from '../lib/levels'
 import { materialState } from '../lib/material'
-import { loadOpeningBook, type OpeningBook } from '../lib/openings'
+import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { acceptsDraw, DRAW_AFTER_PLIES, outcomeOf, playHeaders, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
 import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type LiveGame, type PlaySetup } from '../lib/playStore'
 import { onReselect } from '../lib/router'
@@ -110,6 +110,8 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   return (
     <div className="play-page">
       <PageHeader
+        // Desktop has a game's actions in the panel's own heading, so the board gets the height.
+        phoneOnly={Boolean(game)}
         title="Play"
         back={game ? '/' : undefined}
         phoneTitle={game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
@@ -137,6 +139,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
           active={active}
           gear={gear}
           sharing={shareOpen}
+          onShare={() => setShareOpen(true)}
           onCloseShare={() => setShareOpen(false)}
           game={game}
           setGame={setGame}
@@ -250,14 +253,16 @@ interface GameViewProps {
   active: boolean
   /** Opens Board settings, in the panel's heading. */
   gear: ReactNode
-  /** The page header's Share was clicked: show the share dialog for this game. */
+  /** Share was clicked: show the share dialog for this game. */
   sharing: boolean
+  /** Desktop's Share, in the panel's heading (phones have it in the page header). */
+  onShare: () => void
   onCloseShare: () => void
-  /** Phones: the game's title and Board settings are in the page header, and the moves are a strip. */
+  /** Phones: Share and Board settings are in the page header, and the moves are a strip. */
   phone: boolean
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onCloseShare, phone }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onCloseShare, phone }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
@@ -503,6 +508,10 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   // Until both sides have moved, the game can be called off instead: not saved, not counted.
   const canAbort = !game.outcome && game.moves.length < 2
 
+  // The opening the moves on show have reached: it stays named once the game leaves the book.
+  const opening = useMemo(() => (book ? openingOf(book, line.slice(0, shownPly + 1)) : undefined), [book, line, shownPly])
+  const openingText = shownPly === 0 ? 'Starting position' : opening ? opening.name : '\u00a0'
+
   const headers = playHeaders({ ...meta(game), date: new Date(game.startedAt) })
 
   return (
@@ -562,16 +571,22 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
         <div className="panel-card">
           <header className="play-panel-head">
             <div className="play-panel-title">
-              <strong>{computerName}</strong>
-              <span className="muted">
-                {level.rating} · You play {game.color} · {clockLabel(game.setup.clock)}
+              <strong className={`play-status ${game.outcome ? 'over' : ''}`} role="status">
+                {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Rookahead is thinking…' : 'Rookahead to move')}
+              </strong>
+              <span className="play-opening muted" title={opening ? `${opening.eco} ${opening.name}` : undefined}>
+                {openingText}
               </span>
             </div>
-            {gear}
+            {!phone && (
+              <button className="icon-btn panel-gear" onClick={onShare} disabled={game.moves.length === 0} aria-label="Share game" title="Share game">
+                <svg viewBox="0 0 24 24" aria-hidden>
+                  <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+                </svg>
+              </button>
+            )}
+            {!phone && gear}
           </header>
-          <p className={`play-status ${game.outcome ? 'over' : ''}`} role="status">
-            {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Rookahead is thinking…' : 'Rookahead to move')}
-          </p>
           <div className="panel-body">
             {phone ? (
               <MoveStrip tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} />
@@ -599,23 +614,27 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           {game.outcome ? (
             <ResultCard game={game} onReview={onReview} onRematch={onRematch} onNewGame={onNewGame} />
           ) : (
-            <div className="play-actions">
-              <button className="btn ghost" onClick={takeback} disabled={!canTakeBack}>
-                Takeback{game.takebacks ? ` · ${game.takebacks}` : ''}
+            <div className="play-actions play-tools">
+              <button className="ctrl" onClick={takeback} disabled={!canTakeBack} aria-label="Takeback" title="Takeback">
+                <ToolIcon name="takeback" />
+                {game.takebacks > 0 && <span className="play-tool-count">{game.takebacks}</span>}
               </button>
-              <button className="btn ghost" onClick={() => void showHint()} disabled={!yourTurn || !engine}>
-                Hint{game.hints ? ` · ${game.hints}` : ''}
+              <button className="ctrl" onClick={() => void showHint()} disabled={!yourTurn || !engine} aria-label="Hint" title="Hint">
+                <ToolIcon name="hint" />
+                {game.hints > 0 && <span className="play-tool-count">{game.hints}</span>}
               </button>
-              <button className="btn ghost" onClick={() => void offerDraw()} disabled={!engine || !yourTurn}>
-                Offer draw
+              <button className="ctrl" onClick={() => void offerDraw()} disabled={!engine || !yourTurn} aria-label="Offer draw" title="Offer draw">
+                <span className="play-tool-half" aria-hidden>
+                  ½
+                </span>
               </button>
               {canAbort ? (
-                <button className="btn ghost" onClick={() => setConfirming('abort')} title="Call the game off: it isn't saved or counted">
-                  Abort
+                <button className="ctrl" onClick={() => setConfirming('abort')} aria-label="Abort" title="Abort: call the game off, it isn't saved or counted">
+                  <ToolIcon name="abort" />
                 </button>
               ) : (
-                <button className="btn ghost" onClick={() => setConfirming('resign')}>
-                  Resign
+                <button className="ctrl" onClick={() => setConfirming('resign')} aria-label="Resign" title="Resign">
+                  <ToolIcon name="resign" />
                 </button>
               )}
             </div>
@@ -623,6 +642,22 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
         </div>
       </aside>
     </main>
+  )
+}
+
+// Material Icons (Apache 2.0), 24×24, drawn in the button's colour like NavIcon.
+const TOOL_PATHS = {
+  takeback: 'M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z',
+  hint: 'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z',
+  resign: 'M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z',
+  abort: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+}
+
+function ToolIcon({ name }: { name: keyof typeof TOOL_PATHS }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d={TOOL_PATHS[name]} />
+    </svg>
   )
 }
 

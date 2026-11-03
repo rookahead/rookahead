@@ -6650,9 +6650,22 @@ button.user-avatar.guest:hover {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 10px 10px 16px;
+  gap: 4px;
+  padding: 12px 10px 10px 16px;
   border-bottom: 1px solid var(--border);
+}
+
+.play-panel-head .icon-btn:disabled {
+  opacity: 0.35;
+  background: transparent;
+}
+
+/* Desktop: a game's page has no bar above it (Share and Board settings are in the panel), so the
+   board gets that height too. */
+@media (min-width: 1001px) {
+  .play-layout.play-game {
+    --nav-h: 0px;
+  }
 }
 
 .play-panel-title {
@@ -6690,15 +6703,14 @@ button.user-avatar.guest:hover {
 }
 
 .play-status {
-  flex-shrink: 0;
-  margin: 0;
-  padding: 10px 16px;
   font-weight: 600;
-  border-bottom: 1px solid var(--border);
 }
 
-.play-status.over {
-  font-size: 16px;
+/* The opening the moves have reached, under the status: one line, cut short if it's long. */
+.play-opening {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .play-actions,
@@ -6722,6 +6734,40 @@ button.user-avatar.guest:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/* A game's actions: Takeback, Hint, Draw and Resign as one row of icons, like the move controls. */
+.play-actions.play-tools {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0 12px 12px;
+  border-top: 0;
+}
+
+.play-tools .ctrl {
+  position: relative;
+}
+
+.play-tools .ctrl svg {
+  width: 20px;
+  height: 20px;
+}
+
+.play-tool-half {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* How many takebacks or hints so far. */
+.play-tool-count {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
 
 .result-card {
@@ -11494,23 +11540,15 @@ a.you-row:active {
     border-radius: 16px;
   }
 
-  /* The title and Board settings are in the page header. */
+  /* Share and Board settings are in the page header; the panel's heading is the status and opening. */
   .play-game .play-panel-head {
-    display: none;
+    padding: 10px 16px;
   }
 
   .play-game .panel-body {
     padding: 8px 8px 4px;
   }
 
-  .play-game .play-actions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .play-game .play-actions .btn {
-    padding: 0 6px;
-    font-size: 13.5px;
-  }
 }
 
 @media (min-width: 641px) and (max-width: 1000px) {
