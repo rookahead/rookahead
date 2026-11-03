@@ -6681,6 +6681,8 @@ button.user-avatar.guest:hover {
 @media (min-width: 1001px) {
   .play-layout.play-game {
     --nav-h: 0px;
+    /* Centred in the window's height, like Analysis: the padding above wins over the shared rule that does it. */
+    padding-top: calc(var(--pad-y) + max(0px, (100vh - var(--nav-h) - 2 * var(--pad-y) - var(--column-h)) / 2));
   }
 }
 
