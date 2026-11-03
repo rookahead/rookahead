@@ -2003,25 +2003,6 @@ svg {
   stroke-linejoin: round;
 }
 
-/* Share game: a word, not another icon, so it's the one action that reads at a glance. */
-.panel-share {
-  margin-right: 6px;
-  gap: 6px;
-}
-
-.panel-share svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Share game: a word, not another icon, so it's the one action that reads at a glance. */
-.panel-share {
-  margin-right: 6px;
-}
-
 .panel-header {
   flex-shrink: 0;
   display: flex;
@@ -11174,24 +11155,6 @@ a.you-row:active {
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
-}
-
-/* Beside Flip and Sound in the panel's top row: the same size, colour and spacing as those two. */
-.panel-top .board-menu {
-  margin-left: 0;
-}
-
-.panel-top .board-menu .ctrl.more {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  color: var(--text-2);
-}
-
-.panel-top .board-menu .ctrl.more:hover,
-.panel-top .board-menu .ctrl.more.active {
-  background: var(--btn);
-  color: var(--text);
 }
 
 .eval-bar.horizontal {

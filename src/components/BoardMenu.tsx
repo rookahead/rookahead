@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { FlipIcon } from './NavIcons'
+import { FlipIcon, LoadIcon, NewBoardIcon } from './NavIcons'
+import { Gear } from './UserCard'
 
 interface Props {
   onFlip: () => void
@@ -8,46 +9,17 @@ interface Props {
   onSettings: () => void
   /** Which way the list opens: up from the move controls (the default), or down from a page header. */
   placement?: 'up' | 'down'
-  /** Leave Flip out: it has a button of its own beside the menu. */
-  noFlip?: boolean
 }
 
 const ITEMS = [
-  {
-    id: 'flip',
-    label: 'Flip board',
-    key: 'F',
-    icon: null,
-  },
-  {
-    id: 'new',
-    label: 'New board',
-    icon: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
-      </>
-    ),
-  },
-  {
-    id: 'load',
-    label: 'Load game',
-    icon: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="3" />
-        <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
-      </>
-    ),
-  },
+  { id: 'flip', label: 'Flip board', key: 'F', icon: <FlipIcon /> },
+  { id: 'new', label: 'New board', icon: <NewBoardIcon /> },
+  { id: 'load', label: 'Load game', icon: <LoadIcon /> },
+  { id: 'settings', label: 'Settings', icon: <Gear /> },
 ] as const
 
 /** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
-export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up', noFlip = false }: Props) {
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up' }: Props) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -73,7 +45,7 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placemen
       </button>
       {open && (
         <div className="board-menu-list" role="menu">
-          {ITEMS.filter((item) => !noFlip || item.id !== 'flip').map((item) => (
+          {ITEMS.map((item) => (
             <button
               key={item.id}
               role="menuitem"
@@ -83,13 +55,7 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placemen
                 actions[item.id]()
               }}
             >
-              {item.id === 'flip' ? (
-                <FlipIcon />
-              ) : (
-                <svg viewBox="0 0 24 24" aria-hidden>
-                  {item.icon}
-                </svg>
-              )}
+              {item.icon}
               {item.label}
               {'key' in item && <kbd>{item.key}</kbd>}
             </button>

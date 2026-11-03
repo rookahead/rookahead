@@ -4,7 +4,7 @@ import { DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
-import { FlipIcon, NavIcon } from '../components/NavIcons'
+import { FlipIcon, LoadIcon, NavIcon, NewBoardIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
@@ -14,6 +14,7 @@ import { EvalGraph } from '../components/EvalGraph'
 import { MovePreview, type Preview } from '../components/MovePreview'
 import { ExplainPanel } from '../components/ExplainPanel'
 import { BoardMenu } from '../components/BoardMenu'
+import { Gear } from '../components/UserCard'
 import { GameInfo } from '../components/GameInfo'
 import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadGameDialog'
 import { MoveList } from '../components/MoveList'
@@ -1039,25 +1040,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               {!phone && (
                 <div className="panel-top">
                   <h1 className="panel-title">{blank ? 'Analysis board' : 'Game review'}</h1>
-                  {line.length > 1 && (
-                    <button className="btn ghost small panel-share" onClick={() => setShareOpen(true)}>
-                      Share game
-                    </button>
-                  )}
-                  <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-                    <FlipIcon />
+                  <button className="icon-btn" onClick={() => setOptionsOpen('view')} aria-label="Board settings" title="Board settings">
+                    <Gear />
                   </button>
-                  <button
-                    className="icon-btn"
-                    onClick={() => updateSettings({ soundVolume: muted ? DEFAULT_SETTINGS.soundVolume : 0 })}
-                    aria-label={muted ? 'Sounds on' : 'Sounds off'}
-                    title={muted ? 'Sounds on' : 'Sounds off'}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden>
-                      <path d={muted ? 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9.5l5 5M21 9.5l-5 5' : 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11'} />
-                    </svg>
-                  </button>
-                  <BoardMenu placement="down" noFlip onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen('view')} />
                 </div>
               )}
               {!plainBoard && <header className="panel-header">
@@ -1141,6 +1126,32 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <NavIcon name="last" />
                 </button>
               </nav>
+              {/* Desktop: the board's other actions, quiet at the foot, as on Play. Phones keep them in the
+                  header's menu: there the board is sized to fill the height above the move controls. */}
+              {!phone && (
+                <div className="panel-strip">
+                  <button className="icon-btn" onClick={() => setShareOpen(true)} disabled={line.length < 2} aria-label="Share game" title="Share game">
+                    <ShareIcon />
+                  </button>
+                  <button className="icon-btn" onClick={newBoard} aria-label="New board" title="New board">
+                    <NewBoardIcon />
+                  </button>
+                  <button className="icon-btn" onClick={() => setLoadOpen(true)} aria-label="Load game" title="Load game">
+                    <LoadIcon />
+                  </button>
+                  <button
+                    className="icon-btn panel-strip-end"
+                    onClick={() => updateSettings({ soundVolume: muted ? DEFAULT_SETTINGS.soundVolume : 0 })}
+                    aria-label={muted ? 'Sounds on' : 'Sounds off'}
+                    title={muted ? 'Sounds on' : 'Sounds off'}
+                  >
+                    <SoundIcon muted={muted} />
+                  </button>
+                  <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
+                    <FlipIcon />
+                  </button>
+                </div>
+              )}
             </div>
           </aside>
 
