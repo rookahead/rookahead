@@ -5,7 +5,6 @@ const PATHS = {
   last: <path d="M16 5h2v14h-2zM4 5v14l10-7z" />,
   play: <path d="M7 4.5v15l12.5-7.5z" />,
   pause: <path d="M6.5 5h4v14h-4zm7 0h4v14h-4z" />,
-  flip: <path d="M7 3 3 7l4 4V8h11V6H7zm10 10v3H6v2h11v3l4-4z" />,
   back: <path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z" />,
 }
 
@@ -14,6 +13,15 @@ export function NavIcon({ name }: { name: keyof typeof PATHS }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
       {PATHS[name]}
+    </svg>
+  )
+}
+
+/** Flip board: a rounded square turning round, the same everywhere (move controls, headers, menus). Drawn in strokes. */
+export function FlipIcon() {
+  return (
+    <svg className="flip-icon" viewBox="0 0 24 24" aria-hidden>
+      <path d="M4 15V8a4 4 0 0 1 4-4h9M14.5 1.75 17 4l-2.5 2.25M20 9v7a4 4 0 0 1-4 4H7M9.5 17.75 7 20l2.5 2.25" />
     </svg>
   )
 }

@@ -2,7 +2,7 @@
 import { DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
-import { NavIcon } from '../../components/NavIcons'
+import { FlipIcon, NavIcon } from '../../components/NavIcons'
 import { PieceIcon } from '../../components/PieceIcon'
 import { Flame } from '../../components/PuzzleIcons'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
@@ -163,7 +163,7 @@ export function StepNav({ at, last, onStep, onFlip }: { at: number; last: number
         <NavIcon name="last" />
       </button>
       <button className="ctrl flip" onClick={onFlip} aria-label="Flip board" title="Flip board (F)">
-        <NavIcon name="flip" />
+        <FlipIcon />
       </button>
     </nav>
   )

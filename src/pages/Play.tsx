@@ -7,7 +7,7 @@ import { BoardOptions } from '../components/BoardOptions'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
-import { NavIcon } from '../components/NavIcons'
+import { FlipIcon, NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
 import { ROOK } from '../components/RookLogo'
@@ -658,7 +658,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
               <NavIcon name="last" />
             </button>
             <button className="ctrl flip" onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)">
-              <NavIcon name="flip" />
+              <FlipIcon />
             </button>
           </nav>
           {game.outcome ? (

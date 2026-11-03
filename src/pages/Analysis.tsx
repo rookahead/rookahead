@@ -4,7 +4,7 @@ import { DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
-import { NavIcon } from '../components/NavIcons'
+import { FlipIcon, NavIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
@@ -1045,9 +1045,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                     </button>
                   )}
                   <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-                    <svg viewBox="0 0 24 24" aria-hidden>
-                      <path d="M8 20V4M4 8l4-4 4 4M16 4v16M12 16l4 4 4-4" />
-                    </svg>
+                    <FlipIcon />
                   </button>
                   <button
                     className="icon-btn"

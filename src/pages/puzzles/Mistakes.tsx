@@ -6,7 +6,7 @@ import { Board } from '../../components/Board'
 import { ClassIcon } from '../../components/ClassIcon'
 import { Link } from '../../components/Link'
 import { OpenGameDialog } from '../../components/LoadGameDialog'
-import { NavIcon } from '../../components/NavIcons'
+import { FlipIcon } from '../../components/NavIcons'
 import { useEngine } from '../../hooks/useEngine'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
 import { CLASS_INFO } from '../../lib/classify'
@@ -239,7 +239,7 @@ function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, on
       </div>
       <nav className="play-nav mistake-nav" aria-label="Board">
         <button className="ctrl flip" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-          <NavIcon name="flip" />
+          <FlipIcon />
         </button>
       </nav>
       <div className="play-actions">

@@ -2248,6 +2248,20 @@ svg {
   margin-left: 6px;
 }
 
+/* The flip icon is drawn in strokes wherever it sits, even in buttons whose other icons are filled. */
+.flip-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ctrl .flip-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .board-menu {
   position: relative;
   display: grid;
