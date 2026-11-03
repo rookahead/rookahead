@@ -21,7 +21,7 @@ export function NavIcon({ name }: { name: keyof typeof PATHS }) {
 export function FlipIcon() {
   return (
     <svg className="flip-icon" viewBox="0 0 24 24" aria-hidden>
-      <path d="M4 15V8a4 4 0 0 1 4-4h9M14.5 1.75 17 4l-2.5 2.25M20 9v7a4 4 0 0 1-4 4H7M9.5 17.75 7 20l2.5 2.25" />
+      <path d="M5 14.5v-6A3.5 3.5 0 0 1 8.5 5H16m-2-2 2 2-2 2m5 2.5v6a3.5 3.5 0 0 1-3.5 3.5H8m2-2-2 2 2 2" />
     </svg>
   )
 }

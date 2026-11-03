@@ -2281,8 +2281,8 @@ svg {
   border: 1px solid var(--border);
   background: var(--surface-2);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
-  transform-origin: bottom right;
-  animation: pop-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  /* A fade only: a zoom would end with the icons snapping a pixel as the list is redrawn sharp. */
+  animation: fade-in 0.12s ease-out;
 }
 
 .board-menu-item {
@@ -11138,13 +11138,40 @@ a.you-row:active {
 .board-menu.down .board-menu-list {
   top: calc(100% + 6px);
   bottom: auto;
-  transform-origin: top right;
 }
 
 .board-menu.down .ctrl.more {
   width: 40px;
   height: 40px;
   background: none;
+}
+
+/* The menu's lines are drawn like the icons beside it. */
+.ctrl.more svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+/* Beside Flip and Sound in the panel's top row: the same size, colour and spacing as those two. */
+.panel-top .board-menu {
+  margin-left: 0;
+}
+
+.panel-top .board-menu .ctrl.more {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--text-2);
+}
+
+.panel-top .board-menu .ctrl.more:hover,
+.panel-top .board-menu .ctrl.more.active {
+  background: var(--btn);
+  color: var(--text);
 }
 
 .eval-bar.horizontal {

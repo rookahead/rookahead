@@ -68,7 +68,7 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placemen
     <div className={`board-menu ${placement}`} ref={root}>
       <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game, settings">
         <svg viewBox="0 0 24 24" aria-hidden>
-          <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
+          <path d="M5 7h14M5 12h14M5 17h14" />
         </svg>
       </button>
       {open && (
