@@ -1,12 +1,22 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-02
+date: 2026-11-03
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 3 November 2026
+
+- Premoves when you play the computer: pick up a piece while it's thinking and make your move, and it's played the moment the computer has moved. Turn them off in Board settings.
+- Choose what a pawn promotes to, from a column beside the board, or turn on Always promote to queen in Board settings (hold Alt to choose).
+- A bigger board on desktop. A game no longer has a bar above it, so the board takes that room, and it sits in the middle of the window's height.
+- The panel shows the opening you're in under whose move it is. Takeback, Hint, Draw and Resign are one row of icons under the move controls.
+- Focus: the ⤢ button beside Board settings hides the sidebar and moves the players and their clocks beside the board, so the board takes the window's full height. Esc or the ✕ at the top left leaves it.
+- Your bar shows your photo and username once you're signed in. The computer's shows the Rookahead rook. Avatars are now squares with rounded corners.
+- On a phone, a game fills the screen, with the move controls and buttons at the bottom edge, under your thumb.
 
 ## 2 November 2026
 
