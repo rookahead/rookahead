@@ -701,14 +701,24 @@ function mateGuard(fenMate: string, sq: Square, moved: Square): string | null {
 }
 
 /**
- * A move that leads to mate, told like a coach: the mate it threatens and what makes it work, and when
- * it's a sacrifice, why taking it is mate too.
+ * A move that leads to mate, told like a coach: what it gives up, the mate it threatens and what makes
+ * it work, and when it's a sacrifice, why taking it is mate too.
  */
 function mateRows(input: ExplainInput, fenAfter: string, mine: ExplainShape, n: number): ExplainRow[] | null {
   const { fenBefore, uci, san, reply, ownThreat, playedTake } = input
   const [, to] = squares(uci)
+  const them = other(turnOf(fenBefore))
   const rows: ExplainRow[] = []
   const mateText = (k: number, s: string) => `${numbered(fenBefore, k, s.replace(/#$/, ''))} mate`
+  const sac = sacrifice(fenBefore, uci)
+
+  // What it gives up, said first: the point of a sacrifice is that it looks like a gift.
+  if (sac) {
+    const [tFrom] = squares(sac.take)
+    const taker = new Chess(fenAfter).get(tFrom)
+    const who = !taker ? 'it' : taker.type === 'p' ? `the ${tFrom} pawn` : `the ${NAMES[taker.type]} on ${tFrom}`
+    rows.push({ key: 'idea', label: 'The idea', text: `Gives up the ${NAMES[sac.piece]}: ${who} can take it.`, shapes: [mine, { orig: tFrom, dest: sac.square, brush: 'red' }], play: play(fenBefore, [uci]) })
+  }
 
   // The mate it threatens: what it would do with a free move, or else the line itself.
   let threat: { san: string; from: Square; to: Square; fen: string } | null = null
@@ -726,16 +736,21 @@ function mateRows(input: ExplainInput, fenAfter: string, mine: ExplainShape, n: 
   const played = playLine(fenBefore, pv, 12)
   if (threat && !san.includes('+')) {
     const guard = mateGuard(threat.fen, threat.to, to)
-    rows.push({ key: 'idea', label: 'The idea', text: `Threatens ${mateText(2, threat.san)}${guard ? `: ${guard}` : ''}.`, shapes: [mine, { orig: threat.from, dest: threat.to, brush: 'yellow' }], play: play(fenBefore, pv, n) })
+    rows.push({
+      key: sac ? 'threat' : 'idea',
+      label: sac ? 'The threat' : 'The idea',
+      text: `${sac ? `Next is ${mateText(2, threat.san)}` : `Threatens ${mateText(2, threat.san)}`}${guard ? `: ${guard}` : ''}.`,
+      shapes: [mine, { orig: threat.from, dest: threat.to, brush: 'yellow' }],
+      play: play(fenBefore, pv, n),
+    })
   } else if (played.mateAt) {
     const k = played.mateAt - 1
     const guard = mateGuard(played.fens[k], squares(pv[k])[1], to)
     const end = `${numbered(fenBefore, k, played.san[k])}${guard ? `, and ${guard}` : ''}`
-    rows.push({ key: 'idea', label: 'The idea', text: `Starts a mate in ${Math.ceil(played.mateAt / 2)}: it ends with ${end}.`, shapes: [mine], play: play(fenBefore, pv, played.mateAt) })
+    rows.push({ key: sac ? 'threat' : 'idea', label: sac ? 'Then' : 'The idea', text: `${sac ? 'It s' : 'S'}tarts a mate in ${Math.ceil(played.mateAt / 2)}: it ends with ${end}.`, shapes: [mine], play: play(fenBefore, pv, played.mateAt) })
   } else return null
 
   // A sacrifice: taking it is mate too, often because the piece that takes stops guarding something.
-  const sac = sacrifice(fenBefore, uci)
   if (sac && playedTake?.pv[0]) {
     const line = [uci, sac.take, playedTake.pv[0]]
     const c = new Chess(fenBefore)
@@ -755,7 +770,7 @@ function mateRows(input: ExplainInput, fenAfter: string, mine: ExplainShape, n: 
           position: { fen: takenFen, lastMove: [take.from, take.to] },
           play: play(fenBefore, line, 3),
         })
-        if (rows[0].text.startsWith('Threatens')) rows.push({ key: 'result', label: 'Either way', text: 'Taken or not, it’s mate.', shapes: [mine] })
+        rows.push({ key: 'result', label: 'Either way', text: `${sideName(them)} can’t take it and can’t leave it: it’s mate either way.`, shapes: [mine] })
       }
     } catch {
       // The take doesn't play: the threat alone tells it.

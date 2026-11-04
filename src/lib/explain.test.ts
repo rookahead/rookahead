@@ -76,12 +76,13 @@ describe('explaining a move', () => {
       ownThreat: { pv: ['g6h7'], score: { type: 'mate', value: 1 } },
     }
     expect(texts(NF6)).toEqual([
-      'The idea: Threatens 27.Qh7 mate: the knight guards h7.',
+      'The idea: Gives up the knight: the g7 pawn can take it.',
+      'The threat: Next is 27.Qh7 mate: the knight guards h7.',
       'If 26…gxf6: The pawn has left g7, so 27.Qxh6 is mate.',
-      'Either way: Taken or not, it’s mate.',
+      'Either way: Black can’t take it and can’t leave it: it’s mate either way.',
     ])
     // Without the search for its threat, the line itself tells it.
-    expect(texts({ ...NF6, ownThreat: null })?.[0]).toBe('The idea: Starts a mate in 2: it ends with 27.Qh7#, and the knight guards h7.')
+    expect(texts({ ...NF6, ownThreat: null })?.[1]).toBe('Then: It starts a mate in 2: it ends with 27.Qh7#, and the knight guards h7.')
   })
 
   it('spots a fork', () => {
