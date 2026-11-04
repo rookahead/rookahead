@@ -62,6 +62,13 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
         })}
       </nav>
       <div className="sidebar-foot">
+        {/* The donate page is outside the app, so a plain link. */}
+        <a className="sidebar-item sidebar-donate" href="/donate" title={rail ? 'Donate' : undefined}>
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M12 20s-7-4.4-8.9-8.8C1.7 8 3.6 4.5 7 4.5c2 0 3.5 1.1 5 2.8 1.5-1.7 3-2.8 5-2.8 3.4 0 5.3 3.5 3.9 6.7C19 15.6 12 20 12 20z" />
+          </svg>
+          <span className="sidebar-label">Donate</span>
+        </a>
         <button className="sidebar-item sidebar-toggle" onClick={onToggleRail} aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} title={rail ? 'Expand' : undefined}>
           <span className="sidebar-label">Collapse</span>
           <svg viewBox="0 0 24 24" aria-hidden>

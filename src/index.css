@@ -42,6 +42,8 @@
   --bar-dark: var(--t-high);
   --warn: #e0b25b;
   --streak: #ff8f3f;
+  /* Donate's heart: GitHub Sponsors' pink, apart from every colour theme. */
+  --heart: #db61a2;
   /* Secondary buttons: a tonal fill a step lighter than whatever they sit on. */
   --btn: rgba(255, 255, 255, 0.085);
   --btn-hover: rgba(255, 255, 255, 0.14);
@@ -126,6 +128,7 @@
   --danger: #d4433a;
   --warn: #a2700f;
   --streak: #e2620b;
+  --heart: #bf3989;
   --btn: rgba(0, 0, 0, 0.06);
   --btn-hover: rgba(0, 0, 0, 0.1);
   --tone-violet: #7c3aed;
@@ -815,6 +818,31 @@ svg {
 
 .sidebar.rail .sidebar-toggle {
   gap: 0;
+}
+
+/* Donate: a row like the toggle, over it, in the heart's pink rather than your colour. */
+.sidebar .sidebar-donate {
+  flex: none;
+  /* With the foot's 10px gap: 2px, as between the links. */
+  margin-bottom: -8px;
+  height: 38px;
+  color: var(--heart);
+  font-size: 14px;
+}
+
+.sidebar .sidebar-donate:hover {
+  background: color-mix(in srgb, var(--heart) 12%, transparent);
+  color: var(--heart);
+}
+
+.sidebar .sidebar-donate svg {
+  fill: currentColor;
+}
+
+/* Collapse's word on Donate's line (past the heart and its gap). */
+.sidebar:not(.rail) .sidebar-toggle .sidebar-label {
+  padding-left: 32px;
+  text-align: left;
 }
 
 .sidebar.rail .sidebar-toggle svg {

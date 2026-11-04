@@ -183,6 +183,7 @@ export function YouPage({ settings, updateSettings }: Props) {
           <a href="/blog">Blog</a>
           <a href="/about">About</a>
           <a href="/privacy">Privacy</a>
+          <a href="/donate">Donate</a>
           <a href={DISCORD_URL}>Discord</a>
           <a href={YOUTUBE_URL}>YouTube</a>
           <a href="https://github.com/rookahead/rookahead">GitHub</a>
