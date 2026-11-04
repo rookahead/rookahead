@@ -316,8 +316,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
       },
       orientation,
+      // The named line this move reaches, without its ECO code ("B12 Caro-Kann Defense" → the name).
+      book?.nameAt(node.fen)?.replace(/^\S+ /, ''),
     )
-  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation])
+  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation, book])
   // A preview never outlives what it was pointing at.
   useEffect(() => setPreview(null), [node.id, tab, explaining])
   // Clicking a row plays its moves on the board, a move at a time, and holds the last position.

@@ -72,3 +72,15 @@ describe('the coach line, across games', () => {
     expect(coachLine({ fenBefore: '1rb2rk1/2p1q1bp/np1p2p1/1B1Pp2n/1PP1N3/3QBN1P/5PP1/1R2R1K1 b - - 0 21', uci: 'f8f3', san: 'Rxf3', cls: 'excellent', best: { pv: ['h7h6', 'c4c5', 'f8f3', 'g2f3', 'e7h4', 'c5d6', 'c7d6', 'b5a6', 'c8h3', 'b1b3'], score: { type: 'cp', value: 256 }}, reply: { pv: ['g2f3', 'e7h4', 'd3f1', 'h7h6', 'f1g2', 'c8h3', 'g2h2', 'b8f8', 'b5a6', 'f8f3'], score: { type: 'cp', value: 252 }}, previous: 'c3e4' } as ExplainInput, 'black')).toBe('You give up the rook for the knight on f3: the g2 pawn can take it. Good move.')
   })
 })
+
+describe('the coach line on book moves', () => {
+  const cp = (value: number) => ({ type: 'cp' as const, value })
+  it('names the opening a book move reaches, instead of calling it a classic', () => {
+    const c6: ExplainInput = { fenBefore: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', uci: 'c7c6', san: 'c6', cls: 'book', best: { pv: ['e7e5', 'g1f3'], score: cp(30) }, reply: { pv: ['d2d4', 'd7d5'], score: cp(35) } }
+    expect(coachLine(c6, 'white', 'Caro-Kann Defense')).toBe('Your opponent prepares 2…d5: the pawn covers d5. This is the Caro-Kann Defense.')
+  })
+  it('says what the move does, and nothing filler, when no named line is reached', () => {
+    const d4: ExplainInput = { fenBefore: 'rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', uci: 'd2d4', san: 'd4', cls: 'book', best: { pv: ['d2d4', 'd7d5'], score: cp(35) }, reply: { pv: ['d7d5', 'b1c3'], score: cp(35) } }
+    expect(coachLine(d4, 'white')).toBe('You open a line for the bishop on c1.')
+  })
+})

@@ -29,7 +29,6 @@ const PRAISE: Partial<Record<Cls, string[]>> = {
   best: ['Very nice.', 'Solid.', 'Nice.', 'Good stuff.'],
   excellent: ['Nice.', 'Good move.', 'Solid.'],
   good: ['Fine.', 'Not bad.'],
-  book: ['A classic.', 'Book stuff.'],
 }
 
 const WRONG: readonly Cls[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
@@ -49,8 +48,11 @@ function behind(input: ExplainInput): boolean {
   return s.type === 'mate' ? s.value * sign < 0 : s.value * sign <= -300
 }
 
-/** The coach line for a reviewed move, talking to the player who has `you`'s pieces. */
-export function coachLine(input: ExplainInput, you: Color): string | null {
+/**
+ * The coach line for a reviewed move, talking to the player who has `you`'s pieces. `opening` is the
+ * named line the move reaches, if it reaches one ("Caro-Kann Defense: Advance Variation").
+ */
+export function coachLine(input: ExplainInput, you: Color, opening?: string): string | null {
   const facts = explainMove(input)?.coach
   if (!facts) return null
   const mine = (input.fenBefore.split(' ')[1] === 'w' ? 'white' : 'black') === you
@@ -59,7 +61,9 @@ export function coachLine(input: ExplainInput, you: Color): string | null {
   const say = (...parts: (string | undefined | null | false)[]) => parts.filter(Boolean).join(' ')
 
   if (WRONG.includes(input.cls)) return wrongLine(facts, mine, input.cls, pick)
-  return goodLine(facts, input, mine, pick, say)
+  const line = goodLine(facts, input, mine, pick, say)
+  // A book move that reaches a named line says which: more use than "a classic".
+  return opening && input.cls === 'book' ? say(line, `This is the ${opening}.`) : line
 }
 
 function wrongLine(facts: CoachFacts, mine: boolean, cls: Cls, pick: (l?: string[]) => string): string | null {
