@@ -6,7 +6,8 @@ interface Props {
   icon?: ReactNode
   /** Small prefix before the title, e.g. the move number. */
   kicker?: ReactNode
-  title: ReactNode
+  /** None: the card is only its note (the coach's word on the game). */
+  title?: ReactNode
   detail?: ReactNode
   score?: Score | null
   children?: ReactNode
@@ -52,25 +53,27 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
   const typedDetail = textKey !== undefined && typeof detail === 'string' ? <Words text={detail} from={wordCount(title)} /> : detail
   const words = (
     <>
-      <div className="coach-head" key={`head:${textKey}`}>
-        {icon}
-        {kicker && <span className="coach-kicker">{kicker}</span>}
-        <h2 className="coach-title">{typedTitle}</h2>
-        {onReport && (
-          <button
-            className="coach-report"
-            onClick={onReport}
-            disabled={reported}
-            aria-label={reported ? 'Reported' : 'Disagree?'}
-            title={reported ? 'Reported. Thanks, we’ll take a look.' : 'Disagree? Think this verdict is wrong? Tell us.'}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden>
-              <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
-            </svg>
-          </button>
-        )}
-        {score && <span className="eval-pill">{formatScore(score)}</span>}
-      </div>
+      {title !== undefined && (
+        <div className="coach-head" key={`head:${textKey}`}>
+          {icon}
+          {kicker && <span className="coach-kicker">{kicker}</span>}
+          <h2 className="coach-title">{typedTitle}</h2>
+          {onReport && (
+            <button
+              className="coach-report"
+              onClick={onReport}
+              disabled={reported}
+              aria-label={reported ? 'Reported' : 'Disagree?'}
+              title={reported ? 'Reported. Thanks, we’ll take a look.' : 'Disagree? Think this verdict is wrong? Tell us.'}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+              </svg>
+            </button>
+          )}
+          {score && <span className="eval-pill">{formatScore(score)}</span>}
+        </div>
+      )}
       {(detail || stepping) && (
         <p className="coach-detail" key={`note:${textKey}`}>
           {typedDetail}

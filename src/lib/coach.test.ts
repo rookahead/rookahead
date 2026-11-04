@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coachLine, coachMood } from './coach'
+import { coachLine, coachMood, gameQuip } from './coach'
 import type { ExplainInput } from './explain'
 
 // Every line here is from one real game (MelonLord-009 – DarkBiishopOnFire, 2026), seen as White.
@@ -112,5 +112,19 @@ describe('the coach’s face', () => {
   it('meets a checkmate as the player’s win or loss', () => {
     expect(coachMood('best', true, true)).toBe('proud')
     expect(coachMood('best', false, true)).toBe('ouch')
+  })
+})
+
+describe('the coach’s word on the game', () => {
+  it('cheers a win, by how it ended', () => {
+    expect(gameQuip('1-0', 'MelonLord-009 won by checkmate', 'white')).toEqual({ line: 'Checkmate, and a pretty one. Nice job!', mood: 'proud' })
+    expect(gameQuip('0-1', 'MelonLord-009 won by resignation', 'black').line).toBe('They resigned. Well played!')
+    expect(gameQuip('1-0', 'MelonLord-009 won on time', 'white').line).toBe('You won on time. A win’s a win!')
+  })
+  it('winces at a loss, and thinks over a draw', () => {
+    expect(gameQuip('1-0', 'X won by checkmate', 'black')).toEqual({ line: 'Checkmated, ouch. Let’s see where it went wrong.', mood: 'ouch' })
+    expect(gameQuip('0-1', 'X won by resignation', 'white').mood).toBe('ouch')
+    expect(gameQuip('1/2-1/2', 'Game drawn by agreement', 'white').mood).toBe('thinking')
+    expect(gameQuip(undefined, undefined, 'white').mood).toBe('neutral')
   })
 })

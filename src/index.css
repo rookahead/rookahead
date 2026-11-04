@@ -2596,31 +2596,82 @@ svg {
   }
 }
 
+/* Three fixed places: Explain on the left, Share or Show best in the middle (or nothing), Next move on
+   the right. A button that isn't there leaves its place empty, so the others never move. */
 .coach-actions.row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .coach-actions.row > .btn {
   width: 100%;
+  min-width: 0;
 }
 
-.coach-actions.row > .coach-next {
+.coach-actions.row > .coach-explain {
+  grid-column: 1;
+}
+
+.coach-actions.row > .coach-middle {
   grid-column: 2;
 }
 
-.coach-actions.row > .coach-next:only-child {
-  grid-column: 1 / -1;
+.coach-actions.row > .coach-next {
+  grid-column: 3;
 }
 
-/* Explain and Show best share the left half. */
-.coach-actions.row:has(> :nth-child(3)) {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+/* With the rook, the note keeps room for four lines, so a long line and a short one leave the buttons
+   in the same place. */
+.coach.stepping.speaking .coach-detail {
+  min-height: calc(4 * 1.55em);
 }
 
-.coach-actions.row:has(> :nth-child(3)) > .coach-next {
-  grid-column: 3 / -1;
+/* Analysing it yourself: the move's verdict and what was best, in two lines over the engine's. */
+.panel-body > .move-verdicts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
 }
+
+.move-verdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 28px;
+}
+
+.move-verdict-text {
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.move-verdict-line {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The review's way through: back on the left, Analyse on the right. */
+.view-nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 4px 8px;
+}
+
+.view-nav .btn {
+  gap: 6px;
+}
+
 
 /* The coach's face beside a speech bubble: the verdict and its note are what the rook says. The bubble
    is the rook's own colour (the theme's text colour), with the card's colours turned round inside it. */
@@ -11649,6 +11700,15 @@ a.you-row:active {
 
   .analysis-page.pinned .panel-header {
     border-bottom: 0;
+  }
+
+  .analysis-page.pinned .view-nav {
+    min-height: 40px;
+    padding: 2px 6px;
+  }
+
+  .analysis-page.pinned .coach.speaking .coach-detail {
+    min-height: calc(3 * 1.4em);
   }
 
   .analysis-page.pinned .phone-views {

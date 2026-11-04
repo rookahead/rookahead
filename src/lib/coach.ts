@@ -199,3 +199,26 @@ export function coachMood(cls: Cls, mine: boolean, mates = false): RookMood {
   if (cls === 'inaccuracy') return 'pleased'
   return 'neutral'
 }
+
+/**
+ * The coach's word on the whole game, for the top of the summary: one line, by the result and how it
+ * ended, said to the player (`you`). Its face goes with it.
+ */
+export function gameQuip(result: string | undefined, termination: string | undefined, you: Color): { line: string; mood: RookMood } {
+  const how = (termination ?? '').toLowerCase()
+  const won = result === (you === 'white' ? '1-0' : '0-1')
+  const lost = result === (you === 'white' ? '0-1' : '1-0')
+  if (won) {
+    if (how.includes('checkmate')) return { line: 'Checkmate, and a pretty one. Nice job!', mood: 'proud' }
+    if (how.includes('resign')) return { line: 'They resigned. Well played!', mood: 'proud' }
+    if (how.includes('time')) return { line: 'You won on time. A win’s a win!', mood: 'pleased' }
+    return { line: 'A win. Nice job!', mood: 'proud' }
+  }
+  if (lost) {
+    if (how.includes('checkmate')) return { line: 'Checkmated, ouch. Let’s see where it went wrong.', mood: 'ouch' }
+    if (how.includes('time')) return { line: 'Lost on time. Let’s see where the minutes went.', mood: 'ouch' }
+    return { line: 'A tough one. Let’s see where it slipped.', mood: 'ouch' }
+  }
+  if (result === '1/2-1/2') return { line: 'A draw. Let’s see who let it go.', mood: 'thinking' }
+  return { line: 'Let’s go through the game.', mood: 'neutral' }
+}

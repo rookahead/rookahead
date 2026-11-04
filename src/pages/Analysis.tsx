@@ -1,6 +1,6 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
-import { DEFAULT_POSITION } from 'chess.js'
+import { Chess, DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
@@ -25,7 +25,7 @@ import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
 import { ShareBanner } from '../components/ShareBanner'
 import { ShareDialog } from '../components/ShareDialog'
-import { TAB_ICONS, Tabs } from '../components/Tabs'
+import { TAB_ICONS } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
 import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
@@ -37,9 +37,9 @@ import { setBoardResizing } from '../lib/pixelGrid'
 import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
-import { coachLine, coachMood, type RookMood } from '../lib/coach'
+import { coachLine, coachMood, gameQuip, type RookMood } from '../lib/coach'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
-import type { Color } from '../lib/evaluation'
+import { formatScore, type Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, newOpeningAt, openingOf, type OpeningBook } from '../lib/openings'
 import { finishedReview } from '../lib/regrade'
@@ -369,20 +369,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     setTab('review')
     if (!node.parentId && line[1]) setCurrentId(line[1].id)
   }
-  // Phones pick one part at a time under the board, as the tabs do on desktop.
-  const phoneView: PhoneView = tab === 'analysis' ? 'engine' : tab === 'review' ? 'coach' : 'summary'
   // Stepping and the engine hold the board still on one screen; the finished report gets the page to itself.
   const pinned = phone && tab !== 'summary'
   const reportPage = phone && tab === 'summary' && reviewed
   useLayoutEffect(() => {
     if (active && phone) window.scrollTo(0, 0)
   }, [active, phone, pinned, reportPage])
-  const pickPhoneView = (view: PhoneView) => {
-    if (view === 'engine') return setTab('analysis')
-    if (view === 'summary') return setTab('summary')
-    if (reviewed) startStepping()
-    else setTab('review')
-  }
   // Stepping through the review: the board shows what was better, not the live engine's lines.
   const reviewArrows = tab === 'review' && reviewed
 
@@ -741,15 +733,67 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           </svg>
           Explain
         </button>
-        {showBest && (
-          <button className="btn ghost" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
-            Show {bestSan ?? 'best'}
+        {/* The middle slot: Share for a move worth showing off, Show best for one that wasn't best,
+            nothing otherwise. Explain and Next keep their places, so no button ever moves. */}
+        {currentReview.cls === 'brilliant' || currentReview.cls === 'great' ? (
+          <button className="btn ghost coach-middle" onClick={() => setShareOpen(true)}>
+            <ShareIcon />
+            Share
           </button>
+        ) : (
+          showBest && (
+            <button className="btn ghost coach-middle" onClick={() => playLineFrom(parent.id, [currentReview.bestMove!])}>
+              Show {bestSan ?? 'best'}
+            </button>
+          )
         )}
         {next}
       </CoachCard>
     )
   }
+
+  // Analysing it yourself: the move's verdict on top, and what was best instead (with how it goes on),
+  // in two plain lines, so the review's word stays in view while you try things.
+  const verdictLines = (() => {
+    const parent = node.parentId ? tree.nodes[node.parentId] : null
+    if (!currentReview || !parent || !node.san) return null
+    const before = review.evals[parent.fen] ?? side.evals[parent.fen]
+    const best = currentReview.bestMove
+    const showBest = best && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
+    let bestSan: string | undefined
+    let onward = ''
+    if (showBest) {
+      const chess = new Chess(parent.fen)
+      try {
+        bestSan = chess.move(uciToMove(best)).san
+        const pv = before?.pv[0] === best ? before.pv.slice(1, 4) : []
+        onward = pv.length ? lineText(chess.fen(), pvToSan(chess.fen(), pv)) : ''
+      } catch {
+        bestSan = undefined
+      }
+    }
+    return (
+      <div className="move-verdicts">
+        <div className="move-verdict">
+          <span className="eval-pill">{formatScore(currentReview.score)}</span>
+          <ClassIcon cls={currentReview.cls} size={20} />
+          <span className="move-verdict-text" style={{ color: CLASS_INFO[currentReview.cls].color }}>
+            {moveHeadline(node.san, currentReview)}
+          </span>
+        </div>
+        {bestSan && before && (
+          <div className="move-verdict">
+            <span className="eval-pill">{formatScore(before.score)}</span>
+            <ClassIcon cls="best" size={20} />
+            <span className="move-verdict-text" style={{ color: CLASS_INFO.best.color }}>
+              {bestSan} is best
+            </span>
+            {onward && <span className="move-verdict-line">{onward}</span>}
+          </div>
+        )}
+      </div>
+    )
+  })()
 
   // ── Summary tab: start a review, follow it, then its report ──
   // How far the review has got (useGameReview): the search, then the double-checks; never going back.
@@ -840,8 +884,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       </>
     )
   } else if (reviewed) {
+    const quip = gameQuip(headers.Result, headers.Termination, orientation)
     summaryBody = (
       <>
+        <CoachCard avatar={<RookCoach mood={quip.mood} moodKey="summary" />} detail={quip.line} />
         <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
         <ReviewSummary report={report!} headers={headers} />
         {turningPoint && tree.nodes[turningPoint.nodeId] && (
@@ -1078,25 +1124,17 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   </button>
                 </div>
               )}
-              {!plainBoard && <header className="panel-header">
-                {phone ? (
-                  <PhoneViews
-                    value={phoneView}
-                    score={!pinned && engineOn && score ? chipText(score) : null}
-                    onSelect={pickPhoneView}
+              {!plainBoard && (
+                <header className="panel-header">
+                  {/* One way through, as on Chess.com: the summary, then the review, with the board
+                      to analyse yourself a click away; back always returns where you came from. */}
+                  <ViewNav
+                    back={tab === 'review' ? 'Summary' : tab === 'analysis' ? (reviewed ? 'Review' : 'Summary') : undefined}
+                    onBack={() => setTab(tab === 'analysis' && reviewed ? 'review' : 'summary')}
+                    onAnalyse={tab !== 'analysis' ? () => setTab('analysis') : undefined}
                   />
-                ) : null}
-                {!phone && <Tabs
-                  value={tab}
-                  onSelect={setTab}
-                  items={[
-                    { id: 'summary', label: 'Summary', icon: TAB_ICONS.summary, tone: 'violet' },
-                    // Its verdicts aren't final until the review is done.
-                    { id: 'review', label: 'Review', icon: TAB_ICONS.review, tone: 'sky', disabled: reviewing },
-                    { id: 'analysis', label: 'Analysis', icon: TAB_ICONS.analysis, tone: 'green' },
-                  ]}
-                />}
-              </header>}
+                </header>
+              )}
 
               <div className={`panel-body ${tab}`}>
                 {tab === 'summary' ? (
@@ -1110,6 +1148,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   </>
                 ) : tab === 'analysis' ? (
                   <>
+                    {verdictLines}
                     {!engineOnTop && engineLines}
                     <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
                     {inVariation && (
@@ -1255,7 +1294,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
 }
 
-type PhoneView = 'summary' | 'coach' | 'engine'
 
 /** "a blunder", "an oversight". */
 /** Verdicts Explain tells by what went wrong (the rest, by what the move does). */
@@ -1266,21 +1304,27 @@ const NO_EVALS: Record<string, PositionEval> = {}
 
 const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
 
-/** Phones: the switch under the board between the review's parts. The engine's button carries its score. */
-function PhoneViews({ value, score, onSelect }: { value: PhoneView; score: string | null; onSelect: (v: PhoneView) => void }) {
-  const views: [PhoneView, string][] = [
-    ['summary', 'Summary'],
-    ['coach', 'Review'],
-    ['engine', 'Engine'],
-  ]
+/** The review's way through: back to where you came from on the left, and the board to analyse
+ *  yourself on the right. */
+function ViewNav({ back, onBack, onAnalyse }: { back?: string; onBack: () => void; onAnalyse?: () => void }) {
   return (
-    <div className="phone-views" role="tablist" aria-label="Under the board">
-      {views.map(([v, label]) => (
-        <button key={v} role="tab" aria-selected={value === v} className={value === v ? 'active' : ''} onClick={() => onSelect(v)}>
-          {label}
-          {v === 'engine' && score && <span className="phone-views-score">{score}</span>}
+    <div className="view-nav">
+      {back ? (
+        <button className="btn ghost small view-back" onClick={onBack}>
+          <NavIcon name="prev" />
+          {back}
         </button>
-      ))}
+      ) : (
+        <span />
+      )}
+      {onAnalyse && (
+        <button className="btn ghost small view-analyse" onClick={onAnalyse}>
+          <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+            {TAB_ICONS.analysis}
+          </svg>
+          Analyse
+        </button>
+      )}
     </div>
   )
 }
