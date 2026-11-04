@@ -42,6 +42,27 @@ describe('explaining a move', () => {
     expect(rows.map((r) => r.key)).toEqual(['loses', 'better'])
   })
 
+  it('says what the missed check was pulling away, where it leads, and what the reply shuts', () => {
+    // MelonLord-009 – DarkBiishopOnFire, 2026: 22.b3 saves the pawn, but 22.Qf5+ g6 23.Nf6+ was there.
+    const B3: ExplainInput = {
+      fenBefore: '3r1br1/pp4pk/1qp4p/8/4NQ2/8/PPP3PP/R4R1K w - - 1 22',
+      uci: 'b2b3',
+      san: 'b3',
+      cls: 'blunder',
+      best: { pv: ['f4f5', 'g7g6', 'e4f6', 'h7h8', 'f5e6', 'g8g7', 'f6e8', 'b6c5', 'e8g7', 'f8g7', 'e6g6', 'c5g5', 'g6e4'], score: cp(576) },
+      reply: { pv: ['f8e7', 'f4e5', 'd8e8', 'a1d1'], score: cp(-8) },
+      threat: null,
+    }
+    expect(texts(B3)).toEqual([
+      'The chance: You had a winning shot. 22.Qf5+ forces …g6, and now nothing guards f6.',
+      'Then: 23.Nf6+ Kh8 24.Qe6 wins the exchange (+5.76).',
+      'b3: Saves the attacked b2 pawn, but it’s too slow. After …Be7, which guards f6, it’s about level (−0.08).',
+    ])
+    const e = explainMove(B3)!
+    expect(e.rows[1].position?.fen).toBe('3r1br1/pp5k/1qp3pp/5Q2/4N3/8/PPP3PP/R4R1K w - - 0 23')
+    expect(e.lines[0].text).toBe('22.Qf5+ g6 23.Nf6+ Kh8 24.Qe6 Rg7 25.Ne8 Qc5 26.Nxg7 Bxg7 27.Qxg6')
+  })
+
   it('spots a fork', () => {
     expect(
       texts({
@@ -84,7 +105,7 @@ describe('explaining a move', () => {
       threat: null,
     })!
     expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual([
-      'The chance: 24.Be5+ wins the d4 pawn. You’d be winning (+6.50).',
+      'The chance: You had a winning shot. 24.Be5+ wins the d4 pawn (+6.50).',
       'Ne4: Lets the win slip. After 24…dxe4, it’s about level (+0.03).',
     ])
     expect(e.lines[0].from).toBe('before')

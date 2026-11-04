@@ -392,7 +392,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
       }
     }
   }
-  if (piece !== 'k' && loose(before, m.from) && !loose(after, m.to)) add(`Moves the attacked ${name} to safety.`, 14)
+  if (piece !== 'k' && loose(before, m.from) && !loose(after, m.to)) add(`Saves the attacked ${piece === 'p' ? `${m.from} pawn` : name}.`, 14)
   for (const s of ALL) {
     if (s === m.from || s === m.to || before[s]?.color !== me || !loose(before, s) || loose(after, s)) continue
     add(`Protects ${nm(after, s)}, which was hanging.`, 12, [{ orig: s, brush: 'suggest' }])

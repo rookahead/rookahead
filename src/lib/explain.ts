@@ -33,7 +33,7 @@ export interface Play {
 }
 
 /** At most this many moves of a line play when its row is clicked. */
-const PLAY_MOVES = 6
+const PLAY_MOVES = 12
 const play = (fen: string, uci: string[], n = uci.length): Play => ({ fen, uci: uci.slice(0, Math.min(Math.max(n, 1), PLAY_MOVES)) })
 
 /** A line to show, UCI and in notation: what punishes the move (from the position after it), or what
@@ -278,6 +278,9 @@ function direct(played: Played, pv: string[]): boolean {
   return Boolean(side && (side.ply === 0 || (side.ply === 2 && side.from === pv[0]?.slice(2, 4))))
 }
 
+/** A clear win for the mover, short of a mate (that one says so itself). */
+const winning = (score: Score, mover: Color) => score.type === 'cp' && (mover === 'white' ? 1 : -1) * score.value >= 300
+
 /** Where the mover stands, in words, e.g. "White stays only a little better (+0.73)". */
 function standing(score: Score, mover: Color): string {
   const tag = `(${formatScore(score)})`
@@ -340,6 +343,48 @@ function coversReply(fen: string, bestUci: string, replyUci: string): boolean {
   if (!landed || !guard || !chess.attackers(rTo, guard.color).includes(bTo)) return false
   const defenders = chess.attackers(rTo, landed.color).length
   return defenders === 0 || VALUES[guard.type] < VALUES[landed.type] || chess.attackers(rTo, guard.color).length > defenders
+}
+
+/**
+ * A check that pulls a defender away: the reply moves the only piece guarding a square, and the next
+ * move lands there with check or a capture. "22.Qf5+ forces …g6, and now nothing guards f6."
+ */
+function lever(fen: string, pv: string[]): { text: string; square: Square; at: number } | null {
+  const start = new Chess(fen)
+  const them = start.turn() === 'w' ? 'b' : 'w'
+  const chess = new Chess(fen)
+  const moves: { san: string; from: Square; to: Square; fen: string }[] = []
+  for (const uci of pv.slice(0, 5)) {
+    try {
+      const m = chess.move(uciToMove(uci))
+      moves.push({ san: m.san, from: m.from, to: m.to, fen: chess.fen() })
+    } catch {
+      break
+    }
+  }
+  const [first, reply] = moves
+  if (!first || !reply || !/\+/.test(first.san)) return null
+  for (const k of [2, 4]) {
+    const m = moves[k]
+    if (!m || !/[+#x]/.test(m.san)) continue
+    const guards = start.attackers(m.to, them)
+    if (guards.length !== 1 || guards[0] !== reply.from || new Chess(moves[k - 1].fen).attackers(m.to, them).length) continue
+    return { text: `${lineText(fen, [first.san])} forces …${reply.san}, and now nothing guards ${m.to}.`, square: m.to, at: k }
+  }
+  return null
+}
+
+/** The square of the missed line that the other side's reply now guards: "…Be7 guards f6". */
+function shuts(fen: string, uci: string, keys: Square[]): Square | null {
+  const before = new Chess(fen)
+  const chess = new Chess(fen)
+  let m
+  try {
+    m = chess.move(uciToMove(uci))
+  } catch {
+    return null
+  }
+  return keys.find((t) => t !== m.to && chess.attackers(t, m.color).includes(m.to) && !before.attackers(t, m.color).includes(m.from)) ?? null
 }
 
 function shownLine(label: string, from: 'before' | 'after', fen: string, pv: string[], played: Played): ShownLine {
@@ -505,6 +550,9 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const bestUci = best.pv[0]
   const bestPlayed = bestUci ? playLine(fenBefore, best.pv) : null
   const bestSan = bestPlayed?.san[0]
+  const pull = bestUci ? lever(fenBefore, best.pv) : null
+  // The squares the missed line needed: where its checks and captures land.
+  const keys = [...(pull ? [pull.square] : []), ...(bestPlayed?.san ?? []).flatMap((x, i) => (i % 2 === 0 && /[+#x]/.test(x) ? [squares(best.pv[i])[1]] : []))]
 
   /** What the better move would have done, and the move played letting it go. */
   const chance = (note: string): Explanation | null => {
@@ -512,8 +560,33 @@ export function explainMove(input: ExplainInput): Explanation | null {
     const moveRow: ExplainRow = { key: 'move', label: san, text: note, shapes: [{ orig: from, dest: to, brush: 'yellow' }], play: play(fenBefore, [uci]) }
     const sac = sacrificeStory(fenBefore, best, bestTake, { key: 'chance', label: 'The chance', from: 'before', brush: 'suggest', yours: true, standing: standing(best.score, mover) })
     if (sac) return { rows: [...sac.rows, moveRow], lines: sac.lines }
+    const opener = winning(best.score, mover) ? 'You had a winning shot. ' : ''
+    // With the opener said, the score alone is enough.
+    const where = opener ? ` (${formatScore(best.score)}).` : `. ${capitalise(standing(best.score, mover))}.`
+    // The check that pulls a defender away, then where it leads, played out to the point.
+    if (pull) {
+      const long = playLine(fenBefore, best.pv, 14)
+      const wins = long.mateAt ? 'leads to mate' : winsWhat(long, mover)
+      const fenAt = long.fens[pull.at - 1]
+      const next = best.pv[pull.at]
+      if (wins && fenAt && next && long.length > pull.at) {
+        rows.push(
+          { key: 'chance', label: 'The chance', text: `${opener}${pull.text}`, shapes: [{ orig: squares(bestUci)[0], dest: squares(bestUci)[1], brush: 'suggest' }, { orig: pull.square, brush: 'red' }], play: play(fenBefore, best.pv, pull.at) },
+          {
+            key: 'result',
+            label: 'Then',
+            text: `${lineText(fenAt, long.san.slice(pull.at, pull.at + 3))} ${wins}${where}`,
+            shapes: [{ orig: squares(next)[0], dest: squares(next)[1], brush: 'suggest' }],
+            position: { fen: fenAt, lastMove: squares(best.pv[pull.at - 1]) as [Square, Square] },
+            play: play(fenAt, best.pv.slice(pull.at), long.length - pull.at),
+          },
+          moveRow,
+        )
+        return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, long)] }
+      }
+    }
     const story = lineStory(fenBefore, best, bestPlayed)
-    const text = story ? `${capitalise(story)}. ${capitalise(standing(best.score, mover))}.` : `${lineText(fenBefore, [bestSan])} was the move: ${standing(best.score, mover)}.`
+    const text = story ? `${opener}${capitalise(story)}${where}` : `${opener}${lineText(fenBefore, [bestSan])} was the move: ${standing(best.score, mover)}.`
     rows.push({ key: 'chance', label: 'The chance', text, shapes: [{ orig: squares(bestUci)[0], dest: squares(bestUci)[1], brush: 'suggest' }], play: play(fenBefore, best.pv, bestPlayed.length) }, moveRow)
     return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, bestPlayed)] }
   }
@@ -525,8 +598,15 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const moverAfter = (mover === 'white' ? 1 : -1) * (reply.score.type === 'cp' ? reply.score.value : reply.score.value > 0 ? 10000 : -10000)
   const moverBest = (mover === 'white' ? 1 : -1) * (best.score.type === 'cp' ? best.score.value : best.score.value > 0 ? 10000 : -10000)
   if (moverAfter > -50) {
-    const afterText = reply.pv[0] ? ` After ${lineText(fenAfter, pvSan(fenAfter, reply.pv.slice(0, 1)))}, ${theirStanding(reply.score, them)}.` : ''
-    return chance(`${moverBest >= 300 && moverAfter < 150 ? 'Lets the win slip.' : 'Lets some of the edge go.'}${afterText}`)
+    const [replySan] = reply.pv[0] ? pvSan(fenAfter, reply.pv.slice(0, 1)) : []
+    const shut = replySan ? shuts(fenAfter, reply.pv[0], keys) : null
+    const afterText = !replySan ? '' : shut ? ` After …${replySan}, which guards ${shut}, ${theirStanding(reply.score, them)}.` : ` After ${lineText(fenAfter, [replySan])}, ${theirStanding(reply.score, them)}.`
+    // What the move was for, when there's something real to say: "Saves the attacked b2 pawn, but it's too slow."
+    const [purpose] = boardIdeas(fenBefore, uci, reply.pv).filter((i) => i.weight >= 9)
+    const head = purpose
+      ? `${purpose.text.replace(/\.$/, '')}, but ${bestSan && /[+#x]/.test(bestSan) ? 'it’s too slow' : 'it misses the chance'}.`
+      : moverBest >= 300 && moverAfter < 150 ? 'Lets the win slip.' : 'Lets some of the edge go.'
+    return chance(`${head}${afterText}`)
   }
 
   const replyUci = reply.pv[0]
