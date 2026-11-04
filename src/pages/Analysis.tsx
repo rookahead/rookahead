@@ -38,7 +38,7 @@ import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanatio
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
 import { coachLine, coachMood, gameQuip, type RookMood } from '../lib/coach'
-import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
+import { moveDetail, moveHeadline } from '../lib/commentary'
 import { formatScore, type Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, newOpeningAt, openingOf, type OpeningBook } from '../lib/openings'
@@ -658,7 +658,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const hasGame = Boolean(headers.White || headers.Black)
   const currentIndex = isMainline(tree, node.id) ? node.ply - line[0].ply : null
   const lastMove = node.from && node.to ? ([node.from, node.to] as [typeof node.from, typeof node.to]) : undefined
-  const summaryText = useMemo(() => (report ? gameSummary(report, tree, headers) : ''), [report, tree, headers])
 
   // The game's opening for a loaded game (our book names first: they're the best formatted);
   // on a fresh board, wherever the moves have got to.
@@ -805,7 +804,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       opening={line.length > 1 ? (gameOpening ?? infoOpening) : infoOpening}
       positionNote={terminal ? terminal.label : `${turn === 'white' ? 'White' : 'Black'} to move`}
       positionOpening={hasGame && opening && opening.name !== infoOpening?.name ? opening : undefined}
-      summary={reviewed ? summaryText : undefined}
     />
   )
   const readyCard = (
@@ -884,7 +882,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       </>
     )
   } else if (reviewed) {
-    const quip = gameQuip(headers.Result, headers.Termination, orientation)
+    // The coach's word on the game, with its big moment: the player's legendary move, else the turning point.
+    const legendary = report && Object.values(report.moves).find((m) => m.cls === 'brilliant' && m.color === orientation)
+    const quip = gameQuip(headers.Result, headers.Termination, orientation, {
+      legendary: legendary ? tree.nodes[legendary.nodeId]?.san : undefined,
+      turning: turningPoint && tree.nodes[turningPoint.nodeId]?.san ? { san: tree.nodes[turningPoint.nodeId].san!, mine: turningPoint.color === orientation } : undefined,
+    })
     summaryBody = (
       <>
         <CoachCard avatar={<RookCoach mood={quip.mood} moodKey="summary" />} detail={quip.line} />
@@ -906,7 +909,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             <NavIcon name="next" />
           </button>
         )}
-        {gameInfo}
         <div className="summary-cta">
           <button className="btn primary big" onClick={startStepping}>
             Start review

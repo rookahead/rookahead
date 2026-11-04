@@ -10,8 +10,6 @@ interface Props {
   positionNote: string
   /** The opening the moves have reached, when it isn't the game's own. */
   positionOpening?: { eco?: string; name: string }
-  /** A sentence about how the game went, once it's reviewed. */
-  summary?: string
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -52,7 +50,7 @@ function splitOpening(name: string): [string, string | undefined] {
  * The panel's Info tab, laid out like the top of a scoresheet: the opening as the headline, then the
  * facts a PGN's tags carry (time control, date, result, where it was played), then how the game went.
  */
-export function GameInfo({ headers, hasGame, opening, positionNote, positionOpening, summary }: Props) {
+export function GameInfo({ headers, hasGame, opening, positionNote, positionOpening }: Props) {
   const tc = headers.TimeControl && headers.TimeControl !== '-' ? headers.TimeControl : undefined
   const result = headers.Result && headers.Result !== '*' ? headers.Result.replace('1/2', '½').replace('-', '–') : undefined
   // Chess.com puts the game's address in Link; Lichess in Site.
@@ -112,12 +110,6 @@ export function GameInfo({ headers, hasGame, opening, positionNote, positionOpen
         </dl>
       </section>
 
-      {summary && (
-        <section className="gi-section" aria-label="How the game went">
-          <h3 className="section-label">How it went</h3>
-          <p className="gi-text">{summary}</p>
-        </section>
-      )}
     </>
   )
 }

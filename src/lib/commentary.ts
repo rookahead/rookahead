@@ -1,8 +1,4 @@
-import { CLASS_INFO, type GameReport, type MoveReview } from './classify'
-import type { Color } from './evaluation'
-import { moveNumberLabel, type GameTree, type PgnHeaders } from './tree'
-
-const article = (word: string) => (/^[aeiou]/i.test(word) ? 'an' : 'a')
+import type { MoveReview } from './classify'
 
 /** One-line verdict for a classified move, e.g. "Nxe5 is a blunder". */
 export function moveHeadline(san: string, review: MoveReview): string {
@@ -57,36 +53,4 @@ export function moveDetail(review: MoveReview, bestSan?: string): string | undef
     default:
       return undefined
   }
-}
-
-/** A short paragraph summing up the game for the review overview. */
-export function gameSummary(report: GameReport, tree: GameTree, headers: PgnHeaders): string {
-  const name = (c: Color) => headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')
-  const parts: string[] = []
-
-  const result = headers.Result
-  const termination = headers.Termination?.match(/ won (by .+)$/)?.[1]
-  if (result === '1-0' || result === '0-1') {
-    const winner: Color = result === '1-0' ? 'white' : 'black'
-    parts.push(`${name(winner)} won${termination ? ` ${termination}` : ''}.`)
-  } else if (result === '1/2-1/2') {
-    parts.push('The game ended in a draw.')
-  }
-
-  // The single most costly move, if it was a real error.
-  const worst = Object.values(report.moves)
-    .filter((m) => m.cls === 'blunder' || m.cls === 'mistake' || m.cls === 'miss')
-    .sort((a, b) => b.loss - a.loss)[0]
-  if (worst) {
-    const san = tree.nodes[worst.nodeId]?.san
-    const label = CLASS_INFO[worst.cls].label.toLowerCase()
-    parts.push(`The turning point was ${moveNumberLabel(worst.ply)} ${san}, ${article(label)} ${label} by ${name(worst.color)}.`)
-  } else if (Object.keys(report.moves).length > 6) {
-    parts.push('A clean game: no real mistakes from either side.')
-  }
-
-  const brilliant = Object.values(report.moves).find((m) => m.cls === 'brilliant')
-  if (brilliant) parts.push(`Look out for ${moveNumberLabel(brilliant.ply)} ${tree.nodes[brilliant.nodeId]?.san} — legendary!`)
-
-  return parts.join(' ') || 'Here’s how the game went.'
 }

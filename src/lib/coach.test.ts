@@ -127,4 +127,11 @@ describe('the coach’s word on the game', () => {
     expect(gameQuip('1/2-1/2', 'Game drawn by agreement', 'white').mood).toBe('thinking')
     expect(gameQuip(undefined, undefined, 'white').mood).toBe('neutral')
   })
+  it('adds the game’s big moment: the player’s legendary move, else where it turned', () => {
+    expect(gameQuip('1-0', 'MelonLord-009 won by checkmate', 'white', { legendary: 'Bxf7+', turning: { san: 'Bc5', mine: false } }).line).toBe(
+      'Checkmate, and a pretty one. Nice job! And Bxf7+ was legendary!',
+    )
+    expect(gameQuip('1-0', 'X won by resignation', 'white', { turning: { san: 'Bc5', mine: false } }).line).toBe('They resigned. Well played! Their Bc5 was the turning point.')
+    expect(gameQuip('0-1', 'X won by checkmate', 'white', { turning: { san: 'Qxg4', mine: true } }).line).toBe('Checkmated, ouch. Let’s see where it went wrong. It slipped at Qxg4.')
+  })
 })

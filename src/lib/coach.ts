@@ -204,7 +204,34 @@ export function coachMood(cls: Cls, mine: boolean, mates = false): RookMood {
  * The coach's word on the whole game, for the top of the summary: one line, by the result and how it
  * ended, said to the player (`you`). Its face goes with it.
  */
-export function gameQuip(result: string | undefined, termination: string | undefined, you: Color): { line: string; mood: RookMood } {
+export function gameQuip(
+  result: string | undefined,
+  termination: string | undefined,
+  you: Color,
+  moments: GameMoments = {},
+): { line: string; mood: RookMood } {
+  const told = gameLine(result, termination, you)
+  // One fact worth keeping, said as the coach would: the player's legendary move, else where it turned.
+  const { legendary, turning } = moments
+  const more = legendary
+    ? `And ${legendary} was legendary!`
+    : turning
+      ? turning.mine
+        ? `It slipped at ${turning.san}.`
+        : `Their ${turning.san} was the turning point.`
+      : ''
+  return { line: more ? `${told.line} ${more}` : told.line, mood: told.mood }
+}
+
+/** The game's big moments, for the coach's word on it (SAN, no move numbers). */
+export interface GameMoments {
+  /** The player's own legendary move. */
+  legendary?: string
+  /** The costliest real error, and whose it was. */
+  turning?: { san: string; mine: boolean }
+}
+
+function gameLine(result: string | undefined, termination: string | undefined, you: Color): { line: string; mood: RookMood } {
   const how = (termination ?? '').toLowerCase()
   const won = result === (you === 'white' ? '1-0' : '0-1')
   const lost = result === (you === 'white' ? '0-1' : '1-0')
