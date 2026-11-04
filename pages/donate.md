@@ -7,7 +7,7 @@ heading: Free game review for everyone.
 subheading: No limit, no paywall, no pop-ups. Just Stockfish, on your own device.
 upi: bijoyv9@ybl
 upiName:
-github: https://github.com/sponsors/bijoyv9
+github: https://github.com/sponsors/rookahead
 bmc: https://buymeacoffee.com/bijoyv9i
 ---
 

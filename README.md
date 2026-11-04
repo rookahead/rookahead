@@ -49,7 +49,7 @@ The rules behind every verdict are written down in [`docs/rulebook.md`](docs/rul
 Rookahead is free for everyone, and every feature stays free. If it helps your chess, you can help keep it going:
 
 - [rookahead.com/donate](https://rookahead.com/donate) (UPI in India)
-- [GitHub Sponsors](https://github.com/sponsors/bijoyv9)
+- [GitHub Sponsors](https://github.com/sponsors/rookahead)
 - [Buy Me a Coffee](https://buymeacoffee.com/bijoyv9i)
 
 Starring the repo, sharing Rookahead with a friend and [reporting bugs](https://github.com/rookahead/rookahead/issues) help too. Come and talk chess on [Discord](https://discord.gg/ebm3NZNHZH).
