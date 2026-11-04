@@ -1,6 +1,7 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js'
 import type { MoveClass } from './classify'
 import { formatScore, winPercent, type Color } from './evaluation'
+import { boardIdeas } from './ideas'
 import { uciToMove } from './tree'
 import type { Score } from './uci'
 
@@ -609,10 +610,6 @@ export function explainMove(input: ExplainInput): Explanation | null {
   return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)] }
 }
 
-/** In the opening, a knight or bishop leaving its first square. */
-const developing = (fen: string, piece: PieceSymbol, from: Square, color: Color) =>
-  (piece === 'n' || piece === 'b') && from[1] === (color === 'white' ? '1' : '8') && Number(fen.split(' ')[5]) <= 15
-
 /** A move that's fine: what it does (when there's something real to point at), then what else there was. */
 function explainGood(input: ExplainInput, fenAfter: string): Explanation | null {
   const { fenBefore, uci, cls, best, reply, threat, ownThreat, playedTake, second } = input
@@ -644,6 +641,8 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   // Taking back what was just taken: material was down before the move and level after it.
   const behind = balance(new Chess(fenBefore), mover)
   const winsBack = move.captured && behind < 0 && played.gain <= -behind
+  // What the move does on the board: its outpost, file, pin, passed pawn…
+  const [top] = boardIdeas(fenBefore, uci, reply.pv)
 
   if (after.isCheckmate()) idea('Checkmate.')
   else if (mate) idea(`Starts a mate in ${mate}.`, [mine], played.mateAt ?? played.length)
@@ -659,8 +658,7 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
     idea(`Deals with ${sideName(them)}’s threat of ${tPlayed!.san[0].replace(/[+#]$/, '')}, which ${tStory.replace(/^\S+ /, '')}.`, [{ ...mine }, { orig: squares(threat!.pv[0])[0], dest: squares(threat!.pv[0])[1], brush: 'red' }])
   } else if (oStory) {
     idea(`Threatens ${oPlayed!.san[0].replace(/[+#]$/, '')}, which ${oStory.replace(/^\S+ /, '')}.`, [mine, { orig: squares(ownThreat!.pv[0])[0], dest: squares(ownThreat!.pv[0])[1], brush: 'yellow' }])
-  } else if (move.isKingsideCastle() || move.isQueensideCastle()) idea('Castles: the king is safe and the rook comes into play.')
-  else if (developing(fenBefore, move.piece, from, mover)) idea(`Develops the ${NAMES[move.piece]}.`)
+  } else if (top) idea(top.text, [mine, ...top.shapes], top.plies)
   else if (cls === 'book') idea('A well-known opening move.')
   else if (after.inCheck()) idea('Gives check.')
   // Nothing to point at: some moves are best for reasons a line can't show.
