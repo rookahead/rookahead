@@ -690,6 +690,80 @@ export function explainMove(input: ExplainInput): Explanation | null {
   return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)] }
 }
 
+/** "the knight guards h7": a piece of the mating side, besides the mating one, covering the mating square. */
+function mateGuard(fenMate: string, sq: Square, moved: Square): string | null {
+  const chess = new Chess(fenMate)
+  const mater = chess.get(sq)
+  const [g] = mater ? chess.attackers(sq, mater.color) : []
+  if (!g) return null
+  const p = chess.get(g)!
+  return `${g === moved ? `the ${NAMES[p.type]}` : p.type === 'p' ? `the ${g} pawn` : `the ${NAMES[p.type]} on ${g}`} guards ${sq}`
+}
+
+/**
+ * A move that leads to mate, told like a coach: the mate it threatens and what makes it work, and when
+ * it's a sacrifice, why taking it is mate too.
+ */
+function mateRows(input: ExplainInput, fenAfter: string, mine: ExplainShape, n: number): ExplainRow[] | null {
+  const { fenBefore, uci, san, reply, ownThreat, playedTake } = input
+  const [, to] = squares(uci)
+  const rows: ExplainRow[] = []
+  const mateText = (k: number, s: string) => `${numbered(fenBefore, k, s.replace(/#$/, ''))} mate`
+
+  // The mate it threatens: what it would do with a free move, or else the line itself.
+  let threat: { san: string; from: Square; to: Square; fen: string } | null = null
+  const ownNull = nullMoveFen(fenAfter)
+  if (ownThreat?.pv[0] && ownNull) {
+    try {
+      const c = new Chess(ownNull)
+      const m = c.move(uciToMove(ownThreat.pv[0]))
+      if (c.isCheckmate()) threat = { san: m.san, from: m.from, to: m.to, fen: c.fen() }
+    } catch {
+      // Not a move here: no threat to name.
+    }
+  }
+  const pv = [uci, ...reply.pv]
+  const played = playLine(fenBefore, pv, 12)
+  if (threat && !san.includes('+')) {
+    const guard = mateGuard(threat.fen, threat.to, to)
+    rows.push({ key: 'idea', label: 'The idea', text: `Threatens ${mateText(2, threat.san)}${guard ? `: ${guard}` : ''}.`, shapes: [mine, { orig: threat.from, dest: threat.to, brush: 'yellow' }], play: play(fenBefore, pv, n) })
+  } else if (played.mateAt) {
+    const k = played.mateAt - 1
+    const guard = mateGuard(played.fens[k], squares(pv[k])[1], to)
+    const end = `${numbered(fenBefore, k, played.san[k])}${guard ? `, and ${guard}` : ''}`
+    rows.push({ key: 'idea', label: 'The idea', text: `Starts a mate in ${Math.ceil(played.mateAt / 2)}: it ends with ${end}.`, shapes: [mine], play: play(fenBefore, pv, played.mateAt) })
+  } else return null
+
+  // A sacrifice: taking it is mate too, often because the piece that takes stops guarding something.
+  const sac = sacrifice(fenBefore, uci)
+  if (sac && playedTake?.pv[0]) {
+    const line = [uci, sac.take, playedTake.pv[0]]
+    const c = new Chess(fenBefore)
+    try {
+      c.move(uciToMove(line[0]))
+      const take = c.move(uciToMove(line[1]))
+      const takenFen = c.fen()
+      const mate = c.move(uciToMove(line[2]))
+      if (c.isCheckmate()) {
+        const left = new Chess(fenAfter).attackers(mate.to, take.color).includes(take.from)
+        const who = take.piece === 'p' ? 'pawn' : NAMES[take.piece]
+        rows.push({
+          key: 'take',
+          label: `If ${numbered(fenBefore, 1, take.san)}`,
+          text: `${left ? `The ${who} has left ${take.from}, so ` : ''}${numbered(fenBefore, 2, mate.san.replace(/#$/, ''))} is mate.`,
+          shapes: [{ orig: mate.from, dest: mate.to, brush: 'suggest' }, ...(left ? [{ orig: take.from, brush: 'red' as const }] : [])],
+          position: { fen: takenFen, lastMove: [take.from, take.to] },
+          play: play(fenBefore, line, 3),
+        })
+        if (rows[0].text.startsWith('Threatens')) rows.push({ key: 'result', label: 'Either way', text: 'Taken or not, it’s mate.', shapes: [mine] })
+      }
+    } catch {
+      // The take doesn't play: the threat alone tells it.
+    }
+  }
+  return rows
+}
+
 /** A move that's fine: what it does (when there's something real to point at), then what else there was. */
 function explainGood(input: ExplainInput, fenAfter: string): Explanation | null {
   const { fenBefore, uci, cls, best, reply, threat, ownThreat, playedTake, second } = input
@@ -725,7 +799,11 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   const [top] = boardIdeas(fenBefore, uci, reply.pv)
 
   if (after.isCheckmate()) idea('Checkmate.')
-  else if (mate) idea(`Starts a mate in ${mate}.`, [mine], played.mateAt ?? played.length)
+  else if (mate) {
+    const told = mateRows(input, fenAfter, mine, played.mateAt ?? played.length)
+    if (told) rows.push(...told)
+    else idea(`Starts a mate in ${mate}.`, [mine], played.mateAt ?? played.length)
+  }
   else if (cls === 'forced') idea('The only legal move.')
   else if (sac) {
     rows.push(...sac.rows)

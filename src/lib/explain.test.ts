@@ -63,6 +63,27 @@ describe('explaining a move', () => {
     expect(e.lines[0].text).toBe('22.Qf5+ g6 23.Nf6+ Kh8 24.Qe6 Rg7 25.Ne8 Qc5 26.Nxg7 Bxg7 27.Qxg6')
   })
 
+  it('tells a mating sacrifice: the threat, what makes it work, and why taking is mate too', () => {
+    // The same game, 26.Nf6!!: Qh7 is coming, and …gxf6 lets Qxh6 in.
+    const NF6: ExplainInput = {
+      fenBefore: '6rk/pp4p1/1qp3Qp/2br4/4N3/1PP5/P5PP/R4R1K w - - 3 26',
+      uci: 'e4f6',
+      san: 'Nf6',
+      cls: 'brilliant',
+      best: { pv: ['e4f6', 'd5g5', 'g6h7'], score: { type: 'mate', value: 2 } },
+      reply: { pv: ['d5g5', 'g6h7'], score: { type: 'mate', value: 1 } },
+      playedTake: { pv: ['g6h6'], score: { type: 'mate', value: 1 } },
+      ownThreat: { pv: ['g6h7'], score: { type: 'mate', value: 1 } },
+    }
+    expect(texts(NF6)).toEqual([
+      'The idea: Threatens 27.Qh7 mate: the knight guards h7.',
+      'If 26…gxf6: The pawn has left g7, so 27.Qxh6 is mate.',
+      'Either way: Taken or not, it’s mate.',
+    ])
+    // Without the search for its threat, the line itself tells it.
+    expect(texts({ ...NF6, ownThreat: null })?.[0]).toBe('The idea: Starts a mate in 2: it ends with 27.Qh7#, and the knight guards h7.')
+  })
+
   it('spots a fork', () => {
     expect(
       texts({
