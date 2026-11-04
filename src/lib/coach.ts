@@ -32,6 +32,8 @@ const PRAISE: Partial<Record<Cls, string[]>> = {
 }
 
 const WRONG: readonly Cls[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'
+const CLASSIC = ['e4', 'd4', 'c4', 'Nf3']
 /** "Forks the king…", "Takes back…": a sentence that starts with what the move does. */
 const startsWithVerb = (s: string) => /^[A-Z][a-z]+s\b/.test(s) && !/^(This|Its|Nothing)\b/.test(s)
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
@@ -61,8 +63,13 @@ export function coachLine(input: ExplainInput, you: Color, opening?: string): st
   const say = (...parts: (string | undefined | null | false)[]) => parts.filter(Boolean).join(' ')
 
   if (WRONG.includes(input.cls)) return wrongLine(facts, mine, input.cls, pick)
+  // "Classic" is said once a game, on the very first move, when it's one of the well-known ones.
+  if (input.fenBefore.startsWith(START) && CLASSIC.includes(input.san)) {
+    const centre = input.san === 'e4' || input.san === 'd4' ? ', straight for the centre' : ''
+    return mine ? `A classic ${input.san}${centre}.` : `Your opponent opens with a classic ${input.san}${centre}.`
+  }
   const line = goodLine(facts, input, mine, pick, say)
-  // A book move that reaches a named line says which: more use than "a classic".
+  // A book move that reaches a named line says which.
   return opening && input.cls === 'book' ? say(line, `This is the ${opening}.`) : line
 }
 

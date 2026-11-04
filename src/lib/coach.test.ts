@@ -83,4 +83,9 @@ describe('the coach line on book moves', () => {
     const d4: ExplainInput = { fenBefore: 'rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', uci: 'd2d4', san: 'd4', cls: 'book', best: { pv: ['d2d4', 'd7d5'], score: cp(35) }, reply: { pv: ['d7d5', 'b1c3'], score: cp(35) } }
     expect(coachLine(d4, 'white')).toBe('You open a line for the bishop on c1.')
   })
+  it('calls the first move a classic, and only the first', () => {
+    const e4: ExplainInput = { fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', uci: 'e2e4', san: 'e4', cls: 'book', best: { pv: ['e2e4', 'e7e5'], score: cp(30) }, reply: { pv: ['e7e5', 'g1f3'], score: cp(30) } }
+    expect(coachLine(e4, 'white')).toBe('A classic e4, straight for the centre.')
+    expect(coachLine(e4, 'black')).toBe('Your opponent opens with a classic e4, straight for the centre.')
+  })
 })
