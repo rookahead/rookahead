@@ -49,3 +49,14 @@ export function openingOf(book: OpeningBook, path: MoveNode[]): Opening | undefi
   }
   return undefined
 }
+
+/**
+ * The opening the last move of `path` reaches, only when it's new there: the first time a line is named,
+ * or when it narrows to a variation. Repeats of the same name along the line give nothing.
+ */
+export function newOpeningAt(book: OpeningBook, path: MoveNode[]): string | undefined {
+  const last = path[path.length - 1]
+  const name = last && book.nameAt(last.fen)?.replace(/^\S+ /, '')
+  if (!name) return undefined
+  return name !== openingOf(book, path.slice(0, -1))?.name ? name : undefined
+}

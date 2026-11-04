@@ -40,7 +40,7 @@ import { coachLine } from '../lib/coach'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
-import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
+import { loadOpeningBook, newOpeningAt, openingOf, type OpeningBook } from '../lib/openings'
 import { finishedReview } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
@@ -299,6 +299,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
     })
   }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
+  // The opening this move reaches, said only when it's new: the first time a line is named, or when it
+  // narrows to a variation (never "This is the Caro-Kann Defense" on every move of it).
+  const newOpening = useMemo(() => (book ? newOpeningAt(book, path) : undefined), [book, path])
   // The coach line under the move: made from the review's own lines, so it's there with the verdict.
   const coach = useMemo(() => {
     if (!currentReview || !parentFen || !node.uci || !node.san) return null
@@ -316,10 +319,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
       },
       orientation,
-      // The named line this move reaches, without its ECO code ("B12 Caro-Kann Defense" → the name).
-      book?.nameAt(node.fen)?.replace(/^\S+ /, ''),
+      newOpening,
     )
-  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation, book])
+  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation, newOpening])
   // A preview never outlives what it was pointing at.
   useEffect(() => setPreview(null), [node.id, tab, explaining])
   // Clicking a row plays its moves on the board, a move at a time, and holds the last position.
