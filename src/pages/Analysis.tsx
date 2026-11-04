@@ -296,7 +296,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       playedTake: taken(parentFen, [node.uci, ...after.pv]),
       ownThreat: own ? { pv: own.pv, score: own.score } : null,
       second: reviewed?.secondMove && reviewed.second ? { move: reviewed.secondMove, score: reviewed.second } : null,
-      previous: node.parentId ? tree.nodes[node.parentId].uci : undefined,
+      previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
     })
   }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
   // The coach line under the move: made from the review's own lines, so it's there with the verdict.
@@ -313,7 +313,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         cls: currentReview.cls,
         best: { pv: before.pv, score: before.score },
         reply: { pv: after?.pv ?? [], score: currentReview.score },
-        previous: node.parentId ? tree.nodes[node.parentId].uci : undefined,
+        previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
       },
       orientation,
     )

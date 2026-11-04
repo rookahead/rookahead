@@ -42,6 +42,13 @@ const yourVerb = (s: string) =>
 /** An idea's sentence as a clause: "Develops the knight." → "develops the knight". */
 const clause = (s: string) => lower(s.split(':')[0].replace(/\.$/, ''))
 
+/** Clearly lost after the move (by three pawns or more, or getting mated): praise would ring false. */
+function behind(input: ExplainInput): boolean {
+  const s = input.reply.score
+  const sign = input.fenBefore.split(' ')[1] === 'w' ? 1 : -1
+  return s.type === 'mate' ? s.value * sign < 0 : s.value * sign <= -300
+}
+
 /** The coach line for a reviewed move, talking to the player who has `you`'s pieces. */
 export function coachLine(input: ExplainInput, you: Color): string | null {
   const facts = explainMove(input)?.coach
@@ -65,18 +72,33 @@ function wrongLine(facts: CoachFacts, mine: boolean, cls: Cls, pick: (l?: string
   const point = better?.point
   const why = !point ? '' : point.startsWith('then ') ? `: ${point.slice(5)}` : mine ? `, which ${point}` : `: it ${point}`
   const betterText = better ? (mine ? `Your better option was ${better.move}${why}.` : `${better.move} was better${why}.`) : null
+  // What was missed, said as missed (unless the opener already says it): "They missed 2.dxe5, which wins the e5 pawn."
+  const missed = chance && !shot && !mate ? missedWords(chance, mine) : chance
   // At most two facts after the opener: what was there (or what it allows), and what the move did.
-  const parts = chance ? [chance, own] : own ? [own, allows ? `Now ${allows}` : betterText] : [allows ? `Now ${allows}` : null, betterText]
-  const body = parts.filter(Boolean)
+  const parts = missed ? [missed, own] : own ? [own, allows ? `Now ${allows}` : betterText] : [allows ? `Now ${allows}` : null, betterText]
+  // Explain says "your" to whoever moved; on the opponent's move, those pieces are theirs.
+  const body = parts.filter((x): x is string => Boolean(x)).map((x) => (mine ? x : x.replace(/\byour\b/g, 'their')))
   return body.length ? [opener, ...body].filter(Boolean).join(' ') : null
+}
+
+/** "2.dxe5 wins the e5 pawn." → "You missed 2.dxe5, which wins the e5 pawn." */
+function missedWords(chance: string, mine: boolean): string {
+  const m = chance.match(/^(\S+?)(,)? (.*)$/)
+  if (!m) return chance
+  const [, move, comma, rest] = m
+  const who = mine ? 'You missed' : 'They missed'
+  return comma ? `${who} ${move}, and ${rest.replace(/^then /, '')}` : `${who} ${move}, which ${rest}`
 }
 
 function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (l?: string[]) => string, say: (...p: (string | undefined | null | false)[]) => string): string | null {
   const { idea, also } = facts
   if (!idea) return null
   if (idea === 'Checkmate.') return mine ? 'Checkmate! Well played.' : 'Checkmate.'
+  // Lost anyway: no "Nice." on top of "nothing saves the king".
+  const lost = /^(Nothing saves|Takes the \w+, but nothing saves)/.test(idea) || behind(input)
   // "7.Bxf7+ gives up the bishop…" is told as what you do: "You give up the bishop…".
-  let text = idea.replace(/\.$/, '').replace(/^\S*\d\S* (?=[a-z]+s\b)/, '').replace(/^[a-z]/, (c) => c.toUpperCase())
+  // The first sentence is the idea; what follows in Explain (where it leaves things) isn't for the coach.
+  let text = idea.split('. ')[0].replace(/\.$/, '').replace(/^\S*\d\S* (?=[a-z]+s\b)/, '').replace(/^[a-z]/, (c) => c.toUpperCase())
   // A capture is often more than a capture: "takes back the pawn and develops the knight".
   if (/^Takes (back )?the [^,:]+$/.test(text) && !also) {
     const kind = (t: string) => t.split(' ')[0]
@@ -88,6 +110,6 @@ function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (
   // After "Your opponent found the only move.", it's "They get out of check", not "Your opponent" twice.
   const them = opener ? 'They' : 'Your opponent'
   if (verb) text = mine || opener ? `${mine ? 'You' : them} ${yourVerb(lower(text)).replace(/ and (\w+?)(ies|es|s)\b/, (m) => ` and ${yourVerb(m.slice(5))}`)}` : `${them} ${lower(text)}`
-  const praise = mine && !opener ? pick(PRAISE[input.cls]) : ''
+  const praise = mine && !opener && !lost ? pick(PRAISE[input.cls]) : ''
   return say(opener, `${text}.`, also, praise)
 }

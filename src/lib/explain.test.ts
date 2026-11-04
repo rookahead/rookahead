@@ -155,7 +155,7 @@ describe('explaining a move', () => {
       bestTake: { pv: ['d1h5', 'f7f8', 'h5c5', 'd7d6', 'd4c6', 'd8e8', 'c5d4', 'b7c6'], score: cp(292) },
     })!
     expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual([
-      'The chance: 6.Bxf7+ gives up the bishop with check: the king can take it.',
+      'The chance: 6.Bxf7+ gives up the bishop for the f7 pawn with check: the king can take it.',
       'If 6…Kxf7: 7.Qh5+ forks the king and the bishop on c5, and 8.Qxc5+ wins it back.',
       'Either way: White ends a pawn up, and Black can’t castle any more (+2.47).',
       'Be3: Misses 6.Bxf7+. You’re only a little better (+0.48).',

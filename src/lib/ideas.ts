@@ -314,8 +314,8 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
     const victims = ALL.filter((s) => rankOf(s) === rankOf(m.to) && after[s]?.color === them && after[s]!.type === 'p').length
     const kingBack = theirK && relRank(theirK, me) === 7
     if (victims || kingBack) {
-      const what = [victims ? `it hits ${victims} pawn${victims > 1 ? 's' : ''}` : '', kingBack ? 'the king is stuck on the back rank' : ''].filter(Boolean)
-      add(`The rook reaches the seventh rank: ${what.join(', and ')}.`, 18)
+      const what = [victims ? `it hits ${victims === 1 ? 'a pawn' : `${victims} pawns`}` : '', kingBack ? 'the king is stuck on the back rank' : ''].filter(Boolean)
+      add(`Brings the rook to the seventh rank: ${what.join(', and ')}.`, 18)
     }
   }
   if (piece === 'q' || piece === 'r' || piece === 'b') {
@@ -340,7 +340,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
 
   // ---- The king ----
   if (castle) add('Castles: the king is safe and the rook comes into play.', 12)
-  else if (piece === 'k' && kingPressure(before, m.from, them) - kingPressure(after, m.to, them) >= 2) add('The king steps out of the firing line.', 12)
+  else if (piece === 'k' && kingPressure(before, m.from, them) - kingPressure(after, m.to, them) >= 2) add('Steps the king out of the firing line.', 12)
   if (piece === 'p' && myK && relRank(myK, me) === 0 && (fileOf(myK) <= 2 || fileOf(myK) >= 5) && Math.abs(fileOf(m.from) - fileOf(myK)) <= 1 && relRank(m.to, me) === 2) {
     if (ALL.some((s) => after[s]?.color === them && (after[s]!.type === 'r' || after[s]!.type === 'q'))) add('Gives the king a square to escape to, so a back-rank check isn’t mate.', 8)
   }
@@ -381,7 +381,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
     else if (passed(after, m.to)) add(`Makes a passed pawn on ${m.to}: no pawn can stop it any more.`, rr >= 4 ? 16 : 10, [{ orig: m.to, brush: 'suggest' }])
     if (!m.captured) {
       const hit = attacksFrom(after, m.to).find((s) => after[s]?.color === them && after[s]!.type === 'p')
-      if (hit) add(`A pawn break: it challenges ${nm(after, hit)} to open lines.`, 10, [{ orig: m.to, dest: hit, brush: 'yellow' }])
+      if (hit) add(`Challenges ${nm(after, hit)} to open lines.`, 10, [{ orig: m.to, dest: hit, brush: 'yellow' }])
       else if (rr === 4 && !pawnGuards(after, m.to, them)) add(`Gains space on the ${fileOf(m.to) < 4 ? 'queenside' : 'kingside'}: the pawn on ${m.to} cramps ${SIDE[them]}’s pieces.`, 5)
     }
   }

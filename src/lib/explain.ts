@@ -101,7 +101,7 @@ export interface ExplainInput {
   ownThreat?: EngineLine | null
   /** The review's second choice in the position before, for "next best". */
   second?: { move: string; score: Score } | null
-  /** The move before this one (UCI), to tell a recapture. */
+  /** The move before this one (UCI), when it was a capture: to tell taking back from taking. */
   previous?: string
 }
 
@@ -275,6 +275,9 @@ function forkTargets(fenAfter: string, to: Square): { piece: PieceSymbol; square
   const piece = chess.get(to)
   if (!piece) return []
   const them = piece.color === 'w' ? 'b' : 'w'
+  // A piece that's simply taken next forks nothing (unless it gives check: then they can't take first).
+  const takers = chess.attackers(to, them)
+  if (!chess.inCheck() && takers.length && (!chess.attackers(to, piece.color).length || takers.some((t) => VALUES[chess.get(t)!.type] < VALUES[piece.type] && chess.get(t)!.type !== 'k'))) return []
   const out: { piece: PieceSymbol; square: Square; value: number }[] = []
   for (const row of chess.board())
     for (const sq of row) {
@@ -450,7 +453,7 @@ function keysOf(fen: string, pv: string[], reach = 6): { square: Square; ply: nu
 function betterPoint(fenBefore: string, bestUci: string, bestPv: string[], fenAfter: string, punisher: string[] | null, playedUci: string): string | null {
   // Against the line that hurt: only its first few moves, where the guard plainly matters.
   if (punisher) {
-    const keys = keysOf(fenAfter, punisher, 3)
+    const keys = keysOf(fenAfter, punisher, 3).filter((k) => k.square !== playedUci.slice(2, 4))
     const guarded = shuts(fenBefore, bestUci, keys.map((k) => k.square))
     if (guarded) {
       const k = keys.find((x) => x.square === guarded)!
@@ -542,6 +545,12 @@ export function takeFen(fen: string, pv: string[]): string | null {
   return chess.fen()
 }
 
+/** "h-pawn", "knight": the piece a move is made with. */
+function retakerWords(fen: string, uci: string): string {
+  const p = new Chess(fen).get(squares(uci)[0])
+  return !p ? 'piece' : p.type === 'p' ? `${uci[0]}-pawn` : NAMES[p.type]
+}
+
 /** Who takes a sacrifice: "the h6 pawn", "the rook on d8", "the king". */
 function takerWords(fen: string, uci: string, take: string): string {
   const chess = new Chess(fen)
@@ -571,11 +580,13 @@ function sacrificeStory(
   const them = other(side)
   const arrow = (uci: string): ExplainShape => ({ orig: squares(uci)[0], dest: squares(uci)[1], brush: opts.brush })
   const [firstSan] = pvSan(fen, line.pv.slice(0, 1))
+  // An exchange sacrifice takes something on the way.
+  const took = new Chess(fen).get(squares(line.pv[0])[1])?.type
   const rows: ExplainRow[] = [
     {
       key: opts.key,
       label: opts.label,
-      text: `${lineText(fen, [firstSan])} gives up the ${NAMES[sac.piece]}${sac.check ? ' with check' : ''}: ${takerWords(fen, line.pv[0], sac.take)} can take it.`,
+      text: `${lineText(fen, [firstSan])} gives up the ${NAMES[sac.piece]}${took ? ` for ${pieceWords({ piece: took, square: squares(line.pv[0])[1] })}` : ''}${sac.check ? ' with check' : ''}: ${takerWords(fen, line.pv[0], sac.take)} can take it.`,
       shapes: [arrow(line.pv[0])],
       play: play(fen, line.pv, 1),
     },
@@ -676,6 +687,9 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const bestUci = best.pv[0]
   const bestPlayed = bestUci ? playLine(fenBefore, best.pv) : null
   const bestSan = bestPlayed?.san[0]
+  // Taking back on the square the last move took on: a recapture, not a win ("12…hxg6 takes back").
+  const bestRetakes = Boolean(bestUci && input.previous && input.previous.slice(2, 4) === bestUci.slice(2, 4))
+  const retakeWords = bestRetakes && bestUci ? `takes back with the ${retakerWords(fenBefore, bestUci)}` : null
   const pull = bestUci ? lever(fenBefore, best.pv) : null
   // The squares the missed line needed: where its checks and captures land.
   const keys = [...(pull ? [pull.square] : []), ...(bestPlayed?.san ?? []).flatMap((x, i) => (i % 2 === 0 && /[+#x]/.test(x) ? [squares(best.pv[i])[1]] : []))]
@@ -684,13 +698,17 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const chance = (note: string, also?: string): Explanation | null => {
     if (!bestUci || !bestSan || !bestPlayed) return null
     const moveRow: ExplainRow = { key: 'move', label: san, text: note, shapes: [{ orig: from, dest: to, brush: 'yellow' }], play: play(fenBefore, [uci]) }
-    const shot = clearWin(best.score, mover)
+    // Only a shot missed when it's gone: still winning after the move isn't "you had a winning shot".
+    const shot = clearWin(best.score, mover) && !clearWin(reply.score, mover)
     const facts = (chance: string): CoachFacts => ({ chance, own: also, shot, mate: Boolean(mateFor(best.score, mover)) })
     const sac = sacrificeStory(fenBefore, best, bestTake, { key: 'chance', label: 'The chance', from: 'before', brush: 'suggest', yours: true, standing: standing(best.score, mover) })
     if (sac) {
+      // The coach tells a sacrifice only with why it works; on its own, "it can be taken" just confuses.
       const take = sac.rows.find((r) => r.key === 'take')
-      const told = `${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}.${take ? ` ${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}` : ''}`
-      return { rows: [...sac.rows, moveRow], lines: sac.lines, coach: facts(told) }
+      const coach = take
+        ? facts(`${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}. ${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}`)
+        : { better: { move: lineText(fenBefore, [bestSan]), point: null }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) }
+      return { rows: [...sac.rows, moveRow], lines: sac.lines, coach }
     }
     const opener = shot ? 'You had a winning shot. ' : ''
     // With the opener said, the score alone is enough.
@@ -717,8 +735,8 @@ export function explainMove(input: ExplainInput): Explanation | null {
         return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, long)], coach: facts(pull.text) }
       }
     }
-    const story = lineStory(fenBefore, best, bestPlayed)
-    const point = story ? null : betterPoint(fenBefore, bestUci, best.pv, fenAfter, reply.pv, uci)
+    const story = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed)
+    const point = story ? null : retakeWords ?? betterPoint(fenBefore, bestUci, best.pv, fenAfter, reply.pv, uci)
     const text = story
       ? `${opener}${capitalise(story)}${where}`
       : point
@@ -811,7 +829,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
       moveShapes.push({ orig: firstTake.square, brush: 'red' })
     }
   }
-  if (!moveText && between(rFrom, rTo).includes(from)) moveText = `Opens the way for ${replySan}.`
+  if (!moveText && between(rFrom, rTo).includes(from)) moveText = `Opens the way for ${lineText(fenAfter, [replySan])}.`
   // It stops guarding a piece, and the reply goes straight for it.
   if (!moveText) {
     const b = new Chess(fenBefore)
@@ -857,8 +875,9 @@ export function explainMove(input: ExplainInput): Explanation | null {
     const [bFrom, bTo] = squares(bestUci)
     const bestText = lineText(fenBefore, [bestSan])
     let point: string | null = null
-    const bestStory = lineStory(fenBefore, best, bestPlayed)
-    if (bestStory && (mateFor(best.score, mover) || bestPlayed.gain >= 1)) point = bestStory.replace(/^\S+ /, '')
+    const bestStory = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed)
+    if (retakeWords) point = retakeWords
+    else if (bestStory && (mateFor(best.score, mover) || bestPlayed.gain >= 1)) point = bestStory.replace(/^\S+ /, '')
     else if (firstTake && bFrom === firstTake.square) point = `saves the ${NAMES[firstTake.piece]}`
     // Only for a quiet reply: guarding the square of a capture is a different story.
     else if (!pieceAt(fenAfter, rTo) && coversReply(fenBefore, bestUci, replyUci)) point = `covers ${rTo}`
@@ -877,8 +896,8 @@ export function explainMove(input: ExplainInput): Explanation | null {
   // For the coach: what the move did wrong, then what it allows (or else what was better).
   const allows = mating
     ? `${lineText(fenAfter, [replySan])} gives up ${mating[0].text.match(/gives up (the \w+)/)?.[1] ?? 'a piece'}, and it’s mate either way.`
-    : sac
-      ? sac.rows[0].text
+    : sac?.rows.some((r) => r.key === 'take')
+      ? `${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}.`
       : story
         ? `${capitalise(story)}.`
         : null
@@ -1032,7 +1051,7 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   const theirMate = !threat && fenNull ? mateInOne(fenNull) : null
   // Taking back what was just taken: material was down before the move and level after it.
   const behind = balance(new Chess(fenBefore), mover)
-  const winsBack = move.captured && ((previous && previous.slice(2, 4) === to) || (behind < 0 && played.gain <= -behind))
+  const winsBack = move.captured && (input.previous !== undefined ? previous?.slice(2, 4) === to : behind < 0 && played.gain <= -behind)
   const replySan = reply.pv[0] ? pvSan(fenAfter, reply.pv.slice(0, 2)) : []
   // A check that also hits a piece, which falls once the king has moved.
   const won = winning(played, mover)
@@ -1064,8 +1083,16 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
     rows.push(...sac.rows)
     lines = sac.lines
   } else if (winsBack) idea(`Takes back the ${NAMES[move.captured!]}.`)
-  else if (move.captured && wins && fork.length) idea(`Forks ${forkWords(fork, false)}, and ${wins}.`, [mine], played.length)
-  else if (move.captured && wins) idea(`${capitalise(wins)}.`, [mine], played.length)
+  else if (move.captured && wins && fork.length) {
+    // "Wins the knight on g4 and the e6 pawn: it forks the king and the knight." when the fork is how.
+    const how = fork.some((f) => wins.includes(f.square))
+    idea(how ? `${capitalise(wins)}: it forks ${forkWords(fork, false)}.` : `Forks ${forkWords(fork, false)}, and ${wins}.`, [mine], played.length)
+  } else if (move.captured && won && won.capture.ply > 0 && won.capture.from !== to) {
+    // The capture isn't the win; a later move is: "Takes the e4 pawn, then 6…Qxd5 wins the bishop on d5."
+    const traded = played.captures[1]?.ply === 1 && played.captures[1].square === to && VALUES[played.captures[1].piece] === VALUES[move.captured]
+    const first = traded ? `Trades ${move.captured === move.piece ? `${NAMES[move.piece]}s` : `the ${NAMES[move.piece]} for the ${NAMES[move.captured]}`}` : `Takes the ${move.captured === 'p' ? `${to} pawn` : `${NAMES[move.captured]} on ${to}`}`
+    idea(`${first}, then ${numbered(fenBefore, won.capture.ply, played.san[won.capture.ply])} ${won.text}.`, [mine], played.length)
+  } else if (move.captured && wins) idea(`${capitalise(wins)}.`, [mine], played.length)
   else if (move.captured) idea(`Takes the ${move.captured === 'p' ? `${to} pawn` : `${NAMES[move.captured]} on ${to}`}.`)
   else if (forkWin) {
     const target = pieceWords(forkWin.capture)
