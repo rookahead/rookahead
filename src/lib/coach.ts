@@ -1,10 +1,13 @@
+import { Chess } from 'chess.js'
 import { explainMove, type CoachFacts, type ExplainInput } from './explain'
 import type { Color } from './evaluation'
 import { boardIdeas } from './ideas'
+import { uciToMove } from './tree'
 
 // The coach line under each move: a sentence or two in a coach's voice, made of the facts Explain finds
-// (never a score). It talks to the player: their moves are "you", the other side's "your opponent". It
-// praises a good move, says so when a move is a mistake, and names the better one.
+// (never a score, and no move numbers: the board shows the move). It talks to the player: their moves
+// are "you", the other side's "your opponent". It praises a good move, says so when a move is a mistake,
+// names the better one in words, and turns the opponent's mistake into what the player can take.
 
 type Cls = ExplainInput['cls']
 
@@ -31,6 +34,14 @@ const PRAISE: Partial<Record<Cls, string[]>> = {
   good: ['Fine.', 'Not bad.'],
 }
 
+/** A light word after the opponent's ordinary move, now and then. */
+const QUIP_THEIRS = ['Not bad.', 'Fair enough.', 'Simple stuff.', '', 'Let’s see what you do next.', '', 'Solid from them.', '']
+/** After their mistake hands you something. */
+const CHANCE_THEIRS: Partial<Record<Cls, string[]>> = {
+  blunder: ['Their loss, your gain.', 'Take it!'],
+  mistake: ['Make them pay.', 'Don’t let it go.'],
+}
+
 const WRONG: readonly Cls[] = ['inaccuracy', 'mistake', 'miss', 'blunder']
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w'
 const CLASSIC = ['e4', 'd4', 'c4', 'Nf3']
@@ -42,6 +53,34 @@ const yourVerb = (s: string) =>
   s.replace(/^(\w+?)(ies|es|s)\b/, (_, stem: string, end: string) => (end === 'ies' ? `${stem}y` : end === 'es' && /(sh|ch|x|ss)$/.test(stem) ? stem : end === 'es' ? `${stem}e` : stem))
 /** An idea's sentence as a clause: "Develops the knight." → "develops the knight". */
 const clause = (s: string) => lower(s.split(':')[0].replace(/\.$/, ''))
+
+/**
+ * A move in words, the way a coach says it: "take back the pawn", "take the knight on d5 with the queen",
+ * "bring the queen to g3", "push the pawn to d5", "castle". With "with check" when it is.
+ */
+export function moveWords(fen: string, uci: string, previous?: string): string {
+  const chess = new Chess(fen)
+  let m
+  try {
+    m = chess.move(uciToMove(uci))
+  } catch {
+    return uci
+  }
+  const name = (p: string) => ({ p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' })[p]!
+  const check = chess.inCheck() ? ' with check' : ''
+  if (m.isKingsideCastle() || m.isQueensideCastle()) return `castle${check}`
+  if (m.captured) {
+    // Which piece takes back is often the whole point (h-pawn, not f-pawn).
+    if (previous?.slice(2, 4) === m.to) return `take back the ${name(m.captured)} with the ${m.piece === 'p' ? `${m.from[0]}-pawn` : name(m.piece)}${check}`
+    const what = m.captured === 'p' ? `the ${m.to} pawn` : `the ${name(m.captured)} on ${m.to}`
+    return `take ${what}${m.piece === 'p' ? '' : ` with the ${name(m.piece)}`}${check}`
+  }
+  if (m.promotion) return `promote the pawn to a ${name(m.promotion)}${check}`
+  return m.piece === 'p' ? `push the pawn to ${m.to}${check}` : `bring the ${name(m.piece)} to ${m.to}${check}`
+}
+
+/** "22.Qf5+ forces …g6" → "Qf5+ forces g6": no move numbers, which only beginners' eyes trip on. */
+const plain = (s: string) => s.replace(/\b\d+(\.|…)(?=[KQRBNOa-h])/g, '').replace(/…(?=[KQRBNOa-h])/g, '')
 
 /** Clearly lost after the move (by three pawns or more, or getting mated): praise would ring false. */
 function behind(input: ExplainInput): boolean {
@@ -62,7 +101,10 @@ export function coachLine(input: ExplainInput, you: Color, opening?: string): st
   const pick = (list?: string[]) => (list?.length ? list[ply % list.length] : '')
   const say = (...parts: (string | undefined | null | false)[]) => parts.filter(Boolean).join(' ')
 
-  if (WRONG.includes(input.cls)) return wrongLine(facts, mine, input.cls, pick)
+  if (WRONG.includes(input.cls)) {
+    const line = wrongLine(facts, input, mine, pick)
+    return line && plain(line)
+  }
   // "Classic" is said once a game, on the very first move, when it's one of the well-known ones.
   if (input.fenBefore.startsWith(START) && CLASSIC.includes(input.san)) {
     const centre = input.san === 'e4' || input.san === 'd4' ? ', straight for the centre' : ''
@@ -70,23 +112,33 @@ export function coachLine(input: ExplainInput, you: Color, opening?: string): st
   }
   const line = goodLine(facts, input, mine, pick, say)
   // A book move that reaches a named line says which.
-  return opening && input.cls === 'book' ? say(line, `This is the ${opening}.`) : line
+  return plain(opening && input.cls === 'book' ? say(line, `This is the ${opening}.`) : (line ?? '')) || null
 }
 
-function wrongLine(facts: CoachFacts, mine: boolean, cls: Cls, pick: (l?: string[]) => string): string | null {
-  const { own, allows, chance, better, shot } = facts
-  const { mate } = facts
+function wrongLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (l?: string[]) => string): string | null {
+  const { own, allows, chance, better, shot, mate, gives, mates } = facts
+  const cls = input.cls
   const opener = mate
     ? mine ? 'You had mate!' : 'Your opponent missed mate!'
     : shot ? (mine ? 'You had a winning shot!' : 'Your opponent missed a winning shot!') : pick((mine ? OPEN_MINE : OPEN_THEIRS)[cls])
-  // "then 21…hxg5 wins the knight" reads as what follows the move, not as what the move does.
+  // The better move in words: "Your better option was to take back the pawn, which…"
   const point = better?.point
-  const why = !point ? '' : point.startsWith('then ') ? `: ${point.slice(5)}` : mine ? `, which ${point}` : `: it ${point}`
-  const betterText = better ? (mine ? `Your better option was ${better.move}${why}.` : `${better.move} was better${why}.`) : null
-  // What was missed, said as missed (unless the opener already says it): "They missed 2.dxe5, which wins the e5 pawn."
+  const words = better && moveWords(input.fenBefore, better.uci, input.previous)
+  // Said already by the words ("take back the pawn" / "take the a4 pawn" / "bring the knight to c3"):
+  // no "which takes back", "which wins the a4 pawn", "which develops the knight" after it.
+  const repeats = !point || /^(takes back|develops)/.test(point) || (point.startsWith('wins') && words?.startsWith('take') && point.includes(better!.uci.slice(2, 4)))
+  const why = repeats ? '' : point.startsWith('then ') ? `: ${point.slice(5)}` : `, which ${point}`
+  const betterText = words ? `${mine ? 'Your' : 'Their'} better option was to ${words}${why}.` : null
+  // Their mistake is the player's chance, told as theirs to take: "You can win the knight on d5 now."
+  // And how, when it's a tactic worth naming: "…now: Qxc3+ forks their king and rook."
+  const how = allows?.match(/^(\S+) (forks|skewers|pins) ([^,.]+)/)
+  const yours = !mine && (mates || gives) ? (mates ? 'You have mate now!' : `You can win ${gives} now${how ? `: ${how[1]} ${how[2]} ${how[3].replace(/\byour\b/g, 'their')}` : ''}.`) : null
+  const theirs = mine && !own && (mates || gives) ? (mates ? 'That allows mate.' : `That hands them ${gives}.`) : null
+  if (yours) return [opener, own?.replace(/\byour\b/g, 'their'), yours, pick(CHANCE_THEIRS[cls])].filter(Boolean).join(' ')
+  // What was missed, said as missed (unless the opener already says it): "They missed dxe5, which wins the e5 pawn."
   const missed = chance && !shot && !mate ? missedWords(chance, mine) : chance
   // At most two facts after the opener: what was there (or what it allows), and what the move did.
-  const parts = missed ? [missed, own] : own ? [own, allows ? `Now ${allows}` : betterText] : [allows ? `Now ${allows}` : null, betterText]
+  const parts = missed ? [missed, own] : own ? [own, allows ? `Now ${allows}` : betterText] : [theirs ?? (allows ? `Now ${allows}` : null), betterText]
   // Explain says "your" to whoever moved; on the opponent's move, those pieces are theirs.
   const body = parts.filter((x): x is string => Boolean(x)).map((x) => (mine ? x : x.replace(/\byour\b/g, 'their')))
   return body.length ? [opener, ...body].filter(Boolean).join(' ') : null
@@ -121,6 +173,8 @@ function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (
   // After "Your opponent found the only move.", it's "They get out of check", not "Your opponent" twice.
   const them = opener ? 'They' : 'Your opponent'
   if (verb) text = mine || opener ? `${mine ? 'You' : them} ${yourVerb(lower(text)).replace(/ and (\w+?)(ies|es|s)\b/, (m) => ` and ${yourVerb(m.slice(5))}`)}` : `${them} ${lower(text)}`
-  const praise = mine && !opener && !lost ? pick(PRAISE[input.cls]) : ''
+  // A quip only after a plain move of theirs: not after "…but Nxg4 still wins the bishop".
+  const plainMove = !also && !/\b(but|wins|mate)\b/.test(text) && input.cls !== 'forced'
+  const praise = mine && !opener && !lost ? pick(PRAISE[input.cls]) : !mine && !opener && plainMove ? pick(QUIP_THEIRS) : ''
   return say(opener, `${text}.`, also, praise)
 }

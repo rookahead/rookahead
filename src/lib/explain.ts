@@ -65,7 +65,10 @@ export interface CoachFacts {
   /** What was missed, as a line ("22.Qf5+ forces …g6, and now nothing guards f6."). */
   chance?: string
   /** The better move, and why ("guards f4 against 16.Bf4"), when there's a reason to give. */
-  better?: { move: string; point: string | null }
+  better?: { move: string; uci: string; point: string | null }
+  /** What the move hands the other side: a piece by name ("the knight on d5"), or mate. */
+  gives?: string
+  mates?: boolean
   /** A clear win was there. */
   shot?: boolean
   /** Mate was there. */
@@ -707,7 +710,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
       const take = sac.rows.find((r) => r.key === 'take')
       const coach = take
         ? facts(`${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}. ${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}`)
-        : { better: { move: lineText(fenBefore, [bestSan]), point: null }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) }
+        : { better: { move: lineText(fenBefore, [bestSan]), uci: bestUci, point: null }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) }
       return { rows: [...sac.rows, moveRow], lines: sac.lines, coach }
     }
     const opener = shot ? 'You had a winning shot. ' : ''
@@ -747,7 +750,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     return {
       rows,
       lines: [shownLine('The line', 'before', fenBefore, best.pv, bestPlayed)],
-      coach: story ? facts(`${capitalise(story)}.`) : { better: { move: bestText, point }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) },
+      coach: story ? facts(`${capitalise(story)}.`) : { better: { move: bestText, uci: bestUci, point }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) },
     }
   }
 
@@ -883,7 +886,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     else if (!pieceAt(fenAfter, rTo) && coversReply(fenBefore, bestUci, replyUci)) point = `covers ${rTo}`
     else if (sacrifice(fenBefore, bestUci)) point = `sacrifices the ${NAMES[sacrifice(fenBefore, bestUci)!.piece]}`
     else point = betterPoint(fenBefore, bestUci, best.pv, fenAfter, reply.pv, uci)
-    bestPoint = { move: bestText, point }
+    bestPoint = { move: bestText, uci: bestUci, point }
     rows.push({
       key: 'better',
       label: 'Better',
@@ -902,7 +905,9 @@ export function explainMove(input: ExplainInput): Explanation | null {
         ? `${capitalise(story)}.`
         : null
   const own = moveText ? `${san} ${moveText.charAt(0).toLowerCase()}${moveText.slice(1)}` : undefined
-  const coach: CoachFacts = { own, allows: allows ?? undefined, better: bestPoint ?? undefined }
+  // What they get out of it, by name, for the coach to tell the player as theirs to take.
+  const got = net ? netWon : winning(punished, them)
+  const coach: CoachFacts = { own, allows: allows ?? undefined, better: bestPoint ?? undefined, gives: got?.text.replace(/^wins /, ''), mates: Boolean(mateFor(reply.score, them)) }
   return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)], coach }
 }
 

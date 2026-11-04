@@ -248,7 +248,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
     if (s) {
       const t = after[s]!
       const undefended = !attackersOf(after, s, them).length
-      add(`${piece === 'p' ? 'Kicks' : 'Attacks'} ${nm(after, s)}${undefended ? ', which has no defender' : ''}.`, t.type === 'q' ? 16 : undefended ? 14 : piece === 'p' ? 12 : 11, [{ orig: m.to, dest: s, brush: 'yellow' }])
+      add(`${piece === 'p' ? 'Kicks' : 'Attacks'} ${undefended ? nm(after, s).replace(/^the /, 'the undefended ') : nm(after, s)}.`, t.type === 'q' ? 16 : undefended ? 14 : piece === 'p' ? 12 : 11, [{ orig: m.to, dest: s, brush: 'yellow' }])
     }
   }
 
@@ -287,7 +287,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
       if (!t) continue
       if (after[t]!.type === 'k') add(`Uncovers check from ${nm(after, sq)}.`, 28, [{ orig: sq, dest: t, brush: 'yellow' }])
       else if (VALUES[after[t]!.type] >= VALUES[x.type] || !attackersOf(after, t, them).length)
-        add(`Uncovers ${nm(after, sq)}, which now hits ${nm(after, t)}.`, 18, [{ orig: sq, dest: t, brush: 'yellow' }])
+        add(`Opens ${nm(after, sq)} onto ${nm(after, t)}.`, 18, [{ orig: sq, dest: t, brush: 'yellow' }])
       break
     }
   }
@@ -406,7 +406,7 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
   // pieces cheap enough to make taking it pay. (A pawn only the queen eyes, with a rook on it, isn't.)
   for (const s of ALL) {
     if (s === m.from || s === m.to || before[s]?.color !== me || before[s]!.type === 'k' || !danger(before, s) || danger(after, s)) continue
-    add(`Protects ${nm(after, s)}, which was ${attackersOf(before, s, me).length ? 'under attack' : 'hanging'}.`, 12, [{ orig: s, brush: 'suggest' }])
+    add(`Protects ${nm(after, s).replace(/^the /, attackersOf(before, s, me).length ? 'the threatened ' : 'the hanging ')}.`, 12, [{ orig: s, brush: 'suggest' }])
     break
   }
 

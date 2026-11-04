@@ -195,7 +195,7 @@ describe('explaining a good move', () => {
       reply: { pv: ['d7d6', 'c2c3'], score: cp(20) },
     })!
     expect(e.rows[0].text).toBe('Castles: the king is safe and the rook comes into play.')
-    expect(e.rows[1]).toMatchObject({ label: 'Best', text: '4.d3 protects the e4 pawn, which was hanging (+0.30).' })
+    expect(e.rows[1]).toMatchObject({ label: 'Best', text: '4.d3 protects the hanging e4 pawn (+0.30).' })
   })
 })
 
