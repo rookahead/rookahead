@@ -130,4 +130,4 @@ src/
 Rookahead is free software under the **GNU General Public License v3.0 or later** (see `LICENSE`).
 
 It builds on Stockfish.js (GPL-3.0) and Chessground (GPL-3.0-or-later), so anyone serving the app must also offer its source under the GPL.
-The opening book comes from Lichess's chess-openings (CC0), and the Syne, DM Sans and DM Mono fonts are under the SIL Open Font License.
+Explain's board ideas (`src/lib/ideas.ts`) follow the rules of what'sthisposition (GPL-3.0). The opening book comes from Lichess's chess-openings (CC0), and the Syne, DM Sans and DM Mono fonts are under the SIL Open Font License.

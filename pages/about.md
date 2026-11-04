@@ -28,6 +28,7 @@ It's built on the work of others, with thanks:
 - [Stockfish](https://stockfishchess.org/), via [Stockfish.js](https://github.com/nmrugg/stockfish.js) (GPL-3.0)
 - [Chessground](https://github.com/lichess-org/chessground) by Lichess (GPL-3.0-or-later)
 - [chess.js](https://github.com/jhlywa/chess.js) (BSD-2-Clause)
+- The board ideas in Explain follow the rules of [what’sthisposition](https://github.com/acunli/whatsthisposition) (GPL-3.0)
 - Opening names from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0)
 - [gifenc](https://github.com/mattdesl/gifenc) (MIT) for GIFs, and the Syne, DM Sans and DM Mono fonts (SIL Open Font License)
 
