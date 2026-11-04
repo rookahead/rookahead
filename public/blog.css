@@ -32,6 +32,8 @@
   --brand-card-text: var(--t-opc);
   --btn: rgba(255, 255, 255, 0.085);
   --btn-hover: rgba(255, 255, 255, 0.14);
+  /* Donate's heart: GitHub Sponsors' pink, apart from every colour theme (as in the app). */
+  --heart: #db61a2;
   --font-display: 'Syne', 'DM Sans', sans-serif;
   --font-ui: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
   /* The sticky header's height, and the new-post bar's over it while it's open: what the post's rails and
@@ -61,6 +63,7 @@
   --brand-card-text: var(--t-opc);
   --btn: rgba(0, 0, 0, 0.06);
   --btn-hover: rgba(0, 0, 0, 0.1);
+  --heart: #bf3989;
 }
 
 /* Black: a true black page, the cards just lifted off it. */
@@ -253,17 +256,17 @@ h3 {
   color: var(--text);
 }
 
-/* Donate, in your colour, like Lichess's. */
+/* Donate, in the heart's pink rather than your colour, like the app's sidebar. */
 .top-nav .nav-donate {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--brand);
+  color: var(--heart);
 }
 
 .top-nav .nav-donate:hover,
 .top-nav .nav-donate[aria-current] {
-  color: var(--brand);
+  color: var(--heart);
   filter: brightness(1.15);
 }
 
