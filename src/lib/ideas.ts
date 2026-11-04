@@ -130,6 +130,15 @@ function capturable(b: Board, sq: Square): boolean {
   })
 }
 
+/** Would taking it pay? Loose, or attacked more often than guarded by something no dearer than it. */
+function danger(b: Board, sq: Square): boolean {
+  const x = b[sq]
+  if (!x || x.type === 'k') return false
+  if (loose(b, sq)) return true
+  const atk = attackersOf(b, sq, other(x.color))
+  return atk.length > attackersOf(b, sq, x.color).length && atk.some((a) => b[a]!.type !== 'k' && VALUES[b[a]!.type] <= VALUES[x.type])
+}
+
 function passed(b: Board, sq: Square): boolean {
   const x = b[sq]!
   return !ALL.some((s) => b[s]?.type === 'p' && b[s]!.color !== x.color && Math.abs(fileOf(s) - fileOf(sq)) <= 1 && relRank(s, x.color) > relRank(sq, x.color))
@@ -393,22 +402,12 @@ export function boardIdeas(fenBefore: string, uci: string, line: string[]): Boar
     }
   }
   if (piece !== 'k' && loose(before, m.from) && !loose(after, m.to)) add(`Saves the attacked ${piece === 'p' ? `${m.from} pawn` : name}.`, 14)
+  // Defending something that was really in danger: hanging, or attacked by more than guard it with
+  // pieces cheap enough to make taking it pay. (A pawn only the queen eyes, with a rook on it, isn't.)
   for (const s of ALL) {
-    if (s === m.from || s === m.to || before[s]?.color !== me || !loose(before, s) || loose(after, s)) continue
-    add(`Protects ${nm(after, s)}, which was hanging.`, 12, [{ orig: s, brush: 'suggest' }])
+    if (s === m.from || s === m.to || before[s]?.color !== me || before[s]!.type === 'k' || !danger(before, s) || danger(after, s)) continue
+    add(`Protects ${nm(after, s)}, which was ${attackersOf(before, s, me).length ? 'under attack' : 'hanging'}.`, 12, [{ orig: s, brush: 'suggest' }])
     break
-  }
-  if (piece !== 'k' && !has(/^Protects/)) {
-    for (const t of attacksFrom(after, m.to)) {
-      const x = after[t]
-      if (!x || x.color !== me || x.type === 'k' || attacksFrom(before, m.from).includes(t)) continue
-      const atk = attackersOf(after, t, them).length
-      const def = attackersOf(before, t, me).length
-      if (atk >= 1 && atk >= def && !loose(before, t)) {
-        add(`Adds a defender to ${nm(after, t)}, which had as many attackers as defenders.`, 9, [{ orig: t, brush: 'suggest' }])
-        break
-      }
-    }
   }
 
   // ---- Development ----

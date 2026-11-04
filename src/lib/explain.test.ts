@@ -81,8 +81,8 @@ describe('explaining a move', () => {
       'If 26…gxf6: The pawn has left g7, so 27.Qxh6 is mate.',
       'Either way: Black can’t take it and can’t leave it: it’s mate either way.',
     ])
-    // Without the search for its threat, the line itself tells it.
-    expect(texts({ ...NF6, ownThreat: null })?.[1]).toBe('Then: It starts a mate in 2: it ends with 27.Qh7#, and the knight guards h7.')
+    // Without the search for its threat, a mate in one is found by hand.
+    expect(texts({ ...NF6, ownThreat: null })).toEqual(texts(NF6))
   })
 
   it('spots a fork', () => {
@@ -155,7 +155,7 @@ describe('explaining a move', () => {
       bestTake: { pv: ['d1h5', 'f7f8', 'h5c5', 'd7d6', 'd4c6', 'd8e8', 'c5d4', 'b7c6'], score: cp(292) },
     })!
     expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual([
-      'The chance: 6.Bxf7+ sacrifices the bishop with check.',
+      'The chance: 6.Bxf7+ gives up the bishop with check: the king can take it.',
       'If 6…Kxf7: 7.Qh5+ forks the king and the bishop on c5, and 8.Qxc5+ wins it back.',
       'Either way: White ends a pawn up, and Black can’t castle any more (+2.47).',
       'Be3: Misses 6.Bxf7+. You’re only a little better (+0.48).',
@@ -195,7 +195,40 @@ describe('explaining a good move', () => {
       reply: { pv: ['d7d6', 'c2c3'], score: cp(20) },
     })!
     expect(e.rows[0].text).toBe('Castles: the king is safe and the rook comes into play.')
-    expect(e.rows[1]).toMatchObject({ label: 'Best', text: '4.d3 was a little better (+0.30).' })
+    expect(e.rows[1]).toMatchObject({ label: 'Best', text: '4.d3 protects the e4 pawn, which was hanging (+0.30).' })
+  })
+})
+
+describe('a whole game, move by move (MelonLord-009 – DarkBiishopOnFire, 2026)', () => {
+  it('8.Ne5+: a check that forks a piece, which falls once the king moves', () => {
+    expect(texts({ fenBefore: 'rn1q1b1r/pp2pkpp/2p2n2/8/3P2b1/2N2N2/PPP3PP/R1BQK2R w KQ - 0 8', uci: 'f3e5', san: 'Ne5+', cls: 'great', best: { pv: ['f3e5', 'f7g8', 'e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6'], score: { type: 'cp', value: 148 }}, reply: { pv: ['f7g8', 'e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6', 'g4e6'], score: { type: 'cp', value: 182 }}, threat: { pv: ['g4f3', 'd1f3', 'd8d4', 'h2h3', 'd4c4', 'c1e3', 'b8d7', 'e1c1', 'f7g8', 'h1f1'], score: { type: 'cp', value: -469 }}, second: { move: 'e1g1', score: { type: 'cp', value: -347 }}, previous: 'e8f7' } as ExplainInput)).toEqual(['The idea: Forks the king and the bishop on g4: after the king moves, 9.Nxg4 wins it.', 'Next best: Nothing else holds: 8.O-O was next (−3.47).'])
+  })
+  it('8…Kg8: getting out of check, and what falls anyway', () => {
+    expect(texts({ fenBefore: 'rn1q1b1r/pp2pkpp/2p2n2/4N3/3P2b1/2N5/PPP3PP/R1BQK2R b KQ - 1 8', uci: 'f7g8', san: 'Kg8', cls: 'best', best: { pv: ['f7g8', 'e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6', 'g4e6'], score: { type: 'cp', value: 182 }}, reply: { pv: ['e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6', 'g4e6', 'g8h7'], score: { type: 'cp', value: 177 }}, ownThreat: { pv: ['g4d1', 'c3d1', 'd8d4', 'e5f3', 'd4d6', 'c1d2', 'b8d7', 'd1e3', 'h7h6', 'a2a3'], score: { type: 'cp', value: -892 }}, second: { move: 'f7e8', score: { type: 'cp', value: 220 }}, previous: 'f3e5' } as ExplainInput)).toEqual(['The idea: Gets out of check, but 9.Nxg4 still wins the bishop on g4.', 'Next best: One of several good moves: 8…Ke8 was next (+2.20).'])
+  })
+  it('14…Qc5+: a check, not a defender for a pawn only the queen attacks', () => {
+    expect(texts({ fenBefore: 'r4bkr/pp2q1pp/2p5/4n3/Q7/2N5/PPP3PP/R1B2RK1 b - - 1 14', uci: 'e7c5', san: 'Qc5+', cls: 'best', best: { pv: ['e7b4', 'a4b4', 'f8b4', 'c3e4', 'a8e8', 'c1d2', 'b4d2', 'e4d2', 'e5g4', 'd2c4'], score: { type: 'cp', value: 24 }}, reply: { pv: ['f1f2', 'c5c4', 'a4c4', 'e5c4', 'b2b3', 'f8b4', 'c3a4', 'b7b5', 'b3c4', 'b5a4'], score: { type: 'cp', value: 24 }}, threat: { pv: ['a4b3', 'e5f7', 'c1d2', 'h7h6', 'a1e1', 'e7d7', 'c3e4', 'a8e8', 'a2a4', 'b7b6'], score: { type: 'cp', value: 293 }}, second: { move: 'e7c5', score: { type: 'cp', value: 30 }}, previous: 'g4a4' } as ExplainInput)).toEqual(['The idea: Gives check: after 15.Rf2, 15…Qc4 follows.'])
+  })
+  it('16…Qb6: the piece it stops guarding, and the reply that goes for it', () => {
+    expect(texts({ fenBefore: 'r4bkr/pp4p1/2p4p/2q1n3/Q3N3/8/PPP3PP/R1B2R1K b - - 1 16', uci: 'c5b6', san: 'Qb6', cls: 'mistake', best: { pv: ['c5c4', 'a4c4', 'e5c4', 'c1f4', 'g8h7', 'b2b3', 'c4b6', 'a1e1', 'b6d5', 'f4d6'], score: { type: 'cp', value: 21 }}, reply: { pv: ['c1f4', 'e5g6', 'a4c4', 'g8h7', 'f4g5', 'b6b5', 'c4f7', 'h6g5', 'a2a4', 'b5b2'], score: { type: 'cp', value: 243 }}, threat: { pv: ['e4c5', 'f8c5', 'a4e4', 'c5d6', 'c1f4', 'a8e8', 'f4e5', 'd6e5', 'a1e1', 'h6h5'], score: { type: 'cp', value: 866 }}, ownThreat: { pv: ['b6b4', 'a4b3', 'b4b3', 'a2b3', 'e5f7', 'c1d2', 'h6h5', 'h2h3', 'f8e7', 'd2e3'], score: { type: 'cp', value: 50 }}, second: { move: 'c5b4', score: { type: 'cp', value: 51 }}, previous: 'c3e4' } as ExplainInput)).toEqual(['Qb6: Stops guarding the knight on e5, and 17.Bf4 attacks it.', 'What it allows: After 17.Bf4, White is clearly better (+2.43).', 'Better: 16…Qc4 was the move. It stays about level (+0.21).'])
+  })
+  it('20…Nxf4: a trade isn’t a loss: what falls for good is the bishop, later', () => {
+    expect(texts({ fenBefore: '3r1b1r/pp4pk/1qp3np/8/4NB2/6Q1/PPP3PP/R4R1K b - - 9 20', uci: 'g6f4', san: 'Nxf4', cls: 'blunder', best: { pv: ['b6b4', 'e4g5', 'h6g5', 'g3h3', 'h7g8', 'h3e6', 'g8h7'], score: { type: 'cp', value: 0 }}, reply: { pv: ['g3f4', 'c6c5', 'f4f7', 'f8e7', 'f7e7', 'h8e8', 'e7h4', 'b6g6', 'e4g3', 'g6c2'], score: { type: 'cp', value: 459 }}, threat: { pv: ['f4c7', 'b6d4', 'c7d8', 'd4e4', 'd8a5', 'f8e7', 'a5c3', 'h8f8', 'f1f8', 'e7f8'], score: { type: 'cp', value: 526 }}, ownThreat: { pv: ['f4g6', 'h2h4', 'f8e7', 'h4h5', 'g6h4', 'f1f7', 'b6b2', 'a1f1', 'h8f8', 'f1f2'], score: { type: 'cp', value: -313 }}, second: { move: 'b6d4', score: { type: 'cp', value: 15 }}, previous: 'd3g3' } as ExplainInput)).toEqual(['How it loses: 21.Qxf4, then 23.Qxe7 wins the bishop on e7. White is winning (+4.59).', 'Better: 20…Qb4, then 21…hxg5 wins the knight on g5. It stays about level (0.00).'])
+  })
+  it('21.Qxf4: a recapture is taking back, not winning', () => {
+    expect(texts({ fenBefore: '3r1b1r/pp4pk/1qp4p/8/4Nn2/6Q1/PPP3PP/R4R1K w - - 0 21', uci: 'g3f4', san: 'Qxf4', cls: 'best', best: { pv: ['g3f4', 'c6c5', 'f4f7', 'f8e7', 'f7e7', 'h8e8', 'e7h4', 'b6g6', 'e4g3', 'g6c2'], score: { type: 'cp', value: 459 }}, reply: { pv: ['c6c5', 'f4f7', 'f8e7', 'f7e7', 'h8e8', 'e7h4', 'b6g6', 'e4g3', 'd8d4', 'h4h3'], score: { type: 'cp', value: 448 }}, threat: { pv: ['f4g6', 'h2h4', 'f8e7', 'h4h5', 'g6h4', 'f1f7', 'b6b2', 'a1f1', 'h8f8', 'f1f2'], score: { type: 'cp', value: -313 }}, ownThreat: { pv: ['f4f5', 'g7g6', 'f5f7', 'f8g7', 'e4f6'], score: { type: 'mate', value: 3 }}, second: { move: 'f1f4', score: { type: 'cp', value: 49 }}, previous: 'g6f4' } as ExplainInput)).toEqual(['The idea: Takes back the knight.', 'Next best: Well ahead of the rest: 21.Rxf4 was next (+0.49).'])
+  })
+  it('23.Qf5+: a check that leads nowhere, and why the better move was better', () => {
+    expect(texts({ fenBefore: '5br1/pp4pk/1qp4p/8/3rNQ2/1P6/P1P3PP/R4R1K w - - 1 23', uci: 'f4f5', san: 'Qf5+', cls: 'blunder', best: { pv: ['c2c3', 'd4d5', 'c3c4', 'd5a5', 'c4c5', 'b6d8', 'a1d1', 'd8e8', 'f4c7', 'e8e4'], score: { type: 'cp', value: 474 }}, reply: { pv: ['h7h8', 'c2c3', 'd4d5', 'f5f7', 'd5e5', 'e4d2', 'e5e7', 'f7g6', 'b6e3', 'd2f3'], score: { type: 'cp', value: 11 }}, threat: { pv: ['b6d8', 'c2c3', 'd4d5', 'c3c4', 'd5d4', 'f4f5', 'h7h8', 'f5g6', 'f8e7', 'e4g3'], score: { type: 'cp', value: 0 }}, second: { move: 'f4f7', score: { type: 'cp', value: 227 }}, previous: 'd8d4' } as ExplainInput)).toEqual(['The chance: You had a winning shot. 23.c3 was the move: it kicks the rook on d4 (+4.74).', 'Qf5+: The check leads nowhere. After 23…Kh8, it’s about level (+0.11).'])
+  })
+  it('25…Bc5: the other side’s mating sacrifice, and what the better move guards', () => {
+    expect(texts({ fenBefore: '5brk/pp4p1/1qp3Qp/3r4/4N3/1PP5/P5PP/R4R1K b - - 2 25', uci: 'f8c5', san: 'Bc5', cls: 'blunder', best: { pv: ['b6d8', 'h2h3', 'f8e7', 'c3c4', 'd5e5', 'a1d1', 'd8e8', 'g6e8', 'g8e8', 'e4d6'], score: { type: 'cp', value: -6 }}, reply: { pv: ['e4f6', 'd5d1', 'g6h7'], score: { type: 'mate', value: 2 }}, threat: { pv: ['f1f7', 'b6d8', 'h2h3', 'f8e7', 'c3c4', 'd5e5', 'a1f1', 'd8e8', 'f1f4', 'e7d8'], score: { type: 'cp', value: 22 }}, replyTake: { pv: ['g6h6'], score: { type: 'mate', value: 1 }}, ownThreat: { pv: ['c5e7', 'e4g3', 'b6d8', 'g3f5', 'd8e8', 'g6e8', 'g8e8', 'a1e1', 'd5d7', 'h2h3'], score: { type: 'cp', value: 2 }}, second: { move: 'f8e7', score: { type: 'cp', value: -6 }}, previous: 'f5g6' } as ExplainInput)).toEqual(['How it loses: 26.Nf6 gives up the knight: the g7 pawn can take it.', 'The threat: Next is 27.Qh7 mate: the knight guards h7.', 'If 26…gxf6: The pawn has left g7, so 27.Qxh6 is mate.', 'Either way: You can’t take it and can’t leave it: it’s mate either way.', 'Better: 25…Qd8 guards f6 against 26.Nf6. It stays about level (−0.06).'])
+  })
+  it('26…gxf6: getting mated isn’t “starting a mate”', () => {
+    expect(texts({ fenBefore: '6rk/pp4p1/1qp2NQp/2br4/8/1PP5/P5PP/R4R1K b - - 4 26', uci: 'g7f6', san: 'gxf6', cls: 'best', best: { pv: ['d5g5', 'g6h7'], score: { type: 'mate', value: 1 }}, reply: { pv: ['g6h6'], score: { type: 'mate', value: 1 }}, threat: { pv: ['g6h7'], score: { type: 'mate', value: 1 }}, ownThreat: { pv: ['g8g6', 'b3b4', 'c5f8', 'c3c4', 'd5g5', 'a2a3', 'g5g2', 'a1e1', 'b6d8', 'f1g1'], score: { type: 'cp', value: -1315 }}, second: { move: 'g8f8', score: { type: 'mate', value: 1 }}, previous: 'e4f6' } as ExplainInput)).toEqual(['The idea: Takes the knight, but nothing saves the king now: 27.Qxh6 is mate.'])
+  })
+  it('15…h6: the square the better move guards against the reply', () => {
+    expect(texts({ fenBefore: 'r4bkr/pp4pp/2p5/2q1n3/Q7/2N5/PPP3PP/R1B2R1K b - - 3 15', uci: 'h7h6', san: 'h6', cls: 'inaccuracy', best: { pv: ['c5c4', 'a4c4', 'e5c4', 'b2b3', 'f8b4', 'c3a4', 'c4b6', 'c2c3', 'b4e7', 'a4b6'], score: { type: 'cp', value: 20 }}, reply: { pv: ['c1f4', 'e5c4', 'a4b3', 'c5b4', 'c3e4', 'b4b3', 'a2b3', 'c4b6', 'a1e1', 'a7a5'], score: { type: 'cp', value: 89 }}, threat: { pv: ['c1f4', 'e5c4', 'a4b3', 'c5b4', 'c3e4', 'b4b3', 'a2b3', 'c4b6', 'f4d6', 'a7a6'], score: { type: 'cp', value: 206 }}, ownThreat: { pv: ['c5b4', 'a4b3', 'g8h7', 'c1e3', 'f8d6', 'e3g1', 'h8e8', 'a1e1', 'b4b3', 'a2b3'], score: { type: 'cp', value: -1 }}, second: { move: 'c5b4', score: { type: 'cp', value: 33 }}, previous: 'g1h1' } as ExplainInput)).toEqual(['What it allows: After 16.Bf4, White is a little better (+0.89).', 'Better: 15…Qc4 guards f4 against 16.Bf4. It stays about level (+0.20).'])
   })
 })
 

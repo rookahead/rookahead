@@ -295,8 +295,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       playedTake: taken(parentFen, [node.uci, ...after.pv]),
       ownThreat: own ? { pv: own.pv, score: own.score } : null,
       second: reviewed?.secondMove && reviewed.second ? { move: reviewed.secondMove, score: reviewed.second } : null,
+      previous: node.parentId ? tree.nodes[node.parentId].uci : undefined,
     })
-  }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
+  }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
   // A preview never outlives what it was pointing at.
   useEffect(() => setPreview(null), [node.id, tab, explaining])
   // Clicking a row plays its moves on the board, a move at a time, and holds the last position.
