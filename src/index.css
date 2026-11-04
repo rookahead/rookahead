@@ -2622,6 +2622,128 @@ svg {
   grid-column: 3 / -1;
 }
 
+/* The coach's face beside a speech bubble: the verdict and its note are what the rook says. The bubble
+   is the rook's own colour (the theme's text colour), with the card's colours turned round inside it. */
+.coach-speech {
+  --bubble: var(--text);
+  --bubble-ink: var(--surface);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.coach-avatar {
+  flex: none;
+  width: 60px;
+  height: 70px;
+}
+
+.coach-bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 13px;
+  border-radius: 14px;
+  background: var(--bubble);
+  color: var(--bubble-ink);
+  --text: var(--bubble-ink);
+  --text-2: color-mix(in srgb, var(--bubble-ink) 86%, var(--bubble));
+  --muted: color-mix(in srgb, var(--bubble-ink) 62%, var(--bubble));
+  --surface-3: color-mix(in srgb, var(--bubble-ink) 7%, var(--bubble));
+  --border-strong: color-mix(in srgb, var(--bubble-ink) 16%, var(--bubble));
+}
+
+/* The bubble is narrower than the card: a smaller title, and no move number in front of it (the move
+   list and the board show which move it is), so "dxe5 is an oversight" keeps its line. */
+.coach-bubble .coach-title {
+  font-size: 19px;
+}
+
+.coach-bubble .coach-kicker {
+  display: none;
+}
+
+/* The bubble's tail, pointing at the rook. */
+.coach-bubble::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 24px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--bubble);
+  transform: rotate(45deg);
+}
+
+.rook-coach {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.rook-body {
+  fill: var(--text);
+}
+
+.rook-carve,
+.rook-fill {
+  fill: var(--surface);
+}
+
+.rook-line,
+.rook-thin {
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rook-thin {
+  stroke-width: 2.6;
+}
+
+.rook-white {
+  fill: #ffffff;
+  stroke: var(--surface);
+  stroke-width: 2.2;
+}
+
+.rook-star {
+  fill: #ffd166;
+}
+
+.rook-drop {
+  fill: var(--tone-sky);
+}
+
+/* A reaction comes in with a small lift; the face then settles on its own (RookCoach). */
+.rook-react {
+  transform-box: view-box;
+  transform-origin: 60px 128px;
+  animation: rook-react 0.32s ease-out;
+}
+
+@keyframes rook-react {
+  0% {
+    transform: translateY(3px) scale(0.96);
+  }
+  55% {
+    transform: translateY(-3px) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rook-react {
+    animation: none;
+  }
+}
+
 .coach-explain svg,
 .explain-line .btn svg {
   width: 16px;
@@ -11573,6 +11695,45 @@ a.you-row:active {
   .analysis-page.pinned .coach-detail {
     font-size: 14px;
     line-height: 1.4;
+  }
+
+  /* With the rook, the bubble takes the card's width (its verdict needs it), and the buttons go on
+     a row of their own under it. */
+  .analysis-page.pinned .panel-body > .coach.speaking {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .analysis-page.pinned .coach.speaking .coach-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .analysis-page.pinned .coach-bubble .coach-title {
+    font-size: 16px;
+  }
+
+  .analysis-page.pinned .coach-speech {
+    gap: 8px;
+  }
+
+  .analysis-page.pinned .coach-avatar {
+    width: 40px;
+    height: 47px;
+  }
+
+  .analysis-page.pinned .coach-bubble {
+    gap: 2px;
+    padding: 6px 10px 7px;
+    border-radius: 10px;
+  }
+
+  .analysis-page.pinned .coach-bubble::before {
+    top: 14px;
+    left: -5px;
+    width: 10px;
+    height: 10px;
   }
 
   .analysis-page.pinned .coach-actions {

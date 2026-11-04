@@ -6,6 +6,7 @@ import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
 import { FlipIcon, LoadIcon, NavIcon, NewBoardIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
+import { RookCoach } from '../components/RookCoach'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
@@ -36,7 +37,7 @@ import { setBoardResizing } from '../lib/pixelGrid'
 import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
-import { coachLine } from '../lib/coach'
+import { coachLine, coachMood, type RookMood } from '../lib/coach'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
@@ -66,6 +67,7 @@ import {
   uciToMove,
   ROOT_ID,
   treeFromPgn,
+  turnAt,
   type GameTree,
   type MoveInput,
   type PgnHeaders,
@@ -684,9 +686,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       </button>
     )
     const parent = node.parentId ? tree.nodes[node.parentId] : null
+    // The coach's face: the move's moment for a beat, then its normal face. The player's own moves are
+    // the ones on the side the board is shown from.
+    const mine = parent ? turnAt(parent.fen) === orientation : true
+    const face = (mood: RookMood) => <RookCoach mood={mood} moodKey={node.id} />
     if (!parent || !node.san) {
       return (
-        <CoachCard textKey={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." stepping={!phone}>
+        <CoachCard avatar={face('neutral')} textKey={node.id} title="Let’s go through the game" detail="Step through with Next or the arrow keys. Every move gets a verdict." stepping={!phone}>
           {next}
         </CoachCard>
       )
@@ -694,6 +700,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (!currentReview) {
       return (
         <CoachCard
+          avatar={face('neutral')}
           textKey={node.id}
           kicker={moveNumberLabel(node.ply)}
           title={<San san={node.san} />}
@@ -709,6 +716,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
       <CoachCard
+        avatar={face(coachMood(currentReview.cls, mine, node.san.includes('#')))}
         textKey={node.id}
         icon={<ClassIcon cls={currentReview.cls} size={26} />}
         kicker={moveNumberLabel(node.ply)}

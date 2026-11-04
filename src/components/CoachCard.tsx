@@ -21,6 +21,8 @@ interface Props {
   stepping?: boolean
   /** Changes with the move shown: the card stays put and only its words come in again, one after another. */
   textKey?: string
+  /** The coach's face: the title and note then sit in its speech bubble beside it. */
+  avatar?: ReactNode
 }
 
 /** Each word of `text` comes in after the one before it, as if being written; numbered on from `from`. */
@@ -44,12 +46,12 @@ function Words({ text, from }: { text: string; from: number }) {
 const wordCount = (node: ReactNode) => (typeof node === 'string' ? node.split(/\s+/).filter(Boolean).length : 1)
 
 /** The review's verdict for the current move (or the game): headline, eval and actions. */
-export function CoachCard({ icon, kicker, title, detail, score, children, onReport, reported, stepping, textKey }: Props) {
+export function CoachCard({ icon, kicker, title, detail, score, children, onReport, reported, stepping, textKey, avatar }: Props) {
   // The title's words first, then the note's.
   const typedTitle = textKey !== undefined && typeof title === 'string' ? <Words text={title} from={0} /> : title
   const typedDetail = textKey !== undefined && typeof detail === 'string' ? <Words text={detail} from={wordCount(title)} /> : detail
-  return (
-    <div className={`coach${stepping ? ' stepping' : ''}`}>
+  const words = (
+    <>
       <div className="coach-head" key={`head:${textKey}`}>
         {icon}
         {kicker && <span className="coach-kicker">{kicker}</span>}
@@ -73,6 +75,18 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
         <p className="coach-detail" key={`note:${textKey}`}>
           {typedDetail}
         </p>
+      )}
+    </>
+  )
+  return (
+    <div className={`coach${stepping ? ' stepping' : ''}${avatar ? ' speaking' : ''}`}>
+      {avatar ? (
+        <div className="coach-speech">
+          <div className="coach-avatar">{avatar}</div>
+          <div className="coach-bubble">{words}</div>
+        </div>
+      ) : (
+        words
       )}
       {children && <div className={`coach-actions${stepping ? ' row' : ''}`}>{children}</div>}
     </div>

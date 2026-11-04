@@ -178,3 +178,24 @@ function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (
   const praise = mine && !opener && !lost ? pick(PRAISE[input.cls]) : !mine && !opener && plainMove ? pick(QUIP_THEIRS) : ''
   return say(opener, `${text}.`, also, praise)
 }
+
+/** The coach's face for a moment. */
+export type RookMood = 'neutral' | 'pleased' | 'proud' | 'ouch' | 'shocked' | 'thinking'
+
+/**
+ * How the coach reacts to a move, as the player's coach: proud of their brilliant or clutch move,
+ * pleased with a good one, wincing at their mistake, thinking over a chance they missed, and wide-eyed
+ * when the opponent blunders (or finds something brilliant). The opponent's ordinary moves get no face.
+ */
+export function coachMood(cls: Cls, mine: boolean, mates = false): RookMood {
+  if (mates) return mine ? 'proud' : 'ouch'
+  if (mine) {
+    if (cls === 'brilliant' || cls === 'great') return 'proud'
+    if (cls === 'mistake' || cls === 'blunder') return 'ouch'
+    if (cls === 'inaccuracy' || cls === 'miss') return 'thinking'
+    return cls === 'forced' ? 'neutral' : 'pleased'
+  }
+  if (cls === 'blunder' || cls === 'mistake' || cls === 'miss' || cls === 'brilliant' || cls === 'great') return 'shocked'
+  if (cls === 'inaccuracy') return 'pleased'
+  return 'neutral'
+}

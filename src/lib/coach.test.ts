@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coachLine } from './coach'
+import { coachLine, coachMood } from './coach'
 import type { ExplainInput } from './explain'
 
 // Every line here is from one real game (MelonLord-009 – DarkBiishopOnFire, 2026), seen as White.
@@ -87,5 +87,30 @@ describe('the coach line on book moves', () => {
     const e4: ExplainInput = { fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', uci: 'e2e4', san: 'e4', cls: 'book', best: { pv: ['e2e4', 'e7e5'], score: cp(30) }, reply: { pv: ['e7e5', 'g1f3'], score: cp(30) } }
     expect(coachLine(e4, 'white')).toBe('A classic e4, straight for the centre.')
     expect(coachLine(e4, 'black')).toBe('Your opponent opens with a classic e4, straight for the centre.')
+  })
+})
+
+describe('the coach’s face', () => {
+  it('is proud of your best moments, winces at your mistakes, and thinks over a missed chance', () => {
+    expect(coachMood('brilliant', true)).toBe('proud')
+    expect(coachMood('great', true)).toBe('proud')
+    expect(coachMood('best', true)).toBe('pleased')
+    expect(coachMood('book', true)).toBe('pleased')
+    expect(coachMood('blunder', true)).toBe('ouch')
+    expect(coachMood('mistake', true)).toBe('ouch')
+    expect(coachMood('miss', true)).toBe('thinking')
+    expect(coachMood('inaccuracy', true)).toBe('thinking')
+    expect(coachMood('forced', true)).toBe('neutral')
+  })
+  it('goes wide-eyed at the opponent’s blunder, and stays calm through their ordinary moves', () => {
+    expect(coachMood('blunder', false)).toBe('shocked')
+    expect(coachMood('miss', false)).toBe('shocked')
+    expect(coachMood('inaccuracy', false)).toBe('pleased')
+    expect(coachMood('best', false)).toBe('neutral')
+    expect(coachMood('excellent', false)).toBe('neutral')
+  })
+  it('meets a checkmate as the player’s win or loss', () => {
+    expect(coachMood('best', true, true)).toBe('proud')
+    expect(coachMood('best', false, true)).toBe('ouch')
   })
 })
