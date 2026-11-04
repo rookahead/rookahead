@@ -36,6 +36,7 @@ import { setBoardResizing } from '../lib/pixelGrid'
 import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
+import { coachLine } from '../lib/coach'
 import { gameSummary, moveDetail, moveHeadline } from '../lib/commentary'
 import type { Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
@@ -298,6 +299,25 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       previous: node.parentId ? tree.nodes[node.parentId].uci : undefined,
     })
   }, [explaining, currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, explainSearch.pending, takeSearch.pending, takeSearch.evals, evalOf, review.evals, side.evals])
+  // The coach line under the move: made from the review's own lines, so it's there with the verdict.
+  const coach = useMemo(() => {
+    if (!currentReview || !parentFen || !node.uci || !node.san) return null
+    const before = review.evals[parentFen] ?? side.evals[parentFen]
+    const after = review.evals[node.fen] ?? side.evals[node.fen]
+    if (!before?.pv.length) return null
+    return coachLine(
+      {
+        fenBefore: parentFen,
+        uci: node.uci,
+        san: node.san,
+        cls: currentReview.cls,
+        best: { pv: before.pv, score: before.score },
+        reply: { pv: after?.pv ?? [], score: currentReview.score },
+        previous: node.parentId ? tree.nodes[node.parentId].uci : undefined,
+      },
+      orientation,
+    )
+  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation])
   // A preview never outlives what it was pointing at.
   useEffect(() => setPreview(null), [node.id, tab, explaining])
   // Clicking a row plays its moves on the board, a move at a time, and holds the last position.
@@ -689,7 +709,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         icon={<ClassIcon cls={currentReview.cls} size={26} />}
         kicker={moveNumberLabel(node.ply)}
         title={moveHeadline(node.san, currentReview)}
-        detail={moveDetail(currentReview, bestSan)}
+        detail={coach ?? moveDetail(currentReview, bestSan)}
         score={currentReview.score}
         // A forced move has nothing to disagree with.
         onReport={ACCOUNTS_ENABLED && currentReview.cls !== 'forced' ? () => setReporting(node.id) : undefined}

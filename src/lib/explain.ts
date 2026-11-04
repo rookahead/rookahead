@@ -50,6 +50,26 @@ export interface ShownLine {
 export interface Explanation {
   rows: ExplainRow[]
   lines: ShownLine[]
+  /** The facts the coach line is made of: the main one, maybe a second, and whether a clear win was missed. */
+  coach?: CoachFacts
+}
+
+export interface CoachFacts {
+  /** A good move: what it does (a sentence starting with a verb, "Forks the king…"), and for a sacrifice, why it works. */
+  idea?: string
+  also?: string
+  /** A mistake: what the move itself did ("b3 saves the attacked b2 pawn, but it's too slow."). */
+  own?: string
+  /** What it lets the other side do, as a line ("11.Qc4+, then 12.Nxd5 wins the knight on d5."). */
+  allows?: string
+  /** What was missed, as a line ("22.Qf5+ forces …g6, and now nothing guards f6."). */
+  chance?: string
+  /** The better move, and why ("guards f4 against 16.Bf4"), when there's a reason to give. */
+  better?: { move: string; point: string | null }
+  /** A clear win was there. */
+  shot?: boolean
+  /** Mate was there. */
+  mate?: boolean
 }
 
 /** One engine line: its moves from the position, and its score (White POV). */
@@ -450,6 +470,18 @@ const clause = (text: string) => {
   return head.charAt(0).toLowerCase() + head.slice(1)
 }
 
+/** After a sacrifice is taken: the mate in one that follows, if there is one. */
+function mateAfterTake(fen: string, uci: string, take: string): string | null {
+  const chess = new Chess(fen)
+  try {
+    chess.move(uciToMove(uci))
+    chess.move(uciToMove(take))
+  } catch {
+    return null
+  }
+  return mateInOne(chess.fen())
+}
+
 /** A mate in one for the side to move, if there is one: the move that would be mate with a free turn. */
 function mateInOne(fen: string): string | null {
   const chess = new Chess(fen)
@@ -649,12 +681,18 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const keys = [...(pull ? [pull.square] : []), ...(bestPlayed?.san ?? []).flatMap((x, i) => (i % 2 === 0 && /[+#x]/.test(x) ? [squares(best.pv[i])[1]] : []))]
 
   /** What the better move would have done, and the move played letting it go. */
-  const chance = (note: string): Explanation | null => {
+  const chance = (note: string, also?: string): Explanation | null => {
     if (!bestUci || !bestSan || !bestPlayed) return null
     const moveRow: ExplainRow = { key: 'move', label: san, text: note, shapes: [{ orig: from, dest: to, brush: 'yellow' }], play: play(fenBefore, [uci]) }
+    const shot = clearWin(best.score, mover)
+    const facts = (chance: string): CoachFacts => ({ chance, own: also, shot, mate: Boolean(mateFor(best.score, mover)) })
     const sac = sacrificeStory(fenBefore, best, bestTake, { key: 'chance', label: 'The chance', from: 'before', brush: 'suggest', yours: true, standing: standing(best.score, mover) })
-    if (sac) return { rows: [...sac.rows, moveRow], lines: sac.lines }
-    const opener = clearWin(best.score, mover) ? 'You had a winning shot. ' : ''
+    if (sac) {
+      const take = sac.rows.find((r) => r.key === 'take')
+      const told = `${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}.${take ? ` ${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}` : ''}`
+      return { rows: [...sac.rows, moveRow], lines: sac.lines, coach: facts(told) }
+    }
+    const opener = shot ? 'You had a winning shot. ' : ''
     // With the opener said, the score alone is enough.
     const where = opener ? ` (${formatScore(best.score)}).` : `. ${capitalise(standing(best.score, mover))}.`
     // The check that pulls a defender away, then where it leads, played out to the point.
@@ -676,7 +714,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
           },
           moveRow,
         )
-        return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, long)] }
+        return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, long)], coach: facts(pull.text) }
       }
     }
     const story = lineStory(fenBefore, best, bestPlayed)
@@ -687,7 +725,12 @@ export function explainMove(input: ExplainInput): Explanation | null {
         ? `${opener}${lineText(fenBefore, [bestSan])} was the move: it ${point}${where}`
         : `${opener}${lineText(fenBefore, [bestSan])} was the move: ${standing(best.score, mover)}.`
     rows.push({ key: 'chance', label: 'The chance', text, shapes: [{ orig: squares(bestUci)[0], dest: squares(bestUci)[1], brush: 'suggest' }], play: play(fenBefore, best.pv, bestPlayed.length) }, moveRow)
-    return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, bestPlayed)] }
+    const bestText = lineText(fenBefore, [bestSan])
+    return {
+      rows,
+      lines: [shownLine('The line', 'before', fenBefore, best.pv, bestPlayed)],
+      coach: story ? facts(`${capitalise(story)}.`) : { better: { move: bestText, point }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) },
+    }
   }
 
   // A miss: the opponent had just slipped, and the move doesn't make them pay.
@@ -706,7 +749,9 @@ export function explainMove(input: ExplainInput): Explanation | null {
       ? `${capitalise(clause(purpose.text))}, but ${bestSan && /[+#x]/.test(bestSan) ? 'it’s too slow' : 'it misses the chance'}.`
       : san.includes('+') ? 'The check leads nowhere.'
       : moverBest >= 300 && moverAfter < 150 ? 'Lets the win slip.' : 'Lets some of the edge go.'
-    return chance(`${head}${afterText}`)
+    // For the coach: what the move did, said of the move itself.
+    const also = purpose ? `${san} ${clause(purpose.text)}, but it’s ${bestSan && /[+#x]/.test(bestSan) ? 'too slow' : 'not the best'}.` : san.includes('+') ? `${san} is a check that leads nowhere.` : undefined
+    return chance(`${head}${afterText}`, also)
   }
 
   const replyUci = reply.pv[0]
@@ -807,6 +852,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
   else rows.push({ key: 'loses', label, text: loses, shapes: loseShapes, play: play(fenAfter, reply.pv, punished.length) })
 
   // Better: the review's best move, and what it does about it.
+  let bestPoint: CoachFacts['better'] | null = null
   if (bestUci && bestSan && bestPlayed) {
     const [bFrom, bTo] = squares(bestUci)
     const bestText = lineText(fenBefore, [bestSan])
@@ -818,6 +864,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     else if (!pieceAt(fenAfter, rTo) && coversReply(fenBefore, bestUci, replyUci)) point = `covers ${rTo}`
     else if (sacrifice(fenBefore, bestUci)) point = `sacrifices the ${NAMES[sacrifice(fenBefore, bestUci)!.piece]}`
     else point = betterPoint(fenBefore, bestUci, best.pv, fenAfter, reply.pv, uci)
+    bestPoint = { move: bestText, point }
     rows.push({
       key: 'better',
       label: 'Better',
@@ -827,7 +874,17 @@ export function explainMove(input: ExplainInput): Explanation | null {
     })
   }
 
-  return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)] }
+  // For the coach: what the move did wrong, then what it allows (or else what was better).
+  const allows = mating
+    ? `${lineText(fenAfter, [replySan])} gives up ${mating[0].text.match(/gives up (the \w+)/)?.[1] ?? 'a piece'}, and it’s mate either way.`
+    : sac
+      ? sac.rows[0].text
+      : story
+        ? `${capitalise(story)}.`
+        : null
+  const own = moveText ? `${san} ${moveText.charAt(0).toLowerCase()}${moveText.slice(1)}` : undefined
+  const coach: CoachFacts = { own, allows: allows ?? undefined, better: bestPoint ?? undefined }
+  return { rows, lines: sac?.lines ?? [shownLine('The line', 'after', fenAfter, reply.pv, punished)], coach }
 }
 
 /** "the knight guards h7": a piece of the mating side, besides the mating one, covering the mating square. */
@@ -911,8 +968,9 @@ function mateRows(input: MateInput, fenAfter: string, mine: ExplainShape, n: num
   } else return null
 
   // A sacrifice: taking it is mate too, often because the piece that takes stops guarding something.
-  if (sac && playedTake?.pv[0]) {
-    const line = [uci, sac.take, playedTake.pv[0]]
+  const takeMate = playedTake?.pv[0] ?? (sac ? mateAfterTake(fenBefore, uci, sac.take) : null)
+  if (sac && takeMate) {
+    const line = [uci, sac.take, takeMate]
     const c = new Chess(fenBefore)
     try {
       c.move(uciToMove(line[0]))
@@ -969,6 +1027,9 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   const ownNull = nullMoveFen(fenAfter)
   const oPlayed = ownThreat && ownNull ? playLine(ownNull, ownThreat.pv) : null
   const oStory = ownThreat && ownNull && oPlayed && direct(oPlayed, ownThreat.pv) ? lineStory(ownNull, ownThreat, oPlayed) : null
+  // Without those searches, a mate in one either way is still plain to see.
+  const ownMate = !ownThreat && ownNull ? mateInOne(ownNull) : null
+  const theirMate = !threat && fenNull ? mateInOne(fenNull) : null
   // Taking back what was just taken: material was down before the move and level after it.
   const behind = balance(new Chess(fenBefore), mover)
   const winsBack = move.captured && ((previous && previous.slice(2, 4) === to) || (behind < 0 && played.gain <= -behind))
@@ -1014,6 +1075,10 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   }
   else if (tStory && reply.pv[0] !== threat!.pv[0]) {
     idea(`Deals with ${sideName(them)}’s threat of ${tPlayed!.san[0].replace(/[+#]$/, '')}, which ${tStory.replace(/^\S+ /, '')}.`, [{ ...mine }, { orig: squares(threat!.pv[0])[0], dest: squares(threat!.pv[0])[1], brush: 'red' }])
+  } else if (theirMate && reply.pv[0] !== theirMate && !mateInOne(fenAfter)) {
+    idea(`Stops ${numbered(fenAfter, 0, pvSan(fenNull!, [theirMate])[0].replace(/#$/, ''))} mate.`, [mine, { orig: squares(theirMate)[0], dest: squares(theirMate)[1], brush: 'red' }])
+  } else if (ownMate && !after.inCheck()) {
+    idea(`Threatens ${numbered(fenAfter, 1, pvSan(ownNull!, [ownMate])[0].replace(/#$/, ''))} mate.`, [mine, { orig: squares(ownMate)[0], dest: squares(ownMate)[1], brush: 'yellow' }])
   } else if (oStory && !ownTaken) {
     idea(`Threatens ${oPlayed!.san[0].replace(/[+#]$/, '')}, which ${oStory.replace(/^\S+ /, '')}.`, [mine, { orig: squares(ownThreat!.pv[0])[0], dest: squares(ownThreat!.pv[0])[1], brush: 'yellow' }])
   } else if (top) idea(top.text, [mine, ...top.shapes], top.plies)
@@ -1058,7 +1123,16 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
     })
   }
   if (!lines.length && reply.pv.length) lines = [shownLine('Best play from here', 'after', fenAfter, reply.pv, playLine(fenAfter, reply.pv))]
-  return { rows, lines }
+  // For the coach: the idea, and for a sacrifice, why it works.
+  const first = rows[0]
+  const either = rows.find((r) => r.label === 'Either way')
+  const take = rows.find((r) => r.key === 'take')
+  const also = either
+    ? `${sideName(them)} can’t take it and can’t leave it: it’s mate either way.`
+    : take
+      ? `${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}`
+      : undefined
+  return { rows, lines, coach: first ? { idea: either ? `${first.text.split(':')[0]}.` : first.text, also } : undefined }
 }
 
 /** How far apart two scores are, in the mover's win chance (0–100). */
