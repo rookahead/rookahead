@@ -276,6 +276,137 @@ h3 {
   fill: currentColor;
 }
 
+/* The phone's menu: the top bar opens downwards, edge to edge, with its links and the social icons. Narrow
+   windows only. */
+.top {
+  position: relative;
+}
+
+.top:has(.site-menu[open]) {
+  background: var(--bg);
+  box-shadow: none;
+}
+
+.site-menu {
+  display: none;
+}
+
+.site-menu summary {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-right: -8px;
+  border-radius: 10px;
+  color: var(--text-2);
+  list-style: none;
+  cursor: pointer;
+}
+
+.site-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-menu summary:hover,
+.site-menu[open] summary {
+  color: var(--text);
+}
+
+.site-menu summary svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.site-menu[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.site-menu-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  /* The bar's side padding, so the links line up under the logo. */
+  padding: 4px 24px 20px;
+  border-radius: 0 0 22px 22px;
+  background: var(--bg);
+  box-shadow: inset 0 -1px 0 var(--line), 0 24px 40px rgba(0, 0, 0, 0.3);
+}
+
+.site-menu-panel nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.site-menu-panel nav a,
+.site-menu .site-menu-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: 600 18px var(--font-display);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.site-menu-panel nav a:hover,
+.site-menu-panel nav a[aria-current],
+.site-menu-search:hover {
+  color: var(--text);
+}
+
+.site-menu-panel .nav-donate,
+.site-menu-panel .nav-donate:hover,
+.site-menu-panel .nav-donate[aria-current] {
+  color: var(--heart);
+}
+
+.site-menu-panel .nav-donate svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Search sits in the bar until the bar runs out of room (phones). */
+.site-menu .site-menu-search {
+  display: none;
+}
+
+.site-menu-social {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 0 -10px;
+}
+
+.site-menu-social a {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--text-2);
+}
+
+.site-menu-social a:hover {
+  background: var(--btn);
+  color: var(--text);
+}
+
+.site-menu-social svg {
+  width: 21px;
+  height: 21px;
+  fill: currentColor;
+}
+
 .top-end {
   display: flex;
   align-items: center;
@@ -1530,6 +1661,10 @@ kbd {
     display: none;
   }
 
+  .site-menu {
+    display: block;
+  }
+
   .cards {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1593,6 +1728,19 @@ kbd {
     margin-left: 4px;
     padding: 8px 14px;
     font-size: 14px;
+  }
+
+  /* The menu takes the bar's search, so Open the app still fits. */
+  .top-end .search-btn {
+    display: none;
+  }
+
+  .site-menu .site-menu-search {
+    display: flex;
+  }
+
+  .site-menu-panel {
+    padding: 4px 16px 20px;
   }
 
   /* Just the magnifier: there's no keyboard to press Ctrl K on. */
