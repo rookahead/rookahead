@@ -79,7 +79,7 @@
   --pad-x: 28px;
   --pad-y: 20px;
   --panel-w: 400px;
-  --evalbar-w: 36px;
+  --evalbar-w: 20px;
   /* Room taken by the sidebar (set from data-side by the shell) and by the phone's tab bar. */
   --side-w: 0px;
   --tabbar-h: 0px;
@@ -1449,23 +1449,29 @@ svg {
 }
 
 /* ═══════════════ Eval bar ═══════════════
-   A wide bar whose score chip sits inside it, on the split. */
+   A slim bar in the board's colours (White's share its light squares, Black's its dark: EvalBar sets
+   --eval-light and --eval-dark); the score rides the split on a light chip a little wider than the bar. */
 .eval-bar {
   position: relative;
   width: var(--evalbar-w);
   height: var(--board-size);
   flex-shrink: 0;
-  border-radius: 6px;
+}
+
+.eval-bar-track {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
+  border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
-.eval-bar.white-bottom {
-  background: var(--bar-dark);
+.eval-bar.white-bottom .eval-bar-track {
+  background: var(--eval-dark);
 }
 
-.eval-bar.black-bottom {
-  background: var(--bar-light);
+.eval-bar.black-bottom .eval-bar-track {
+  background: var(--eval-light);
 }
 
 .eval-bar-fill {
@@ -1478,35 +1484,42 @@ svg {
 }
 
 .white-bottom .eval-bar-fill {
-  background: var(--bar-light);
+  background: var(--eval-light);
 }
 
 .black-bottom .eval-bar-fill {
-  background: var(--bar-dark);
+  background: var(--eval-dark);
+}
+
+.eval-bar-rider {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+  /* Same curve and duration as the fill, so the chip stays on the split. */
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .eval-bar-chip {
   position: absolute;
-  left: 3px;
-  right: 3px;
-  z-index: 1;
-  transform: translateY(-50%);
-  padding: 4px 0;
-  border-radius: 5px;
-  background: var(--bg);
-  color: var(--text);
+  top: 0;
+  left: 50%;
+  width: 38px;
+  transform: translate(-50%, -50%);
+  padding: 3px 0;
+  border-radius: 4px;
+  background: #eceef1;
+  color: #1d232c;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-chip);
-  /* Same curve and duration as the fill, so the chip stays on the split. */
-  transition: top 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), var(--shadow-chip);
 }
 
 /* ═══════════════ Board ═══════════════ */
@@ -11432,7 +11445,6 @@ a.you-row:active {
   width: auto;
   height: 16px;
   margin: 0 12px;
-  border-radius: 5px;
 }
 
 .eval-bar.horizontal .eval-bar-fill {
@@ -11441,9 +11453,8 @@ a.you-row:active {
 
 .eval-bar.horizontal .eval-bar-chip {
   top: 50%;
-  left: auto;
-  right: auto;
-  transform: translate(-50%, -50%);
+  left: 0;
+  width: auto;
   padding: 0 5px;
   border-radius: 4px;
   font-size: 10.5px;
@@ -11706,6 +11717,9 @@ a.you-row:active {
   .analysis-page.pinned .eval-bar.horizontal {
     height: 10px;
     margin: 0 12px 2px;
+  }
+
+  .analysis-page.pinned .eval-bar-track {
     border-radius: 3px;
   }
 

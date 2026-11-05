@@ -20,7 +20,7 @@ interface Props {
 const sameScore = (a: Score | null, b: Score | null) =>
   a === b || (!!a && !!b && a.type === b.type && a.value === b.value && (a.type !== 'mate' || b.type !== 'mate' || a.mated === b.mated))
 
-/** Compact text for the chip: "+0.3", "−7.5", "M4", "1-0". Fits inside the bar. */
+/** Compact text for the chip: "+0.3", "−7.5", "M4", "1-0". */
 export function chipText(score: Score): string {
   if (score.type === 'mate') {
     if (score.value === 0) return score.mated === 'white' ? '0-1' : score.mated === 'black' ? '1-0' : '#'
@@ -46,9 +46,11 @@ export function EvalBar({ score, orientation, active, horizontal = false, theme 
   const fill = orientation === 'white' ? white : 100 - white
   // The chip marks the split, but stays whole inside the bar: at least half its height (plus a
   // little air) from either end, in pixels, so it fits however short the board makes the bar.
-  const chipTop = `clamp(15px, ${100 - fill}%, calc(100% - 15px))`
-  // Across the board, the chip rides the split the same way, left to right.
-  const chipLeft = `clamp(22px, ${fill}%, calc(100% - 22px))`
+  // It rides a layer the bar's size that slides (a transform, so it glides with the fill on the
+  // compositor rather than re-laying out on every new score).
+  const ride = horizontal
+    ? `translateX(clamp(22px, ${fill}%, calc(100% - 22px)))`
+    : `translateY(clamp(15px, ${100 - fill}%, calc(100% - 15px)))`
 
   return (
     <div
@@ -60,12 +62,14 @@ export function EvalBar({ score, orientation, active, horizontal = false, theme 
       aria-valuenow={Math.round(white)}
       aria-valuetext={shown ? formatScore(shown) : 'No evaluation yet'}
       title={shown ? formatScore(shown) : undefined}
-      style={{ '--bar-light': squares.light, '--bar-dark': squares.dark } as CSSProperties}
+      style={{ '--eval-light': squares.light, '--eval-dark': squares.dark } as CSSProperties}
     >
-      <div className="eval-bar-fill" style={{ transform: horizontal ? `scaleX(${fill / 100})` : `scaleY(${fill / 100})` }} />
-      <span className="eval-bar-chip" style={horizontal ? { left: chipLeft } : { top: chipTop }}>
-        {shown ? chipText(shown) : '0.0'}
-      </span>
+      <div className="eval-bar-track">
+        <div className="eval-bar-fill" style={{ transform: horizontal ? `scaleX(${fill / 100})` : `scaleY(${fill / 100})` }} />
+      </div>
+      <div className="eval-bar-rider" style={{ transform: ride }}>
+        <span className="eval-bar-chip">{shown ? chipText(shown) : '0.0'}</span>
+      </div>
     </div>
   )
 }
