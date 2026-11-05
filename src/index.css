@@ -3204,7 +3204,7 @@ button.explain-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 14px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -3304,17 +3304,17 @@ button.explain-row {
 .engine-lines {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
+  gap: 3px;
+  padding: 6px;
 }
 
 .engine-line {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 4px 8px 4px 4px;
-  border-radius: 7px;
+  min-height: 27px;
+  padding: 2px 6px 2px 3px;
+  border-radius: 6px;
   background: var(--surface-3);
 }
 
@@ -3336,13 +3336,13 @@ button.explain-row {
 
 .score-badge {
   flex-shrink: 0;
-  min-width: 54px;
+  min-width: 50px;
   text-align: center;
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: 1px 6px;
+  border-radius: 4px;
   font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 .score-badge.white {
@@ -3374,7 +3374,7 @@ button.explain-row {
 .pv-move {
   border: 0;
   background: transparent;
-  padding: 2px 3px;
+  padding: 1px 3px;
   border-radius: 4px;
   color: var(--text-2);
   font-size: 13px;
