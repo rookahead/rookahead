@@ -85,7 +85,11 @@ export function CoachCard({ icon, kicker, title, detail, score, children, onRepo
     <div className={`coach${stepping ? ' stepping' : ''}${avatar ? ' speaking' : ''}`}>
       {avatar ? (
         <div className="coach-speech">
-          <div className="coach-avatar">{avatar}</div>
+          <div className="coach-avatar">
+            {avatar}
+            {/* The coach's lines are new and still learning: say so, on the coach himself. */}
+            <span className="coach-beta" title="The coach is new: tell us when a line sounds wrong">Beta</span>
+          </div>
           <div className="coach-bubble">{words}</div>
         </div>
       ) : (
