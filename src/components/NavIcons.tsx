@@ -36,27 +36,34 @@ export function SoundIcon({ muted }: { muted: boolean }) {
   )
 }
 
+/** Share: three joined dots, the sign everyone knows (not an arrow, which reads like Load's). */
 export function ShareIcon() {
   return (
     <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 15V4M7 9l5-5 5 5M5 14v6h14v-6" />
+      <circle cx="18" cy="5.5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="18.5" r="2.5" />
+      <path d="M8.2 10.8 15.8 6.7M8.2 13.2l7.6 4.1" />
     </svg>
   )
 }
 
+/** New board: a board with a plus. */
 export function NewBoardIcon() {
   return (
     <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+      <rect x="2.5" y="2.5" width="14" height="14" rx="2" />
+      <path d="M2.5 9.5h14M9.5 2.5v14M19.5 15v7M16 18.5h7" />
     </svg>
   )
 }
 
+/** Load a game: an open folder. */
 export function LoadIcon() {
   return (
     <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+      <path d="M3.5 18V6.5a2 2 0 0 1 2-2h3.8l2 2h6.2a2 2 0 0 1 2 2V10" />
+      <path d="M3.5 18l2.4-6.2A2.5 2.5 0 0 1 8.2 10.2h12.3a1 1 0 0 1 .95 1.3l-2 6.3a2.5 2.5 0 0 1-2.4 1.7H4.5a1 1 0 0 1-1-1.5z" />
     </svg>
   )
 }

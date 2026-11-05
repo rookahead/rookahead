@@ -92,8 +92,14 @@ export const TAB_ICONS = {
   ),
   // The review's report: a list.
   summary: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
-  // The same marks as Game review and Analyze in the sidebar.
-  review: <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />,
+  // The same marks as Game review and Analyze in the sidebar. Game review: the coach's speech bubble,
+  // with a verdict's solid star in it.
+  review: (
+    <>
+      <path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+      <path className="icon-fill" d="M12 6.5L13.06 9.24L15.99 9.4L13.71 11.26L14.47 14.1L12 12.5L9.53 14.1L10.29 11.26L8.01 9.4L10.94 9.24Z" />
+    </>
+  ),
   analysis: (
     <>
       <path d="M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6" />

@@ -31,8 +31,15 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6',
     fill: 'M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z',
   },
-  // Rookahead's main thing: set apart and highlighted.
-  { id: 'analysis', label: 'Game review', path: '/analysis', icon: 'M4 20V10M10 20V4M16 20v-8M22 20H2', featured: true },
+  // Rookahead's main thing: set apart and highlighted. The coach's speech bubble, with a verdict's solid star.
+  {
+    id: 'analysis',
+    label: 'Game review',
+    path: '/analysis',
+    icon: 'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+    fill: 'M12 6.5L13.06 9.24L15.99 9.4L13.71 11.26L14.47 14.1L12 12.5L9.53 14.1L10.29 11.26L8.01 9.4L10.94 9.24Z',
+    featured: true,
+  },
 ]
 
 /** The phone's tab bar: My games and Game review share the Review tab; You holds the profile and settings. Playing starts from Home's button. */

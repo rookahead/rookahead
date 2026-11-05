@@ -88,6 +88,7 @@ function restoreSession(): {
   classes: Record<string, MoveClass> | null
   review: boolean
   engine: boolean
+  seenAt: number
 } | null {
   // A share link replaces the saved game, so don't flash the old one first.
   if (parseShareHash(location.pathname, location.hash)) return null
@@ -105,7 +106,7 @@ function restoreSession(): {
         if (cls) classes![node.id] = cls
       })
     }
-    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine) }
+    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine), seenAt: s.seenAt ?? 0 }
   } catch {
     return null
   }
@@ -139,8 +140,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
   const [loadOpen, setLoadOpen] = useState(false)
-  // The engine strip's gear opens Stockfish's settings; the board's menu, the rest.
-  const [optionsOpen, setOptionsOpen] = useState<'engine' | 'view' | null>(null)
+  // One settings dialog for the page (Engine, Display, Board), from the header's gear or the phone's menu.
+  const [optionsOpen, setOptionsOpen] = useState(false)
   // A game picked on the home page arrives with `review` set: review it as soon as the engine is up.
   const [pendingReview, setPendingReview] = useState(() => restored?.review ?? false)
   // Analyze's clean board opens on the engine; Game review on its Summary tab, where a review starts and
@@ -375,6 +376,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   useLayoutEffect(() => {
     if (active && phone) window.scrollTo(0, 0)
   }, [active, phone, pinned, reportPage])
+  // The page's way through, as on Chess.com: the summary, then the review, with analysing it yourself a
+  // click away. Back goes to the summary from the review, and to the review from the analysis (only when
+  // there is one: a game just played through on the board has nowhere to go back to).
+  const backTo: 'summary' | 'review' | null = plainBoard || blank ? null : tab === 'review' ? 'summary' : tab === 'analysis' && reviewed ? 'review' : null
+  const goBack = () => setTab(backTo === 'review' ? 'review' : 'summary')
+  const canAnalyse = !plainBoard && !blank && tab !== 'analysis'
+  const pageTitle = tab === 'analysis' || blank ? 'Analysis' : 'Game review'
   // Stepping through the review: the board shows what was better, not the live engine's lines.
   const reviewArrows = tab === 'review' && reviewed
 
@@ -409,6 +417,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
       evals: review.evals,
       classes: sharedClasses ? line.slice(1).map((n) => sharedClasses[n.id] ?? null) : undefined,
+      // When the game was last worked on: Game review from the menu reopens it only while it's recent.
+      seenAt: Date.now(),
     }
     writeSession(session)
   }, [sessionPgn, tree, orientation, node, line, review.evals, sharedClasses])
@@ -1048,7 +1058,6 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       terminal={terminal}
       reviewing={reviewing}
       onPlayLine={playLine}
-      onOpenSettings={() => setOptionsOpen('engine')}
       onPreview={canHover ? setPreview : undefined}
     />
   )
@@ -1076,7 +1085,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             <span className="page-header-label">Share</span>
           </button>
         )}
-        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen('view')} />}
+        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
       </PageHeader>
 
       <main
@@ -1120,21 +1129,38 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             <div className="panel-card">
               {!phone && (
                 <div className="panel-top">
-                  <h1 className="panel-title">{blank ? 'Analysis board' : 'Game review'}</h1>
-                  <button className="icon-btn" onClick={() => setOptionsOpen('view')} aria-label="Board settings" title="Board settings">
-                    <Gear />
-                  </button>
+                  <div className="panel-top-side">
+                    {backTo && (
+                      <button className="icon-btn" onClick={goBack} aria-label={`Back to the ${backTo}`} title={`Back to the ${backTo}`}>
+                        <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+                          <path d="M19 12H5M11 6l-6 6 6 6" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <h1 className="panel-title">
+                    <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
+                      {pageTitle === 'Analysis' ? TAB_ICONS.analysis : TAB_ICONS.review}
+                    </svg>
+                    {pageTitle}
+                  </h1>
+                  <div className="panel-top-side end">
+                    {canAnalyse && (
+                      <button className="icon-btn" onClick={() => setTab('analysis')} aria-label="Analyse it yourself" title="Analyse it yourself">
+                        <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+                          {TAB_ICONS.analysis}
+                        </svg>
+                      </button>
+                    )}
+                    <button className="icon-btn" onClick={() => setOptionsOpen(true)} aria-label="Settings" title="Settings">
+                      <Gear />
+                    </button>
+                  </div>
                 </div>
               )}
-              {!plainBoard && (
+              {phone && !plainBoard && (backTo || canAnalyse) && (
                 <header className="panel-header">
-                  {/* One way through, as on Chess.com: the summary, then the review, with the board
-                      to analyse yourself a click away; back always returns where you came from. */}
-                  <ViewNav
-                    back={tab === 'review' ? 'Summary' : tab === 'analysis' ? (reviewed ? 'Review' : 'Summary') : undefined}
-                    onBack={() => setTab(tab === 'analysis' && reviewed ? 'review' : 'summary')}
-                    onAnalyse={tab !== 'analysis' ? () => setTab('analysis') : undefined}
-                  />
+                  <ViewNav back={backTo ? capitalise(backTo) : undefined} onBack={goBack} onAnalyse={canAnalyse ? () => setTab('analysis') : undefined} />
                 </header>
               )}
 
@@ -1276,7 +1302,17 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         />
       )}
 
-      {optionsOpen && <AnalysisSettings settings={settings} status={status} onChange={updateSettings} onClose={() => setOptionsOpen(null)} board={plainBoard} part={optionsOpen} />}
+      {optionsOpen && (
+        <AnalysisSettings
+          settings={settings}
+          status={status}
+          onChange={updateSettings}
+          onClose={() => setOptionsOpen(false)}
+          board={plainBoard}
+          // Analysing, it opens on Stockfish's settings; reviewing, on how things look.
+          initialTab={tab === 'analysis' ? 'engine' : 'display'}
+        />
+      )}
 
       <LoadGameDialog
         open={loadOpen}
@@ -1308,6 +1344,8 @@ const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${
 
 /** The review's way through: back to where you came from on the left, and the board to analyse
  *  yourself on the right. */
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
 function ViewNav({ back, onBack, onAnalyse }: { back?: string; onBack: () => void; onAnalyse?: () => void }) {
   return (
     <div className="view-nav">

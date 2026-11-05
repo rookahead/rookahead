@@ -19,7 +19,8 @@ interface Props {
   /** Play the first `count` moves of a line on the board. */
   onPlayLine: (pv: string[], count: number) => void
   /** Opens the analysis settings (the gear in the header). */
-  onOpenSettings: () => void
+  /** A gear on the strip for Stockfish's settings; none where the page's own settings hold them. */
+  onOpenSettings?: () => void
   /** Pointing at a move: a preview of the position after it (null when the pointer leaves). */
   onPreview?: (preview: Preview | null) => void
 }
@@ -152,9 +153,11 @@ export function EngineLines({ fen, status, enabled, onToggle, result, searching,
             </>
           )}
         </div>
-        <button className="icon-btn engine-gear" onClick={onOpenSettings} aria-label="Settings" title="Settings">
-          <Gear />
-        </button>
+        {onOpenSettings && (
+          <button className="icon-btn engine-gear" onClick={onOpenSettings} aria-label="Settings" title="Settings">
+            <Gear />
+          </button>
+        )}
       </header>
       {body}
     </section>

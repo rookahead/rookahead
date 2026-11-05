@@ -5,7 +5,7 @@ const ICONS: Record<TileTone, string> = {
   play: 'M6 4l14 8-14 8z',
   puzzles: 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z',
   games: 'M4 5h16M4 12h16M4 19h10',
-  review: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
+  review: 'M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
   // The sidebar's Analyze: a lens over two board squares (FILLS).
   analyze: 'M10.5 17.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 15.6 15.6',
   accuracy: 'M3 17l6-6 4 4 8-8',
@@ -18,7 +18,10 @@ const ICONS: Record<TileTone, string> = {
 }
 
 /** Solid shapes drawn over a tile's strokes. */
-const FILLS: Partial<Record<TileTone, string>> = { analyze: 'M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z' }
+const FILLS: Partial<Record<TileTone, string>> = {
+  review: 'M12 6.5L13.06 9.24L15.99 9.4L13.71 11.26L14.47 14.1L12 12.5L9.53 14.1L10.29 11.26L8.01 9.4L10.94 9.24Z',
+  analyze: 'M7 7h3.5v3.5H7zM10.5 10.5H14V14h-3.5z',
+}
 
 /** A section's icon on a soft square of its colour, the way Play the computer wears it on Home. */
 export function IconTile({ tone, size }: { tone: TileTone; size?: 'small' | 'big' }) {

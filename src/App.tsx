@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { OpenGameDialog } from './components/LoadGameDialog'
 import { faviconUrl } from './components/RookLogo'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
@@ -9,7 +10,7 @@ import { useMediaQuery } from './hooks/useMediaQuery'
 import { useOnline } from './hooks/useOnline'
 import { transitionsDone } from './hooks/useSettled'
 import { finishAppSignIn, openAccountPage, startAccounts, useAccount } from './lib/account'
-import { holdBatch } from './lib/batchReview'
+import { heldBy, holdBatch } from './lib/batchReview'
 import { runningInstalled } from './lib/install'
 import { listenForReturns, setBarIcons } from './lib/nativeApp'
 import { BoardPrefsContext } from './lib/boardPrefs'
@@ -17,6 +18,7 @@ import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
 import { slidesByHand, tabSlide } from './lib/nav'
 import { navigate, routeFor, scrollLeftAt, usePathname, useRoute, type Route } from './lib/router'
+import { recentGame } from './lib/session'
 import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
@@ -255,6 +257,16 @@ export default function App() {
     navigate('/analysis')
   }
 
+  // Game review from the menu: the game you were just on (its review running, or worked on in the last
+  // half hour) opens as you left it. Otherwise Load a game opens here, over this page, and only a game
+  // loaded there goes to the review; dismissed, you stay where you were.
+  const [gameReviewLoad, setGameReviewLoad] = useState(false)
+  const onGameReview = () => {
+    if (heldBy('review') || recentGame()) return false
+    setGameReviewLoad(true)
+    return true
+  }
+
   const openSettings = () => navigate('/settings')
   const userCard = <UserCard rail={rail} settingsOpen={route === 'settings'} onSettings={openSettings} settings={settings} onChange={updateSettings} />
 
@@ -275,6 +287,7 @@ export default function App() {
             rail={rail}
             onToggleRail={toggleRail}
             footer={userCard}
+            onGameReview={onGameReview}
           />}
         <div className="shell-page">
           {!online && (
@@ -336,6 +349,7 @@ export default function App() {
         </div>
         {phone && appRoute && <TabBar route={appRoute} />}
       </div>
+      <OpenGameDialog open={gameReviewLoad} onClose={() => setGameReviewLoad(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
       {(auth || leaving) && (
         <div className={`auth-layer ${under ? 'entering' : ''} ${leaving ? 'leaving' : ''}`}>
           <AuthPage />

@@ -23,10 +23,10 @@ function writeLoaded(req: LoadRequest, autoReview: boolean): string | null {
   try {
     if (req.kind === 'pgn') {
       const { tree } = treeFromPgn(req.pgn)
-      writeSession({ pgn: req.pgn, orientation: req.orientation ?? 'white', currentPly: 0, evals: {}, review: autoReview && mainline(tree).length > 1 })
+      writeSession({ pgn: req.pgn, orientation: req.orientation ?? 'white', currentPly: 0, evals: {}, review: autoReview && mainline(tree).length > 1, seenAt: Date.now() })
     } else {
       const headers: Record<string, string> = req.fen === DEFAULT_POSITION ? {} : { SetUp: '1', FEN: req.fen }
-      writeSession({ pgn: mainlineToPgn(createTree(req.fen), headers), orientation: req.fen.split(' ')[1] === 'b' ? 'black' : 'white', currentPly: 0, evals: {}, engine: true })
+      writeSession({ pgn: mainlineToPgn(createTree(req.fen), headers), orientation: req.fen.split(' ')[1] === 'b' ? 'black' : 'white', currentPly: 0, evals: {}, engine: true, seenAt: Date.now() })
     }
     return null
   } catch (err) {

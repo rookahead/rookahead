@@ -16,6 +16,8 @@ export interface Session {
   review?: boolean
   /** Open on the engine rather than the review (a position loaded on another page). Cleared once read. */
   engine?: boolean
+  /** When the game was last worked on (ms): Game review reopens it only while it's recent. */
+  seenAt?: number
 }
 
 export function readSession(): Session | null {
@@ -33,4 +35,16 @@ export function writeSession(session: Session): void {
   } catch {
     // Storage full or unavailable — not fatal.
   }
+}
+
+/** How long a game counts as the one you were just on, for Game review from the menu. */
+export const RECENT_MS = 30 * 60 * 1000
+
+/** The saved game has moves and was worked on in the last half hour: Game review reopens it. */
+export const recentGame = (now = Date.now()): boolean => isRecent(readSession(), now)
+
+export function isRecent(s: Session | null, now: number): boolean {
+  if (!s?.seenAt || now - s.seenAt >= RECENT_MS) return false
+  // Any move in the movetext (after the headers).
+  return /\d+\.\s*[a-hKQRBNO]/.test(s.pgn.replace(/\[[^\]]*\]/g, ''))
 }

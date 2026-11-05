@@ -197,6 +197,9 @@ export function holdBatch(reason: string, on: boolean): void {
 
 const held = () => (holds.size ? new Promise<void>((go) => waiters.push(go)) : undefined)
 
+/** Is `reason` holding the run (e.g. 'review': a game review is running on the review page)? */
+export const heldBy = (reason: string): boolean => holds.has(reason)
+
 /** Stops the run. Finished games stay saved; the one in progress is dropped. */
 export function stopBatch(): void {
   current?.abort()

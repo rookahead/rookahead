@@ -12,6 +12,8 @@ interface Props {
   onToggleRail: () => void
   /** The user card. */
   footer: ReactNode
+  /** Game review was clicked: true when it was handled here (Load a game opened) instead of going there. */
+  onGameReview?: () => boolean
 }
 
 /** A section's icon: its strokes, plus any solid shapes. */
@@ -29,7 +31,7 @@ export function NavItemIcon({ item }: { item: NavItem }) {
  * the bottom. Collapsing folds it to a rail of icons at once: the icons, logo and avatar keep their places
  * while the words fade. The logo is the way Home in both.
  */
-export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
+export function Sidebar({ route, rail, onToggleRail, footer, onGameReview }: Props) {
   return (
     <aside className={`sidebar ${rail ? 'rail' : ''}`} aria-label="Sidebar">
       <div className="sidebar-head">
@@ -48,6 +50,8 @@ export function Sidebar({ route, rail, onToggleRail, footer }: Props) {
               className={`sidebar-item ${route === item.id ? 'active' : ''} ${item.featured ? 'featured' : ''}`}
               aria-current={route === item.id ? 'page' : undefined}
               title={rail ? item.label : undefined}
+              // Game review asks first: it may open Load a game here instead of going there.
+              onClick={item.id === 'analysis' && onGameReview ? (e) => onGameReview() && e.preventDefault() : undefined}
             >
               {icon}
               <span className="sidebar-label">{item.label}</span>
