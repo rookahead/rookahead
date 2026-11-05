@@ -1,12 +1,23 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-03
+date: 2026-11-05
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 5 November 2026
+
+- The coach talks. Every move in a review gets a line from the coach, the way a coach beside you would say it: praise when you find a good move, the better option in plain words when you miss one, and "You can win the knight on d5 now. Take it!" when your opponent slips. The coach is in beta: if a line sounds wrong, tap the flag to tell us.
+- The coach has a face: the Rookahead rook, beside a speech bubble. It reacts to each move, settles back and blinks now and then.
+- A simpler review. First the summary: the coach's word on the game, the graph, your accuracy and your move counts. Start review steps through the moves, with Explain, Show best and Next always in the same place. The magnifier at the top opens the position for you to analyse with the engine.
+- Explain talks more like a coach: what a quiet good move does, what a missed win was, a mating sacrifice through what it gives up first, and why taking it is mate too.
+- Game review in the menu opens Load a game over the page you're on, unless you've just been looking at a game. Close it and you stay where you were.
+- The Analysis board shows the verdict of each move you play in two short lines at the top, and its settings live behind one gear.
+- A slimmer eval bar, still in your board's colours, with the score on a light chip. The engine lines are slimmer too.
+- A Donate link in the sidebar and on the You page, and the blog has a menu on phones.
 
 ## 3 November 2026
 
