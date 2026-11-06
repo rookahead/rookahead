@@ -135,6 +135,7 @@ function buildRows(tree: GameTree): Row[] {
 // Memoised: the parent re-renders with every engine update, which leaves the list unchanged.
 export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report, times, emptyText = 'Make a move on the board, or load a game to analyse.' }: Props) {
   const container = useRef<HTMLDivElement>(null)
+  const scrolledAt = useRef(0)
   const rows = useMemo(() => buildRows(tree), [tree])
   const longest = times ? Math.max(0, ...Object.values(times)) : 0
 
@@ -144,7 +145,11 @@ export const MoveList = memo(function MoveList({ tree, currentId, onSelect, resu
     const box = container.current.getBoundingClientRect()
     const r = el.getBoundingClientRect()
     if (r.top < box.top + 4 || r.bottom > box.bottom - 4) {
-      container.current.scrollBy({ top: r.top - box.top - box.height / 2 + r.height / 2, behavior: 'smooth' })
+      // Glide to the move, unless the taps are quick: a glide begun again with each one just lags behind.
+      const now = performance.now()
+      const quick = now - scrolledAt.current < 450
+      scrolledAt.current = now
+      container.current.scrollBy({ top: r.top - box.top - box.height / 2 + r.height / 2, behavior: quick ? 'auto' : 'smooth' })
     }
   }, [currentId])
 

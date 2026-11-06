@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useRef, type ReactNode } from 'react'
 import { formatScore } from '../lib/evaluation'
 import type { Score } from '../lib/uci'
 
@@ -27,7 +27,8 @@ interface Props {
 }
 
 /** Each word of `text` comes in after the one before it, as if being written; numbered on from `from`. */
-function Words({ text, from }: { text: string; from: number }) {
+function Words({ text, from, quick }: { text: string; from: number; quick: boolean }) {
+  if (quick) return <>{text}</>
   let i = from
   return (
     <>
@@ -48,9 +49,17 @@ const wordCount = (node: ReactNode) => (typeof node === 'string' ? node.split(/\
 
 /** The review's verdict for the current move (or the game): headline, eval and actions. */
 export function CoachCard({ icon, kicker, title, detail, score, children, onReport, reported, stepping, textKey, avatar }: Props) {
+  // Tapping quickly through the moves: the words just appear, since a blurred animation on each of them,
+  // started again with every tap, is what makes fast stepping stutter.
+  const seen = useRef({ key: textKey, at: 0, quick: false })
+  if (seen.current.key !== textKey) {
+    const now = performance.now()
+    seen.current = { key: textKey, at: now, quick: now - seen.current.at < 450 }
+  }
+  const { quick } = seen.current
   // The title's words first, then the note's.
-  const typedTitle = textKey !== undefined && typeof title === 'string' ? <Words text={title} from={0} /> : title
-  const typedDetail = textKey !== undefined && typeof detail === 'string' ? <Words text={detail} from={wordCount(title)} /> : detail
+  const typedTitle = textKey !== undefined && typeof title === 'string' ? <Words text={title} from={0} quick={quick} /> : title
+  const typedDetail = textKey !== undefined && typeof detail === 'string' ? <Words text={detail} from={wordCount(title)} quick={quick} /> : detail
   const words = (
     <>
       {title !== undefined && (
