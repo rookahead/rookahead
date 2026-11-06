@@ -152,6 +152,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // A phone's Analyze tab is a plain board with the engine: no Summary or Review (a game loaded there opens as a review).
   const plainBoard = phone && blank
   const tab: Tab = plainBoard ? 'analysis' : chosenTab
+  // The summary's Start review button opens the coach; move controls belong to that view.
+  const canNavigateMoves = tab !== 'summary'
   const lines = plainBoard ? settings.boardLines : settings.lines
   const [playing, setPlaying] = useState(false)
   const [book, setBook] = useState<OpeningBook | null>(null)
@@ -618,13 +620,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // Autoplay steps forward until the end of the line.
   useEffect(() => {
     if (!playing) return
-    if (!node.children.length) {
+    if (!canNavigateMoves || !node.children.length) {
       setPlaying(false)
       return
     }
     const timer = setTimeout(() => setCurrentId(node.children[0]), 1100)
     return () => clearTimeout(timer)
-  }, [playing, node])
+  }, [playing, node, canNavigateMoves])
 
   // Keyboard navigation (only while this page is showing).
   useEffect(() => {
@@ -632,6 +634,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
       if (target.closest('input, textarea, select, dialog[open]') || e.metaKey || e.ctrlKey || e.altKey) return
+      if (!canNavigateMoves && e.key !== 'f' && e.key !== 'l') return
       const actions: Record<string, () => void> = {
         ArrowLeft: goPrev,
         ArrowRight: goNext,
@@ -652,7 +655,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, goPrev, goNext, goStart, goEnd, flip])
+  }, [active, canNavigateMoves, goPrev, goNext, goStart, goEnd, flip])
 
   const muted = settings.soundVolume === 0
   const material = useMemo(() => materialState(node.fen), [node.fen])
@@ -1228,7 +1231,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 )}
               </div>
 
-              <nav className="panel-nav" aria-label="Move navigation">
+              {canNavigateMoves && <nav className="panel-nav" aria-label="Move navigation">
                 <button className="ctrl" onClick={goStart} disabled={!node.parentId} aria-label="First move" title="First move (↑)">
                   <NavIcon name="first" />
                 </button>
@@ -1250,7 +1253,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                 <button className="ctrl" onClick={goEnd} disabled={!node.children.length} aria-label="Last move" title="Last move (↓)">
                   <NavIcon name="last" />
                 </button>
-              </nav>
+              </nav>}
               {/* Desktop: the board's other actions, quiet at the foot, as on Play. Phones keep them in the
                   header's menu: there the board is sized to fill the height above the move controls. */}
               {!phone && (
