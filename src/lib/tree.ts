@@ -185,17 +185,20 @@ export function treeFromPgn(pgn: string): ImportedGame {
   const history = chess.history({ verbose: true })
   const startFen = headers.FEN && headers.SetUp !== '0' ? headers.FEN : (history[0]?.before ?? DEFAULT_POSITION)
 
-  // Chess.com and Lichess annotate every move with its clock, in order.
-  const clocks = [...pgn.matchAll(/\[%clk\s+(\d+):(\d+):(\d+(?:\.\d+)?)\]/g)].map(
-    (m) => Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]),
-  )
-  const hasClocks = clocks.length === history.length
+  // Chess.com and Lichess annotate each move with its clock. Read it off the comment after the move itself,
+  // so a PGN with a few clocks missing (or extra ones in a side line) still shows the ones it has.
+  const clockOf = (comment: string | undefined) => {
+    const m = comment && /\[%clk\s+(\d+):(\d+):(\d+(?:\.\d+)?)\]/.exec(comment)
+    return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : undefined
+  }
+  const commentAfter = new Map(chess.getComments().map((c) => [c.fen, c.comment]))
+  const clocks = history.map((move) => clockOf(commentAfter.get(move.after)))
 
   let tree = createTree(startFen)
   let parentId = ROOT_ID
   history.forEach((move, i) => {
     const input = { from: move.from, to: move.to, promotion: move.promotion }
-    const next = addMove(tree, parentId, input, hasClocks ? { clock: clocks[i] } : undefined)
+    const next = addMove(tree, parentId, input, clocks[i] !== undefined ? { clock: clocks[i] } : undefined)
     if (!next) throw new Error(`Illegal move in PGN: ${move.san}`)
     tree = next.tree
     parentId = next.nodeId

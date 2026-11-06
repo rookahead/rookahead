@@ -130,3 +130,11 @@ describe('helpers', () => {
     expect(mainline(again.tree).map((n) => n.clock)).toEqual(mainline(tree).map((n) => n.clock))
   })
 })
+
+describe('treeFromPgn clocks', () => {
+  it('reads the clocks a PGN has even when some moves lack one, and spaced Lichess comments', () => {
+    const pgn = '1. e4 { [%clk 0:03:00] } 1... c5 2. Nf3 { [%eval 0.2] [%clk 0:02:58] } 2... e6 { [%clk 0:02:50] } *'
+    const { tree } = treeFromPgn(pgn)
+    expect(mainline(tree).map((n) => n.clock)).toEqual([undefined, 180, undefined, 178, 170])
+  })
+})
