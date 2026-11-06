@@ -1,6 +1,7 @@
 import { Fragment, memo, useEffect, useRef, type ReactNode } from 'react'
 import { CLASS_INFO, NOTABLE, type GameReport, type MoveClass } from '../lib/classify'
 import { ROOT_ID, type GameTree, type MoveNode } from '../lib/tree'
+import { formatSpent } from '../lib/clocks'
 import { ClassIcon } from './ClassIcon'
 import { San } from './San'
 
@@ -13,6 +14,8 @@ interface Props {
   report?: Pick<GameReport, 'moves'> | null
   /** What an empty list says. */
   emptyText?: string
+  /** Seconds each played move took, from the PGN's clocks: shown beside the move. */
+  times?: Record<string, number>
 }
 
 const moveNo = (ply: number) => Math.ceil(ply / 2)
@@ -20,6 +23,17 @@ const isWhiteMove = (ply: number) => ply % 2 === 1
 
 // Icons in the list: the notable ones plus "best" and "book", like a review sheet.
 const LIST_ICONS = new Set<MoveClass>([...NOTABLE, 'best', 'book'])
+
+/** How long a move took, as a small bar (square-rooted, so the quick moves still show) and the time. */
+function MoveTime({ seconds, longest }: { seconds: number; longest: number }) {
+  const share = longest > 0 ? Math.sqrt(Math.min(1, seconds / longest)) : 0
+  return (
+    <span className="move-time" title={`Took ${formatSpent(seconds)}`}>
+      <span className="move-time-bar" style={{ width: `${Math.max(8, share * 100)}%` }} />
+      <span className="move-time-text">{formatSpent(seconds)}</span>
+    </span>
+  )
+}
 
 interface MoveButtonProps {
   node: MoveNode
@@ -118,9 +132,10 @@ function buildRows(tree: GameTree): Row[] {
 }
 
 // Memoised: the parent re-renders with every engine update, which leaves the list unchanged.
-export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report, emptyText = 'Make a move on the board, or load a game to analyse.' }: Props) {
+export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report, times, emptyText = 'Make a move on the board, or load a game to analyse.' }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const rows = buildRows(tree)
+  const longest = times ? Math.max(0, ...Object.values(times)) : 0
 
   useEffect(() => {
     const el = container.current?.querySelector<HTMLElement>('[data-current]')
@@ -146,16 +161,18 @@ export const MoveList = memo(function MoveList({ tree, currentId, onSelect, resu
         <Fragment key={row.key}>
           <div className="move-row">
             <span className="move-num">{row.number}.</span>
-            <span className="move-cell">
-              {row.white ? (
-                <MoveButton node={row.white} current={row.white.id === currentId} onSelect={onSelect} report={report} />
-              ) : (
-                <span className="move placeholder">…</span>
-              )}
-            </span>
-            <span className="move-cell">
-              {row.black && <MoveButton node={row.black} current={row.black.id === currentId} onSelect={onSelect} report={report} />}
-            </span>
+            {[row.white, row.black].map((node, i) => (
+              <span key={i} className={`move-cell ${times ? 'timed' : ''}`}>
+                {node ? (
+                  <>
+                    <MoveButton node={node} current={node.id === currentId} onSelect={onSelect} report={report} />
+                    {times?.[node.id] !== undefined && <MoveTime seconds={times[node.id]} longest={longest} />}
+                  </>
+                ) : (
+                  i === 0 && <span className="move placeholder">…</span>
+                )}
+              </span>
+            ))}
           </div>
           {row.variations.length > 0 && (
             <div className="variations">

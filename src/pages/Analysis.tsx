@@ -21,7 +21,7 @@ import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadG
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
 import { PlayerBar } from '../components/PlayerBar'
-import { clocksAt, formatClockFace } from '../lib/clocks'
+import { clocksAt, formatClockFace, timeSpent } from '../lib/clocks'
 import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
 import { ShareBanner } from '../components/ShareBanner'
@@ -653,6 +653,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const ends = useMemo(() => endMarks(node.fen, atGameEnd ? { result, termination: headers.Termination } : {}), [node.fen, atGameEnd, result, headers.Termination])
   const resultFor = (c: Color) => (result && node.children.length === 0 && isMainline(tree, node.id) ? (c === 'white' ? result.split('-')[0] : result.split('-')[1]) : undefined)
   const clocks = useMemo(() => clocksAt(tree, node.id, headers), [tree, node.id, headers])
+  const spent = useMemo(() => {
+    const t = timeSpent(tree, headers)
+    return Object.keys(t).length ? t : undefined
+  }, [tree, headers])
   const player = (c: Color, eval_?: React.ReactNode) => (
     <PlayerBar
       color={c}
@@ -893,7 +897,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         ) : (
           <>
             <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={null} height={96} progress={reviewProgress} />
-            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={null} />
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={null} times={spent} />
           </>
         )}
       </>
@@ -1004,7 +1008,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           />
         ) : phone ? null : (
           <>
-            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+            <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} times={spent} />
             <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={72} />
           </>
         )}
@@ -1185,7 +1189,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <>
                     {verdictLines}
                     {!engineOnTop && engineLines}
-                    <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} />
+                    <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} times={spent} />
                     {inVariation && (
                       <div className="variation-actions">
                         <span className="muted small">Side line</span>

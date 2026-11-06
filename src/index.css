@@ -3625,6 +3625,38 @@ button.explain-row {
   min-width: 0;
 }
 
+/* A game with clocks: the move, and how long it took at the cell's right end. */
+.move-cell.timed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+}
+
+.move-time {
+  margin-left: auto;
+  flex: 0 1 56px;
+  width: 56px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.move-time-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--muted);
+  opacity: 0.45;
+  align-self: flex-end;
+}
+
 .move {
   display: inline-flex;
   align-items: center;
