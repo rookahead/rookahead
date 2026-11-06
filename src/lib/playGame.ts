@@ -2,6 +2,7 @@
 import { Chess } from 'chess.js'
 import type { ClockSetting } from './clock'
 import type { Color } from './evaluation'
+import { formatClock } from './pgn'
 import { uciToMove } from './tree'
 
 export interface Outcome {
@@ -79,9 +80,13 @@ export function playHeaders(meta: PlayMeta): Record<string, string> {
 }
 
 /** The finished (or unfinished) game as a PGN for the games list and for review. */
-export function playPgn(moves: string[], meta: PlayMeta): string {
+export function playPgn(moves: string[], meta: PlayMeta, clocks?: number[]): string {
   const chess = new Chess(meta.startFen)
   for (const [name, value] of Object.entries(playHeaders(meta))) chess.setHeader(name, value)
-  for (const uci of moves) chess.move(uciToMove(uci))
+  for (const [i, uci] of moves.entries()) {
+    chess.move(uciToMove(uci))
+    // Keep each move's clock, so the game reviewed later shows its clocks and move times like an imported one.
+    if (clocks?.[i] !== undefined) chess.setComment(`[%clk ${formatClock(clocks[i])}]`)
+  }
   return chess.pgn()
 }

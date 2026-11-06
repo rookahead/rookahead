@@ -34,6 +34,7 @@ import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import { useAccount } from '../lib/account'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
+import { formatClockFace, timeSpent } from '../lib/clocks'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
 
 interface Props {
@@ -55,11 +56,6 @@ const sleep = (ms: number, signal: AbortSignal) =>
       resolve()
     })
   })
-
-function formatClock(ms: number) {
-  const s = Math.max(0, Math.ceil(ms / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 
 /** Resumed games continue their clock from where it stopped: time away isn't charged. */
 function restoreGame(): LiveGame | null {
@@ -146,7 +142,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
             setGame(null)
           }}
           onReview={() => {
-            writeSession({ pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }), orientation: game.color, currentPly: 0, evals: {}, review: true })
+            writeSession({ pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }, game.clocks), orientation: game.color, currentPly: 0, evals: {}, review: true })
             onOpenAnalysis()
           }}
         />
@@ -262,9 +258,15 @@ interface GameViewProps {
 function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onToggleSound, onCloseShare, phone }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
-    const t = addLine(createTree(game.startFen), ROOT_ID, game.moves).tree
+    const t = addLine(createTree(game.startFen), ROOT_ID, game.moves, game.clocks).tree
     return { tree: t, line: mainline(t) }
-  }, [game.startFen, game.moves])
+  }, [game.startFen, game.moves, game.clocks])
+  // How long each move took, beside it in the list (timed games only).
+  const spent = useMemo(() => {
+    if (!game.clocks) return undefined
+    const t = timeSpent(tree, { TimeControl: game.setup.clock })
+    return Object.keys(t).length ? t : undefined
+  }, [tree, game.clocks, game.setup.clock])
   const node = line[line.length - 1]
   const turn = turnOf(node.fen)
   const yourTurn = !game.outcome && turn === game.color
@@ -344,8 +346,11 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
         const mover: Color = g.moves.length % 2 === 0 ? turnOf(g.startFen) : other(turnOf(g.startFen))
         const outcome = outcomeOf(g.startFen, moves)
         let clock = g.clock && press(g.clock, mover, at)
+        // The mover's clock as the move leaves it, kept in step with the moves (a game from before this was kept has none).
+        const before = g.clocks ?? (g.moves.length ? undefined : [])
+        const clocks = clock && before ? [...before, Math.round(clock[mover] / 100) / 10] : undefined
         if (clock && outcome) clock = pause(clock, at)
-        return { ...g, moves, clock, outcome }
+        return { ...g, moves, clocks, clock, outcome }
       }),
     [setGame],
   )
@@ -368,7 +373,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       const yours = game.outcome.result === '1/2-1/2' ? 'draw' : (game.outcome.result === '1-0') === (game.color === 'white') ? 'win' : 'loss'
       saveGame({
         id: game.id,
-        pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }),
+        pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }, game.clocks),
         result: yours,
         reason: game.outcome.reason,
         color: game.color,
@@ -447,13 +452,17 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   // Clocks: tick while a timed game runs, and end it on a flag.
   useEffect(() => {
     if (!game.clock || game.outcome) return
-    const id = setInterval(() => {
+    // Tenths show under ten seconds, so the clock ticks faster then.
+    let id: ReturnType<typeof setTimeout>
+    const tick = () => {
       const t = Date.now()
       setNow(t)
       const flag = flagged(game.clock!, t)
-      if (flag) end({ result: flag === 'white' ? '0-1' : '1-0', reason: 'timeout' })
-    }, 250)
-    return () => clearInterval(id)
+      if (flag) return end({ result: flag === 'white' ? '0-1' : '1-0', reason: 'timeout' })
+      id = setTimeout(tick, remaining(game.clock!, game.clock!.running, t) < 10000 ? 100 : 250)
+    }
+    id = setTimeout(tick, 250)
+    return () => clearTimeout(id)
   }, [game.clock, game.outcome, end])
 
   const takeback = () => {
@@ -461,7 +470,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     if (!plies) return
     busy.current?.abort()
     setHint(null)
-    setGame((g) => (g ? { ...g, moves: g.moves.slice(0, -plies), takebacks: g.takebacks + 1, clock: g.clock && { ...g.clock, running: g.color, since: Date.now() } } : g))
+    setGame((g) => (g ? { ...g, moves: g.moves.slice(0, -plies), clocks: g.clocks?.slice(0, -plies), takebacks: g.takebacks + 1, clock: g.clock && { ...g.clock, running: g.color, since: Date.now() } } : g))
   }
 
   const showHint = async () => {
@@ -514,7 +523,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const clockOf = (c: Color) =>
     game.clock && (
       <span className={`player-clock ${game.clock.running === c && !game.outcome ? 'running' : ''} ${remaining(game.clock, c, now) < 30000 ? 'low' : ''}`}>
-        {formatClock(remaining(game.clock, c, now))}
+        {formatClockFace(remaining(game.clock, c, now) / 1000)}
       </span>
     )
   const bar = (c: Color) => (
@@ -623,7 +632,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
             {phone ? (
               <MoveStrip tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} />
             ) : (
-              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} emptyText="Your moves and the computer’s appear here." />
+              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} times={spent} emptyText="Your moves and the computer’s appear here." />
             )}
           </div>
           <nav className="play-nav" aria-label="Move navigation">

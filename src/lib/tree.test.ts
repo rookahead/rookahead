@@ -56,6 +56,11 @@ describe('tree basics', () => {
     expect(deleted.nodes['e2e4'].children).toEqual(['e2e4.e7e5'])
   })
 
+  it('gives each move of a line its clock', () => {
+    const t = addLine(createTree(), ROOT_ID, ['e2e4', 'e7e5', 'g1f3'], [598, 597.5]).tree
+    expect(mainline(t).map((n) => n.clock)).toEqual([undefined, 598, 597.5, undefined])
+  })
+
   it('handles promotion moves in UCI', () => {
     const t = createTree('8/P7/8/8/8/8/8/k6K w - - 0 1')
     const r = addLine(t, ROOT_ID, ['a7a8q'])

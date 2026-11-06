@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { timeSpent } from './clocks'
 import { acceptsDraw, outcomeOf, playPgn, takebackPlies } from './playGame'
+import { treeFromPgn } from './tree'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -63,6 +65,17 @@ describe('playPgn', () => {
     expect(pgn).toContain('[TimeControl "600+5"]')
     expect(pgn).toContain('[Termination "Rookahead Level 4 won by resignation"]')
     expect(pgn).toMatch(/1\. e4 e5 2\. Nf3 1-0\s*$/)
+  })
+
+  it('keeps each move\'s clock, so the saved game reads back with its move times', () => {
+    const meta = { color: 'white' as const, level: 4, clock: '600+5' as const, outcome: null, date: new Date('2026-10-18T10:00:00Z') }
+    const pgn = playPgn(['e2e4', 'e7e5', 'g1f3'], meta, [602.5, 600, 590.1])
+    expect(pgn).toContain('1. e4 {[%clk 0:10:02.5]} e5 {[%clk 0:10:00]} 2. Nf3 {[%clk 0:09:50.1]}')
+    const { tree, headers } = treeFromPgn(pgn)
+    const t = timeSpent(tree, headers)
+    expect(t['e2e4']).toBeCloseTo(2.5, 5) // 600 + 5 - 602.5
+    expect(t['e2e4.e7e5']).toBeCloseTo(5, 5)
+    expect(t['e2e4.e7e5.g1f3']).toBeCloseTo(17.4, 5) // 602.5 - 590.1 + 5
   })
 
   it('marks an unfinished or untimed game', () => {

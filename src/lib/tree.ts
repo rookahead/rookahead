@@ -88,11 +88,12 @@ export function addMove(
   }
 }
 
-/** Plays a sequence of UCI moves from `parentId`, returning the last node. */
-export function addLine(tree: GameTree, parentId: string, ucis: string[]) {
+/** Plays a sequence of UCI moves from `parentId`, returning the last node. `clocks` gives the clock after each move. */
+export function addLine(tree: GameTree, parentId: string, ucis: string[], clocks?: number[]) {
   let current = { tree, nodeId: parentId }
-  for (const uci of ucis) {
-    const next = addMove(current.tree, current.nodeId, uciToMove(uci))
+  for (const [i, uci] of ucis.entries()) {
+    const clock = clocks?.[i]
+    const next = addMove(current.tree, current.nodeId, uciToMove(uci), clock !== undefined ? { clock } : undefined)
     if (!next) break
     current = next
   }

@@ -17,6 +17,8 @@ export interface LiveGame {
   setup: PlaySetup
   /** UCI moves from the start. */
   moves: string[]
+  /** Seconds on the mover's clock after each move (one per move), for the time each took. Timed games only. */
+  clocks?: number[]
   clock: ClockState | null
   takebacks: number
   hints: number
