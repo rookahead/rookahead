@@ -1491,9 +1491,18 @@ svg {
   background: var(--eval-dark);
 }
 
+/* The rider slides by up to its own height, and what slid past the bar would still lengthen the page
+   (it scrolled). This clips it at the bar's ends, with room at the sides for the chip. */
+.eval-bar-clip {
+  position: absolute;
+  inset: 0 -12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .eval-bar-rider {
   position: absolute;
-  inset: 0;
+  inset: 0 12px;
   z-index: 1;
   pointer-events: none;
   will-change: transform;

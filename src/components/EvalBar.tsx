@@ -67,8 +67,10 @@ export function EvalBar({ score, orientation, active, horizontal = false, theme 
       <div className="eval-bar-track">
         <div className="eval-bar-fill" style={{ transform: horizontal ? `scaleX(${fill / 100})` : `scaleY(${fill / 100})` }} />
       </div>
-      <div className="eval-bar-rider" style={{ transform: ride }}>
-        <span className="eval-bar-chip">{shown ? chipText(shown) : '0.0'}</span>
+      <div className="eval-bar-clip">
+        <div className="eval-bar-rider" style={{ transform: ride }}>
+          <span className="eval-bar-chip">{shown ? chipText(shown) : '0.0'}</span>
+        </div>
       </div>
     </div>
   )
