@@ -20,7 +20,7 @@ const MAX_LINE = 80
 const ROSTER: PgnHeaders = { Event: '?', Site: '?', Date: '????.??.??', Round: '?', White: '?', Black: '?', Result: '*' }
 
 /** Seconds → "h:mm:ss", keeping tenths when the clock has them. */
-function formatClock(seconds: number): string {
+export function formatClock(seconds: number): string {
   const tenths = Math.round(seconds * 10)
   const h = Math.floor(tenths / 36000)
   const m = Math.floor((tenths % 36000) / 600)

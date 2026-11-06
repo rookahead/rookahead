@@ -123,4 +123,10 @@ describe('helpers', () => {
     expect(formatTimeControl('30')).toBe('30s')
     expect(formatTimeControl('1/86400')).toBe('1 day')
   })
+
+  it('keeps the clocks when a game is saved as the session and read back', () => {
+    const { tree, headers } = treeFromPgn(CHESSCOM_PGN)
+    const again = treeFromPgn(mainlineToPgn(tree, headers))
+    expect(mainline(again.tree).map((n) => n.clock)).toEqual(mainline(tree).map((n) => n.clock))
+  })
 })

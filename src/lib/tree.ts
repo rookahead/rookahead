@@ -1,4 +1,5 @@
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js'
+import { formatClock } from './pgn'
 
 // The game is a tree: every node is a position, `children[0]` continues the
 // main line and any further children are side variations. Ids are derived
@@ -212,7 +213,11 @@ export function mainlineToPgn(tree: GameTree, headers: PgnHeaders): string {
     chess.setHeader('SetUp', '1')
     chess.setHeader('FEN', root.fen)
   }
-  for (const node of line.slice(1)) chess.move(uciToMove(node.uci!))
+  for (const node of line.slice(1)) {
+    chess.move(uciToMove(node.uci!))
+    // Keep the clocks: the saved game is read back as a PGN, and without them the board's clocks vanish.
+    if (node.clock !== undefined) chess.setComment(`[%clk ${formatClock(node.clock)}]`)
+  }
   return chess.pgn()
 }
 
