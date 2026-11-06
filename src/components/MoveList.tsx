@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useRef, type ReactNode } from 'react'
+import { Fragment, memo, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { CLASS_INFO, NOTABLE, type GameReport, type MoveClass } from '../lib/classify'
 import { ROOT_ID, type GameTree, type MoveNode } from '../lib/tree'
 import { formatSpent } from '../lib/clocks'
@@ -25,7 +25,7 @@ const isWhiteMove = (ply: number) => ply % 2 === 1
 const LIST_ICONS = new Set<MoveClass>([...NOTABLE, 'best', 'book'])
 
 /** How long a move took, as a small bar (square-rooted, so the quick moves still show) and the time. */
-function MoveTime({ seconds, longest }: { seconds: number; longest: number }) {
+const MoveTime = memo(function MoveTime({ seconds, longest }: { seconds: number; longest: number }) {
   const share = longest > 0 ? Math.sqrt(Math.min(1, seconds / longest)) : 0
   return (
     <span className="move-time" title={`Took ${formatSpent(seconds)}`}>
@@ -33,7 +33,7 @@ function MoveTime({ seconds, longest }: { seconds: number; longest: number }) {
       <span className="move-time-text">{formatSpent(seconds)}</span>
     </span>
   )
-}
+})
 
 interface MoveButtonProps {
   node: MoveNode
@@ -42,7 +42,8 @@ interface MoveButtonProps {
   report?: Pick<GameReport, 'moves'> | null
 }
 
-function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
+// Memoised: stepping through the game changes which move is current, and only two buttons differ.
+const MoveButton = memo(function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
   const review = report?.moves[node.id]
   const tint = review && NOTABLE.has(review.cls) ? CLASS_INFO[review.cls].color : undefined
   return (
@@ -59,7 +60,7 @@ function MoveButton({ node, current, onSelect, report }: MoveButtonProps) {
       <San san={node.san!} />
     </button>
   )
-}
+})
 
 /** A side line rendered inline: "3… Nf6 4. d3 (4. Ng5 d5) 4… Bc5". */
 function Variation({ tree, startId, currentId, onSelect, report }: { tree: GameTree; startId: string; currentId: string; onSelect: (id: string) => void; report?: Pick<GameReport, 'moves'> | null }) {
@@ -134,7 +135,7 @@ function buildRows(tree: GameTree): Row[] {
 // Memoised: the parent re-renders with every engine update, which leaves the list unchanged.
 export const MoveList = memo(function MoveList({ tree, currentId, onSelect, result, report, times, emptyText = 'Make a move on the board, or load a game to analyse.' }: Props) {
   const container = useRef<HTMLDivElement>(null)
-  const rows = buildRows(tree)
+  const rows = useMemo(() => buildRows(tree), [tree])
   const longest = times ? Math.max(0, ...Object.values(times)) : 0
 
   useEffect(() => {

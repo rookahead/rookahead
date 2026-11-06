@@ -411,8 +411,22 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // Persist the session so a refresh doesn't lose the game. Writing the PGN replays the game in chess.js:
   // only when the moves change, not on every step through them.
   const sessionPgn = useMemo(() => mainlineToPgn(tree, headers), [tree, headers])
+  // Saving writes the whole session (the review's evals too) to storage, so it waits for a pause in the
+  // stepping, and is written at once when the page closes.
+  const pendingSession = useRef<Session | null>(null)
+  const flushSession = useCallback(() => {
+    if (pendingSession.current) writeSession(pendingSession.current)
+    pendingSession.current = null
+  }, [])
   useEffect(() => {
-    const session: Session = {
+    window.addEventListener('pagehide', flushSession)
+    return () => {
+      window.removeEventListener('pagehide', flushSession)
+      flushSession()
+    }
+  }, [flushSession])
+  useEffect(() => {
+    pendingSession.current = {
       pgn: sessionPgn,
       orientation,
       currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
@@ -421,8 +435,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       // When the game was last worked on: Game review from the menu reopens it only while it's recent.
       seenAt: Date.now(),
     }
-    writeSession(session)
-  }, [sessionPgn, tree, orientation, node, line, review.evals, sharedClasses])
+    const timer = setTimeout(flushSession, 400)
+    return () => clearTimeout(timer)
+  }, [sessionPgn, tree, orientation, node, line, review.evals, sharedClasses, flushSession])
 
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
   const reviewRan = useRef(false)

@@ -70,6 +70,8 @@ interface LiveOptions {
   paused: boolean
 }
 
+const SEARCH_DELAY_MS = 120
+
 /** Continuous analysis of the position on the board, with a per-position cache. */
 export function useLiveAnalysis({ engine, ready, fen, enabled, multiPv, depth, paused }: LiveOptions) {
   const cache = useRef(new Map<string, AnalysisResult>())
@@ -101,28 +103,33 @@ export function useLiveAnalysis({ engine, ready, fen, enabled, multiPv, depth, p
       const prev = cache.current.get(r.fen)
       if (!prev || r.depth >= prev.depth || r.lines.length > prev.lines.length) cache.current.set(r.fen, r)
     }
-    engine
-      .analyze({
-        fen,
-        multiPv: wanted,
-        depth,
-        signal: controller.signal,
-        onUpdate: (r) => {
+    // Wait a beat before searching: clicking quickly through a game would otherwise start (and stop) a search
+    // on every position, and each one's first lines re-draw the page.
+    const start = setTimeout(() => {
+      void engine
+        .analyze({
+          fen,
+          multiPv: wanted,
+          depth,
+          signal: controller.signal,
+          onUpdate: (r) => {
+            if (cancelled) return
+            remember(r)
+            publish(r)
+          },
+        })
+        .then((r) => {
           if (cancelled) return
-          remember(r)
-          publish(r)
-        },
-      })
-      .then((r) => {
-        if (cancelled) return
-        if (r) {
-          remember(r)
-          setResult(r)
-        }
-        setSearching(false)
-      })
+          if (r) {
+            remember(r)
+            setResult(r)
+          }
+          setSearching(false)
+        })
+    }, SEARCH_DELAY_MS)
     return () => {
       cancelled = true
+      clearTimeout(start)
       controller.abort()
     }
   }, [engine, ready, fen, enabled, multiPv, depth, paused, publish])
