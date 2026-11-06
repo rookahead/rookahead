@@ -11626,6 +11626,17 @@ a.you-row:active {
   display: none;
 }
 
+/* Analysis shows a clock as a quiet readout on the player's bar (Play's runs, so it's bolder). */
+.analysis-page .player-clock {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.analysis-page .player-bar .player-clock + .player-eval {
+  margin-left: 8px;
+}
+
 /* The finished report gets the page to itself. The board stays laid out, out of sight, so it doesn't
    have to measure itself again; Start review sits where the move controls were. */
 @media (max-width: 1000px) {

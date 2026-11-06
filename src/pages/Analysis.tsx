@@ -21,6 +21,7 @@ import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadG
 import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
 import { PlayerBar } from '../components/PlayerBar'
+import { clocksAt, formatClockFace } from '../lib/clocks'
 import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
 import { ShareBanner } from '../components/ShareBanner'
@@ -651,7 +652,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const atGameEnd = Boolean(result && !node.children.length && isMainline(tree, node.id))
   const ends = useMemo(() => endMarks(node.fen, atGameEnd ? { result, termination: headers.Termination } : {}), [node.fen, atGameEnd, result, headers.Termination])
   const resultFor = (c: Color) => (result && node.children.length === 0 && isMainline(tree, node.id) ? (c === 'white' ? result.split('-')[0] : result.split('-')[1]) : undefined)
-  const player = (c: Color, end?: React.ReactNode) => (
+  const clocks = useMemo(() => clocksAt(tree, node.id, headers), [tree, node.id, headers])
+  const player = (c: Color, eval_?: React.ReactNode) => (
     <PlayerBar
       color={c}
       name={headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')}
@@ -659,7 +661,12 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       result={resultFor(c)?.replace('1/2', '½')}
       captured={material.captured[c]}
       advantage={material.advantage[c]}
-      clock={end}
+      clock={
+        <>
+          {clocks[c] !== undefined && <span className="player-clock" aria-label={`${c} clock`}>{formatClockFace(clocks[c]!)}</span>}
+          {eval_}
+        </>
+      }
     />
   )
 
