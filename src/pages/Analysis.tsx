@@ -6,6 +6,7 @@ import { Board } from '../components/Board'
 import { ClassIcon } from '../components/ClassIcon'
 import { FlipIcon, LoadIcon, NavIcon, NewBoardIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { CoachCard } from '../components/CoachCard'
+import { ReviewCoachCard } from '../components/ReviewCoachCard'
 import { RookCoach } from '../components/RookCoach'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
@@ -35,10 +36,10 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
 import { setBoardResizing } from '../lib/pixelGrid'
-import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type Explanation } from '../lib/explain'
+import { explainMove, lineText, nullMoveFen, playSteps, takeFen, type ExplainInput, type Explanation } from '../lib/explain'
 import { openingFromEcoUrl } from '../lib/chesscom'
 import { CLASS_INFO, classifyGame, withClasses, type GameReport, type MoveClass, type MoveReview } from '../lib/classify'
-import { coachLine, coachMood, gameQuip, type RookMood } from '../lib/coach'
+import { coachMood, gameQuip, type RookMood } from '../lib/coach'
 import { moveDetail, moveHeadline } from '../lib/commentary'
 import { formatScore, type Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
@@ -306,26 +307,23 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // The opening this move reaches, said only when it's new: the first time a line is named, or when it
   // narrows to a variation (never "This is the Caro-Kann Defense" on every move of it).
   const newOpening = useMemo(() => (book ? newOpeningAt(book, path) : undefined), [book, path])
-  // The coach line under the move: made from the review's own lines, so it's there with the verdict.
-  const coach = useMemo(() => {
-    if (!currentReview || !parentFen || !node.uci || !node.san) return null
+  // Building the coach's explanation can take several frames. Send only its inputs from render;
+  // the worker does the chess calculations without interrupting the board's animation.
+  const coachInput = useMemo<ExplainInput | null>(() => {
+    if (!active || tab !== 'review' || !currentReview || !parentFen || !node.uci || !node.san) return null
     const before = review.evals[parentFen] ?? side.evals[parentFen]
     const after = review.evals[node.fen] ?? side.evals[node.fen]
     if (!before?.pv.length) return null
-    return coachLine(
-      {
-        fenBefore: parentFen,
-        uci: node.uci,
-        san: node.san,
-        cls: currentReview.cls,
-        best: { pv: before.pv, score: before.score },
-        reply: { pv: after?.pv ?? [], score: currentReview.score },
-        previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
-      },
-      orientation,
-      newOpening,
-    )
-  }, [currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals, orientation, newOpening])
+    return {
+      fenBefore: parentFen,
+      uci: node.uci,
+      san: node.san,
+      cls: currentReview.cls,
+      best: { pv: before.pv, score: before.score },
+      reply: { pv: after?.pv ?? [], score: currentReview.score },
+      previous: node.parentId && tree.nodes[node.parentId].san?.includes('x') ? tree.nodes[node.parentId].uci : undefined,
+    }
+  }, [active, tab, currentReview, parentFen, node.uci, node.san, node.fen, node.parentId, tree.nodes, review.evals, side.evals])
   // A preview never outlives what it was pointing at.
   useEffect(() => setPreview(null), [node.id, tab, explaining])
   // Clicking a row plays its moves on the board, a move at a time, and holds the last position.
@@ -742,13 +740,14 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const bestSan = currentReview.bestMove ? pvToSan(parent.fen, [currentReview.bestMove])[0] : undefined
     const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
-      <CoachCard
+      <ReviewCoachCard
+        commentary={coachInput ? { input: coachInput, you: orientation, opening: newOpening } : null}
         avatar={face(coachMood(currentReview.cls, mine, node.san.includes('#')))}
         textKey={node.id}
         icon={<ClassIcon cls={currentReview.cls} size={26} />}
         kicker={moveNumberLabel(node.ply)}
         title={moveHeadline(node.san, currentReview)}
-        detail={coach ?? moveDetail(currentReview, bestSan)}
+        detail={moveDetail(currentReview, bestSan)}
         score={currentReview.score}
         // A forced move has nothing to disagree with.
         onReport={ACCOUNTS_ENABLED && currentReview.cls !== 'forced' ? () => setReporting(node.id) : undefined}
@@ -783,7 +782,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           )
         )}
         {next}
-      </CoachCard>
+      </ReviewCoachCard>
     )
   }
 
