@@ -19,6 +19,7 @@ import type { Settings } from '../../lib/settings'
 import { decodeShare, fromSharedGame } from '../../lib/share'
 import { playSound } from '../../lib/sound'
 import { mainline, mainlineToPgn } from '../../lib/tree'
+import { logUse } from '../../lib/usage'
 import type { Score } from '../../lib/uci'
 import { DayStreak, EmptyBoard, evalText, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, toMove, useStepKeys, walk, type ViewProps } from './shared'
 
@@ -138,6 +139,7 @@ function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, on
     setPhase('solved')
     playSound('success', settings.soundVolume)
     onSolved()
+    logUse('puzzle_solved', 'mistake')
   }
 
   const onMove = async (m: { from: string; to: string; promotion?: string }) => {

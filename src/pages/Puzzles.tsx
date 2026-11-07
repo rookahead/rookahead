@@ -17,6 +17,7 @@ import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
 import { useStoreVersion } from '../lib/syncBus'
+import { logUse } from '../lib/usage'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { PuzzleHub } from './puzzles/Hub'
 import { MistakesView } from './puzzles/Mistakes'
@@ -177,6 +178,7 @@ function RatedView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
 
   return (
     <Solver
+      kind="rated"
       puzzle={puzzle}
       settings={settings}
       tabs={tabs}
@@ -279,6 +281,7 @@ function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
   const done = progress.daily?.day === day ? progress.daily.result : undefined
   return (
     <Solver
+      kind="daily"
       key={puzzle.id}
       puzzle={puzzle}
       settings={settings}
@@ -304,6 +307,7 @@ function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
 }
 
 interface SolverProps {
+  kind: 'rated' | 'daily'
   puzzle: Puzzle
   settings: Settings
   tabs: ReactNode
@@ -329,7 +333,7 @@ interface SolverProps {
 }
 
 /** Solving a Lichess puzzle at your own pace (Rated and Daily). */
-function Solver({ puzzle, settings, tabs, head, counted, onResult, onSolved, onNext, autoNext, onAnalyse, solvedDetail, hints, below, prefs }: SolverProps) {
+function Solver({ kind, puzzle, settings, tabs, head, counted, onResult, onSolved, onNext, autoNext, onAnalyse, solvedDetail, hints, below, prefs }: SolverProps) {
   const color = playerColor(puzzle)
   const s = usePuzzleSolve(puzzle, settings.soundVolume)
   const [flipped, setFlipped] = useState(false)
@@ -368,6 +372,7 @@ function Solver({ puzzle, settings, tabs, head, counted, onResult, onSolved, onN
       playSound('success', settings.soundVolume)
       report(true)
       onSolved?.()
+      logUse('puzzle_solved', kind)
     }
   }
 

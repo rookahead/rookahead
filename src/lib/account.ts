@@ -138,14 +138,17 @@ function setState(patch: Partial<AccountState>) {
   listeners.forEach((l) => l())
 }
 
+/** Calls `l` whenever the account state changes; returns the unsubscribe. */
+export function subscribeAccount(l: () => void): () => void {
+  listeners.add(l)
+  return () => listeners.delete(l)
+}
+
+/** The account state right now, for code outside React. */
+export const accountNow = (): AccountState => state
+
 export function useAccount(): AccountState {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l)
-      return () => listeners.delete(l)
-    },
-    () => state,
-  )
+  return useSyncExternalStore(subscribeAccount, accountNow)
 }
 
 /** Opens the account page (Register or Sign in), coming back here afterwards. */

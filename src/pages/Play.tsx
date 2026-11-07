@@ -33,6 +33,7 @@ import { onReselect } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import { useAccount } from '../lib/account'
+import { logUse } from '../lib/usage'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
 import { formatClockFace, timeSpent } from '../lib/clocks'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
@@ -383,6 +384,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
         hints: game.hints,
         endedAt: Date.now(),
       })
+      logUse('bot_game', yours)
     }
     saveLiveGame({ ...snapshot, saved: savedGame.current })
   }, [game])

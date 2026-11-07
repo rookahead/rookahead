@@ -1,12 +1,12 @@
 ---
 title: Privacy
 description: What Rookahead does and doesn't collect: optional accounts, games analysed on your device, cookieless analytics.
-updated: 2026-10-18
+updated: 2026-11-07
 ---
 
 <div class="note">
 
-**In short:** You can use all of Rookahead without an account. If you make one, we keep your email, your name and your progress so it follows you to other devices, and nothing more. Games are analysed on your own device. Visits are counted without cookies.
+**In short:** You can use all of Rookahead without an account. If you make one, we keep your email, your name and your progress so it follows you to other devices, plus a simple log of when you use the app. Games are analysed on your own device. Visits are counted without cookies.
 
 </div>
 
@@ -16,13 +16,14 @@ Everything works without signing up, and then we have no personal information ab
 
 - your email address and your username, used only for your account (we never send newsletters or share them);
 - if you sign in with Google, the name and profile picture link Google gives us;
-- your progress: puzzle rating and streaks, games you played here, your review history and your settings, so they are the same on every device.
+- your progress: puzzle rating and streaks, games you played here, your review history and your settings, so they are the same on every device;
+- a usage log: when you open Rookahead, start or finish a review, solve a puzzle, open Explain or finish a game against the computer, with the kind of device (app, phone or computer). It never holds your moves, your games or anything you type. We use it only to see whether people come back and which parts of Rookahead they use; it is never shared or sold, and it is deleted with your account.
 
 If you sign up with email, you also choose a password; it is stored only as a secure hash, never as the password itself. Accounts are stored by Supabase, our database provider, and account emails (confirming your address, resetting your password) are sent through Resend. Signing in keeps a login token in your browser's storage; it isn't a tracking cookie. You can delete your account, and everything in it, at any time under Settings → Delete account.
 
 ## Your games are analysed on your device
 
-The chess engine runs in your browser. Games you load or play are analysed on your computer or phone. Without an account, your settings, progress and the game you're working on are saved only in your browser's storage, so they survive a refresh; clearing your browser's site data removes them. With an account, the progress listed above is also copied to your account.
+The chess engine runs in your browser. Games you load or play are analysed on your computer or phone. Without an account nothing is logged, and your settings, progress and the game you're working on are saved only in your browser's storage, so they survive a refresh; clearing your browser's site data removes them. With an account, the progress listed above is also copied to your account.
 
 ## Importing from Chess.com and Lichess
 

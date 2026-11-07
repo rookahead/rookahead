@@ -9,6 +9,7 @@ import type { MyGame } from './myGames'
 import { loadOpeningBook } from './openings'
 import { finishedReview } from './regrade'
 import { loadReviews, saveReview, type CachedReview } from './reviewCache'
+import { logUse } from './usage'
 import { mainline, treeFromPgn } from './tree'
 
 // ── Which games ──
@@ -278,6 +279,7 @@ export async function startBatch(games: MyGame[], settings: BatchSettings, makeR
         if (ctrl.signal.aborted) return
         if (entry) {
           saveReview(game.key, entry)
+          logUse('review_done', 'batch')
           if (steady) {
             recordSpeed(setup, (performance.now() - began) / 1000 / positions[i])
             seconds = secondsPerPosition(setup)

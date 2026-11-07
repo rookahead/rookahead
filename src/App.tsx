@@ -10,6 +10,7 @@ import { useMediaQuery } from './hooks/useMediaQuery'
 import { useOnline } from './hooks/useOnline'
 import { transitionsDone } from './hooks/useSettled'
 import { finishAppSignIn, openAccountPage, startAccounts, useAccount } from './lib/account'
+import { startUsage } from './lib/usage'
 import { heldBy, holdBatch } from './lib/batchReview'
 import { runningInstalled } from './lib/install'
 import { listenForReturns, setBarIcons } from './lib/nativeApp'
@@ -220,7 +221,10 @@ export default function App() {
     document.querySelector('link[rel="icon"]')?.setAttribute('href', faviconUrl(css.getPropertyValue('--brand').trim(), css.getPropertyValue('--brand-ink').trim()))
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 
-  useEffect(() => void startAccounts(), [])
+  useEffect(() => {
+    void startAccounts()
+    startUsage()
+  }, [])
   // The Android app: a sign-in finished in its Chrome tab comes back here.
   useEffect(
     () =>

@@ -141,3 +141,92 @@ $$;
 
 drop trigger if exists verdict_reports_limit on public.verdict_reports;
 create trigger verdict_reports_limit before insert on public.verdict_reports for each row execute function public.verdict_reports_limit();
+
+-- Usage log: what signed-in accounts do, so we can see who comes back. One row per event: who, what,
+-- when, and on what (app, phone or desktop). Never moves, games or anything typed. Accounts may add
+-- their own rows but nobody can read them through the API; read them in the dashboard, through the
+-- views in the `stats` schema below (SQL editor: select * from stats.opens_per_day).
+create table if not exists public.usage_events (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  at timestamptz not null default now(),
+  event text not null check (event in ('open', 'review_start', 'review_done', 'puzzle_solved', 'explain', 'bot_game')),
+  detail text not null default '' check (detail ~ '^[a-z0-9-]{0,20}$'),
+  platform text not null check (platform in ('app', 'phone', 'desktop'))
+);
+create index if not exists usage_events_user_at on public.usage_events (user_id, at);
+create index if not exists usage_events_at on public.usage_events (at);
+
+alter table public.usage_events enable row level security;
+
+drop policy if exists "Own rows: add" on public.usage_events;
+create policy "Own rows: add" on public.usage_events for insert to authenticated with check (user_id = (select auth.uid()));
+
+revoke all on public.usage_events from anon, authenticated;
+grant insert on public.usage_events to authenticated;
+
+-- A ceiling per account, so one script can't fill the table: rows past 300 an hour are dropped quietly.
+create or replace function public.usage_events_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select count(*) from public.usage_events where user_id = new.user_id and at > now() - interval '1 hour') >= 300 then
+    return null;
+  end if;
+  new.at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists usage_events_limit on public.usage_events;
+create trigger usage_events_limit before insert on public.usage_events for each row execute function public.usage_events_limit();
+
+-- Read-outs for the dashboard. The `stats` schema isn't served by the API, so only the dashboard sees them.
+-- Days are counted in India time.
+create schema if not exists stats;
+revoke all on schema stats from public, anon, authenticated;
+
+-- Per day: how many accounts opened the app, how many opens, and what got done.
+create or replace view stats.opens_per_day as
+select
+  (at at time zone 'Asia/Kolkata')::date as day,
+  count(distinct user_id) filter (where event = 'open') as people,
+  count(*) filter (where event = 'open') as opens,
+  count(*) filter (where event = 'review_done') as reviews,
+  count(*) filter (where event = 'puzzle_solved') as puzzles,
+  count(*) filter (where event = 'explain') as explains,
+  count(*) filter (where event = 'bot_game') as bot_games
+from public.usage_events
+group by 1
+order by 1 desc;
+
+-- Per account: when they first and last showed up, on how many days, and what they do.
+create or replace view stats.per_user as
+select
+  coalesce(p.username, u.email) as who,
+  min(e.at) as first_seen,
+  max(e.at) as last_seen,
+  count(distinct (e.at at time zone 'Asia/Kolkata')::date) as days,
+  count(*) filter (where e.event = 'open') as opens,
+  count(*) filter (where e.event = 'review_start') as reviews_started,
+  count(*) filter (where e.event = 'review_done') as reviews_done,
+  count(*) filter (where e.event = 'puzzle_solved') as puzzles,
+  count(*) filter (where e.event = 'explain') as explains,
+  count(*) filter (where e.event = 'bot_game') as bot_games,
+  string_agg(distinct e.platform, ', ') as platforms
+from public.usage_events e
+join auth.users u on u.id = e.user_id
+left join public.profiles p on p.id = e.user_id
+group by e.user_id, p.username, u.email
+order by last_seen desc;
+
+-- Everything, newest first, with names: for looking at one person's visits.
+create or replace view stats.recent as
+select (e.at at time zone 'Asia/Kolkata') as at_ist, coalesce(p.username, u.email) as who, e.event, e.detail, e.platform
+from public.usage_events e
+join auth.users u on u.id = e.user_id
+left join public.profiles p on p.id = e.user_id
+order by e.at desc;

@@ -47,6 +47,7 @@ import { loadOpeningBook, newOpeningAt, openingOf, type OpeningBook } from '../l
 import { finishedReview } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
 import { ACCOUNTS_ENABLED } from '../lib/account'
+import { logUse } from '../lib/usage'
 import { holdBatch } from '../lib/batchReview'
 import { useImmersive } from '../lib/immersive'
 import { sendVerdictReport } from '../lib/reports'
@@ -442,9 +443,13 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
   const reviewRan = useRef(false)
   useEffect(() => {
-    if (review.status === 'running') reviewRan.current = true
+    if (review.status === 'running' && !reviewRan.current) {
+      reviewRan.current = true
+      logUse('review_start')
+    }
     if (review.status !== 'done' || !reviewRan.current || !report || line.length < 2) return
     reviewRan.current = false
+    logUse('review_done')
     const key = gameKey(headers, line)
     void finishedReview(line, headers, orientation, review.evals, report, settings.reviewDepth).then((entry) => saveReview(key, entry))
   }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])
@@ -763,6 +768,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           onClick={() => {
             setExplainRow(0)
             setExplainId(explaining ? null : node.id)
+            if (!explaining) logUse('explain')
           }}
         >
           <svg viewBox="0 0 24 24" aria-hidden>

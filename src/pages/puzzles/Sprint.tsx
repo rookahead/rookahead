@@ -5,6 +5,7 @@ import { localDayNumber, parsePuzzleLine, playerColor, sprintRating, SPRINT_MODE
 import { dayStreak, recordSprint } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 import { playSound } from '../../lib/sound'
+import { logUse } from '../../lib/usage'
 import { DayStreak, EmptyBoard, Feedback, lastMoveOf, PuzzleLayout, sideName, usePuzzleSolve, type SolveTiming, type ViewProps } from './shared'
 
 interface RunEntry {
@@ -294,6 +295,7 @@ function SprintPuzzle({ puzzle, number, settings, tabs, head, below, onDone, onQ
     } else if (r === 'solved') {
       playSound('success', settings.soundVolume)
       setResult(true)
+      logUse('puzzle_solved', 'sprint')
     }
   }
 
