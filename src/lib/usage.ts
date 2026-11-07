@@ -21,9 +21,10 @@ const QUEUE_MAX = 50
 let queue: UsageRow[] = []
 let timer: ReturnType<typeof setTimeout> | undefined
 
+/** The app, a touch screen (phones and tablets), or a computer with a mouse, whatever the window's width. */
 export function platform(): UsageRow['platform'] {
   if (inApp()) return 'app'
-  return typeof matchMedia === 'function' && matchMedia('(max-width: 1000px)').matches ? 'phone' : 'desktop'
+  return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'phone' : 'desktop'
 }
 
 /** Notes an event. `detail` is a short lowercase tag such as "daily" or "batch". */
