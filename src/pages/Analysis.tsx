@@ -31,7 +31,7 @@ import { TAB_ICONS } from '../components/Tabs'
 import { PageHeader } from '../components/PageHeader'
 import { ReportDialog } from '../components/ReportDialog'
 import type { AnalysisResult, EngineStatus, StockfishEngine } from '../engine/Engine'
-import { depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
+import { checkingLeft, depthOfReview, terminalState, useGameReview, useLiveAnalysis, useSideLineReview, type PositionEval } from '../hooks/useAnalysis'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds, useSteppedForward } from '../hooks/useMoveSounds'
 import { endMarks } from '../lib/gameEnd'
@@ -184,6 +184,15 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     cloud: settings.cloudEvals,
   })
   const reviewing = review.status === 'running'
+  // A clock for the double-checks' time left, ticking only while they run.
+  const [now, setNow] = useState(Date.now)
+  const checkingNow = reviewing && Boolean(review.checking)
+  useEffect(() => {
+    if (!checkingNow) return
+    setNow(Date.now())
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [checkingNow])
   // Analysis stays mounted, so this review can still be running on another page: a batch waits for it.
   useEffect(() => {
     holdBatch('review', reviewing)
@@ -872,6 +881,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
   const progressCard = () => {
     const { checking } = review
+    const left = checkingLeft(checking, now)
     return (
       <CoachCard title="Reviewing the game" detail="The verdicts show once every move is checked, so none of them change on you.">
         <ol className="review-steps">
@@ -883,7 +893,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
           <li className={checking ? 'now' : 'later'}>
             <span className="review-step-mark" aria-hidden />
             Double-checking the sharp moments
-            <span className="review-step-count">{checking ? `${checking.done} of ${checking.total}` : ''}</span>
+            <span className="review-step-count">{checking ? `${checking.done} of ${checking.total}${left ? ` · ${left}` : ''}` : ''}</span>
           </li>
         </ol>
         <div className="review-progress">

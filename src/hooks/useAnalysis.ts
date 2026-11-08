@@ -155,13 +155,29 @@ export interface ReviewState {
   evals: Record<string, PositionEval>
   /** Reading the opening's evals from Lichess's cloud (cloudEval.ts), before the engine starts. */
   fromCloud?: boolean
-  /** After the first pass: the positions being searched deeper (backup.ts), so far and in all. */
-  checking?: { done: number; total: number }
+  /**
+   * After the first pass: the positions being searched deeper (backup.ts), so far and in all, when the
+   * double-checks began and when the last one finished (ms), for a time-left estimate.
+   */
+  checking?: { done: number; total: number; since: number; at?: number }
   /**
    * How far the review has got, 0 to 1, for a progress bar: every move searched takes the first 80%,
    * the double-checks the rest. It never goes back, though a later round of double-checks adds to their total.
    */
   share?: number
+}
+
+/**
+ * About how long the double-checks have left, in words ("about 40 s left"), from how long the finished
+ * ones took. The slowest go first, so it errs long. Null until one has finished.
+ */
+export function checkingLeft(checking: ReviewState['checking'], now: number): string | null {
+  if (!checking?.at || !checking.done || checking.done >= checking.total) return null
+  const each = (checking.at - checking.since) / checking.done
+  const left = (each * (checking.total - checking.done) - (now - checking.at)) / 1000
+  if (left < 10) return 'a few seconds left'
+  if (left < 60) return `about ${Math.ceil(left / 5) * 5} s left`
+  return `about ${Math.round(left / 60)} min left`
 }
 
 /** `state` with its progress share brought up to date (never lower than before). */
@@ -363,13 +379,13 @@ export async function searchGame(
     if (!todo.length) break
     spent += todo.length
     // One count across the rounds: a later round adds to the total, never starts again from 0.
-    update((s) => withShare({ ...s, checking: { done: s.checking?.done ?? 0, total: spent } }))
+    update((s) => withShare({ ...s, checking: { done: s.checking?.done ?? 0, total: spent, since: s.checking?.since ?? Date.now(), at: s.checking?.at } }))
     await pool(todo, async (eng, fen) => {
       const lines = await deepSearch(eng, fen, depth + DEEPER, signal, live)
       if (!live()) return
       // A search that failed is asked for again next round, within the budget.
       if (lines) deep[fen] = lines
-      update((s) => withShare({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1 } }))
+      update((s) => withShare({ ...s, checking: s.checking && { ...s.checking, done: s.checking.done + 1, at: Date.now() } }))
     })
   }
   return live() ? backUp(line, evals, deep).evals : null

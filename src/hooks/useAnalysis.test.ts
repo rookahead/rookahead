@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AnalysisResult, AnalyzeRequest, StockfishEngine } from '../engine/Engine'
 import { mainline, treeFromPgn } from '../lib/tree'
-import { depthOfReview, extraReviewEngines, searchGame, type PositionEval } from './useAnalysis'
+import { checkingLeft, depthOfReview, extraReviewEngines, searchGame, type PositionEval } from './useAnalysis'
 
 const at = (depth: number, pv = ['e2e4']): PositionEval => ({ score: { type: 'cp', value: 0 }, bestMove: pv[0] ?? null, pv, depth })
 
@@ -94,5 +94,20 @@ describe('how many extra engines a review starts', () => {
   it('starts none where memory is short', () => {
     device(8, { deviceMemory: 2 })
     expect(extraReviewEngines('lite')).toBe(0)
+  })
+})
+
+describe('checkingLeft', () => {
+  it('waits for the first double-check to finish', () => {
+    expect(checkingLeft(undefined, 0)).toBeNull()
+    expect(checkingLeft({ done: 0, total: 14, since: 0 }, 9000)).toBeNull()
+  })
+
+  it('goes by how long the finished ones took, counting down between them', () => {
+    // 2 of 14 done in 16 s: 8 s each, 12 left.
+    expect(checkingLeft({ done: 2, total: 14, since: 0, at: 16000 }, 16000)).toBe('about 2 min left')
+    expect(checkingLeft({ done: 10, total: 14, since: 0, at: 30000 }, 30000)).toBe('about 15 s left')
+    expect(checkingLeft({ done: 10, total: 14, since: 0, at: 30000 }, 33000)).toBe('a few seconds left')
+    expect(checkingLeft({ done: 14, total: 14, since: 0, at: 40000 }, 40000)).toBeNull()
   })
 })
