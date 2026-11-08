@@ -16,4 +16,7 @@ describe('the game you were just on', () => {
     expect(isRecent(game('1. e4 *'), NOW)).toBe(false)
     expect(isRecent(null, NOW)).toBe(false)
   })
+  it('isn’t moves tried on a clean board', () => {
+    expect(isRecent({ ...game('1. e4 e5 *', NOW - 60_000), board: true }, NOW)).toBe(false)
+  })
 })

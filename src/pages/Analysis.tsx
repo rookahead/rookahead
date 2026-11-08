@@ -87,6 +87,7 @@ function restoreSession(): {
   game: Game
   orientation: Color
   watching: boolean
+  board: boolean
   currentId: string
   evals: Record<string, PositionEval>
   classes: Record<string, MoveClass> | null
@@ -110,7 +111,7 @@ function restoreSession(): {
         if (cls) classes![node.id] = cls
       })
     }
-    return { game: { tree, headers }, orientation: s.orientation, watching: Boolean(s.watching), currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine), seenAt: s.seenAt ?? 0 }
+    return { game: { tree, headers }, orientation: s.orientation, watching: Boolean(s.watching), board: Boolean(s.board), currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine), seenAt: s.seenAt ?? 0 }
   } catch {
     return null
   }
@@ -144,6 +145,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [watching, setWatching] = useState(() => restored?.watching ?? false)
   /** Who the coach talks to: the side the board is shown from, or no one. */
   const you = watching ? null : orientation
+  // Moves played on a clean board, not a loaded game: Game review from the menu offers Load a game instead.
+  const [scratch, setScratch] = useState(() => restored?.board ?? false)
   const [engineOn, setEngineOn] = useState(true)
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
@@ -445,6 +448,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       pgn: sessionPgn,
       orientation,
       watching: watching || undefined,
+      board: scratch || undefined,
       currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
       evals: review.evals,
       classes: sharedClasses ? line.slice(1).map((n) => sharedClasses[n.id] ?? null) : undefined,
@@ -453,7 +457,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     }
     const timer = setTimeout(flushSession, 400)
     return () => clearTimeout(timer)
-  }, [sessionPgn, tree, orientation, watching, node, line, review.evals, sharedClasses, flushSession])
+  }, [sessionPgn, tree, orientation, watching, scratch, node, line, review.evals, sharedClasses, flushSession])
 
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
   // Not a game the player only watched: its moves aren't theirs to drill as mistakes.
@@ -551,6 +555,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         setCurrentId(ROOT_ID)
         setPlaying(false)
         setWatching(req.kind === 'pgn' && Boolean(req.watching))
+        setScratch(false)
         if (req.kind === 'pgn') {
           setOrientation(req.orientation ?? 'white')
           if (settings.autoReview && mainline(next.tree).length > 1) {
@@ -571,6 +576,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
 
   const newBoard = () => {
     setWatching(false)
+    setScratch(true)
     resetReview()
     setSharedClasses(null)
     setBanner(null)
@@ -610,6 +616,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       setGame({ tree: opened.tree, headers: opened.headers })
       setOrientation(opened.orientation)
       setWatching(false)
+      setScratch(false)
       setSharedClasses(opened.classes)
       setBanner('shared')
       if (opened.classes) {
