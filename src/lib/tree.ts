@@ -175,10 +175,49 @@ export interface ImportedGame {
   pgn: string
 }
 
+/** Where chess.js's PGN parser stopped, when it couldn't read the text. */
+function parseStop(err: unknown): number | null {
+  const at = (err as { location?: { start?: { offset?: unknown } } } | null)?.location?.start?.offset
+  return typeof at === 'number' ? at : null
+}
+
+/**
+ * Loads a PGN as people paste it. Notes after the result ("1-0 Great game!") are dropped. Anything else
+ * that isn't chess says where, in words: "Couldn’t read the PGN near “Zoë’s” (move 3)", not the parser's
+ * list of everything it expected.
+ */
+function loadPasted(chess: Chess, text: string): void {
+  try {
+    chess.loadPgn(text)
+    return
+  } catch (err) {
+    const at = parseStop(err)
+    if (at === null) throw err
+    // The game ended before the stray text: read it up to its result.
+    const end = [...text.slice(0, at).matchAll(/(?:^|\s)(1-0|0-1|1\/2-1\/2|\*)(?=\s|$)/g)].pop()
+    if (end && end.index !== undefined) {
+      try {
+        chess.loadPgn(text.slice(0, end.index + end[0].length))
+        return
+      } catch {
+        // Not that either: say where the first problem is.
+      }
+    }
+    const start = text.lastIndexOf('\n', at - 1) + 1
+    const word = text.slice(at).match(/^\S*/)![0]
+    const near = (text.slice(start, at).match(/\S*$/)![0] + word).slice(0, 24)
+    // The last move number before the problem, outside the tags and comments.
+    const before = text.slice(0, at).replace(/\[[^\]]*\]|\{[^}]*\}/g, ' ')
+    const move = [...before.matchAll(/(?:^|\s)(\d+)\.+/g)].pop()?.[1]
+    const line = text.slice(0, at).split('\n').length
+    throw new Error(`Couldn’t read the PGN near “${near}” (${move ? `move ${move}` : `line ${line}`}).`)
+  }
+}
+
 /** Parses a PGN's main line (plus `[%clk]` clock comments) into a tree. */
 export function treeFromPgn(pgn: string): ImportedGame {
   const chess = new Chess()
-  chess.loadPgn(pgn.trim())
+  loadPasted(chess, pgn.trim())
   // chess.js fills the tags a PGN leaves out with "?" (and the date with "????.??.??"): they'd show as names.
   const headers = Object.fromEntries(
     Object.entries(chess.getHeaders()).filter((e): e is [string, string] => typeof e[1] === 'string' && !/^[?.]+$/.test(e[1])),

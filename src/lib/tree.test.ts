@@ -106,6 +106,16 @@ describe('PGN import', () => {
   it('throws on garbage', () => {
     expect(() => treeFromPgn('1. e4 e5 2. Ke3 Qh4')).toThrow()
   })
+
+  it('drops notes pasted after the result', () => {
+    expect(mainline(treeFromPgn('1. e4 e5 2. Nf3 Nc6 1-0 Great game!').tree)).toHaveLength(5)
+    expect(mainline(treeFromPgn('[Event "x"]\n\n1. e4 e5 *\nFrom my club night').tree)).toHaveLength(3)
+  })
+
+  it('says where it couldn’t read the PGN, in words', () => {
+    expect(() => treeFromPgn('1. e4 e5 2. Nf3 d6 3. Zoë’s fine')).toThrow('Couldn’t read the PGN near “Zoë’s” (move 3).')
+    expect(() => treeFromPgn('[Event "x"\n1. e4')).toThrow(/^Couldn’t read the PGN near “.*” \(line \d\)\.$/)
+  })
 })
 
 describe('helpers', () => {
