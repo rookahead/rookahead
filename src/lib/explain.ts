@@ -567,6 +567,13 @@ function takerWords(fen: string, uci: string, take: string): string {
   return !p ? 'them' : p.type === 'k' ? 'the king' : pieceWords({ piece: p.type, square: sq })
 }
 
+/** The king hasn't left the centre files of its back two ranks: d, e or f. */
+function kingInMiddle(fen: string, color: Color): boolean {
+  const board = new Chess(fen).board()
+  for (const row of board) for (const p of row) if (p && p.type === 'k' && p.color === short(color)) return 'def'.includes(p.square[0])
+  return false
+}
+
 /**
  * A line that starts with a sacrifice, as its own rows: the sacrifice, what happens if it's taken (a fork,
  * winning it back) and where it ends up either way (material, a king that can't castle).
@@ -576,7 +583,7 @@ function sacrificeStory(
   line: EngineLine,
   take: EngineLine | null | undefined,
   opts: { key: ExplainRow['key']; label: string; from: 'before' | 'after'; brush: ExplainShape['brush']; yours: boolean; standing: string },
-): { rows: ExplainRow[]; lines: ShownLine[] } | null {
+): { rows: ExplainRow[]; lines: ShownLine[]; attack: boolean; attackLine: string | null } | null {
   const sac = line.pv[0] ? sacrifice(fen, line.pv[0]) : null
   if (!sac) return null
   const side = turnOf(fen)
@@ -595,6 +602,11 @@ function sacrificeStory(
     },
   ]
   const lines: ShownLine[] = []
+  const canCastle = (f: string) => (them === 'white' ? /[KQ]/ : /[kq]/).test(f.split(' ')[2])
+  // Taking it costs an attack rather than material: "either way" isn't true of where it ends.
+  let attack = false
+  // The attack in one short sentence, for the coach line under a sacrifice that was played.
+  let attackLine: string | null = null
 
   // If it's taken: the whole line from the sacrifice, the capture and what follows.
   const taken = line.pv[1]?.slice(2, 4) === sac.square
@@ -607,6 +619,7 @@ function sacrificeStory(
     let regained: PieceSymbol | undefined
     let fork: ReturnType<typeof forkTargets> = []
     let takenFen: string | null = null
+    const fens: string[] = []
     for (const [i, uci] of takeUci.slice(0, 8).entries()) {
       let move
       try {
@@ -615,6 +628,7 @@ function sacrificeStory(
         break
       }
       sans.push(move.san)
+      fens.push(start.fen())
       if (i === 1) takenFen = start.fen()
       if (i === 2) fork = forkTargets(start.fen(), move.to)
       // The side that sacrificed is level again or better: the piece is back.
@@ -640,6 +654,33 @@ function sacrificeStory(
         play: play(fen, takeUci, n),
       })
       lines.push({ label: `If ${takeText}`, from: opts.from, fen, uci: takeUci.slice(0, n), text: lineText(fen, sans.slice(0, n)) })
+    } else if (sans[2] && takenFen) {
+      // Nothing comes back soon: what the piece buys is the attack. Without the next moves, "gives up the
+      // knight" beside "White is winning" reads as a contradiction.
+      const ours = [2, 4].filter((i) => sans[i])
+      const moves = ours.map((i) => numbered(fen, i, sans[i])).join(' and ')
+      const many = ours.length > 1
+      const checks = ours.every((i) => /[+#]/.test(sans[i]))
+      const last = fens[ours[ours.length - 1]]
+      const stuck = canCastle(fen) && !canCastle(last) && kingInMiddle(last, them)
+      const how = checks ? (many ? 'come with check after check' : 'comes with check') : many ? 'follow' : 'follows'
+      const score = taken ? line.score : take!.score
+      const cp = (side === 'white' ? 1 : -1) * (score.type === 'cp' ? score.value : score.value > 0 ? 10000 : -10000)
+      const still = cp >= 300 ? `${sideName(side)} is still winning` : cp >= 100 ? `${sideName(side)} is still better` : null
+      const end = ours[ours.length - 1] + 1
+      if (stuck || checks || still) {
+        attack = true
+        if (checks || stuck) attackLine = `If ${takeText}, ${moves} ${how}${stuck && !checks ? `: ${sideName(them)}’s king is stuck in the middle` : ''}.`
+        rows.push({
+          key: 'take',
+          label: `If ${takeText}`,
+          text: `${moves} ${how}${stuck ? `: ${sideName(them)}’s king is stuck in the middle` : ''}.${still ? ` ${still}.` : ''}`,
+          shapes: ours.map((i) => arrow(takeUci[i])),
+          position: { fen: takenFen, lastMove: [...squares(takeUci[1])] as [Square, Square] },
+          play: play(fen, takeUci, end),
+        })
+        lines.push({ label: `If ${takeText}`, from: opts.from, fen, uci: takeUci.slice(0, end), text: lineText(fen, sans.slice(0, end)) })
+      }
     }
   }
 
@@ -651,7 +692,6 @@ function sacrificeStory(
   } catch {
     // A line that can't be played this far: the sacrifice's rows still stand.
   }
-  const canCastle = (f: string) => (them === 'white' ? /[KQ]/ : /[kq]/).test(f.split(' ')[2])
   const lostCastling = canCastle(fen) && !canCastle(end.fen())
   const ahead = played.gain >= 1 ? `${sideName(side)} ends ${amount(played.gain)} up` : null
   const parts = [ahead, lostCastling ? `${sideName(them)} can’t castle any more` : null].filter(Boolean)
@@ -660,7 +700,7 @@ function sacrificeStory(
   if (parts.length) {
     rows.push({
       key: 'result',
-      label: rows.length > 1 && !taken ? 'Either way' : 'Then',
+      label: attack && !taken && played.san[1] ? `If ${numbered(fen, 1, played.san[1])}` : rows.length > 1 && !taken ? 'Either way' : 'Then',
       text: `${capitalise(parts.join(', and '))} (${formatScore(line.score)}).`,
       shapes: [arrow(line.pv[0])],
       play: play(fen, line.pv, played.length),
@@ -668,7 +708,7 @@ function sacrificeStory(
   }
   if (!taken) lines.push(shownLine(lines.length ? 'Best defence' : 'The line', opts.from, fen, line.pv, played))
   else if (!lines.length) lines.push(shownLine('The line', opts.from, fen, line.pv, played))
-  return { rows, lines }
+  return { rows, lines, attack, attackLine }
 }
 
 /** Why a mistake was a mistake, as short rows. Null when there's nothing we can show for sure. */
@@ -707,7 +747,8 @@ export function explainMove(input: ExplainInput): Explanation | null {
     const sac = sacrificeStory(fenBefore, best, bestTake, { key: 'chance', label: 'The chance', from: 'before', brush: 'suggest', yours: true, standing: standing(best.score, mover) })
     if (sac) {
       // The coach tells a sacrifice only with why it works; on its own, "it can be taken" just confuses.
-      const take = sac.rows.find((r) => r.key === 'take')
+      // An attack takes moves to tell, too many for a coach line.
+      const take = sac.attack ? null : sac.rows.find((r) => r.key === 'take')
       const coach = take
         ? facts(`${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}. ${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}`)
         : { better: { move: lineText(fenBefore, [bestSan]), uci: bestUci, point: null }, own: also, shot, mate: Boolean(mateFor(best.score, mover)) }
@@ -865,7 +906,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
   const mating = mateFor(reply.score, them) && sacrifice(fenAfter, replyUci)
     ? mateRows({ fenBefore: fenAfter, uci: replyUci, san: replySan, reply: { pv: reply.pv.slice(1), score: reply.score }, playedTake: replyTake, theirs: true }, punished.fens[0], { orig: rFrom, dest: rTo, brush: 'red' }, punished.length)
     : null
-  const sac = mating ? { rows: mating, lines: [] as ShownLine[] } : sacrificeStory(fenAfter, reply, replyTake, { key: 'loses', label, from: 'after', brush: 'red', yours: false, standing: theirStanding(reply.score, them) })
+  const sac = mating ? { rows: mating, lines: [] as ShownLine[], attack: false, attackLine: null } : sacrificeStory(fenAfter, reply, replyTake, { key: 'loses', label, from: 'after', brush: 'red', yours: false, standing: theirStanding(reply.score, them) })
   const loses = story ? `${capitalise(story)}. ${theirStanding(reply.score, them)}.` : `After ${lineText(fenAfter, [replySan])}, ${theirStanding(reply.score, them)}.`
   const loseShapes: ExplainShape[] = [{ orig: rFrom, dest: rTo, brush: 'red' }]
   if (firstTake && firstTake.square !== rTo) loseShapes.push({ orig: firstTake.square, brush: 'red' })
@@ -899,7 +940,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
   // For the coach: what the move did wrong, then what it allows (or else what was better).
   const allows = mating
     ? `${lineText(fenAfter, [replySan])} gives up ${mating[0].text.match(/gives up (the \w+)/)?.[1] ?? 'a piece'}, and it’s mate either way.`
-    : sac?.rows.some((r) => r.key === 'take')
+    : !sac?.attack && sac?.rows.some((r) => r.key === 'take')
       ? `${sac.rows[0].text.split('. ')[0].replace(/\.$/, '')}.`
       : story
         ? `${capitalise(story)}.`
@@ -1158,12 +1199,12 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   // For the coach: the idea, and for a sacrifice, why it works.
   const first = rows[0]
   const either = rows.find((r) => r.label === 'Either way')
-  const take = rows.find((r) => r.key === 'take')
+  const take = sac?.attack ? null : rows.find((r) => r.key === 'take')
   const also = either
     ? `${sideName(them)} can’t take it and can’t leave it: it’s mate either way.`
     : take
       ? `${take.label}, ${take.text.charAt(0).toLowerCase()}${take.text.slice(1)}`
-      : undefined
+      : (sac?.attackLine ?? undefined)
   return { rows, lines, coach: first ? { idea: either ? `${first.text.split(':')[0]}.` : first.text, also } : undefined }
 }
 

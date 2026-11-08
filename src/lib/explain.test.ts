@@ -164,6 +164,42 @@ describe('explaining a move', () => {
     expect(e.lines[0]).toMatchObject({ from: 'before', uci: ['c4f7', 'e8f7', 'd1h5', 'f7f8', 'h5c5'] })
   })
 
+  it('tells what a sacrifice buys when taking it wins nothing back: the attack', () => {
+    // 9…b5 in the Opera Game (Morphy, 1858). 10.Nxb5 can be taken, and nothing comes back soon,
+    // but 11.Bxb5+ and 12.O-O-O+ hunt the king. Without those moves, "gives up the knight" reads as a loss.
+    const e = explainMove({
+      fenBefore: 'rn2kb1r/pp2qppp/2p2n2/4p1B1/2B1P3/1QN5/PPP2PPP/R3K2R b KQkq - 1 9',
+      uci: 'b7b5',
+      san: 'b5',
+      cls: 'mistake',
+      best: { pv: ['b8a6', 'g5f6', 'g7f6', 'c4a6', 'b7a6', 'b3a4', 'e7b7', 'e1c1'], score: cp(240) },
+      reply: { pv: ['c3b5', 'e7b4', 'b5c3', 'b4b3', 'a2b3', 'f8b4', 'f2f3', 'f6d7'], score: cp(409) },
+      replyTake: { pv: ['c4b5', 'e8d8', 'e1c1', 'd8c8', 'd1d3', 'e7b4', 'd3c3', 'c8b7', 'b3f7'], score: cp(666) },
+    })!
+    expect(e.rows.map((r) => `${r.label}: ${r.text}`)).toEqual([
+      'b5: Puts the pawn where it can be taken.',
+      'What it allows: 10.Nxb5 gives up the knight for the b5 pawn: the c6 pawn can take it.',
+      'If 10…cxb5: 11.Bxb5+ and 12.O-O-O+ come with check after check: Black’s king is stuck in the middle. White is still winning.',
+      'If 10…Qb4+: White ends a pawn up (+4.09).',
+      'Better: 9…Na6 develops the knight. White stays better, but you’re still in it (+2.40).',
+    ])
+    expect(e.lines.map((l) => `${l.label}: ${l.text}`)).toEqual(['If 10…cxb5: 10.Nxb5 cxb5 11.Bxb5+ Kd8 12.O-O-O+', 'Best defence: 10.Nxb5 Qb4+'])
+    // The coach line on the mistake stays short: the attack is for Explain to show.
+    expect(e.coach?.allows).toBe('10.Nxb5 wins the b5 pawn.')
+
+    // On 10.Nxb5 itself, the coach says how it goes on in one sentence.
+    const played = explainMove({
+      fenBefore: 'rn2kb1r/p3qppp/2p2n2/1p2p1B1/2B1P3/1QN5/PPP2PPP/R3K2R w KQkq - 0 10',
+      uci: 'c3b5',
+      san: 'Nxb5',
+      cls: 'brilliant',
+      best: { pv: ['c3b5', 'e7b4', 'b5c3', 'b4b3', 'a2b3', 'f8b4', 'f2f3', 'f6d7'], score: cp(409) },
+      reply: { pv: ['e7b4', 'b5c3', 'b4b3', 'a2b3', 'f8b4', 'f2f3', 'f6d7'], score: cp(409) },
+      playedTake: { pv: ['c4b5', 'e8d8', 'e1c1', 'd8c8', 'd1d3', 'e7b4', 'd3c3', 'c8b7', 'b3f7'], score: cp(666) },
+    })!
+    expect(played.coach?.also).toBe('If 10…cxb5, 11.Bxb5+ and 12.O-O-O+ come with check after check.')
+  })
+
   it('gives up when the move doesn’t fit the position', () => {
     expect(explainMove({ ...RAB8, uci: 'e1e8' })).toBeNull()
   })
