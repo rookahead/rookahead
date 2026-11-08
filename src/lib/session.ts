@@ -10,6 +10,8 @@ export interface Session {
   orientation: Color
   /** A game the player only watched (pasted as "Neither"): the coach names the sides. */
   watching?: boolean
+  /** Moves played on a clean board (Analyze, New board), not a game: Game review doesn't reopen them. */
+  board?: boolean
   currentPly: number
   evals: Record<string, PositionEval>
   /** A shared review's verdicts, in main-line order: they override the classifier's. */
@@ -46,7 +48,7 @@ export const RECENT_MS = 30 * 60 * 1000
 export const recentGame = (now = Date.now()): boolean => isRecent(readSession(), now)
 
 export function isRecent(s: Session | null, now: number): boolean {
-  if (!s?.seenAt || now - s.seenAt >= RECENT_MS) return false
+  if (!s?.seenAt || s.board || now - s.seenAt >= RECENT_MS) return false
   // Any move in the movetext (after the headers).
   return /\d+\.\s*[a-hKQRBNO]/.test(s.pgn.replace(/\[[^\]]*\]/g, ''))
 }
