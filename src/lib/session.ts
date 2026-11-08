@@ -8,6 +8,8 @@ export const SESSION_KEY = 'rookahead.session.v1'
 export interface Session {
   pgn: string
   orientation: Color
+  /** A game the player only watched (pasted as "Neither"): the coach names the sides. */
+  watching?: boolean
   currentPly: number
   evals: Record<string, PositionEval>
   /** A shared review's verdicts, in main-line order: they override the classifier's. */

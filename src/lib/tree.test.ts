@@ -12,6 +12,7 @@ import {
   promoteVariation,
   pvToSan,
   ROOT_ID,
+  guessSide,
   treeFromPgn,
 } from './tree'
 
@@ -151,5 +152,17 @@ describe('treeFromPgn clocks', () => {
     const pgn = '1. e4 { [%clk 0:03:00] } 1... c5 2. Nf3 { [%eval 0.2] [%clk 0:02:58] } 2... e6 { [%clk 0:02:50] } *'
     const { tree } = treeFromPgn(pgn)
     expect(mainline(tree).map((n) => n.clock)).toEqual([undefined, 180, undefined, 178, 170])
+  })
+})
+
+describe('guessSide', () => {
+  const pgn = '[White "Morphy"]\n[Black "Duke Karl"]\n\n1. e4 e5 *'
+  it('finds the player by a username we know, in either colour', () => {
+    expect(guessSide(pgn, ['morphy', undefined])).toBe('white')
+    expect(guessSide(pgn, [undefined, 'Duke Karl'])).toBe('black')
+  })
+  it('leaves it to the player when no name matches', () => {
+    expect(guessSide(pgn, ['someone', undefined])).toBeNull()
+    expect(guessSide('1. e4 e5 *', ['morphy'])).toBeNull()
   })
 })

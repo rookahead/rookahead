@@ -5,10 +5,19 @@ import type { Color } from '../lib/evaluation'
 import * as lichess from '../lib/lichess'
 import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
-import { createTree, mainline, mainlineToPgn, treeFromPgn } from '../lib/tree'
+import { createTree, guessSide, mainline, mainlineToPgn, treeFromPgn } from '../lib/tree'
+import { Segmented } from './controls'
 import { Tabs } from './Tabs'
 
-export type LoadRequest = { kind: 'pgn'; pgn: string; orientation?: Color } | { kind: 'fen'; fen: string }
+/** A game: `watching` when the player was neither side (the coach then names the sides). */
+export type LoadRequest = { kind: 'pgn'; pgn: string; orientation?: Color; watching?: boolean } | { kind: 'fen'; fen: string }
+
+type Side = Color | 'neither'
+const SIDES: [Side, string][] = [
+  ['white', 'White'],
+  ['black', 'Black'],
+  ['neither', 'Neither'],
+]
 
 /** What the dialog says when a game can't be read. */
 export function loadError(err: unknown): string {
@@ -23,7 +32,7 @@ function writeLoaded(req: LoadRequest, autoReview: boolean): string | null {
   try {
     if (req.kind === 'pgn') {
       const { tree } = treeFromPgn(req.pgn)
-      writeSession({ pgn: req.pgn, orientation: req.orientation ?? 'white', currentPly: 0, evals: {}, review: autoReview && mainline(tree).length > 1, seenAt: Date.now() })
+      writeSession({ pgn: req.pgn, orientation: req.orientation ?? 'white', watching: req.watching || undefined, currentPly: 0, evals: {}, review: autoReview && mainline(tree).length > 1, seenAt: Date.now() })
     } else {
       const headers: Record<string, string> = req.fen === DEFAULT_POSITION ? {} : { SetUp: '1', FEN: req.fen }
       writeSession({ pgn: mainlineToPgn(createTree(req.fen), headers), orientation: req.fen.split(' ')[1] === 'b' ? 'black' : 'white', currentPly: 0, evals: {}, engine: true, seenAt: Date.now() })
@@ -209,6 +218,9 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
   // Open on the site the player uses, when we only know one of their usernames.
   const [tab, setTab] = useState<Tab>(lichessUser && !chesscomUser ? 'lichess' : 'chesscom')
   const [pgn, setPgn] = useState('')
+  // Which side the player had, for the coach: picked, or guessed from the names in the PGN.
+  const [side, setSide] = useState<Side | null>(null)
+  const pickedSide = side ?? guessSide(pgn, [chesscomUser, lichessUser])
   const [fen, setFen] = useState('')
   const [error, setError] = useState<string | null>(null)
   const dialog = useRef<HTMLDialogElement>(null)
@@ -285,7 +297,8 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
             className="tab-body"
             onSubmit={(e) => {
               e.preventDefault()
-              finish({ kind: 'pgn', pgn })
+              if (!pickedSide) return
+              finish({ kind: 'pgn', pgn, orientation: pickedSide === 'black' ? 'black' : 'white', watching: pickedSide === 'neither' })
             }}
           >
             <textarea
@@ -297,8 +310,12 @@ export function LoadGameDialog({ open, onClose, onLoad, chesscomUser, onChesscom
               autoFocus
             />
             {error && <p className="form-error">{error}</p>}
-            <div className="form-actions">
-              <button className="btn primary" disabled={!pgn.trim()}>
+            <div className="form-actions pgn-actions">
+              <div className="pgn-side">
+                <span aria-hidden>You played</span>
+                <Segmented label="You played" value={(pickedSide ?? '') as Side} options={SIDES} onChange={setSide} />
+              </div>
+              <button className="btn primary" disabled={!pgn.trim() || !pickedSide}>
                 Load PGN
               </button>
             </div>

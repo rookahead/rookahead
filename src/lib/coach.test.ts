@@ -135,3 +135,18 @@ describe('the coach’s word on the game', () => {
     expect(gameQuip('0-1', 'X won by checkmate', 'white', { turning: { san: 'Qxg4', mine: true } }).line).toBe('Checkmated, ouch. Let’s see where it went wrong. It slipped at Qxg4.')
   })
 })
+
+describe('the coach line for a game the player watched', () => {
+  it('names the sides instead of “you” and “your opponent”', () => {
+    expect(coachLine({ fenBefore: 'r4bkr/pp4p1/2p4p/2q1n3/Q3N3/8/PPP3PP/R1B2R1K b - - 1 16', uci: 'c5b6', san: 'Qb6', cls: 'mistake', best: { pv: ['c5c4', 'a4c4', 'e5c4', 'c1f4', 'g8h7', 'b2b3', 'c4b6', 'a1e1', 'b6d5', 'f4d6'], score: { type: 'cp', value: 21 }}, reply: { pv: ['c1f4', 'e5g6', 'a4c4', 'g8h7', 'f4g5', 'b6b5', 'c4f7', 'h6g5', 'a2a4', 'b5b2'], score: { type: 'cp', value: 243 }}, previous: 'c3e4' } as ExplainInput, null)).toBe(
+      'A mistake by Black. Qb6 stops guarding the knight on e5, and Bf4 attacks it. Black’s better option was to bring the queen to c4.',
+    )
+    expect(coachLine({ fenBefore: 'rn1q1b1r/pp2pkpp/2p2n2/8/3P2b1/2N2N2/PPP3PP/R1BQK2R w KQ - 0 8', uci: 'f3e5', san: 'Ne5+', cls: 'great', best: { pv: ['f3e5', 'f7g8', 'e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6'], score: { type: 'cp', value: 148 }}, reply: { pv: ['f7g8', 'e5g4', 'b8d7', 'd1e2', 'h7h6', 'c1f4', 'f6g4', 'e2g4', 'd7f6', 'g4e6'], score: { type: 'cp', value: 182 }}, previous: 'e8f7' } as ExplainInput, null)).toBe('White finds the only move. They fork the king and the bishop on g4: after the king moves, Nxg4 wins it.')
+  })
+  it('keeps a straight face, and calls the result by the winner', () => {
+    expect(coachMood('blunder', null)).toBe('shocked')
+    expect(coachMood('best', null)).toBe('neutral')
+    expect(gameQuip('1-0', 'Morphy won by checkmate', null)).toEqual({ line: 'White wins by checkmate. Let’s see how.', mood: 'pleased' })
+    expect(gameQuip('0-1', 'X won by resignation', null, { turning: { san: 'Qxg4', mine: false } }).line).toBe('White resigned. Let’s see why. Qxg4 was the turning point.')
+  })
+})

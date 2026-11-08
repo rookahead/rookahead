@@ -3809,6 +3809,31 @@ button.explain-row {
   justify-content: flex-end;
 }
 
+/* The pasted game's side for the coach, beside Load PGN. */
+.pgn-actions {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pgn-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pgn-side .segmented {
+  min-width: 216px;
+}
+
+/* Wrapped under the picker on a narrow screen, the button stays at the right. */
+.pgn-actions .btn {
+  margin-left: auto;
+}
+
 .game-list {
   list-style: none;
   margin: 0 -8px;

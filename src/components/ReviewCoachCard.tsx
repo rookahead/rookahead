@@ -7,6 +7,6 @@ type Props = ComponentProps<typeof CoachCard> & { commentary: CoachRequest | nul
 
 /** Only this card re-renders when background commentary arrives, leaving the board alone. */
 export function ReviewCoachCard({ commentary, detail, ...props }: Props) {
-  const coach = useCoachLine(commentary?.input ?? null, commentary?.you ?? 'white', commentary?.opening)
+  const coach = useCoachLine(commentary?.input ?? null, commentary ? commentary.you : 'white', commentary?.opening)
   return <CoachCard {...props} detail={coach ?? detail} />
 }

@@ -86,6 +86,7 @@ type Tab = 'summary' | 'review' | 'analysis'
 function restoreSession(): {
   game: Game
   orientation: Color
+  watching: boolean
   currentId: string
   evals: Record<string, PositionEval>
   classes: Record<string, MoveClass> | null
@@ -109,7 +110,7 @@ function restoreSession(): {
         if (cls) classes![node.id] = cls
       })
     }
-    return { game: { tree, headers }, orientation: s.orientation, currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine), seenAt: s.seenAt ?? 0 }
+    return { game: { tree, headers }, orientation: s.orientation, watching: Boolean(s.watching), currentId: current.id, evals: s.evals ?? {}, classes, review: Boolean(s.review), engine: Boolean(s.engine), seenAt: s.seenAt ?? 0 }
   } catch {
     return null
   }
@@ -139,6 +140,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   const [game, setGame] = useState<Game>(() => restored?.game ?? { tree: createTree(), headers: {} })
   const [currentId, setCurrentId] = useState(() => restored?.currentId ?? ROOT_ID)
   const [orientation, setOrientation] = useState<Color>(() => restored?.orientation ?? 'white')
+  // A game the player only watched: the coach names the sides instead of saying "you".
+  const [watching, setWatching] = useState(() => restored?.watching ?? false)
+  /** Who the coach talks to: the side the board is shown from, or no one. */
+  const you = watching ? null : orientation
   const [engineOn, setEngineOn] = useState(true)
   // The board's size when dragged by its corner handle (this device only); null fits it to the window.
   const [boardSize, setBoardSize] = useState<number | null>(readBoardSize)
@@ -439,6 +444,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     pendingSession.current = {
       pgn: sessionPgn,
       orientation,
+      watching: watching || undefined,
       currentPly: isMainline(tree, node.id) ? node.ply - line[0].ply : 0,
       evals: review.evals,
       classes: sharedClasses ? line.slice(1).map((n) => sharedClasses[n.id] ?? null) : undefined,
@@ -447,9 +453,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     }
     const timer = setTimeout(flushSession, 400)
     return () => clearTimeout(timer)
-  }, [sessionPgn, tree, orientation, node, line, review.evals, sharedClasses, flushSession])
+  }, [sessionPgn, tree, orientation, watching, node, line, review.evals, sharedClasses, flushSession])
 
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
+  // Not a game the player only watched: its moves aren't theirs to drill as mistakes.
   const reviewRan = useRef(false)
   useEffect(() => {
     if (review.status === 'running' && !reviewRan.current) {
@@ -459,9 +466,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (review.status !== 'done' || !reviewRan.current || !report || line.length < 2) return
     reviewRan.current = false
     logUse('review_done')
+    if (watching) return
     const key = gameKey(headers, line)
     void finishedReview(line, headers, orientation, review.evals, report, settings.reviewDepth).then((entry) => saveReview(key, entry))
-  }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])
+  }, [review.status, review.evals, report, line, headers, orientation, watching, settings.reviewDepth])
 
   const runReview = useCallback(() => {
     setSharedClasses(null)
@@ -542,6 +550,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         setGame(next)
         setCurrentId(ROOT_ID)
         setPlaying(false)
+        setWatching(req.kind === 'pgn' && Boolean(req.watching))
         if (req.kind === 'pgn') {
           setOrientation(req.orientation ?? 'white')
           if (settings.autoReview && mainline(next.tree).length > 1) {
@@ -561,6 +570,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   )
 
   const newBoard = () => {
+    setWatching(false)
     resetReview()
     setSharedClasses(null)
     setBanner(null)
@@ -599,6 +609,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       const at = index === null ? null : sharedLine[index]
       setGame({ tree: opened.tree, headers: opened.headers })
       setOrientation(opened.orientation)
+      setWatching(false)
       setSharedClasses(opened.classes)
       setBanner('shared')
       if (opened.classes) {
@@ -730,7 +741,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const parent = node.parentId ? tree.nodes[node.parentId] : null
     // The coach's face: the move's moment for a beat, then its normal face. The player's own moves are
     // the ones on the side the board is shown from.
-    const mine = parent ? turnAt(parent.fen) === orientation : true
+    const mine = !parent ? true : you ? turnAt(parent.fen) === you : null
     const face = (mood: RookMood) => <RookCoach mood={mood} moodKey={node.id} />
     if (!parent || !node.san) {
       return (
@@ -758,7 +769,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     const showBest = currentReview.bestMove && !['best', 'book', 'brilliant', 'great', 'forced'].includes(currentReview.cls)
     return (
       <ReviewCoachCard
-        commentary={coachInput ? { input: coachInput, you: orientation, opening: newOpening } : null}
+        commentary={coachInput ? { input: coachInput, you, opening: newOpening } : null}
         avatar={face(coachMood(currentReview.cls, mine, node.san.includes('#')))}
         textKey={node.id}
         icon={<ClassIcon cls={currentReview.cls} size={26} />}
@@ -937,8 +948,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     )
   } else if (reviewed) {
     // The coach's word on the game, with its big moment: the player's legendary move, else the turning point.
-    const legendary = report && Object.values(report.moves).find((m) => m.cls === 'brilliant' && m.color === orientation)
-    const quip = gameQuip(headers.Result, headers.Termination, orientation, {
+    const legendary = report && Object.values(report.moves).find((m) => m.cls === 'brilliant' && (!you || m.color === you))
+    const quip = gameQuip(headers.Result, headers.Termination, you, {
       legendary: legendary ? tree.nodes[legendary.nodeId]?.san : undefined,
       turning: turningPoint && tree.nodes[turningPoint.nodeId]?.san ? { san: tree.nodes[turningPoint.nodeId].san!, mine: turningPoint.color === orientation } : undefined,
     })
