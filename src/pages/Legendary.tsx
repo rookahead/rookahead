@@ -70,7 +70,7 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
             <section className="home-card legendary-empty">
               <h2>No Legendary moves yet</h2>
               <p>Review your games and every Legendary move you find (usually a brilliant sacrifice) collects here.</p>
-              <Link to="/games" className="btn accent-btn">
+              <Link to="/profile/games" className="btn accent-btn">
                 Review a game
               </Link>
             </section>
@@ -127,7 +127,7 @@ export function LegendaryPage({ settings, onOpenAnalysis }: Props) {
           )}
 
           {!busy && moves.length > 0 && unreviewed > 0 && (
-            <Link to="/games" className="home-card quick-card">
+            <Link to="/profile/games" className="home-card quick-card">
               <IconTile tone="legendary" size="big" />
               <span className="quick-lines">
                 <strong>Find more Legendary moves</strong>

@@ -25,10 +25,10 @@ import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
 import { BlogPage } from './pages/Blog'
-import { GamesPage } from './pages/Games'
 import { HomePage } from './pages/Home'
 import { LegendaryPage } from './pages/Legendary'
 import { PlayPage } from './pages/Play'
+import { ProfilePage } from './pages/Profile'
 import { PuzzlesPage } from './pages/Puzzles'
 import { SettingsPage } from './pages/Settings'
 import { YouPage } from './pages/You'
@@ -310,7 +310,7 @@ export default function App() {
             )}
             {gamesMounted && (
               <div {...slideHost('games')}>
-                <GamesPage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
+                <ProfilePage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
               </div>
             )}
             {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}

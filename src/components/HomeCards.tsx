@@ -289,7 +289,7 @@ export function FormStrip({
   const dailyDone = progress.daily?.day === today
   return (
     <section className={`home-card form-strip ${pending ? 'skel-group' : ''}`} aria-label="Your form" aria-busy={pending}>
-      <Link to="/games" className="form-part">
+      <Link to="/profile/games" className="form-part">
         <span className="form-label">Accuracy, last {bars.length > 1 ? bars.length : 10}</span>
         <span className="form-row">
           {pending ? (

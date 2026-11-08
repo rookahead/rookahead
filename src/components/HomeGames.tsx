@@ -70,7 +70,7 @@ export function GameLines({ games, reviews, onOpen, error }: Pick<Props, 'games'
         })}
       </ul>
       {/* Phones have no My games tab: the whole list opens from here. */}
-      <button className="game-lines-all" onClick={() => navigate('/games')}>
+      <button className="game-lines-all" onClick={() => navigate('/profile/games')}>
         All {games.length} games ›
       </button>
     </>
@@ -137,7 +137,7 @@ export function HomeGames({ games, reviews, theme, onOpen, error }: Props) {
           {chip('unreviewed', 'Not reviewed', unreviewed)}
           {chip('loss', 'Losses', losses)}
         </div>
-        <button className="link-btn see-all" onClick={() => navigate('/games')}>
+        <button className="link-btn see-all" onClick={() => navigate('/profile/games')}>
           All games ›
         </button>
       </header>

@@ -1,8 +1,8 @@
 import type { Route } from './router'
 
-// The app's sections, for the sidebar. `path: null` = not built yet ("Soon").
+// The app's sections, for the sidebar. `path: null` = not built yet ("Soon"). Your profile opens from the user card at its foot.
 export interface NavItem {
-  id: 'play' | 'puzzles' | 'analysis' | 'games' | 'board'
+  id: 'play' | 'puzzles' | 'analysis' | 'board'
   label: string
   path: string | null
   /** Stroke icon, 24×24. */
@@ -21,7 +21,6 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/puzzles',
     icon: 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z',
   },
-  { id: 'games', label: 'My games', path: '/games', icon: 'M4 5h16M4 12h16M4 19h10' },
   // A clean board for exploring any position (Game review is the same page with a game in it).
   // A lens over two board squares.
   {

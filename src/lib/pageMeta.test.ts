@@ -12,6 +12,7 @@ describe('titleFor', () => {
     expect(titleFor('/puzzles/sprint')).toBe(PAGE_META['/puzzles'].title)
     expect(titleFor('/settings/board')).toBe('Settings · Rookahead')
     expect(titleFor('/analysis')).toBe('Game review · Rookahead')
+    expect(titleFor('/profile/stats')).toBe('Profile · Rookahead')
     expect(titleFor('/login')).toBe('Sign in · Rookahead')
   })
 

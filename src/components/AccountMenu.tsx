@@ -13,6 +13,7 @@ interface Props {
 }
 
 const LOG_OUT = 'M9 4H5v16h4M14 8l4 4-4 4M18 12H9'
+export const PROFILE = 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0'
 
 const icon = (d: string) => (
   <svg viewBox="0 0 24 24" aria-hidden>
@@ -30,7 +31,9 @@ export function AccountMenu({ anchor, placement, onClose }: Props) {
 
   // The button is already on screen (it was just clicked), so it can be measured here. A resize closes the menu.
   const r = anchor.getBoundingClientRect()
-  const style: CSSProperties = placement === 'up' ? { left: r.left, bottom: window.innerHeight - r.top + 8 } : { right: window.innerWidth - r.right, top: r.bottom + 8 }
+  // On whole pixels: half a pixel blurs the icons, and they jump into place.
+  const style: CSSProperties =
+    placement === 'up' ? { left: Math.round(r.left), bottom: Math.round(window.innerHeight - r.top + 8) } : { right: Math.round(window.innerWidth - r.right), top: Math.round(r.bottom + 8) }
 
   useEffect(() => {
     const onDown = (e: PointerEvent) => {
@@ -66,11 +69,10 @@ export function AccountMenu({ anchor, placement, onClose }: Props) {
         </span>
         <span className="account-menu-text">
           <strong>{username ?? account?.name}</strong>
-          <span>{account?.email}</span>
         </span>
       </div>
-      <button className="account-menu-item" role="menuitem" onClick={() => go('/settings/profile')}>
-        {icon('M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0')}
+      <button className="account-menu-item" role="menuitem" onClick={() => go('/profile')}>
+        {icon(PROFILE)}
         Profile
       </button>
       <button className="account-menu-item" role="menuitem" onClick={() => go('/settings')}>

@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount, type Account } from '../lib/account'
+import { navigate, useRoute } from '../lib/router'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
-import { AccountMenu } from './AccountMenu'
+import { AccountMenu, PROFILE } from './AccountMenu'
 
 interface Props {
   rail: boolean
@@ -52,6 +53,7 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
   const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
   const closeMenu = useCallback(() => setMenuAt(null), [])
   const guest = status !== 'signed-in'
+  const onProfile = useRoute() === 'games'
   // Keyed: the card's layout changes as a saved sign-in comes back (signing in, then you), and the gear moves
   // among its siblings; without a key it would be a new button each time, and a click landing then is lost.
   const settings = (
@@ -73,6 +75,10 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
           Log in
         </button>
         <div className="guest-card-tools">
+          {/* Guests have no account menu: their profile (games, ratings, stats) is a button here. */}
+          <button className={`icon-btn ${onProfile ? 'active' : ''}`} onClick={() => navigate('/profile')} aria-label="Profile" title="Profile">
+            {icon(PROFILE)}
+          </button>
           <button
             className="icon-btn"
             onClick={() => onChange({ appearance: dark ? 'light' : 'dark' })}
@@ -114,7 +120,7 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
     return (
       <div className="user-card">
         <button
-          className={`user-card-who ${menuAt ? 'active' : ''}`}
+          className={`user-card-who ${menuAt || onProfile ? 'active' : ''}`}
           onClick={(e) => {
             const at = e.currentTarget
             setMenuAt((open) => (open ? null : at))

@@ -1107,7 +1107,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
         // Desktop has the title and actions in the panel's own header, so the board gets the height.
         phoneOnly
         title={blank ? 'Analysis board' : 'Game review'}
-        back={blank ? '/' : '/games'}
+        back={blank ? '/' : '/profile/games'}
         phoneTitle={hasGame ? `${headers.White || 'White'} vs ${headers.Black || 'Black'}` : blank ? 'Analysis board' : 'Game review'}
         phoneSub={hasGame ? [blank ? 'Analysis board' : 'Game review', result?.replace('1/2-1/2', '½–½')].filter(Boolean).join(' · ') : undefined}
       >

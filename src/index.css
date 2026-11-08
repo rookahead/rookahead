@@ -5623,7 +5623,7 @@ button.user-avatar.guest:hover {
 /* Theme, sounds and settings: three equal tonal buttons under Log in. */
 .guest-card-tools {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   margin-top: 2px;
 }
@@ -8963,8 +8963,7 @@ button.chip:hover {
   font-size: 13px;
 }
 
-/* The My games page (Games.tsx): Home's two columns, the list in Home's rows, your record above it and your games
-   by time control and opening beside it. */
+/* Game lists with filters: the profile's Games tab (Profile.tsx) and the Legendary moves page. */
 .games-title strong {
   color: var(--text-2);
   font-weight: 550;
@@ -8983,16 +8982,6 @@ button.chip:hover {
 
 .games-sources {
   margin-left: auto;
-}
-
-.games-picked {
-  margin: 0 12px 4px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 550;
 }
 
 .games-older {
@@ -9100,29 +9089,375 @@ button.chip:hover {
   border-radius: 50%;
 }
 
-/* Three equal parts, where Home's streak takes what its week needs. */
-.record-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* ═══════════════ Profile (Profile.tsx) ═══════════════ */
+/* You and the tabs across the top; your ratings in a column on the left, the tab beside them. */
+.profile {
+  max-width: 1240px;
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding: 26px var(--pad-x) 48px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* In the strip, the results' bar and the rating's line sit where Home's accuracy bars do. */
-.record-strip .form-bars {
-  align-self: center;
+.profile-card {
+  padding: 22px 24px 0;
 }
 
-.record-strip .result-bar {
+.profile-who {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+}
+
+.profile-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  font-size: 32px;
+}
+
+.profile-name {
   flex: 1;
-  height: 8px;
-  border-radius: 4px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.form-spark {
+.profile-name h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-name p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.profile-linked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 4px !important;
+}
+
+.profile-site {
+  white-space: nowrap;
+}
+
+.profile-site b {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.profile-edit {
+  flex: none;
+  align-self: flex-start;
+}
+
+.profile-tabs {
+  position: relative;
+  display: flex;
+  gap: 26px;
+  margin: 0 -24px;
+  padding: 0 24px;
+  border-top: 1px solid var(--border);
+}
+
+.profile-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 2px 13px;
+  color: var(--muted);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+
+.profile-tab:hover {
+  color: var(--text);
+}
+
+.profile-tab.active {
+  color: var(--text);
+}
+
+/* The underline under the tab picked; it slides to the next one. */
+.profile-tabs-ink {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--w);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  transform: translateX(var(--x));
+  pointer-events: none;
+}
+
+.profile-tabs-ink.moves {
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* A tab's content comes in from the side its tab is on. */
+.profile-main.from-right {
+  animation: profile-from-right 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.profile-main.from-left {
+  animation: profile-from-left 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes profile-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes profile-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-tabs-ink.moves,
+  .profile-main.from-right,
+  .profile-main.from-left {
+    transition: none;
+    animation: none;
+  }
+}
+
+.games-card .profile-games-head {
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding-bottom: 14px;
+}
+
+.profile-games-count {
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-games-where {
+  margin-left: auto;
+}
+
+.profile-games-where button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.profile-tab-count {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-cols {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.profile-side,
+.profile-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Ratings: a row each, the one picked lit. */
+.profile-ratings {
+  padding: 18px 10px 14px;
+}
+
+.profile-ratings h2 {
+  padding: 0 10px 8px;
+}
+
+.profile-ratings ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-rating {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+button.profile-rating:hover {
+  background: var(--card-row);
+}
+
+.profile-rating.on {
+  background: var(--surface-3);
+}
+
+.profile-rating-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-rating-text strong {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.profile-rating-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-rating-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-rating-value b {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.profile-rating-value small,
+.rating-card-now small {
+  font-size: 12px;
+}
+
+.profile-rating.add .profile-rating-value {
+  color: var(--muted);
+  font-family: inherit;
+}
+
+.profile-rating-value .up,
+.rating-card-now .up {
+  color: var(--win);
+}
+
+.profile-rating-value .down,
+.rating-card-now .down {
+  color: var(--danger);
+}
+
+.profile-note {
+  margin: 10px 10px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* A rating's card: the number, how far it moved, and its line. */
+.rating-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rating-card-head > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rating-card-head small,
+.profile-stat-head small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.rating-card-now {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rating-card-now b {
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.rating-card-now small:not(.up):not(.down) {
+  color: var(--muted);
+}
+
+.rating-card-empty {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.rating-card-empty .btn {
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.rating-graph {
+  margin: 18px 0 0;
+}
+
+.rating-graph-plot {
+  position: relative;
+  height: 170px;
+  margin-left: 42px;
+  touch-action: pan-y;
+}
+
+.rating-graph-plot svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.form-spark path {
+.rating-graph-line {
   fill: none;
   stroke: var(--brand);
   stroke-width: 2;
@@ -9131,195 +9466,356 @@ button.chip:hover {
   vector-effect: non-scaling-stroke;
 }
 
-/* Time controls and openings: a row each, with how they went and your score; picking one filters the list. */
-.group-card {
-  padding: 20px 8px 8px;
+.rating-graph-area {
+  fill: color-mix(in srgb, var(--brand) 10%, transparent);
 }
 
-.group-card .home-card-head {
-  padding: 0 12px 8px;
+.rating-graph-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--border);
 }
 
-.group-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.group-row {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-button.group-row:hover {
-  background: var(--surface-3);
-}
-
-.group-row.on {
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent);
-}
-
-.group-text {
-  flex: 1;
-  min-width: 0;
-  /* Two lines' height, so a placeholder row is as tall as a real one. */
-  min-height: 37px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-}
-
-.skel-group .group-text {
-  gap: 8px;
-}
-
-.group-text strong,
-.group-text small {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.group-text strong {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.group-text small {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.rating-graph-grid small {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: -8px;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* The side you had: a little piece-coloured disc. */
-.side-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
+.rating-graph-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--border-strong);
+  background: var(--brand);
+  box-shadow: 0 0 0 2px var(--card);
+  pointer-events: none;
 }
 
-.side-dot.white {
-  background: #f2f2f2;
+.rating-graph-tip {
+  position: absolute;
+  top: -10px;
+  transform: translate(10px, -100%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-4);
+  color: var(--text-2);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-.side-dot.black {
-  background: #1a1a1a;
+.rating-graph-tip.left {
+  transform: translate(calc(-100% - 10px), -100%);
 }
 
-/* Time controls: a small table, a row each to pick. */
-.time-list {
-  list-style: none;
+.rating-graph-tip b {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.rating-graph-dates,
+.rating-card-range {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0 42px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rating-card-range {
+  justify-content: flex-start;
+  gap: 18px;
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.rating-card-range b {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* Stats: where from and which rating, then a card each. */
+.profile-stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.profile-sources {
+  flex: none;
+}
+
+.profile-sources button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.profile-history {
+  margin: -8px 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.profile-stat-card h2 {
+  font-size: 16px;
+}
+
+.profile-stat-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.profile-stat-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.profile-results {
+  margin-top: 16px;
+}
+
+.profile-results-nums {
   margin: 0;
-  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-results-nums > span {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
 }
 
-.time-head,
-.time-row {
+.profile-results-nums .result-dot {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px 52px 60px;
+  grid-template-columns: auto 1fr;
+  column-gap: 7px;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  text-align: right;
+}
+
+.profile-results-nums .result-dot small {
+  grid-column: 1 / -1;
+}
+
+.profile-results-nums b {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
-.time-head {
-  height: 24px;
+.profile-results-nums small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.profile-results-bar {
+  width: 100%;
+  height: 8px;
+  margin-top: 14px;
+  border-radius: 4px;
+}
+
+.stat-rows {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stat-rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 7.5em);
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+.stat-rows.two li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.stat-rows li:first-child {
+  border-top: 0;
+}
+
+.stat-rows span {
+  color: var(--text-2);
+}
+
+.stat-rows b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stat-rows small {
   color: var(--muted);
   font-size: 12px;
-}
-
-.time-row {
-  width: 100%;
-  min-height: 44px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 10px;
-  background: none;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.time-row:hover {
-  background: var(--surface-3);
-}
-
-.time-row.on {
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent);
-}
-
-.time-name {
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
   overflow: hidden;
-  text-align: left;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.time-name strong {
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
+.profile-phases {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.time-name small {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.profile-phases > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card-row);
+}
+
+.profile-phases small {
   color: var(--muted);
   font-size: 12px;
 }
 
-.time-rating {
-  color: var(--text);
-  font-weight: 650;
-}
-
-.group-note {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.group-score {
-  flex: none;
-  width: 38px;
-  text-align: right;
-  font-size: 13px;
-  font-weight: 650;
+.profile-phases b {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+.profile-stat-empty {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.profile-openings {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.profile-openings th {
+  padding: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.profile-openings td {
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-openings th:first-child,
+.profile-openings td:first-child {
+  text-align: left;
+  font-family: inherit;
+}
+
+.profile-openings th + th,
+.profile-openings td + td {
+  width: 5.5em;
+}
+
+.profile-openings td small {
+  color: var(--muted);
+}
+
+@media (max-width: 1000px) {
+  .profile {
+    padding: 16px 16px calc(var(--tabbar-h) + 24px);
+    gap: 14px;
+  }
+
+  .profile-card {
+    padding: 18px 16px 0;
+  }
+
+  .profile-who {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .profile-edit {
+    order: 1;
+    width: 100%;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    font-size: 26px;
+  }
+
+  .profile-name h1 {
+    font-size: 21px;
+  }
+
+  .profile-tabs {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .profile-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .profile-games-where {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .profile-games-where button {
+    padding: 6px 4px;
+  }
+
+  .profile-cols,
+  .profile-stat-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .profile-side,
+  .profile-main {
+    gap: 14px;
+  }
+
+  .profile-results-nums,
+  .profile-phases {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rating-card-now b {
+    font-size: 26px;
+  }
 }
 
 /* ═══════════════ Brand type: Syne headings and wordmark, DM Sans text, DM Mono numbers ═══════════════ */
@@ -9804,7 +10300,14 @@ strong.settings-value {
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   box-shadow: var(--shadow-pop);
-  animation: pop-in 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+  /* A fade only: scaled in, its icons are drawn a touch off and jump as it lands. */
+  animation: menu-in 0.14s ease-out;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .account-menu.up {
