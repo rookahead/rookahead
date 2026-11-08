@@ -49,6 +49,16 @@ const PERF_TYPES = 'ultraBullet,bullet,blitz,rapid,classical,correspondence'
 /** Games that never really started. */
 const UNPLAYED = new Set(['created', 'started', 'aborted', 'noStart'])
 
+/**
+ * A Lichess game link written one way, "https://lichess.org/PndlSDZg", as the games list writes it: a game's PGN
+ * may say "https://lichess.org/game/PndlSDZg" (newer games) or add a side or a player's longer id. Anything else
+ * is returned as it is.
+ */
+export function lichessGameUrl(url: string): string {
+  const m = /^https:\/\/lichess\.org\/(?:game\/)?([A-Za-z0-9]{8})(?:[A-Za-z0-9]{4})?(?:\/(?:white|black))?\/?$/.exec(url)
+  return m ? `https://lichess.org/${m[1]}` : url
+}
+
 /** True only for lichess.org itself (or a subdomain), not URLs that merely mention it. */
 export function isLichessUrl(url: string): boolean {
   try {

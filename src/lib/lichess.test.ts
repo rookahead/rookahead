@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isLichessUrl, outcomeFor, parseGame, type ApiGame } from './lichess'
+import { isLichessUrl, lichessGameUrl, outcomeFor, parseGame, type ApiGame } from './lichess'
 
 const api = (over: Partial<ApiGame> = {}): ApiGame => ({
   id: 'PndlSDZg',
@@ -57,6 +57,20 @@ describe('outcomeFor', () => {
     expect(outcomeFor(game, 'Thibault')).toBe('loss')
     expect(outcomeFor(game, 'pehachzed')).toBe('win')
     expect(outcomeFor({ ...game, winner: undefined }, 'thibault')).toBe('draw')
+  })
+})
+
+describe('lichessGameUrl', () => {
+  it('writes a game link one way, as the games list does', () => {
+    expect(lichessGameUrl('https://lichess.org/game/PndlSDZg')).toBe('https://lichess.org/PndlSDZg')
+    expect(lichessGameUrl('https://lichess.org/PndlSDZg')).toBe('https://lichess.org/PndlSDZg')
+    expect(lichessGameUrl('https://lichess.org/PndlSDZg/black')).toBe('https://lichess.org/PndlSDZg')
+    expect(lichessGameUrl('https://lichess.org/PndlSDZgAbCd')).toBe('https://lichess.org/PndlSDZg')
+  })
+
+  it('leaves links that are not games as they are', () => {
+    expect(lichessGameUrl('https://lichess.org/training/abc12')).toBe('https://lichess.org/training/abc12')
+    expect(lichessGameUrl('not a url')).toBe('not a url')
   })
 })
 

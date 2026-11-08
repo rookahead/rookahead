@@ -49,6 +49,15 @@ describe('review cache', () => {
     expect(Object.keys(loadReviews(s))).toEqual(['k'])
   })
 
+  it('finds Lichess reviews saved under the long link, keeping the newer of two', () => {
+    const s = memoryStorage()
+    s.setItem(
+      'rookahead.reviews.v1',
+      JSON.stringify({ 'https://lichess.org/game/AbCd1234': entry(5), 'https://lichess.org/AbCd1234': entry(3), 'https://lichess.org/game/ZzZz9999': entry(4) }),
+    )
+    expect(loadReviews(s)).toEqual({ 'https://lichess.org/AbCd1234': entry(5), 'https://lichess.org/ZzZz9999': entry(4) })
+  })
+
   it('never throws when storage does', () => {
     const broken = { getItem: () => { throw new Error('no') }, setItem: () => { throw new Error('no') } } as unknown as Storage
     expect(loadReviews(broken)).toEqual({})
@@ -65,6 +74,10 @@ describe('gameKey', () => {
 
   it('uses the Lichess game link', () => {
     expect(gameKey({ Site: 'https://lichess.org/PndlSDZg' }, line)).toBe('https://lichess.org/PndlSDZg')
+  })
+
+  it('keys Lichess games the same whichever way the link is written', () => {
+    expect(gameKey({ Site: 'https://lichess.org/game/PndlSDZg' }, line)).toBe('https://lichess.org/PndlSDZg')
   })
 
   it('hashes the moves otherwise, the same for the same moves', () => {

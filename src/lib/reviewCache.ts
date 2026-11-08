@@ -2,7 +2,7 @@
 // instantly. Each entry holds the review as a share-link token (~0.5 KB).
 import type { Color } from './evaluation'
 import { isChesscomUrl } from './chesscom'
-import { isLichessUrl } from './lichess'
+import { isLichessUrl, lichessGameUrl } from './lichess'
 import type { ReviewLines } from './regrade'
 import { markChanged, STORE_KEYS } from './syncBus'
 import type { MoveNode, PgnHeaders } from './tree'
@@ -32,7 +32,7 @@ const defaultStorage = (): Storage | undefined => (typeof localStorage === 'unde
 /** Chess.com and Lichess games are keyed by their URL; anything else by a hash of its moves. */
 export function gameKey(headers: PgnHeaders, line: MoveNode[]): string {
   if (headers.Link && isChesscomUrl(headers.Link)) return headers.Link
-  if (headers.Site && isLichessUrl(headers.Site)) return headers.Site
+  if (headers.Site && isLichessUrl(headers.Site)) return lichessGameUrl(headers.Site)
   let h = 0x811c9dc5 // FNV-1a
   for (const ch of line[0].fen + ' ' + line.slice(1).map((n) => n.uci).join(' ')) {
     h ^= ch.charCodeAt(0)
@@ -44,7 +44,14 @@ export function gameKey(headers: PgnHeaders, line: MoveNode[]): string {
 export function loadReviews(storage = defaultStorage()): Record<string, CachedReview> {
   try {
     const parsed: unknown = JSON.parse(storage?.getItem(KEY) ?? '{}')
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, CachedReview>) : {}
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    // Reviews of newer Lichess games were saved under their long link: file them under the one the games list uses.
+    const reviews: Record<string, CachedReview> = {}
+    for (const [key, entry] of Object.entries(parsed as Record<string, CachedReview>)) {
+      const k = lichessGameUrl(key)
+      if (!reviews[k] || entry.at > reviews[k].at) reviews[k] = entry
+    }
+    return reviews
   } catch {
     return {}
   }
