@@ -1,4 +1,5 @@
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js'
+import type { Color } from './evaluation'
 import { formatClock } from './pgn'
 
 // The game is a tree: every node is a position, `children[0]` continues the
@@ -244,6 +245,17 @@ export function treeFromPgn(pgn: string): ImportedGame {
     parentId = next.nodeId
   })
   return { tree, headers, pgn }
+}
+
+/** The side a pasted game's player tags name, when one is a username we know. */
+export function guessSide(pgn: string, users: (string | undefined)[]): Color | null {
+  const known = users.filter(Boolean).map((u) => u!.toLowerCase())
+  const tag = (name: string) => new RegExp(`\\[${name}\\s+"([^"]*)"\\]`).exec(pgn)?.[1].toLowerCase()
+  const white = tag('White')
+  const black = tag('Black')
+  if (white && known.includes(white)) return 'white'
+  if (black && known.includes(black)) return 'black'
+  return null
 }
 
 /** Builds a PGN of the main line, for saving/restoring the session. */

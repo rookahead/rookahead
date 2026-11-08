@@ -4,7 +4,7 @@ import type { Color } from '../lib/evaluation'
 import type { ExplainInput } from '../lib/explain'
 
 /** The verdict appears immediately; the detailed commentary arrives without blocking a frame. */
-export function useCoachLine(input: ExplainInput | null, you: Color, opening?: string): string | null {
+export function useCoachLine(input: ExplainInput | null, you: Color | null, opening?: string): string | null {
   const client = useRef<CoachClient | null>(null)
   const [result, setResult] = useState<{ key: string; text: string | null } | null>(null)
   // Evals can be republished as fresh objects. Only changed commentary inputs warrant another job.

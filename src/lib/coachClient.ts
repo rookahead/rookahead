@@ -3,7 +3,8 @@ import type { ExplainInput } from './explain'
 
 export interface CoachRequest {
   input: ExplainInput
-  you: Color
+  /** The player's side; null for a game they watched. */
+  you: Color | null
   opening?: string
 }
 

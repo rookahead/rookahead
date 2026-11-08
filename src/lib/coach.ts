@@ -8,6 +8,7 @@ import { uciToMove } from './tree'
 // (never a score, and no move numbers: the board shows the move). It talks to the player: their moves
 // are "you", the other side's "your opponent". It praises a good move, says so when a move is a mistake,
 // names the better one in words, and turns the opponent's mistake into what the player can take.
+// For a game the player only watched (a famous game, a friend's), it names the sides instead.
 
 type Cls = ExplainInput['cls']
 
@@ -27,6 +28,15 @@ const OPEN_THEIRS: Partial<Record<Cls, string[]>> = {
   mistake: ['Your opponent made a mistake.'],
   blunder: ['Your opponent blundered!'],
   miss: ['Your opponent let you off the hook.'],
+}
+/** The same, for a game the player watched: by the side's name. */
+const OPEN_SIDE: Partial<Record<Cls, ((side: string) => string)[]>> = {
+  brilliant: [(s) => `Brilliant from ${s}!`, (s) => `What a shot by ${s}!`],
+  great: [(s) => `${s} finds the only move.`],
+  inaccuracy: [(s) => `A small slip by ${s}.`],
+  mistake: [(s) => `${s} makes a mistake.`, (s) => `A mistake by ${s}.`],
+  blunder: [(s) => `${s} blunders!`, (s) => `A blunder by ${s}.`],
+  miss: [(s) => `${s} misses the chance.`],
 }
 const PRAISE: Partial<Record<Cls, string[]>> = {
   best: ['Very nice.', 'Solid.', 'Nice.', 'Good stuff.'],
@@ -82,6 +92,21 @@ export function moveWords(fen: string, uci: string, previous?: string): string {
 /** "22.Qf5+ forces …g6" → "Qf5+ forces g6": no move numbers, which only beginners' eyes trip on. */
 const plain = (s: string) => s.replace(/\b\d+(\.|…)(?=[KQRBNOa-h])/g, '').replace(/…(?=[KQRBNOa-h])/g, '')
 
+/**
+ * Who the line talks to. `mine`: the player made the move. `watching`: the player was neither side, so
+ * the sides go by name; `side` made the move and `other` replies.
+ */
+interface Voice {
+  mine: boolean
+  watching: boolean
+  side: string
+  other: string
+}
+
+/** Explain says "your" to whoever moved: the player's own, the opponent's ("their"), or a side's. */
+const owner = (v: Voice, text: string) =>
+  v.mine ? text : v.watching ? text.replace(/\b[Yy]our\b/g, `${v.side}’s`) : text.replace(/\byour\b/g, 'their')
+
 /** Clearly lost after the move (by three pawns or more, or getting mated): praise would ring false. */
 function behind(input: ExplainInput): boolean {
   const s = input.reply.score
@@ -90,37 +115,46 @@ function behind(input: ExplainInput): boolean {
 }
 
 /**
- * The coach line for a reviewed move, talking to the player who has `you`'s pieces. `opening` is the
- * named line the move reaches, if it reaches one ("Caro-Kann Defense: Advance Variation").
+ * The coach line for a reviewed move, talking to the player who has `you`'s pieces, or (`you` null) to
+ * someone who watched the game. `opening` is the named line the move reaches, if it reaches one
+ * ("Caro-Kann Defense: Advance Variation").
  */
-export function coachLine(input: ExplainInput, you: Color, opening?: string): string | null {
+export function coachLine(input: ExplainInput, you: Color | null, opening?: string): string | null {
   const facts = explainMove(input)?.coach
   if (!facts) return null
-  const mine = (input.fenBefore.split(' ')[1] === 'w' ? 'white' : 'black') === you
-  const ply = (Number(input.fenBefore.split(' ')[5]) || 1) * 2 + (input.fenBefore.split(' ')[1] === 'b' ? 1 : 0)
-  const pick = (list?: string[]) => (list?.length ? list[ply % list.length] : '')
+  const white = input.fenBefore.split(' ')[1] === 'w'
+  const v: Voice = { mine: you === (white ? 'white' : 'black'), watching: you === null, side: white ? 'White' : 'Black', other: white ? 'Black' : 'White' }
+  const ply = (Number(input.fenBefore.split(' ')[5]) || 1) * 2 + (white ? 0 : 1)
+  const pick = <T,>(list?: T[]): T | '' => (list?.length ? list[ply % list.length] : '')
+  const opener = (cls: Cls) => {
+    const f = v.watching ? pick(OPEN_SIDE[cls]) : null
+    return f ? f(v.side) : v.watching ? '' : pick((v.mine ? OPEN_MINE : OPEN_THEIRS)[cls])
+  }
   const say = (...parts: (string | undefined | null | false)[]) => parts.filter(Boolean).join(' ')
 
   if (WRONG.includes(input.cls)) {
-    const line = wrongLine(facts, input, mine, pick)
+    const line = wrongLine(facts, input, v, pick, opener)
     return line && plain(line)
   }
   // "Classic" is said once a game, on the very first move, when it's one of the well-known ones.
   if (input.fenBefore.startsWith(START) && CLASSIC.includes(input.san)) {
     const centre = input.san === 'e4' || input.san === 'd4' ? ', straight for the centre' : ''
-    return mine ? `A classic ${input.san}${centre}.` : `Your opponent opens with a classic ${input.san}${centre}.`
+    return v.mine ? `A classic ${input.san}${centre}.` : `${v.watching ? 'White' : 'Your opponent'} opens with a classic ${input.san}${centre}.`
   }
-  const line = goodLine(facts, input, mine, pick, say)
+  const line = goodLine(facts, input, v, pick, opener, say)
   // A book move that reaches a named line says which.
   return plain(opening && input.cls === 'book' ? say(line, `This is the ${opening}.`) : (line ?? '')) || null
 }
 
-function wrongLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (l?: string[]) => string): string | null {
+type Pick = <T>(list?: T[]) => T | ''
+
+function wrongLine(facts: CoachFacts, input: ExplainInput, v: Voice, pick: Pick, open: (cls: Cls) => string): string | null {
   const { own, allows, chance, better, shot, mate, gives, mates } = facts
+  const { mine, watching } = v
   const cls = input.cls
   const opener = mate
-    ? mine ? 'You had mate!' : 'Your opponent missed mate!'
-    : shot ? (mine ? 'You had a winning shot!' : 'Your opponent missed a winning shot!') : pick((mine ? OPEN_MINE : OPEN_THEIRS)[cls])
+    ? mine ? 'You had mate!' : watching ? `${v.side} missed mate!` : 'Your opponent missed mate!'
+    : shot ? (mine ? 'You had a winning shot!' : watching ? `${v.side} missed a winning shot!` : 'Your opponent missed a winning shot!') : open(cls)
   // The better move in words: "Your better option was to take back the pawn, which…"
   const point = better?.point
   const words = better && moveWords(input.fenBefore, better.uci, input.previous)
@@ -128,33 +162,35 @@ function wrongLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: 
   // no "which takes back", "which wins the a4 pawn", "which develops the knight" after it.
   const repeats = !point || /^(takes back|develops)/.test(point) || (point.startsWith('wins') && words?.startsWith('take') && point.includes(better!.uci.slice(2, 4)))
   const why = repeats ? '' : point.startsWith('then ') ? `: ${point.slice(5)}` : `, which ${point}`
-  const betterText = words ? `${mine ? 'Your' : 'Their'} better option was to ${words}${why}.` : null
+  const betterText = words ? `${mine ? 'Your' : watching ? `${v.side}’s` : 'Their'} better option was to ${words}${why}.` : null
   // Their mistake is the player's chance, told as theirs to take: "You can win the knight on d5 now."
   // And how, when it's a tactic worth naming: "…now: Qxc3+ forks their king and rook."
   const how = allows?.match(/^(\S+) (forks|skewers|pins) ([^,.]+)/)
-  const yours = !mine && (mates || gives) ? (mates ? 'You have mate now!' : `You can win ${gives} now${how ? `: ${how[1]} ${how[2]} ${how[3].replace(/\byour\b/g, 'their')}` : ''}.`) : null
+  const taker = watching ? v.other : 'You'
+  const yours = !mine && (mates || gives) ? (mates ? `${taker} ${watching ? 'has' : 'have'} mate now!` : `${taker} can win ${gives} now${how ? `: ${how[1]} ${how[2]} ${owner(v, how[3])}` : ''}.`) : null
   const theirs = mine && !own && (mates || gives) ? (mates ? 'That allows mate.' : `That hands them ${gives}.`) : null
-  if (yours) return [opener, own?.replace(/\byour\b/g, 'their'), yours, pick(CHANCE_THEIRS[cls])].filter(Boolean).join(' ')
+  if (yours) return [opener, own && owner(v, own), yours, !watching && pick(CHANCE_THEIRS[cls])].filter(Boolean).join(' ')
   // What was missed, said as missed (unless the opener already says it): "They missed dxe5, which wins the e5 pawn."
-  const missed = chance && !shot && !mate ? missedWords(chance, mine) : chance
+  const missed = chance && !shot && !mate ? missedWords(chance, mine ? 'You' : watching && !opener ? v.side : 'They') : chance
   // At most two facts after the opener: what was there (or what it allows), and what the move did.
   const parts = missed ? [missed, own] : own ? [own, allows ? `Now ${allows}` : betterText] : [theirs ?? (allows ? `Now ${allows}` : null), betterText]
   // Explain says "your" to whoever moved; on the opponent's move, those pieces are theirs.
-  const body = parts.filter((x): x is string => Boolean(x)).map((x) => (mine ? x : x.replace(/\byour\b/g, 'their')))
+  const body = parts.filter((x): x is string => Boolean(x)).map((x) => owner(v, x))
   return body.length ? [opener, ...body].filter(Boolean).join(' ') : null
 }
 
 /** "2.dxe5 wins the e5 pawn." → "You missed 2.dxe5, which wins the e5 pawn." */
-function missedWords(chance: string, mine: boolean): string {
+function missedWords(chance: string, who: string): string {
   const m = chance.match(/^(\S+?)(,)? (.*)$/)
   if (!m) return chance
   const [, move, comma, rest] = m
-  const who = mine ? 'You missed' : 'They missed'
+  who = `${who} missed`
   return comma ? `${who} ${move}, and ${rest.replace(/^then /, '')}` : `${who} ${move}, which ${rest}`
 }
 
-function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (l?: string[]) => string, say: (...p: (string | undefined | null | false)[]) => string): string | null {
+function goodLine(facts: CoachFacts, input: ExplainInput, v: Voice, pick: Pick, open: (cls: Cls) => string, say: (...p: (string | undefined | null | false)[]) => string): string | null {
   const { idea, also } = facts
+  const { mine, watching } = v
   if (!idea) return null
   if (idea === 'Checkmate.') return mine ? 'Checkmate! Well played.' : 'Checkmate.'
   // Lost anyway: no "Nice." on top of "nothing saves the king".
@@ -162,6 +198,7 @@ function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (
   // "7.Bxf7+ gives up the bishop…" is told as what you do: "You give up the bishop…".
   // The first sentence is the idea; what follows in Explain (where it leaves things) isn't for the coach.
   let text = idea.split('. ')[0].replace(/\.$/, '').replace(/^\S*\d\S* (?=[a-z]+s\b)/, '').replace(/^[a-z]/, (c) => c.toUpperCase())
+  if (watching) text = owner(v, text)
   // A capture is often more than a capture: "takes back the pawn and develops the knight".
   if (/^Takes (back )?the [^,:]+$/.test(text) && !also) {
     const kind = (t: string) => t.split(' ')[0]
@@ -169,13 +206,14 @@ function goodLine(facts: CoachFacts, input: ExplainInput, mine: boolean, pick: (
     if (more) text += ` and ${clause(more.text)}`
   }
   const verb = startsWithVerb(text)
-  const opener = pick((mine ? OPEN_MINE : OPEN_THEIRS)[input.cls])
+  const opener = open(input.cls)
   // After "Your opponent found the only move.", it's "They get out of check", not "Your opponent" twice.
-  const them = opener ? 'They' : 'Your opponent'
+  const them = opener ? 'They' : watching ? v.side : 'Your opponent'
   if (verb) text = mine || opener ? `${mine ? 'You' : them} ${yourVerb(lower(text)).replace(/ and (\w+?)(ies|es|s)\b/, (m) => ` and ${yourVerb(m.slice(5))}`)}` : `${them} ${lower(text)}`
   // A quip only after a plain move of theirs: not after "…but Nxg4 still wins the bishop".
   const plainMove = !also && !/\b(but|wins|mate)\b/.test(text) && input.cls !== 'forced'
-  const praise = mine && !opener && !lost ? pick(PRAISE[input.cls]) : !mine && !opener && plainMove ? pick(QUIP_THEIRS) : ''
+  // Watching, a good move is praised whoever made it; the quips talk to a player.
+  const praise = (mine || watching) && !opener && !lost ? pick(PRAISE[input.cls]) : !mine && !watching && !opener && plainMove ? pick(QUIP_THEIRS) : ''
   return say(opener, `${text}.`, also, praise)
 }
 
@@ -186,8 +224,10 @@ export type RookMood = 'neutral' | 'pleased' | 'proud' | 'ouch' | 'shocked' | 't
  * How the coach reacts to a move, as the player's coach: proud of their brilliant or clutch move,
  * pleased with a good one, wincing at their mistake, thinking over a chance they missed, and wide-eyed
  * when the opponent blunders (or finds something brilliant). The opponent's ordinary moves get no face.
+ * Watching a game (`mine` null), it's on no one's side: wide-eyed at the big moments, nothing else.
  */
-export function coachMood(cls: Cls, mine: boolean, mates = false): RookMood {
+export function coachMood(cls: Cls, mine: boolean | null, mates = false): RookMood {
+  if (mine === null) return mates || ['brilliant', 'great', 'mistake', 'blunder', 'miss'].includes(cls) ? 'shocked' : 'neutral'
   if (mates) return mine ? 'proud' : 'ouch'
   if (mine) {
     if (cls === 'brilliant' || cls === 'great') return 'proud'
@@ -202,12 +242,12 @@ export function coachMood(cls: Cls, mine: boolean, mates = false): RookMood {
 
 /**
  * The coach's word on the whole game, for the top of the summary: one line, by the result and how it
- * ended, said to the player (`you`). Its face goes with it.
+ * ended, said to the player (`you`), or to someone who watched it (null). Its face goes with it.
  */
 export function gameQuip(
   result: string | undefined,
   termination: string | undefined,
-  you: Color,
+  you: Color | null,
   moments: GameMoments = {},
 ): { line: string; mood: RookMood } {
   const told = gameLine(result, termination, you)
@@ -216,23 +256,32 @@ export function gameQuip(
   const more = legendary
     ? `And ${legendary} was legendary!`
     : turning
-      ? turning.mine
-        ? `It slipped at ${turning.san}.`
-        : `Their ${turning.san} was the turning point.`
+      ? you === null
+        ? `${turning.san} was the turning point.`
+        : turning.mine
+          ? `It slipped at ${turning.san}.`
+          : `Their ${turning.san} was the turning point.`
       : ''
   return { line: more ? `${told.line} ${more}` : told.line, mood: told.mood }
 }
 
 /** The game's big moments, for the coach's word on it (SAN, no move numbers). */
 export interface GameMoments {
-  /** The player's own legendary move. */
+  /** The player's own legendary move (watching, either side's). */
   legendary?: string
   /** The costliest real error, and whose it was. */
   turning?: { san: string; mine: boolean }
 }
 
-function gameLine(result: string | undefined, termination: string | undefined, you: Color): { line: string; mood: RookMood } {
+function gameLine(result: string | undefined, termination: string | undefined, you: Color | null): { line: string; mood: RookMood } {
   const how = (termination ?? '').toLowerCase()
+  if (you === null && (result === '1-0' || result === '0-1')) {
+    const [winner, loser] = result === '1-0' ? ['White', 'Black'] : ['Black', 'White']
+    if (how.includes('checkmate')) return { line: `${winner} wins by checkmate. Let’s see how.`, mood: 'pleased' }
+    if (how.includes('resign')) return { line: `${loser} resigned. Let’s see why.`, mood: 'pleased' }
+    if (how.includes('time')) return { line: `${winner} wins on time. Let’s see how it went.`, mood: 'pleased' }
+    return { line: `${winner} wins. Let’s see how.`, mood: 'pleased' }
+  }
   const won = result === (you === 'white' ? '1-0' : '0-1')
   const lost = result === (you === 'white' ? '0-1' : '1-0')
   if (won) {
