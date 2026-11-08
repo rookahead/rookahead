@@ -456,6 +456,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   }, [sessionPgn, tree, orientation, watching, node, line, review.evals, sharedClasses, flushSession])
 
   // Remember each finished review, so the home page can show its accuracy and reopen it instantly.
+  // Not a game the player only watched: its moves aren't theirs to drill as mistakes.
   const reviewRan = useRef(false)
   useEffect(() => {
     if (review.status === 'running' && !reviewRan.current) {
@@ -465,9 +466,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
     if (review.status !== 'done' || !reviewRan.current || !report || line.length < 2) return
     reviewRan.current = false
     logUse('review_done')
+    if (watching) return
     const key = gameKey(headers, line)
     void finishedReview(line, headers, orientation, review.evals, report, settings.reviewDepth).then((entry) => saveReview(key, entry))
-  }, [review.status, review.evals, report, line, headers, orientation, settings.reviewDepth])
+  }, [review.status, review.evals, report, line, headers, orientation, watching, settings.reviewDepth])
 
   const runReview = useCallback(() => {
     setSharedClasses(null)
