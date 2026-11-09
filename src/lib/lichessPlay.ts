@@ -257,6 +257,55 @@ export function endText(state: OnlineState, you: Side): string {
   return `${won ? 'You won' : 'You lost'} ${how[s] ?? ''}`.trim()
 }
 
+/** What an opponent's Lichess account says about them: enough to spot a brand-new (or flagged) account. */
+export interface PlayerFacts {
+  name: string
+  title: string | null
+  url: string
+  createdAt: number
+  /** Rated games, all speeds. */
+  rated: number
+  /** Their rating at this game's speed, and whether Lichess still calls it provisional ("?"). */
+  rating: number | null
+  provisional: boolean
+  speedGames: number
+  /** Two-letter country code, if they set one. */
+  country: string | null
+  /** Lichess has marked the account for breaking its rules. */
+  marked: boolean
+}
+
+/** Rapid or classical, from the game's clock (Lichess's own split: 25 minutes estimated, 40 moves). */
+export const speedOf = (initialMs: number, incrementMs: number): 'rapid' | 'classical' => (initialMs / 1000 + (40 * incrementMs) / 1000 >= 1500 ? 'classical' : 'rapid')
+
+/** A player's public Lichess account (no sign-in needed); null when it can't be read. */
+export async function playerFacts(name: string, speed: 'rapid' | 'classical'): Promise<PlayerFacts | null> {
+  try {
+    const res = await fetch(`${API}/user/${encodeURIComponent(name)}`)
+    if (!res.ok) return null
+    const u = (await res.json()) as Record<string, any>
+    const perf = u.perfs?.[speed] ?? {}
+    const flag = typeof u.profile?.flag === 'string' && /^[A-Z]{2}$/.test(u.profile.flag) ? u.profile.flag : null
+    return {
+      name: u.username ?? name,
+      title: typeof u.title === 'string' ? u.title : null,
+      url: typeof u.url === 'string' ? u.url : `https://lichess.org/@/${name}`,
+      createdAt: typeof u.createdAt === 'number' ? u.createdAt : 0,
+      rated: typeof u.count?.rated === 'number' ? u.count.rated : 0,
+      rating: typeof perf.rating === 'number' ? perf.rating : null,
+      provisional: perf.prov === true,
+      speedGames: typeof perf.games === 'number' ? perf.games : 0,
+      country: flag,
+      marked: u.tosViolation === true,
+    }
+  } catch {
+    return null
+  }
+}
+
+/** An account this young is worth a look (many fair-play bans hit accounts in their first weeks). */
+export const NEW_ACCOUNT_DAYS = 30
+
 /** The game you're playing, kept so a reload goes back to it. */
 const LIVE_KEY = 'rookahead.online'
 

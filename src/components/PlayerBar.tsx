@@ -15,6 +15,10 @@ interface Props {
   clock?: React.ReactNode
   /** A picture for the avatar (your photo, the computer's mark) instead of the name's initial. */
   avatar?: React.ReactNode
+  /** The name opens something about the player (an online opponent's account). */
+  onName?: () => void
+  /** A short flag after the rating, e.g. "New account". */
+  note?: React.ReactNode
 }
 
 function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
@@ -40,7 +44,7 @@ function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
   )
 }
 
-export function PlayerBar({ color, name, rating, result, captured, advantage, clock, avatar }: Props) {
+export function PlayerBar({ color, name, rating, result, captured, advantage, clock, avatar, onName, note }: Props) {
   const opponent: Color = color === 'white' ? 'black' : 'white'
   return (
     <div className="player-bar">
@@ -49,8 +53,15 @@ export function PlayerBar({ color, name, rating, result, captured, advantage, cl
       </div>
       <div className="player-info">
         <div className="player-name">
-          <span className="player-username">{name}</span>
+          {onName ? (
+            <button className="player-username player-name-btn" onClick={onName}>
+              {name}
+            </button>
+          ) : (
+            <span className="player-username">{name}</span>
+          )}
           {rating && <span className="player-rating">{rating}</span>}
+          {note}
           {result && <span className="player-result">{result}</span>}
         </div>
         <div className="player-material">

@@ -2,6 +2,7 @@ import { Chess, DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Link } from '../../components/Link'
 import { MoveList } from '../../components/MoveList'
 import { MoveStrip } from '../../components/MoveStrip'
 import { FlipIcon, NavIcon, SoundIcon } from '../../components/NavIcons'
@@ -21,11 +22,15 @@ import {
   followGame,
   gamePgn,
   LIVE_STATUSES,
+  NEW_ACCOUNT_DAYS,
+  playerFacts,
   resign,
   saveLiveOnline,
   sendMove,
   sideToMove,
+  speedOf,
   type OnlineGame as Game,
+  type PlayerFacts,
   type OnlineState,
   type Side,
   type StartedGame,
@@ -202,6 +207,29 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
 
   useMoveSounds(tree, shown, settings.soundVolume, !live && Boolean(state))
 
+  // Both players' Lichess accounts, to spot a brand-new (or flagged) opponent: tap a name for the card.
+  const [factsBy, setFactsBy] = useState<Partial<Record<Side, PlayerFacts>>>({})
+  const [card, setCard] = useState<Side | null>(null)
+  const whiteName = game?.white.name
+  const blackName = game?.black.name
+  const speed = game ? speedOf(game.initial, game.increment) : null
+  useEffect(() => {
+    if (!speed) return
+    let alive = true
+    for (const [side, name] of [['white', whiteName], ['black', blackName]] as const) {
+      if (name) void playerFacts(name, speed).then((f) => alive && f && setFactsBy((was) => ({ ...was, [side]: f })))
+    }
+    return () => {
+      alive = false
+    }
+  }, [whiteName, blackName, speed])
+  const daysOld = (f?: PlayerFacts) => (f?.createdAt ? Math.floor((now - f.createdAt) / 86400000) : null)
+  const theirs = factsBy[other(you)]
+  const theirAge = daysOld(theirs)
+  const note = theirs?.marked ? <span className="player-note bad">Marked by Lichess</span> : theirAge != null && theirAge < NEW_ACCOUNT_DAYS ? <span className="player-note warn">New account</span> : null
+  const cardFor = (c: Side) =>
+    card === c && game && <PlayerCard facts={factsBy[c] ?? null} name={game[c].name} ageDays={daysOld(factsBy[c])} yours={c === you} onClose={() => setCard(null)} />
+
   const { account, username } = useAccount()
   const material = materialState(shown.fen)
   const clocks = state ? clockNow(state, now) : null
@@ -214,8 +242,10 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
       <PlayerBar
         color={c}
         name={p ? `${p.title ? `${p.title} ` : ''}${p.name}` : mine ? (username ?? 'You') : 'Opponent'}
-        rating={p?.rating != null ? String(p.rating) : undefined}
+        rating={p?.rating != null ? `${p.rating}${factsBy[c]?.provisional ? '?' : ''}` : undefined}
         avatar={mine && username ? <AvatarFace account={account} /> : undefined}
+        onName={p ? () => setCard((open) => (open === c ? null : c)) : undefined}
+        note={mine ? undefined : note}
         captured={material.captured[c]}
         advantage={material.advantage[c]}
         clock={
@@ -282,7 +312,10 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
         </ConfirmDialog>
       )}
       <section className="play-board">
-        {bar(other(orientation))}
+        <div className="online-bar">
+          {bar(other(orientation))}
+          {cardFor(other(orientation))}
+        </div>
         <Board
           fen={shown.fen}
           orientation={orientation}
@@ -296,7 +329,10 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
           autoQueen={settings.autoQueen}
           ends={ends}
         />
-        {bar(orientation)}
+        <div className="online-bar">
+          {bar(orientation)}
+          {cardFor(orientation)}
+        </div>
       </section>
 
       <aside className="panel play-panel">
@@ -405,5 +441,80 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
         </div>
       </aside>
     </main>
+  )
+}
+
+const ago = (days: number) => (days < 1 ? 'today' : days === 1 ? 'yesterday' : days < 60 ? `${days} days ago` : days < 730 ? `${Math.round(days / 30)} months ago` : `${Math.round(days / 365)} years ago`)
+// The country by name: Windows draws flag emoji as two letters.
+const countryOf = (code: string) => {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+/**
+ * A player at a glance, from their Lichess account: how old it is, how much they've played, any mark. Your
+ * opponent's warns about a young account; yours adds the way to your profile here.
+ */
+function PlayerCard({ facts, name, ageDays, yours, onClose }: { facts: PlayerFacts | null; name: string; ageDays: number | null; yours: boolean; onClose: () => void }) {
+  useEffect(() => {
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as HTMLElement).closest('.opponent-card, .player-name-btn')) onClose()
+    }
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', close)
+    return () => {
+      document.removeEventListener('pointerdown', close)
+      document.removeEventListener('keydown', close)
+    }
+  }, [onClose])
+  // Your own account gets no warnings.
+  const isNew = !yours && ageDays != null && ageDays < NEW_ACCOUNT_DAYS
+  const watch = (bad: boolean) => (!yours && bad ? 'warn' : '')
+  return (
+    <div className="opponent-card" role="dialog" aria-label={`About ${name}`}>
+      <div className="opponent-head">
+        <strong>
+          {facts?.title && <span className="opponent-title">{facts.title}</span>}
+          {facts?.name ?? name}
+        </strong>
+        {facts?.country && <span className="opponent-country">{countryOf(facts.country)}</span>}
+      </div>
+      {!facts ? (
+        <p className="muted">Reading their Lichess account…</p>
+      ) : (
+        <dl className="opponent-facts">
+          <div className={isNew ? 'warn' : ''}>
+            <dt>Joined</dt>
+            <dd>{ageDays == null ? '—' : ago(ageDays)}</dd>
+          </div>
+          <div className={watch(facts.rated < 50)}>
+            <dt>Rated games</dt>
+            <dd>{facts.rated.toLocaleString('en-US')}</dd>
+          </div>
+          <div className={watch(facts.provisional)}>
+            <dt>Rating here</dt>
+            <dd>
+              {facts.rating ?? '—'}
+              {facts.provisional ? '?' : ''} <small>{facts.speedGames} games</small>
+            </dd>
+          </div>
+        </dl>
+      )}
+      {facts?.marked && <p className="opponent-alert">Lichess has marked this account for breaking its rules.</p>}
+      {facts && !facts.marked && isNew && <p className="opponent-warn">A new account: most are fine, but keep an eye on it.</p>}
+      <div className="opponent-links">
+        {yours && (
+          <Link to="/profile" className="btn ghost small">
+            Your profile
+          </Link>
+        )}
+        <a className="btn ghost small" href={facts?.url ?? `https://lichess.org/@/${name}`} target="_blank" rel="noreferrer">
+          Profile on Lichess
+        </a>
+      </div>
+    </div>
   )
 }

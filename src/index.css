@@ -6784,6 +6784,141 @@ button.user-avatar.guest:hover {
   }
 }
 
+/* An online opponent's name opens what their Lichess account says about them. */
+.player-name-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 3px;
+}
+
+.player-name-btn:hover {
+  text-decoration-style: solid;
+}
+
+.player-note {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.player-note.warn {
+  background: color-mix(in srgb, var(--tone-amber) 22%, transparent);
+  color: var(--tone-amber);
+}
+
+.player-note.bad {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+.online-bar {
+  position: relative;
+}
+
+.opponent-card {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(300px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2, var(--surface));
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+
+/* Below the board, the card opens upwards. */
+.play-board > .online-bar:last-child .opponent-card {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.opponent-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.opponent-title {
+  margin-right: 5px;
+  color: var(--tone-amber);
+}
+
+.opponent-country {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.opponent-card a.btn {
+  text-decoration: none;
+}
+
+.opponent-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.opponent-facts {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opponent-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.opponent-facts dt {
+  color: var(--muted);
+}
+
+.opponent-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.opponent-facts dd small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.opponent-facts .warn dd {
+  color: var(--tone-amber);
+}
+
+.opponent-card p {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.opponent-warn {
+  color: var(--tone-amber);
+}
+
+.opponent-alert {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* A draw offered to you, or the win to claim: the answer in the tools' place. */
 .online-offer {
   display: flex;
