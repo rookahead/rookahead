@@ -258,16 +258,19 @@ function ProfileCard({ tab, games, users, onLinked }: { tab: Tab; games: number;
         <div className="profile-name">
           <h1>{name}</h1>
           <p>{signedIn ? 'Only you see this page' : 'Your games and puzzles on this device'}</p>
-          <p className="profile-linked">
-            {linked.map((s) => (
-              <span key={s} className="profile-site">
-                {SOURCE_LABEL[s]} <b>{users[s]}</b>
-              </span>
-            ))}
-            <button className="link-btn" onClick={onLinked}>
-              {linked.length ? 'Change' : 'Add your Chess.com or Lichess username'}
-            </button>
-          </p>
+          {/* With none yet, the page's Bring in your games card asks for them. */}
+          {linked.length > 0 && (
+            <p className="profile-linked">
+              {linked.map((s) => (
+                <span key={s} className="profile-site">
+                  {SOURCE_LABEL[s]} <b>{users[s]}</b>
+                </span>
+              ))}
+              <button className="link-btn" onClick={onLinked}>
+                Change
+              </button>
+            </p>
+          )}
         </div>
         {signedIn ? (
           <button className="btn ghost profile-edit" onClick={() => navigate('/settings/profile')}>
