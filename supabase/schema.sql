@@ -141,6 +141,8 @@ $$;
 
 drop trigger if exists verdict_reports_limit on public.verdict_reports;
 create trigger verdict_reports_limit before insert on public.verdict_reports for each row execute function public.verdict_reports_limit();
+-- Only the trigger runs it: not callable through the API.
+revoke execute on function public.verdict_reports_limit() from public, anon, authenticated;
 
 -- Usage log: what signed-in accounts do, so we can see who comes back. One row per event: who, what,
 -- when, and on what (app, phone or desktop). Never moves, games or anything typed. Accounts may add
@@ -183,6 +185,8 @@ $$;
 
 drop trigger if exists usage_events_limit on public.usage_events;
 create trigger usage_events_limit before insert on public.usage_events for each row execute function public.usage_events_limit();
+-- Only the trigger runs it: not callable through the API.
+revoke execute on function public.usage_events_limit() from public, anon, authenticated;
 
 -- Read-outs for the dashboard. The `stats` schema isn't served by the API, so only the dashboard sees them.
 -- Days are counted in India time.
@@ -311,3 +315,7 @@ drop trigger if exists profile_reports_limit on public.profile_reports;
 create trigger profile_reports_limit before insert on public.profile_reports for each row execute function public.profile_reports_limit();
 -- Only the trigger runs it: not callable through the API.
 revoke execute on function public.profile_reports_limit() from public, anon, authenticated;
+
+-- Supabase's own switch that turns RLS on for every new table in public (the ensure_rls event trigger):
+-- the database runs it, so it isn't callable through the API.
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
