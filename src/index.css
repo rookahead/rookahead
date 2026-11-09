@@ -9802,6 +9802,15 @@ button.profile-rating:hover {
     flex: 1;
   }
 
+  /* All games on a phone: the page's bar has the name and the count, so the card keeps only Where from. */
+  .profile-games-full .profile-games-head :is(h2, .profile-games-count) {
+    display: none;
+  }
+
+  .profile-games-full .profile-games-head:not(:has(.segmented)) {
+    display: none;
+  }
+
   .profile-avatar {
     width: 60px;
     height: 60px;

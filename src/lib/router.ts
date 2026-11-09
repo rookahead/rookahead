@@ -51,9 +51,12 @@ export function afterSignIn(back: string): string {
 
 const listeners = new Set<() => void>()
 // Analyze is Game review's page without a game: moving between them isn't a change of page.
-const pageOf = (pathname: string) => {
+// A phone shows the profile's Games tab (All games) as a page of its own, so it comes in like one.
+const pageOf = (pathname: string): string => {
   const route = routeFor(pathname)
-  return route === 'board' ? 'analysis' : route
+  if (route === 'board') return 'analysis'
+  if (route === 'games' && /games\/?$/.test(pathname) && typeof matchMedia === 'function' && matchMedia('(max-width: 1000px)').matches) return 'all-games'
+  return route
 }
 let shownPage = typeof location === 'undefined' ? 'home' : pageOf(location.pathname)
 // The path the app shows. It moves on with the redraw, not with the address: a page that re-renders between the
@@ -89,9 +92,10 @@ function notify(first?: () => void) {
   const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 1000px)').matches
   if (animate && phone && slidesByHand(shownPath, location.pathname)) flushSync(update)
   else if (animate) {
-    // On a phone, going to Analyze slides the two pages along together (index.css, :root[data-slide]).
+    // On a phone, going to Analyze slides the two pages along together (index.css, :root[data-slide]), and so
+    // does going into All games and back out, like the tabs.
     const root = document.documentElement
-    const slide = phone ? tabSlide(shownPath, location.pathname) : null
+    const slide = phone ? (tabSlide(shownPath, location.pathname) ?? (shownPage === 'all-games' ? 'forward' : from === 'all-games' ? 'back' : null)) : null
     if (slide) root.dataset.slide = slide
     void startViewTransition(() => flushSync(update), 'page-change')
       .finished.catch(() => {})

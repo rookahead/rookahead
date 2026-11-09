@@ -185,6 +185,18 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
     )
   }
 
+  const loadDialog = <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
+
+  // Phones have no room for the list under your card and ratings: All games is a page of its own, just the list.
+  if (phone && tab === 'games')
+    return (
+      <div className="home-page">
+        <PageHeader phoneOnly back="/profile" phoneTitle="Games" phoneSub={games.length ? `${games.length} games` : undefined} />
+        <main className="profile games-page profile-games-full">{body}</main>
+        {loadDialog}
+      </div>
+    )
+
   return (
     <div className="home-page">
       {/* Phones: this is the You tab, and its settings are behind the gear. */}
@@ -224,7 +236,7 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
           </div>
         </div>
       </main>
-      <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
+      {loadDialog}
     </div>
   )
 }
