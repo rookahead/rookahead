@@ -94,6 +94,12 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   useImmersive(active && phone && Boolean(game || online))
   useEffect(() => () => searching?.ctrl.abort(), [searching])
 
+  // A rematch started from the game's end: the next game takes its place.
+  const startOnline = useCallback((g: StartedGame) => {
+    saveLiveOnline(g)
+    setOnline(g)
+  }, [])
+
   const findOpponent = async (s: OnlineSetup) => {
     saveOnlineSetup(s)
     setOnlineNote(null)
@@ -165,6 +171,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
             setOnline(null)
             void findOpponent(onlineSetup)
           }}
+          onStarted={startOnline}
           onDone={() => {
             saveLiveOnline(null)
             setOnline(null)

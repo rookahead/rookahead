@@ -257,6 +257,65 @@ export function endText(state: OnlineState, you: Side): string {
   return `${won ? 'You won' : 'You lost'} ${how[s] ?? ''}`.trim()
 }
 
+/** A challenge Lichess tells you about: from your opponent asking for a rematch, say. */
+export interface IncomingChallenge {
+  id: string
+  from: string
+  /** The game it's a rematch of, if it is one. */
+  rematchOf: string | null
+}
+
+export interface EventHandlers {
+  onGameStart: (game: StartedGame) => void
+  onChallenge: (challenge: IncomingChallenge) => void
+  /** A challenge to you was withdrawn (or one of yours was declined). */
+  onChallengeGone: (id: string) => void
+}
+
+/** Follows the events reaching your account (games starting, challenges) until `signal` stops it. */
+export function watchEvents(handlers: EventHandlers, signal: AbortSignal): Promise<number> {
+  return stream(
+    `${API}/stream/event`,
+    {},
+    (line) => {
+      const started = startedFrom(line)
+      if (started) return handlers.onGameStart(started)
+      const c = line.challenge as Record<string, unknown> | undefined
+      if (!c || typeof c.id !== 'string') return
+      if (line.type === 'challenge' && c.direction === 'in') {
+        const from = (c.challenger as Record<string, unknown> | undefined)?.name
+        handlers.onChallenge({ id: c.id, from: typeof from === 'string' ? from : 'Your opponent', rematchOf: typeof c.rematchOf === 'string' ? c.rematchOf : null })
+      } else if (line.type === 'challengeCanceled' || line.type === 'challengeDeclined') handlers.onChallengeGone(c.id)
+    },
+    signal,
+  )
+}
+
+/**
+ * A rematch: a challenge to the same opponent at the same clock, colours swapped. It stays open while `signal`
+ * does (Lichess's keep-alive), and resolves with how it ended: accepted (the game's start comes on the event
+ * stream), declined, cancelled, or 'failed' when Lichess turned it down outright.
+ */
+export async function challenge(opponent: string, game: { initial: number; increment: number; rated: boolean }, color: Side, signal: AbortSignal): Promise<string> {
+  let done = 'canceled'
+  const status = await stream(
+    `${API}/challenge/${encodeURIComponent(opponent)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ 'clock.limit': String(Math.round(game.initial / 1000)), 'clock.increment': String(Math.round(game.increment / 1000)), rated: String(game.rated), color, variant: 'standard', keepAliveStream: 'true' }),
+    },
+    (line) => {
+      if (typeof line.done === 'string') done = line.done
+    },
+    signal,
+  ).catch((e: Error) => (e.name === 'AbortError' ? 200 : 0))
+  return status >= 200 && status < 300 ? done : 'failed'
+}
+
+export const acceptChallenge = (id: string) => post(`/challenge/${id}/accept`)
+export const declineChallenge = (id: string) => post(`/challenge/${id}/decline`)
+
 /** What an opponent's Lichess account says about them: enough to spot a brand-new (or flagged) account. */
 export interface PlayerFacts {
   name: string

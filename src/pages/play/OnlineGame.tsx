@@ -15,9 +15,12 @@ import { formatClockFace } from '../../lib/clocks'
 import { endMarks } from '../../lib/gameEnd'
 import {
   abort,
+  acceptChallenge,
   answerDraw,
+  challenge,
   claimVictory,
   clockNow,
+  declineChallenge,
   endText,
   followGame,
   gamePgn,
@@ -33,7 +36,9 @@ import {
   type PlayerFacts,
   type OnlineState,
   type Side,
+  type IncomingChallenge,
   type StartedGame,
+  watchEvents,
 } from '../../lib/lichessPlay'
 import { lichessNow } from '../../lib/lichessAuth'
 import { materialState } from '../../lib/material'
@@ -59,6 +64,8 @@ interface Props {
   onReview: (pgn: string, color: Side) => void
   /** Look for another game at the same time control. */
   onAgain: () => void
+  /** A new game of yours started (a rematch): play it. */
+  onStarted: (game: StartedGame) => void
   /** Back to choosing a game. */
   onDone: () => void
 }
@@ -68,7 +75,7 @@ interface Props {
  * Lichess keeps the moves and the clocks; this page follows them, sends your moves, and has no engine in it
  * (outside help is against Lichess's rules).
  */
-export function OnlineGameView({ started, settings, phone, active, gear, onToggleSound, onReview, onAgain, onDone }: Props) {
+export function OnlineGameView({ started, settings, phone, active, gear, onToggleSound, onReview, onAgain, onStarted, onDone }: Props) {
   const [game, setGame] = useState<Game | null>(null)
   const [state, setState] = useState<OnlineState | null>(null)
   const [gone, setGone] = useState<{ claimAt: number } | null>(null)
@@ -266,10 +273,41 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
   const offerFromYou = state?.drawOffer === you
   const canClaim = gone && now >= gone.claimAt
 
+  // After the game: a rematch, asked for by you (a challenge kept open until answered) or by your opponent.
+  const [rematch, setRematch] = useState<{ ctrl: AbortController } | null>(null)
+  const [incoming, setIncoming] = useState<IncomingChallenge | null>(null)
+  useEffect(() => {
+    if (!over) return
+    const ctrl = new AbortController()
+    void watchEvents(
+      {
+        onGameStart: (g) => g.id !== started.id && onStarted(g),
+        onChallenge: (c) => c.rematchOf === started.id && setIncoming(c),
+        onChallengeGone: (id) => setIncoming((c) => (c?.id === id ? null : c)),
+      },
+      ctrl.signal,
+    ).catch(() => {})
+    return () => ctrl.abort()
+  }, [over, started.id, onStarted])
+  useEffect(() => () => rematch?.ctrl.abort(), [rematch])
+  const askRematch = async () => {
+    if (!game) return
+    if (incoming) {
+      if (!(await acceptChallenge(incoming.id))) say('Couldn’t accept the rematch. Try again.')
+      return
+    }
+    const ctrl = new AbortController()
+    setRematch({ ctrl })
+    const done = await challenge(game[other(you)].name, game, other(you), ctrl.signal)
+    setRematch((r) => (r?.ctrl === ctrl ? null : r))
+    if (done === 'declined') say('Your opponent declined the rematch.')
+    else if (done === 'failed') say('Lichess didn’t send the rematch. Your opponent may have left.')
+  }
+
   const status = !state
     ? 'Connecting to Lichess…'
     : !live
-      ? endText(state, you)
+      ? (notice ?? (incoming ? `${incoming.from} wants a rematch` : rematch ? 'Rematch offered · waiting…' : endText(state, you)))
       : (notice ?? (offerFromThem ? 'Your opponent offers a draw' : gone ? (canClaim ? 'Your opponent left' : `Your opponent left · ${Math.ceil((gone.claimAt - now) / 1000)} s`) : yourTurn ? 'Your move' : pending ? 'Sending…' : 'Their move'))
 
   const review = async () => {
@@ -377,6 +415,22 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
                   {reviewing ? 'Getting the game…' : 'Review this game'}
                 </button>
               )}
+              <div className="result-more">
+                {rematch ? (
+                  <button className="btn ghost" onClick={() => rematch.ctrl.abort()}>
+                    Cancel rematch
+                  </button>
+                ) : (
+                  <button className={`btn ${incoming ? 'accent-btn' : 'ghost'}`} onClick={() => void askRematch()} disabled={!game}>
+                    {incoming ? 'Accept rematch' : 'Rematch'}
+                  </button>
+                )}
+                {incoming && !rematch && (
+                  <button className="btn ghost" onClick={() => void declineChallenge(incoming.id).then(() => setIncoming(null))}>
+                    Decline
+                  </button>
+                )}
+              </div>
               <div className="result-more">
                 <button className="btn ghost" onClick={onAgain}>
                   New opponent
