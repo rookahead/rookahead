@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { connectLichess, disconnectLichess, useLichess } from '../../lib/lichessAuth'
+import { canPlay, connectLichess, disconnectLichess, useLichess } from '../../lib/lichessAuth'
 import { cachedFor, importGames, loadImportCache, SOURCE_LABEL, type ImportSite } from '../../lib/myGames'
 import type { Settings } from '../../lib/settings'
 import { Section } from './shared'
@@ -124,14 +124,20 @@ function LichessSignIn() {
           <span>
             {link ? (
               <>
-                Connected as <b>{link.username}</b>. The opening explorer in Analysis uses it.
+                Connected as <b>{link.username}</b>.{' '}
+                {canPlay(link) ? 'Online play and the opening explorer use it.' : 'Allow playing too, for online games.'}
               </>
             ) : (
-              'Opens the opening explorer in Analysis, and online play when it comes. Your password stays with Lichess.'
+              'Opens online play and the opening explorer in Analysis. Your password stays with Lichess.'
             )}
           </span>
         </div>
         <div className="linked-actions">
+          {link && !canPlay(link) && (
+            <button className="btn primary small" disabled={busy} onClick={() => void connectLichess()}>
+              Allow playing
+            </button>
+          )}
           {link ? (
             <button className="btn ghost small" onClick={() => void disconnectLichess()}>
               Disconnect

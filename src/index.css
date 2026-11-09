@@ -6727,6 +6727,73 @@ button.user-avatar.guest:hover {
   margin-top: 12px;
 }
 
+/* Computer or a real person, at the top of the setup card. */
+.play-mode {
+  margin-bottom: 6px;
+}
+
+/* Online: the rule about speeds, the Rated switch, and the search while it runs. */
+.setup-card > p.online-note {
+  margin-top: -2px;
+  font-size: 12.5px;
+}
+
+.online-rated {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.online-searching {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  font-weight: 600;
+}
+
+.online-searching .btn {
+  margin-left: auto;
+}
+
+.online-pulse {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: online-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes online-pulse {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-pulse {
+    animation: none;
+  }
+}
+
+/* A draw offered to you, or the win to claim: the answer in the tools' place. */
+.online-offer {
+  display: flex;
+  gap: 8px;
+}
+
+.online-offer .btn {
+  flex: 1;
+}
+
 .clock-grid {
   display: flex;
   flex-direction: column;

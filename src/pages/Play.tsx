@@ -10,6 +10,7 @@ import { MoveStrip } from '../components/MoveStrip'
 import { FlipIcon, NavIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
+import { ToolIcon } from '../components/PlayToolIcon'
 import { ROOK } from '../components/RookLogo'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { ShareDialog } from '../components/ShareDialog'
@@ -29,6 +30,8 @@ import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { acceptsDraw, DRAW_AFTER_PLIES, outcomeOf, playHeaders, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
 import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type LiveGame, type PlaySetup } from '../lib/playStore'
+import { canPlay, connectLichess, useLichess } from '../lib/lichessAuth'
+import { isOnlineClock, loadLiveOnline, ONLINE_CLOCKS, saveLiveOnline, seek, type OnlineClock, type StartedGame } from '../lib/lichessPlay'
 import { onReselect } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
@@ -37,6 +40,7 @@ import { logUse } from '../lib/usage'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
 import { formatClockFace, timeSpent } from '../lib/clocks'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
+import { OnlineGameView } from './play/OnlineGame'
 
 interface Props {
   /** Play is the page showing. Leaving it after a game has ended clears the board for the next one. */
@@ -79,9 +83,30 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   const ready = status?.state === 'ready'
   const [setup, setSetup] = useState<PlaySetup>(loadSetup)
   const [game, setGame] = useState<LiveGame | null>(restoreGame)
+  // Online: the game you're playing on Lichess (kept, so a reload goes back to it), and the search for one.
+  const [mode, setMode] = useState<PlayMode>(loadMode)
+  const [onlineSetup, setOnlineSetup] = useState<OnlineSetup>(loadOnlineSetup)
+  const [online, setOnline] = useState<StartedGame | null>(loadLiveOnline)
+  const [searching, setSearching] = useState<{ since: number; ctrl: AbortController } | null>(null)
+  const [onlineNote, setOnlineNote] = useState<string | null>(null)
   // Phones play full screen: no tab bar while a game is on the board.
   const phone = useMediaQuery('(max-width: 1000px)')
-  useImmersive(active && phone && Boolean(game))
+  useImmersive(active && phone && Boolean(game || online))
+  useEffect(() => () => searching?.ctrl.abort(), [searching])
+
+  const findOpponent = async (s: OnlineSetup) => {
+    saveOnlineSetup(s)
+    setOnlineNote(null)
+    const ctrl = new AbortController()
+    setSearching({ since: Date.now(), ctrl })
+    const found = await seek(s.clock, s.rated, ctrl.signal)
+    setSearching((was) => (was?.ctrl === ctrl ? null : was))
+    if (found === 'refused') setOnlineNote('Lichess turned the search down. Check your Lichess account (a game already open there, or a new account still being checked), then try again.')
+    else if (found) {
+      saveLiveOnline(found)
+      setOnline(found)
+    } else if (!ctrl.signal.aborted) setOnlineNote('No opponent turned up. Try again, or pick another time control.')
+  }
   // Left the page after the game ended: it's saved in My recent games, so come back to a new setup.
   if (!active && game?.outcome) setGame(null)
   // Clicking Play again after the game ended does the same.
@@ -110,20 +135,42 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
     <div className="play-page">
       <PageHeader
         // Desktop has a game's actions in the panel's own heading, so the board gets the height.
-        phoneOnly={Boolean(game)}
+        phoneOnly={Boolean(game || online)}
         title="Play"
-        back={game ? '/' : undefined}
-        phoneTitle={game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
-        phoneSub={game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
+        back={game || online ? '/' : undefined}
+        phoneTitle={online ? 'Online' : game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
+        phoneSub={online ? `On Lichess · you play ${online.color}` : game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
       >
-        {phone && game && gear}
+        {phone && (game || online) && gear}
       </PageHeader>
       {boardSettings && (
         <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
           <BoardOptions settings={settings} onChange={updateSettings} preview play />
         </SettingsDialog>
       )}
-      {game ? (
+      {online ? (
+        <OnlineGameView
+          key={online.id}
+          started={online}
+          settings={settings}
+          phone={phone}
+          active={active}
+          gear={gear}
+          onToggleSound={() => updateSettings({ soundVolume: settings.soundVolume === 0 ? DEFAULT_SETTINGS.soundVolume : 0 })}
+          onReview={(pgn, color) => {
+            writeSession({ pgn, orientation: color, currentPly: 0, evals: {}, review: true })
+            onOpenAnalysis()
+          }}
+          onAgain={() => {
+            setOnline(null)
+            void findOpponent(onlineSetup)
+          }}
+          onDone={() => {
+            saveLiveOnline(null)
+            setOnline(null)
+          }}
+        />
+      ) : game ? (
         <GameView
           key={game.id}
           phone={phone}
@@ -148,7 +195,27 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
           }}
         />
       ) : (
-        <SetupView setup={setup} onChange={setSetup} onStart={() => start(setup)} gear={gear} />
+        <SetupView
+          setup={setup}
+          onChange={setSetup}
+          onStart={() => start(setup)}
+          gear={gear}
+          mode={mode}
+          onMode={(m) => {
+            saveMode(m)
+            setMode(m)
+          }}
+          online={
+            <OnlineSetupView
+              setup={onlineSetup}
+              onChange={setOnlineSetup}
+              searching={searching?.since ?? null}
+              note={onlineNote}
+              onFind={() => void findOpponent(onlineSetup)}
+              onCancel={() => searching?.ctrl.abort()}
+            />
+          }
+        />
       )}
     </div>
   )
@@ -156,71 +223,231 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
 
 const meta = (g: LiveGame) => ({ color: g.color, level: g.setup.level, clock: g.setup.clock, outcome: g.outcome, startFen: g.startFen })
 
-function SetupView({ setup, onChange, onStart, gear }: { setup: PlaySetup; onChange: (s: PlaySetup) => void; onStart: () => void; gear: ReactNode }) {
+function SetupView({
+  setup,
+  onChange,
+  onStart,
+  gear,
+  mode,
+  onMode,
+  online,
+}: {
+  setup: PlaySetup
+  onChange: (s: PlaySetup) => void
+  onStart: () => void
+  gear: ReactNode
+  mode: PlayMode
+  onMode: (m: PlayMode) => void
+  online: ReactNode
+}) {
   return (
     <main className="play-setup">
       <section className="home-card setup-card" aria-labelledby="setup-title">
-        <div className="setup-head">
-          <h2 id="setup-title">Play the computer</h2>
-          {gear}
-        </div>
-        <p className="muted">Takebacks and hints allowed. Your game is saved to My recent games when it ends.</p>
-
-        <div className="level-pick">
-          <div className="level-readout">
-            <h3 className="setup-label" id="level-label">
-              Level <strong>{setup.level}</strong>
-            </h3>
-            <span>Strength {levelInfo(setup.level).rating}</span>
-          </div>
-          <input
-            type="range"
-            className="level-slider"
-            min={1}
-            max={LEVELS.length}
-            step={1}
-            value={setup.level}
-            aria-labelledby="level-label"
-            aria-valuetext={`Level ${setup.level}, strength ${levelInfo(setup.level).rating}`}
-            style={{ '--p': (setup.level - 1) / (LEVELS.length - 1) } as CSSProperties}
-            onChange={(e) => onChange({ ...setup, level: Number(e.target.value) })}
-          />
-          <div className="level-ticks" aria-hidden>
-            {LEVELS.map((l) => (
-              <span key={l.level} className={l.level === setup.level ? 'active' : ''}>
-                {l.level}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <h3 className="setup-label">Your colour</h3>
-        <div className="segmented" role="radiogroup" aria-label="Your colour">
-          {(['white', 'random', 'black'] as const).map((c) => (
-            <button key={c} role="radio" aria-checked={setup.color === c} className={setup.color === c ? 'active' : ''} onClick={() => onChange({ ...setup, color: c })}>
-              {c === 'random' ? 'Random' : c === 'white' ? 'White' : 'Black'}
+        <div className="segmented play-mode" role="radiogroup" aria-label="Play">
+          {(['computer', 'online'] as const).map((m) => (
+            <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'active' : ''} onClick={() => onMode(m)}>
+              {m === 'computer' ? 'Computer' : 'Online'}
             </button>
           ))}
         </div>
-
-        <h3 className="setup-label">Clock</h3>
-        <div className="clock-grid" role="radiogroup" aria-label="Clock">
-          <ClockChip value="none" setup={setup} onChange={onChange} />
-          {CLOCK_GROUPS.map((g) => (
-            <div key={g.name} className="clock-row">
-              <span className="clock-group">{g.name}</span>
-              {g.settings.map((value) => (
-                <ClockChip key={value} value={value} setup={setup} onChange={onChange} />
-              ))}
-            </div>
-          ))}
+        <div className="setup-head">
+          <h2 id="setup-title">{mode === 'online' ? 'Play online' : 'Play the computer'}</h2>
+          {gear}
         </div>
-
-        <button className="btn accent-btn setup-start" onClick={onStart}>
-          Start game
-        </button>
+        {mode === 'online' ? online : <ComputerSetup setup={setup} onChange={onChange} onStart={onStart} />}
       </section>
     </main>
+  )
+}
+
+function ComputerSetup({ setup, onChange, onStart }: { setup: PlaySetup; onChange: (s: PlaySetup) => void; onStart: () => void }) {
+  return (
+    <>
+      <p className="muted">Takebacks and hints allowed. Your game is saved to My recent games when it ends.</p>
+
+      <div className="level-pick">
+        <div className="level-readout">
+          <h3 className="setup-label" id="level-label">
+            Level <strong>{setup.level}</strong>
+          </h3>
+          <span>Strength {levelInfo(setup.level).rating}</span>
+        </div>
+        <input
+          type="range"
+          className="level-slider"
+          min={1}
+          max={LEVELS.length}
+          step={1}
+          value={setup.level}
+          aria-labelledby="level-label"
+          aria-valuetext={`Level ${setup.level}, strength ${levelInfo(setup.level).rating}`}
+          style={{ '--p': (setup.level - 1) / (LEVELS.length - 1) } as CSSProperties}
+          onChange={(e) => onChange({ ...setup, level: Number(e.target.value) })}
+        />
+        <div className="level-ticks" aria-hidden>
+          {LEVELS.map((l) => (
+            <span key={l.level} className={l.level === setup.level ? 'active' : ''}>
+              {l.level}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <h3 className="setup-label">Your colour</h3>
+      <div className="segmented" role="radiogroup" aria-label="Your colour">
+        {(['white', 'random', 'black'] as const).map((c) => (
+          <button key={c} role="radio" aria-checked={setup.color === c} className={setup.color === c ? 'active' : ''} onClick={() => onChange({ ...setup, color: c })}>
+            {c === 'random' ? 'Random' : c === 'white' ? 'White' : 'Black'}
+          </button>
+        ))}
+      </div>
+
+      <h3 className="setup-label">Clock</h3>
+      <div className="clock-grid" role="radiogroup" aria-label="Clock">
+        <ClockChip value="none" setup={setup} onChange={onChange} />
+        {CLOCK_GROUPS.map((g) => (
+          <div key={g.name} className="clock-row">
+            <span className="clock-group">{g.name}</span>
+            {g.settings.map((value) => (
+              <ClockChip key={value} value={value} setup={setup} onChange={onChange} />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <button className="btn accent-btn setup-start" onClick={onStart}>
+        Start game
+      </button>
+    </>
+  )
+}
+
+type PlayMode = 'computer' | 'online'
+const MODE_KEY = 'rookahead.playMode'
+const ONLINE_SETUP_KEY = 'rookahead.onlineSetup'
+
+interface OnlineSetup {
+  clock: OnlineClock
+  rated: boolean
+}
+
+function loadMode(): PlayMode {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'online' ? 'online' : 'computer'
+  } catch {
+    return 'computer'
+  }
+}
+
+function saveMode(m: PlayMode) {
+  try {
+    localStorage.setItem(MODE_KEY, m)
+  } catch {
+    // Not remembered.
+  }
+}
+
+function loadOnlineSetup(): OnlineSetup {
+  try {
+    const raw = JSON.parse(localStorage.getItem(ONLINE_SETUP_KEY) ?? 'null')
+    return { clock: isOnlineClock(raw?.clock) ? raw.clock : '10+0', rated: raw?.rated !== false }
+  } catch {
+    return { clock: '10+0', rated: true }
+  }
+}
+
+function saveOnlineSetup(s: OnlineSetup) {
+  try {
+    localStorage.setItem(ONLINE_SETUP_KEY, JSON.stringify(s))
+  } catch {
+    // Not remembered.
+  }
+}
+
+/**
+ * Playing a real person, through your Lichess account: connect it (or allow playing, for a connection from
+ * before online play), pick a time control, and Lichess finds the opponent.
+ */
+function OnlineSetupView({
+  setup,
+  onChange,
+  searching,
+  note,
+  onFind,
+  onCancel,
+}: {
+  setup: OnlineSetup
+  onChange: (s: OnlineSetup) => void
+  searching: number | null
+  note: string | null
+  onFind: () => void
+  onCancel: () => void
+}) {
+  const { link, busy, error } = useLichess()
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    if (searching == null) return
+    const id = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(id)
+  }, [searching])
+  if (!link || !canPlay(link))
+    return (
+      <>
+        <p className="muted">
+          {link
+            ? 'One more step: allow Rookahead to play games for your Lichess account. It’s one tap on Lichess.'
+            : 'Real players, through your Lichess account. Rated games count for your Lichess rating, the one on your profile.'}
+        </p>
+        <button className="btn accent-btn setup-start" disabled={busy} onClick={() => void connectLichess()}>
+          {busy ? 'Connecting…' : link ? 'Allow on Lichess' : 'Connect Lichess'}
+        </button>
+        {error && <p className="form-error">{error}</p>}
+      </>
+    )
+  const waited = searching == null ? 0 : Math.floor((now - searching) / 1000)
+  return (
+    <>
+      <p className="muted">
+        Real players on Lichess, as <b>{link.username}</b>. No engine while you play: that’s Lichess’s rule.
+      </p>
+      <h3 className="setup-label">Time control</h3>
+      <div className="clock-grid" role="radiogroup" aria-label="Time control">
+        {ONLINE_CLOCKS.map((g) => (
+          <div key={g.group} className="clock-row">
+            <span className="clock-group">{g.group}</span>
+            {g.clocks.map((c) => (
+              <button key={c} role="radio" aria-checked={setup.clock === c} className={`clock-chip ${setup.clock === c ? 'active' : ''}`} disabled={searching != null} onClick={() => onChange({ ...setup, clock: c })}>
+                {c}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <p className="online-note muted">Lichess pairs apps like Rookahead at rapid and classical only.</p>
+      <label className="online-rated">
+        <span>Rated</span>
+        <span className="switch">
+          <input type="checkbox" role="switch" checked={setup.rated} disabled={searching != null} onChange={() => onChange({ ...setup, rated: !setup.rated })} />
+          <span className="switch-track" />
+        </span>
+      </label>
+      {searching != null ? (
+        <div className="online-searching" role="status">
+          <span className="online-pulse" aria-hidden />
+          <span>
+            Looking for an opponent · {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
+          </span>
+          <button className="btn ghost small" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button className="btn accent-btn setup-start" onClick={onFind}>
+          Find an opponent
+        </button>
+      )}
+      {note && <p className="form-error">{note}</p>}
+    </>
   )
 }
 
@@ -721,22 +948,6 @@ function writeFocus(on: boolean) {
   } catch {
     // Storage unavailable: not remembered.
   }
-}
-
-// Drawn in lines like the move controls above them (index.css, .line-icon).
-const TOOL_PATHS = {
-  takeback: 'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
-  hint: 'M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8v.3h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z',
-  resign: 'M6 21V4m0 0h11l-2.5 4.5L17 13H6',
-  abort: 'm6 6 12 12M18 6 6 18',
-}
-
-function ToolIcon({ name }: { name: keyof typeof TOOL_PATHS }) {
-  return (
-    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
-      <path d={TOOL_PATHS[name]} />
-    </svg>
-  )
 }
 
 const REASONS: Record<Outcome['reason'], string> = {

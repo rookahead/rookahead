@@ -37,7 +37,7 @@ When you load games by Chess.com or Lichess username, your browser fetches that 
 
 ## Connecting your Lichess account
 
-If you choose **Connect Lichess**, you sign in on lichess.org itself and Lichess gives your browser a token for your account. The token stays in your browser's storage only: it is never sent to Rookahead's servers or stored in your Rookahead account, and we never see your Lichess password. Your browser uses it to ask Lichess's opening explorer about the position on your board (Lichess requires a signed-in account for that). **Disconnect** under Settings → Linked accounts deletes the token here and asks Lichess to cancel it.
+If you choose **Connect Lichess**, you sign in on lichess.org itself and Lichess gives your browser a token for your account. The token stays in your browser's storage only: it is never sent to Rookahead's servers or stored in your Rookahead account, and we never see your Lichess password. Your browser uses it to ask Lichess's opening explorer about the position on your board (Lichess requires a signed-in account for that), and to play the online games you start in Play: finding an opponent, sending your moves and following the game all happen between your browser and Lichess, as on lichess.org, and those games are Lichess games under its own rules and privacy policy. **Disconnect** under Settings → Linked accounts deletes the token here and asks Lichess to cancel it.
 
 ## Lichess cloud evals
 

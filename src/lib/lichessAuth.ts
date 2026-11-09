@@ -6,7 +6,7 @@ import { navigate } from './router'
 // Connect Lichess: you sign in on lichess.org itself (OAuth with PKCE, made for apps with no server of their
 // own), and Lichess hands back a token that stays in this browser only. Rookahead never sees your password,
 // and the token never reaches our database. It opens Lichess's opening explorer (which wants a signed-in
-// player), and later online play.
+// player) and online play, which goes through Lichess's Board API (the board:play permission).
 
 const LICHESS = 'https://lichess.org'
 /** Lichess asks for any name that's ours; it shows on its "allow access" page. */
@@ -15,10 +15,18 @@ export const LICHESS_RETURN_PATH = '/connect/lichess'
 const KEY = 'rookahead.lichess'
 const PENDING_KEY = 'rookahead.lichess.pending'
 
+/** What Rookahead asks Lichess to allow: playing games for you (Board API). The explorer needs no permission. */
+export const LICHESS_SCOPES = ['board:play']
+
 export interface LichessLink {
   username: string
   token: string
+  /** The permissions it was given; a connection from before online play has none. */
+  scopes: string[]
 }
+
+/** Whether the connection can play games (connected before online play, it can't until you allow it again). */
+export const canPlay = (link: LichessLink | null) => Boolean(link?.scopes.includes('board:play'))
 
 interface State {
   link: LichessLink | null
@@ -30,7 +38,9 @@ interface State {
 function saved(): LichessLink | null {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    return raw && typeof raw.token === 'string' && typeof raw.username === 'string' ? { token: raw.token, username: raw.username } : null
+    return raw && typeof raw.token === 'string' && typeof raw.username === 'string'
+      ? { token: raw.token, username: raw.username, scopes: Array.isArray(raw.scopes) ? raw.scopes.filter((x: unknown) => typeof x === 'string') : [] }
+      : null
   } catch {
     return null
   }
@@ -77,7 +87,7 @@ export async function connectLichess(): Promise<string | null> {
   // In the Android app, Lichess opens in a Chrome tab; its return is marked so this site hands it on to the app.
   const redirectUri = inApp() ? await appReturnUrl(location.origin + LICHESS_RETURN_PATH) : location.origin + LICHESS_RETURN_PATH
   try {
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ verifier, state: stateToken, redirectUri, back: location.pathname + location.search }))
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ verifier, state: stateToken, redirectUri, back: location.pathname + location.search, scopes: LICHESS_SCOPES }))
   } catch {
     return 'Your browser is blocking storage, which connecting needs.'
   }
@@ -88,6 +98,7 @@ export async function connectLichess(): Promise<string | null> {
     redirect_uri: redirectUri,
     code_challenge_method: 'S256',
     code_challenge: challenge,
+    scope: LICHESS_SCOPES.join(' '),
     state: stateToken,
   }).toString()
   setState({ busy: true, error: null })
@@ -104,7 +115,7 @@ export const isLichessReturn = (pathname: string) => pathname.replace(/\/$/, '')
 /** Back from Lichess (at `path`, with its code or error): takes you back where you were and finishes connecting. */
 export async function finishLichess(path: string): Promise<void> {
   const url = new URL(path, location.origin)
-  let pending: { verifier: string; state: string; redirectUri: string; back: string } | null = null
+  let pending: { verifier: string; state: string; redirectUri: string; back: string; scopes?: string[] } | null = null
   try {
     pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? 'null')
     sessionStorage.removeItem(PENDING_KEY)
@@ -129,7 +140,7 @@ export async function finishLichess(path: string): Promise<void> {
     if (!me.ok) throw new Error(`account ${me.status}`)
     const { username } = (await me.json()) as { username?: string }
     if (!username) throw new Error('no username')
-    keep({ token, username })
+    keep({ token, username, scopes: pending.scopes ?? [] })
     setState({ busy: false })
   } catch {
     setState({ busy: false, error: 'Couldn’t finish connecting to Lichess. Try again.' })
