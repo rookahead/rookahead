@@ -276,9 +276,14 @@ function ProfileCard({ tab, games, users, onLinked }: { tab: Tab; games: number;
         ) : (
           ACCOUNTS_ENABLED &&
           status === 'guest' && (
-            <button className="btn primary profile-edit" onClick={() => openAccountPage('signup')}>
-              Sign up
-            </button>
+            <div className="profile-edit profile-guest-actions">
+              <button className="btn primary" onClick={() => openAccountPage('signup')}>
+                Sign up
+              </button>
+              <button className="btn ghost" onClick={() => openAccountPage('login')}>
+                Log in
+              </button>
+            </div>
           )
         )}
       </div>

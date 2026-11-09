@@ -9191,6 +9191,11 @@ button.chip:hover {
   align-self: flex-start;
 }
 
+.profile-guest-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .profile-tabs {
   position: relative;
   display: flex;
@@ -9791,6 +9796,10 @@ button.profile-rating:hover {
   .profile-edit {
     order: 1;
     width: 100%;
+  }
+
+  .profile-guest-actions .btn {
+    flex: 1;
   }
 
   .profile-avatar {
