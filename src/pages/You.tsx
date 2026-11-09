@@ -4,7 +4,6 @@ import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { PalettePicker } from '../components/PalettePicker'
-import { AvatarFace } from '../components/UserCard'
 import { ACCOUNTS_ENABLED, hasUnsynced, logOut, openAccountPage, useAccount } from '../lib/account'
 import { useInstall } from '../lib/install'
 import { DISCORD_URL, YOUTUBE_URL } from '../lib/links'
@@ -22,9 +21,9 @@ const icon = (d: string) => (
 )
 const CHEVRON = icon('M9 6l6 6-6 6')
 
-/** Phones: you and your settings in one tab. Quick switches first, then the full settings, the app, and the small print. */
+/** Phones' settings, behind the gear on your profile (the You tab): quick switches first, then the full settings, the app, and the small print. */
 export function YouPage({ settings, updateSettings }: Props) {
-  const { status, account, username, needsUsername, sync } = useAccount()
+  const { status, account } = useAccount()
   const install = useInstall()
   const [iosHelp, setIosHelp] = useState(false)
   const [confirmLogOut, setConfirmLogOut] = useState(false)
@@ -46,34 +45,9 @@ export function YouPage({ settings, updateSettings }: Props) {
     { to: '/settings/account', label: 'Account', hint: 'Email, password', d: 'M6 10V8a6 6 0 0 1 12 0v2M5 10h14v10H5zM12 14v2', show: ACCOUNTS_ENABLED && Boolean(signedIn) },
   ]
 
+  // Your card is on the profile; a guest still gets signing up and logging in here.
   let who: ReactNode = null
-  if (status === 'loading' && !signedIn) {
-    // A sign-in finishing (back from Google, say): you, on the way, rather than a guest's card for a moment.
-    who = (
-      <section className="you-who" aria-label="You" aria-busy>
-        <span className="user-avatar you-avatar" aria-hidden />
-        <span className="you-name">
-          <strong>{username ?? 'Signing in…'}</strong>
-          <span>Signing in</span>
-        </span>
-      </section>
-    )
-  } else if (signedIn) {
-    who = (
-      <section className="you-who" aria-label="You">
-        <span className="user-avatar you-avatar" aria-hidden>
-          <AvatarFace account={account} />
-        </span>
-        <span className="you-name">
-          <strong>{needsUsername ? account.name : (username ?? 'Signing in…')}</strong>
-          <span>{sync === 'offline' ? 'Offline · will sync later' : 'Synced across your devices'}</span>
-        </span>
-        <Link to={needsUsername ? '/signup' : '/settings/profile'} className="btn ghost small">
-          {needsUsername ? 'Choose a username' : 'Edit'}
-        </Link>
-      </section>
-    )
-  } else if (ACCOUNTS_ENABLED) {
+  if (!signedIn && status !== 'loading' && ACCOUNTS_ENABLED) {
     who = (
       <section className="home-card accent-card you-guest" aria-labelledby="you-guest">
         <h2 id="you-guest">Save your progress</h2>
@@ -92,7 +66,7 @@ export function YouPage({ settings, updateSettings }: Props) {
 
   return (
     <div className="home-page">
-      <PageHeader phoneOnly />
+      <PageHeader phoneOnly back="/profile" phoneTitle="Settings" />
       <main className="you-page">
         {who}
 

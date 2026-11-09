@@ -5,7 +5,7 @@ import { Link } from '../components/Link'
 import { OpenGameDialog } from '../components/LoadGameDialog'
 import { PageHeader } from '../components/PageHeader'
 import { Skel } from '../components/Skeleton'
-import { AvatarFace } from '../components/UserCard'
+import { AvatarFace, Gear } from '../components/UserCard'
 import { UsernameForm } from '../components/UsernameForm'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
@@ -187,7 +187,12 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
 
   return (
     <div className="home-page">
-      <PageHeader phoneOnly />
+      {/* Phones: this is the You tab, and its settings are behind the gear. */}
+      <PageHeader phoneOnly>
+        <Link to="/settings" className="icon-btn profile-gear" aria-label="Settings" title="Settings">
+          <Gear />
+        </Link>
+      </PageHeader>
       <main className="profile games-page">
         <ProfileCard tab={tab} games={games.length} users={users} onLinked={onOpenSettings} />
         <div className="profile-cols">

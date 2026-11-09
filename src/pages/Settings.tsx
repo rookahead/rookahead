@@ -3,7 +3,7 @@ import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ACCOUNTS_ENABLED, useAccount } from '../lib/account'
-import { settingsSection, usePathname, type SettingsSection } from '../lib/router'
+import { goBack, settingsSection, usePathname, type SettingsSection } from '../lib/router'
 import type { Settings } from '../lib/settings'
 import { AccountSection } from './settings/Account'
 import { AppearanceSection } from './settings/Appearance'
@@ -69,10 +69,11 @@ export function SettingsPage({ settings, updateSettings }: Props) {
           {open && (
             <section className="settings-body" key={open}>
               {phone && (
-                <Link to="/you" className="settings-back">
+                // Back where you came from: the list, or the profile (Edit profile, Change).
+                <button className="settings-back" onClick={() => goBack('/settings')}>
                   {icon('M15 6l-6 6 6 6')}
-                  You
-                </Link>
+                  Settings
+                </button>
               )}
               {body}
             </section>

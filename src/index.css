@@ -5583,7 +5583,8 @@ a.see-all {
   text-overflow: ellipsis;
 }
 
-.user-card-gear svg {
+.user-card-gear svg,
+.profile-gear svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -10897,7 +10898,10 @@ strong.settings-value {
     margin: -4px 0 12px -6px;
     padding: 4px 8px 4px 2px;
     border-radius: 8px;
+    border: 0;
+    background: none;
     color: var(--text-2);
+    font: inherit;
     text-decoration: none;
     font-weight: 550;
   }

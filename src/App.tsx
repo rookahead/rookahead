@@ -18,7 +18,7 @@ import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
 import { slidesByHand, tabSlide } from './lib/nav'
-import { navigate, routeFor, scrollLeftAt, usePathname, useRoute, type Route } from './lib/router'
+import { navigate, routeFor, scrollLeftAt, settingsSection, usePathname, useRoute, type Route } from './lib/router'
 import { recentGame } from './lib/session'
 import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
@@ -274,11 +274,10 @@ export default function App() {
   const openSettings = () => navigate('/settings')
   const userCard = <UserCard rail={rail} settingsOpen={route === 'settings'} onSettings={openSettings} settings={settings} onChange={updateSettings} />
 
-  // You (/you) is the phones' tab for your profile and settings; desktop has the sidebar's user card and Settings.
-  // Phones' plain /settings list is the You page too.
+  // Phones' You tab is your profile, its settings behind a gear (plain /settings is the phones' list of them);
+  // /you, its old address, goes to the profile there and to Settings on desktop.
   useEffect(() => {
-    if (!phone && route === 'you') navigate('/settings', { replace: true })
-    if (phone && location.pathname.replace(/\/$/, '') === '/settings') navigate('/you', { replace: true })
+    if (route === 'you') navigate(phone ? '/profile' : '/settings', { replace: true })
     // The blog is its own site on desktop (public/blog, built by scripts/build-blog.mjs).
     if (!phone && route === 'blog' && import.meta.env.PROD) location.reload()
   }, [phone, route])
@@ -319,15 +318,11 @@ export default function App() {
                 <PuzzlesPage leaving={sliding?.route === 'puzzles'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
               </div>
             )}
-            {appRoute === 'settings' && <SettingsPage settings={settings} updateSettings={updateSettings} />}
+            {appRoute === 'settings' &&
+              (phone && !settingsSection(pathname) ? <YouPage settings={settings} updateSettings={updateSettings} /> : <SettingsPage settings={settings} updateSettings={updateSettings} />)}
             {(appRoute === 'blog' || sliding?.route === 'blog') && phone && (
               <div {...slideHost('blog')}>
                 <BlogPage settings={settings} />
-              </div>
-            )}
-            {(appRoute === 'you' || sliding?.route === 'you') && phone && (
-              <div {...slideHost('you')}>
-                <YouPage settings={settings} updateSettings={updateSettings} />
               </div>
             )}
             {playMounted && (

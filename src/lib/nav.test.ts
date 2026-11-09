@@ -4,7 +4,8 @@ import { tabSlide } from './nav'
 describe('tabSlide', () => {
   it('slides towards the tab you go to', () => {
     expect(tabSlide('/', '/puzzles')).toBe('forward')
-    expect(tabSlide('/you', '/blog')).toBe('back')
+    expect(tabSlide('/profile', '/blog')).toBe('back')
+    expect(tabSlide('/profile/stats', '/')).toBe('back')
   })
 
   it('leaves everything that is not one tab to another alone', () => {
@@ -12,5 +13,6 @@ describe('tabSlide', () => {
     expect(tabSlide('/legendary', '/')).toBeNull()
     expect(tabSlide('/puzzles/rated', '/puzzles')).toBeNull()
     expect(tabSlide('/games', '/games')).toBeNull()
+    expect(tabSlide('/profile', '/profile/games')).toBeNull()
   })
 })
