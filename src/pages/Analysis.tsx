@@ -11,6 +11,7 @@ import { RookCoach } from '../components/RookCoach'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
+import { Explorer } from '../components/Explorer'
 import { chipText, EvalBar } from '../components/EvalBar'
 import { EvalGraph } from '../components/EvalGraph'
 import { MovePreview, type Preview } from '../components/MovePreview'
@@ -1240,6 +1241,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <>
                     {verdictLines}
                     {!engineOnTop && engineLines}
+                    <Explorer fen={node.fen} onPlay={(uci) => playLine([uci], 1)} onPreview={canHover ? setPreview : undefined} />
                     <MoveList tree={tree} currentId={node.id} onSelect={setCurrentId} result={result} report={listReport} times={spent} />
                     {inVariation && (
                       <div className="variation-actions">

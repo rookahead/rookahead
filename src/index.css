@@ -10574,6 +10574,116 @@ strong.settings-value {
 .linked-signin .linked-text {
   padding-left: 22px;
 }
+
+/* Lichess's opening explorer, under the engine in Analysis: a row per move with how often it was played and
+   how those games ended (white, drawn, black). */
+.explorer-panel .engine-header {
+  flex-wrap: wrap;
+}
+
+.explorer-panel .engine-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.explorer-panel .engine-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explorer-source button {
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.explorer-connect {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+
+.explorer-connect p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.explorer-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.explorer-move {
+  display: grid;
+  grid-template-columns: 54px 74px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.explorer-move:hover {
+  background: var(--surface-3);
+}
+
+.explorer-san {
+  font-weight: 600;
+}
+
+.explorer-count {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.explorer-count small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.explorer-bar {
+  display: flex;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.explorer-bar > span {
+  flex-basis: 0;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.explorer-bar .white {
+  background: #eceae4;
+  color: #222;
+}
+
+.explorer-bar .draw {
+  background: #8b8f94;
+  color: #fff;
+}
+
+.explorer-bar .black {
+  background: #2a2c2f;
+  color: #ddd;
+}
+
 .linked-head {
   display: flex;
   align-items: center;
