@@ -9182,6 +9182,86 @@ button.chip:hover {
   white-space: nowrap;
 }
 
+/* Who sees your profile, and its link when it's public. */
+.profile-public {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.profile-public-link {
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.profile-public-link:hover {
+  text-decoration: underline;
+}
+
+.profile-name .form-error {
+  margin-top: 4px;
+}
+
+/* Someone's public profile (rookahead.com/@name): their ratings beside three counts. */
+.player-report {
+  flex: none;
+  align-self: flex-start;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.player-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.player-count {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.player-count b {
+  font-size: 26px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.player-count small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.player-page a.btn {
+  text-decoration: none;
+}
+
+.player-page .hero-card .btn {
+  align-self: flex-start;
+}
+
+.player-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.player-missing h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.player-missing p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .profile-site b {
   color: var(--text-2);
   font-weight: 600;

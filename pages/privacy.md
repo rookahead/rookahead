@@ -1,7 +1,7 @@
 ---
 title: Privacy
 description: What Rookahead does and doesn't collect: optional accounts, games analysed on your device, cookieless analytics.
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 <div class="note">
@@ -20,6 +20,12 @@ Everything works without signing up, and then we have no personal information ab
 - a usage log: when you open Rookahead, start or finish a review, solve a puzzle, open Explain or finish a game against the computer, with the kind of device (app, phone or computer). It never holds your moves, your games or anything you type. We use it only to see whether people come back and which parts of Rookahead they use; it is never shared or sold, and it is deleted with your account.
 
 If you sign up with email, you also choose a password; it is stored only as a secure hash, never as the password itself. Accounts are stored by Supabase, our database provider, and account emails (confirming your address, resetting your password) are sent through Resend. Signing in keeps a login token in your browser's storage; it isn't a tracking cookie. You can delete your account, and everything in it, at any time under Settings → Delete account.
+
+## Public profiles are off unless you turn them on
+
+Your profile is private: only you see it. If you choose **Make public** on it, anyone with its link (rookahead.com/@yourname) can see your username, your photo, the month you joined, your online and puzzle ratings, and how many games you've played and reviewed, with your Legendary moves count. It never shows your games, your moves or the people you played. **Make private** takes it down at once, and deleting your account deletes it too.
+
+Anyone can report a public profile's name or photo. A report holds the username, the reason and an optional note, plus your account if you're signed in; we read them only to keep profiles within the rules.
 
 ## Your games are analysed on your device
 

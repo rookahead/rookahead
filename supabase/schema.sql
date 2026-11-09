@@ -230,3 +230,84 @@ from public.usage_events e
 join auth.users u on u.id = e.user_id
 left join public.profiles p on p.id = e.user_id
 order by e.at desc;
+
+-- Public profiles: off until you turn it on (Profile → Make public), and only what the page shows is here:
+-- your app copies your ratings and counts in as they change. Your username, photo and joined date come
+-- from `profiles`; nobody reads either table directly, only the public_profile() function below. Turning
+-- it off deletes your row.
+create table if not exists public.public_profiles (
+  id uuid primary key default auth.uid() references public.profiles (id) on delete cascade,
+  stats jsonb not null default '{}' check (jsonb_typeof(stats) = 'object' and pg_column_size(stats) < 2000),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.public_profiles enable row level security;
+
+drop policy if exists "Own row: read" on public.public_profiles;
+drop policy if exists "Own row: create" on public.public_profiles;
+drop policy if exists "Own row: update" on public.public_profiles;
+drop policy if exists "Own row: delete" on public.public_profiles;
+create policy "Own row: read" on public.public_profiles for select to authenticated using ((select auth.uid()) = id);
+create policy "Own row: create" on public.public_profiles for insert to authenticated with check ((select auth.uid()) = id);
+create policy "Own row: update" on public.public_profiles for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
+create policy "Own row: delete" on public.public_profiles for delete to authenticated using ((select auth.uid()) = id);
+
+revoke all on public.public_profiles from anon, authenticated;
+grant select, insert, update, delete on public.public_profiles to authenticated;
+
+-- A public profile by username (any case), for anyone; nothing for a username that isn't public.
+create or replace function public.public_profile(name text)
+returns table (username text, avatar_url text, joined timestamptz, stats jsonb, updated_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.username, p.avatar_url, p.created_at, pp.stats, pp.updated_at
+  from public.profiles p
+  join public.public_profiles pp on pp.id = p.id
+  where lower(p.username) = lower(name);
+$$;
+
+revoke execute on function public.public_profile(text) from public;
+grant execute on function public.public_profile(text) to anon, authenticated;
+
+-- "Report this profile": anyone may send one, about a public profile's name or photo. Nobody can read them
+-- back through the API; read them in the dashboard (Table Editor → profile_reports).
+create table if not exists public.profile_reports (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  user_id uuid default auth.uid() references auth.users (id) on delete set null,
+  username text not null check (length(username) <= 20),
+  reason text not null check (reason in ('name', 'photo', 'other')),
+  note text not null default '' check (length(note) <= 500)
+);
+create index if not exists profile_reports_created_at on public.profile_reports (created_at);
+
+alter table public.profile_reports enable row level security;
+
+drop policy if exists "Anyone: send" on public.profile_reports;
+create policy "Anyone: send" on public.profile_reports for insert to anon, authenticated with check (user_id is null or user_id = (select auth.uid()));
+
+revoke all on public.profile_reports from anon, authenticated;
+grant insert on public.profile_reports to anon, authenticated;
+
+-- A ceiling on reports per hour, so a script can't fill the database.
+create or replace function public.profile_reports_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select count(*) from public.profile_reports where created_at > now() - interval '1 hour') >= 100 then
+    raise exception 'Too many reports right now' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profile_reports_limit on public.profile_reports;
+create trigger profile_reports_limit before insert on public.profile_reports for each row execute function public.profile_reports_limit();
+-- Only the trigger runs it: not callable through the API.
+revoke execute on function public.profile_reports_limit() from public, anon, authenticated;

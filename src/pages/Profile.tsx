@@ -5,9 +5,11 @@ import { Link } from '../components/Link'
 import { OpenGameDialog } from '../components/LoadGameDialog'
 import { PageHeader } from '../components/PageHeader'
 import { Skel } from '../components/Skeleton'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { AvatarFace, Gear } from '../components/UserCard'
 import { UsernameForm } from '../components/UsernameForm'
 import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { useSettled } from '../hooks/useSettled'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
@@ -17,7 +19,9 @@ import { gameDays } from '../lib/homeGames'
 import { SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import { LOAD_GAME_EVENT } from '../lib/nav'
 import { PHASES, phaseAccuracy, phaseMoves, type Phase } from '../lib/phases'
+import { SITE } from '../lib/pageMeta'
 import { perfsFor, perfStats, type Perf, type RatingPoint, type Results } from '../lib/profile'
+import { profilePath, setPublic, updatePublicStats, usePublicProfile, type PublicStats } from '../lib/publicProfile'
 import { loadProgress, type PuzzleProgress } from '../lib/puzzleStore'
 import { SPRINT_MODES, type SprintMode } from '../lib/puzzles'
 import type { CachedReview } from '../lib/reviewCache'
@@ -109,6 +113,22 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
     window.addEventListener(LOAD_GAME_EVENT, loadGame)
     return () => window.removeEventListener(LOAD_GAME_EVENT, loadGame)
   }, [])
+  // What your public profile shows, kept up to date while it's public (lib/publicProfile.ts).
+  const { moves: legendary } = useLegendaryMoves(games, reviews)
+  const publicStats = useMemo<PublicStats>(
+    () => ({
+      online: online.filter((p) => p.rating != null).map((p) => ({ label: p.label, rating: p.rating ?? 0, games: p.games.length })),
+      puzzles: { rating: Math.round(puzzles.rating), solved: puzzles.solved },
+      games: games.length,
+      reviewed: games.filter((g) => reviews[g.key]).length,
+      legendary: legendary.length,
+    }),
+    [online, puzzles, games, reviews, legendary],
+  )
+  const isPublic = usePublicProfile()
+  useEffect(() => {
+    if (isPublic && !busy && !loading) void updatePublicStats(publicStats)
+  }, [isPublic, busy, loading, publicStats])
   const importError = Object.values(errors).find(Boolean)
   const none = games.length === 0 && !loading && !busy
 
@@ -206,7 +226,7 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
         </Link>
       </PageHeader>
       <main className="profile games-page">
-        <ProfileCard tab={tab} games={games.length} users={users} onLinked={onOpenSettings} />
+        <ProfileCard tab={tab} games={games.length} users={users} publicStats={publicStats} onLinked={onOpenSettings} />
         <div className="profile-cols">
           <aside className="profile-side" aria-label="Ratings">
             <RatingsCard
@@ -242,7 +262,19 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
 }
 
 /** You, the accounts your games come from, and the page's tabs. */
-function ProfileCard({ tab, games, users, onLinked }: { tab: Tab; games: number; users: { chesscom: string; lichess: string }; onLinked: () => void }) {
+function ProfileCard({
+  tab,
+  games,
+  users,
+  publicStats,
+  onLinked,
+}: {
+  tab: Tab
+  games: number
+  users: { chesscom: string; lichess: string }
+  publicStats: PublicStats
+  onLinked: () => void
+}) {
   const { status, account, username } = useAccount()
   const signedIn = status === 'signed-in' && account
   const name = username ?? (signedIn ? account.name : status === 'loading' ? 'Signing in…' : 'Guest')
@@ -269,7 +301,7 @@ function ProfileCard({ tab, games, users, onLinked }: { tab: Tab; games: number;
         </span>
         <div className="profile-name">
           <h1>{name}</h1>
-          <p>{signedIn ? 'Only you see this page' : 'Your games and puzzles on this device'}</p>
+          {signedIn && username ? <PublicLine username={username} stats={publicStats} /> : <p>{signedIn ? 'Only you see this page' : 'Your games and puzzles on this device'}</p>}
           {/* With none yet, the page's Bring in your games card asks for them. */}
           {linked.length > 0 && (
             <p className="profile-linked">
@@ -312,6 +344,73 @@ function ProfileCard({ tab, games, users, onLinked }: { tab: Tab; games: number;
         ))}
       </nav>
     </section>
+  )
+}
+
+/** Who sees your profile: only you, with the way to make it public, or anyone with its link, which you can copy. */
+function PublicLine({ username, stats }: { username: string; stats: PublicStats }) {
+  const isPublic = usePublicProfile()
+  const [asking, setAsking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const link = `${SITE}${profilePath(username)}`
+  const turn = async (on: boolean) => {
+    setBusy(true)
+    setError(null)
+    const problem = await setPublic(on, stats)
+    setBusy(false)
+    setError(problem)
+  }
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setError('Couldn’t copy. The link is ' + link)
+    }
+  }
+  return (
+    <>
+      {isPublic ? (
+        <p className="profile-public">
+          Public at{' '}
+          <Link to={profilePath(username)} className="profile-public-link">
+            {link.replace(/^https:\/\//, '')}
+          </Link>
+          <button className="link-btn" onClick={() => void copy()}>
+            {copied ? 'Copied' : 'Copy link'}
+          </button>
+          <button className="link-btn" disabled={busy} onClick={() => void turn(false)}>
+            Make private
+          </button>
+        </p>
+      ) : (
+        <p className="profile-public">
+          Only you see this page
+          {isPublic === false && (
+            <button className="link-btn" disabled={busy} onClick={() => setAsking(true)}>
+              Make public
+            </button>
+          )}
+        </p>
+      )}
+      {error && <p className="form-error">{error}</p>}
+      {asking && (
+        <ConfirmDialog
+          title="Make your profile public?"
+          confirm="Make public"
+          onConfirm={() => {
+            setAsking(false)
+            void turn(true)
+          }}
+          onClose={() => setAsking(false)}
+        >
+          Anyone with the link sees your username, photo, when you joined, your online and puzzle ratings, and how many games you’ve played and reviewed, with your Legendary moves. Your games stay private. You can make it private again any time.
+        </ConfirmDialog>
+      )}
+    </>
   )
 }
 

@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom'
 import { startViewTransition } from '../hooks/useSettled'
 import { slidesByHand, tabSlide } from './nav'
 
-export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth'
+export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth' | 'player'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 export type SettingsSection = 'profile' | 'linked' | 'board' | 'appearance' | 'account'
 
@@ -16,6 +16,8 @@ export function routeFor(pathname: string): Route {
   // Your profile; /games is its Games tab (the address My games had).
   if (/^\/(games|profile(\/(games|stats))?)\/?$/.test(pathname)) return 'games'
   if (/^\/legendary\/?$/.test(pathname)) return 'legendary'
+  // Someone's public profile: rookahead.com/@name.
+  if (playerName(pathname)) return 'player'
   if (/^\/board\/?$/.test(pathname)) return 'board'
   if (/^\/puzzles(\/(rated|sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
   if (/^\/you\/?$/.test(pathname)) return 'you'
@@ -24,6 +26,13 @@ export function routeFor(pathname: string): Route {
   if (new RegExp(`^/settings(/(${SECTIONS}))?/?$`).test(pathname)) return 'settings'
   if (/^\/(signup|login|reset-password|auth\/google)\/?$/.test(pathname)) return 'auth'
   return 'home'
+}
+
+/** The username in a public profile's address (/@name), or null. */
+export function playerName(pathname: string): string | null {
+  // Some browsers send the @ as %40.
+  const m = /^\/(?:@|%40)([A-Za-z0-9][A-Za-z0-9_-]{2,19})\/?$/.exec(pathname)
+  return m ? m[1] : null
 }
 
 /** The Puzzles page's tab: /puzzles (or /puzzles/rated), /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */

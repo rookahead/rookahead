@@ -18,7 +18,7 @@ import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
 import { slidesByHand, tabSlide } from './lib/nav'
-import { navigate, routeFor, scrollLeftAt, settingsSection, usePathname, useRoute, type Route } from './lib/router'
+import { navigate, playerName, routeFor, scrollLeftAt, settingsSection, usePathname, useRoute, type Route } from './lib/router'
 import { recentGame } from './lib/session'
 import { useSettings } from './lib/settings'
 import { useStoreVersion } from './lib/syncBus'
@@ -29,6 +29,7 @@ import { HomePage } from './pages/Home'
 import { LegendaryPage } from './pages/Legendary'
 import { PlayPage } from './pages/Play'
 import { ProfilePage } from './pages/Profile'
+import { PublicProfilePage } from './pages/PublicProfile'
 import { PuzzlesPage } from './pages/Puzzles'
 import { SettingsPage } from './pages/Settings'
 import { YouPage } from './pages/You'
@@ -313,6 +314,7 @@ export default function App() {
               </div>
             )}
             {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
+            {appRoute === 'player' && <PublicProfilePage name={playerName(pathname) ?? ''} />}
             {(appRoute === 'puzzles' || sliding?.route === 'puzzles') && (
               <div {...slideHost('puzzles')}>
                 <PuzzlesPage leaving={sliding?.route === 'puzzles'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} />
