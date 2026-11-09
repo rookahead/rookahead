@@ -87,11 +87,20 @@ export function startViewTransition(update: () => void, kind?: Kind): ViewTransi
   addEventListener('wheel', wheel, input)
   addEventListener('touchstart', skip, input)
   addEventListener('keydown', key, input)
-  transition.ready.then(() => addEventListener('scroll', skip, { once: true, passive: true }), () => {})
+  // The update's own jump to the top (a new page starts there) can still be reported as a scroll once the
+  // animation has started: only a scroll away from where it started counts.
+  const scrolledAway = () => {
+    if (scrollY !== startedAt) skip()
+  }
+  let startedAt = 0
+  transition.ready.then(() => {
+    startedAt = scrollY
+    addEventListener('scroll', scrolledAway, { passive: true })
+  }, () => {})
   const done: Promise<unknown> = transition.finished
     .catch(() => {})
     .finally(() => {
-      removeEventListener('scroll', skip)
+      removeEventListener('scroll', scrolledAway)
       removeEventListener('pointerdown', press, input)
       removeEventListener('wheel', wheel, input)
       removeEventListener('touchstart', skip, input)
