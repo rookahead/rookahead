@@ -1,3 +1,5 @@
+import { DEFAULT_POSITION } from 'chess.js'
+import { standardMoves } from './cloudEval'
 import { lichessNow, lichessTokenRefused } from './lichessAuth'
 
 // Online play through Lichess's Board API (https://lichess.org/api#tag/Board): a game against a real player,
@@ -167,15 +169,10 @@ const player = (raw: unknown): OnlinePlayer => {
   }
 }
 
-/** Lichess writes castling as king-takes-rook in some games (e1h1): the board wants king-two-squares (e1g1). */
-function castling(uci: string): string {
-  const fix: Record<string, string> = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' }
-  return fix[uci] ?? uci
-}
-
 function stateFrom(raw: Record<string, unknown>, at: number): OnlineState {
   const n = (v: unknown) => (typeof v === 'number' ? v : 0)
-  const moves = typeof raw.moves === 'string' && raw.moves ? raw.moves.split(' ').map(castling) : []
+  // Castling comes as the king taking its rook (e1h1): the board wants the king's own move, for a king only.
+  const moves = typeof raw.moves === 'string' && raw.moves ? standardMoves(DEFAULT_POSITION, raw.moves) : []
   return {
     moves,
     wtime: n(raw.wtime),

@@ -30,8 +30,11 @@ const scoreOf = (pv: CloudPv): Score => (pv.mate !== undefined ? { type: 'mate',
 /** Lichess writes castling as the king taking its own rook; the engine, and everything here, as the king's move. */
 const CASTLING: Record<string, string> = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' }
 
-/** A cloud line in the engine's notation, as far as it can be played. */
-function standardMoves(fen: string, moves: string): string[] {
+/**
+ * Lichess's moves (UCI, space-separated) as the board writes them: castling as the king's two-square move, and only
+ * for a king (a queen going e8 to h8 is just that). Stops at a move that doesn't fit the position.
+ */
+export function standardMoves(fen: string, moves: string): string[] {
   const chess = new Chess(fen)
   const out: string[] = []
   for (const uci of moves.split(' ')) {

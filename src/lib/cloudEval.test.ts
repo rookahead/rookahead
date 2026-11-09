@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cloudEval } from './cloudEval'
+import { DEFAULT_POSITION } from 'chess.js'
+import { cloudEval, standardMoves } from './cloudEval'
 
 const answer = (pvs: { moves: string; cp?: number }[]) => vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ depth: 40, pvs })))
 const signal = new AbortController().signal
@@ -34,5 +35,16 @@ describe('cloudEval', () => {
   it('keeps what it could read of a line that goes wrong', async () => {
     answer([{ moves: 'd2d3 g8f6 a1a8', cp: 20 }])
     expect(await cloudEval(ITALIAN, signal)).toMatchObject({ pv: ['d2d3', 'g8f6'] })
+  })
+})
+
+describe('standardMoves', () => {
+  it('reads the king taking its rook as castling', () => {
+    expect(standardMoves(DEFAULT_POSITION, 'e2e4 e7e5 g1f3 b8c6 f1c4 g8f6 e1h1')).toEqual(['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'g8f6', 'e1g1'])
+  })
+
+  it('leaves a queen going e8 to h8 alone (it once became Qg8 in an online game)', () => {
+    const fen = '4Q3/8/7k/8/8/8/8/4K3 w - - 0 1'
+    expect(standardMoves(fen, 'e8h8')).toEqual(['e8h8'])
   })
 })
