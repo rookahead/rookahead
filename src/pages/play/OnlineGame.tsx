@@ -1,5 +1,5 @@
 import { Chess, DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Link } from '../../components/Link'
@@ -51,6 +51,8 @@ import { addLine, createTree, mainline, ROOT_ID } from '../../lib/tree'
 const other = (c: Side): Side => (c === 'white' ? 'black' : 'white')
 /** A dropped connection is tried again after this long. */
 const RETRY_MS = 2000
+/** Lichess keeps a game's connection busy (keep-alives): this long without a word, it's opened again. */
+const QUIET_MS = 20000
 
 interface Props {
   started: StartedGame
@@ -87,18 +89,35 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
   const [now, setNow] = useState(Date.now)
   const you = started.color
 
-  // Follow the game; a dropped connection reconnects while the game is on.
+  // Follow the game; a dropped connection reconnects while the game is on. A connection can also die without
+  // closing (Lichess drops it when the game is opened elsewhere, a network blip): one that's gone quiet for a
+  // while, or that just missed a move Lichess turned down, is dropped and opened again, which brings the game
+  // back up to date.
+  // Since when the connection has been down (null: up); a quick reopen doesn't flash a message.
+  const [downSince, setDownSince] = useState<number | null>(null)
+  const resync = useRef<() => void>(() => {})
   useEffect(() => {
     const ctrl = new AbortController()
     let over = false
+    let lastHeard = Date.now()
+    let current: AbortController | null = null
+    resync.current = () => current?.abort()
+    const watchdog = setInterval(() => {
+      if (!over && Date.now() - lastHeard > QUIET_MS) current?.abort()
+    }, 5000)
     void (async () => {
       while (!ctrl.signal.aborted && !over) {
+        current = new AbortController()
+        const stop = () => current?.abort()
+        ctrl.signal.addEventListener('abort', stop)
+        lastHeard = Date.now()
         const status = await followGame(
           started.id,
           {
             onGame: (g) => {
               setGame(g)
               setState(g.state)
+              setDownSince(null)
               over = !LIVE_STATUSES.has(g.state.status)
             },
             onState: (s) => {
@@ -106,18 +125,28 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
               over = !LIVE_STATUSES.has(s.status)
             },
             onGone: (seconds) => setGone(seconds === null ? null : { claimAt: Date.now() + seconds * 1000 }),
+            onAlive: () => {
+              lastHeard = Date.now()
+            },
           },
-          ctrl.signal,
+          current.signal,
         ).catch(() => 0)
+        ctrl.signal.removeEventListener('abort', stop)
         if (status === 404 || status === 401) {
           setNotice(status === 404 ? 'This game isn’t on Lichess any more.' : 'Your Lichess connection ended.')
           saveLiveOnline(null)
           return
         }
-        if (!over) await new Promise((r) => setTimeout(r, RETRY_MS))
+        if (!over && !ctrl.signal.aborted) {
+          setDownSince((d) => d ?? Date.now())
+          await new Promise((r) => setTimeout(r, current?.signal.aborted ? 300 : RETRY_MS))
+        }
       }
     })()
-    return () => ctrl.abort()
+    return () => {
+      clearInterval(watchdog)
+      ctrl.abort()
+    }
   }, [started.id])
 
   const live = Boolean(state && LIVE_STATUSES.has(state.status))
@@ -199,10 +228,12 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
     const uci = move.from + move.to + (move.promotion ?? '')
     if (!new Chess(line[lastPly].fen).moves({ verbose: true }).some((m) => m.lan === uci)) return
     setSent({ uci, after: confirmed.length })
-    void sendMove(started.id, uci).then((ok) => {
-      if (ok) return
+    void sendMove(started.id, uci).then((problem) => {
+      if (!problem) return
       setSent((p) => (p?.uci === uci ? null : p))
-      say('Lichess didn’t take that move. Try again.')
+      // Most likely this page missed a move: catch up, then say what Lichess said.
+      resync.current()
+      say(`Lichess didn’t take that move (${problem}). The board is catching up: try again.`)
     })
   }
 
@@ -308,7 +339,7 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
     ? 'Connecting to Lichess…'
     : !live
       ? (notice ?? (incoming ? `${incoming.from} wants a rematch` : rematch ? 'Rematch offered · waiting…' : endText(state, you)))
-      : (notice ?? (offerFromThem ? 'Your opponent offers a draw' : gone ? (canClaim ? 'Your opponent left' : `Your opponent left · ${Math.ceil((gone.claimAt - now) / 1000)} s`) : yourTurn ? 'Your move' : pending ? 'Sending…' : 'Their move'))
+      : (notice ?? (downSince && now - downSince > 1500 ? 'Reconnecting to Lichess…' : offerFromThem ? 'Your opponent offers a draw' : gone ? (canClaim ? 'Your opponent left' : `Your opponent left · ${Math.ceil((gone.claimAt - now) / 1000)} s`) : yourTurn ? 'Your move' : pending ? 'Sending…' : 'Their move'))
 
   const review = async () => {
     setReviewing(true)

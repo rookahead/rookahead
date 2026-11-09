@@ -58,7 +58,7 @@ function token(): string | null {
  * Reads a Lichess ndjson stream (one JSON object a line; blank lines keep it alive) until it ends or `signal` stops
  * it. Resolves with the HTTP status when it ends.
  */
-async function stream(url: string, init: RequestInit, onLine: (line: Record<string, unknown>) => void, signal: AbortSignal): Promise<number> {
+async function stream(url: string, init: RequestInit, onLine: (line: Record<string, unknown>) => void, signal: AbortSignal, onData?: () => void): Promise<number> {
   const t = token()
   if (!t) return 401
   const res = await fetch(url, { ...init, signal, headers: { ...(init.headers ?? {}), Authorization: `Bearer ${t}`, Accept: 'application/x-ndjson' } })
@@ -70,6 +70,8 @@ async function stream(url: string, init: RequestInit, onLine: (line: Record<stri
   for (;;) {
     const { value, done } = await reader.read()
     if (done) break
+    // Anything at all, keep-alive newlines included: the connection is still there.
+    onData?.()
     buffer += decoder.decode(value, { stream: true })
     let nl: number
     while ((nl = buffer.indexOf('\n')) >= 0) {
@@ -185,11 +187,28 @@ function stateFrom(raw: Record<string, unknown>, at: number): OnlineState {
   }
 }
 
+/** Sends your move. Resolves with null once Lichess has it, else Lichess's reason (or a connection problem). */
+export async function sendMove(id: string, uci: string): Promise<string | null> {
+  const t = token()
+  if (!t) return 'Your Lichess connection ended.'
+  try {
+    const res = await fetch(`${API}/board/game/${id}/move/${uci}`, { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
+    if (res.ok) return null
+    if (res.status === 401) lichessTokenRefused()
+    const body = (await res.json().catch(() => ({}))) as { error?: unknown }
+    return typeof body.error === 'string' ? body.error : `Lichess answered ${res.status}`
+  } catch {
+    return 'Couldn’t reach Lichess.'
+  }
+}
+
 export interface GameStreamHandlers {
   onGame: (game: OnlineGame) => void
   onState: (state: OnlineState) => void
   /** The opponent left; you can claim the win after this many seconds (null: they're back). */
   onGone: (claimInSeconds: number | null) => void
+  /** Anything arrived, keep-alives included (a quiet connection may have died). */
+  onAlive?: () => void
 }
 
 /** Follows a game until it ends (or `signal` stops it). Resolves with the HTTP status. */
@@ -214,10 +233,10 @@ export function followGame(id: string, handlers: GameStreamHandlers, signal: Abo
       else if (line.type === 'opponentGone') handlers.onGone(line.gone === true && typeof line.claimWinInSeconds === 'number' ? line.claimWinInSeconds : null)
     },
     signal,
+    handlers.onAlive,
   )
 }
 
-export const sendMove = (id: string, uci: string) => post(`/board/game/${id}/move/${uci}`)
 export const resign = (id: string) => post(`/board/game/${id}/resign`)
 export const abort = (id: string) => post(`/board/game/${id}/abort`)
 export const answerDraw = (id: string, yes: boolean) => post(`/board/game/${id}/draw/${yes ? 'yes' : 'no'}`)
