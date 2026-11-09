@@ -13,8 +13,8 @@ const SECTIONS = 'profile|linked|board|appearance|account'
 export function routeFor(pathname: string): Route {
   if (/^\/(analysis|r)\/?$/.test(pathname)) return 'analysis'
   if (/^\/play\/?$/.test(pathname)) return 'play'
-  // Your profile; /games is its Games tab (the address My games had).
-  if (/^\/(games|profile(\/(games|stats))?)\/?$/.test(pathname)) return 'games'
+  // Your profile and its tabs; /games is its Games tab (the address My games had).
+  if (/^\/(games|profile(\/(games|stats|friends))?)\/?$/.test(pathname)) return 'games'
   if (/^\/legendary\/?$/.test(pathname)) return 'legendary'
   // Someone's public profile: rookahead.com/@name.
   if (playerName(pathname)) return 'player'

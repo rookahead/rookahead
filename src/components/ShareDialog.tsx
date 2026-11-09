@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GameReport, MoveClass } from '../lib/classify'
 import type { Color } from '../lib/evaluation'
+import { useAccount } from '../lib/account'
 import { download } from '../lib/download'
+import { sendGame, useFriends, type Friend } from '../lib/friends'
 import { canShare, shareLink } from '../lib/nativeApp'
 import { exportPgn, pgnFileName } from '../lib/pgn'
 import type { BoardTheme } from '../lib/settings'
@@ -11,7 +13,7 @@ import { Tabs } from './Tabs'
 import type { MoveNode, PgnHeaders } from '../lib/tree'
 
 type ShareMode = 'game' | 'move'
-type Tab = 'pgn' | 'fen' | 'image' | 'gif' | 'embed'
+type Tab = 'pgn' | 'fen' | 'image' | 'gif' | 'embed' | 'friend'
 
 /** Mounted only while open, so every opening starts fresh. */
 interface Props {
@@ -114,12 +116,15 @@ export function ShareDialog({ onClose, line, currentNode, headers, orientation, 
     [line, headers, classes, withReview, withClocks, hasClocks],
   )
 
+  const { status } = useAccount()
   const tabs: [Tab, string][] = [
     ['pgn', 'PGN'],
     ['fen', 'FEN'],
     ['image', 'Image'],
     ['gif', 'GIF'],
     ['embed', 'Embed'],
+    // Signed in: straight to a friend on Rookahead.
+    ...(status === 'signed-in' ? ([['friend', 'Friend']] as [Tab, string][]) : []),
   ]
 
   return (
@@ -206,6 +211,7 @@ export function ShareDialog({ onClose, line, currentNode, headers, orientation, 
           {tab === 'gif' && (
             <GifTab line={line} node={currentNode} headers={headers} orientation={orientation} report={report} boardTheme={boardTheme} endIndex={moveIndex > 0 ? moveIndex : line.length - 1} />
           )}
+          {tab === 'friend' && <SendToFriend token={token} ply={activeMode === 'move' ? moveIndex : null} title={`${headers.White || 'White'} vs ${headers.Black || 'Black'}`} />}
           {tab === 'embed' && (
             <EmbedTab
               url={token ? embedUrl(token, activeMode === 'move' ? moveIndex : null, location.origin) : ''}
@@ -251,5 +257,71 @@ function EmbedTab({ url, size, onSize, title }: { url: string; size: EmbedSize; 
         <CopyButton text={snippet} label="Copy embed code" />
       </div>
     </>
+  )
+}
+
+/** Sends this game (or this move of it) to a friend on Rookahead, with a note; it shows in their Friends tab. */
+function SendToFriend({ token, ply, title }: { token: string | null; ply: number | null; title: string }) {
+  const { friends, loaded } = useFriends()
+  const mine = friends.filter((f) => f.status === 'accepted')
+  const [to, setTo] = useState<Friend | null>(null)
+  const [note, setNote] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sent, setSent] = useState<string | null>(null)
+  if (!loaded) return <p className="muted">Loading your friends…</p>
+  if (!mine.length)
+    return (
+      <p className="muted">
+        No friends yet. Add them under Profile → Friends, then send them games from here.
+      </p>
+    )
+  const send = async () => {
+    if (!to || !token || sending) return
+    setSending(true)
+    setError(null)
+    const problem = await sendGame(to, { token, ply, title, note })
+    setSending(false)
+    if (problem) setError(problem)
+    else {
+      setSent(to.username)
+      setNote('')
+    }
+  }
+  return (
+    <div className="share-friend">
+      <div className="filter-chips" role="radiogroup" aria-label="Send to">
+        {mine.map((f) => (
+          <button
+            key={f.id}
+            role="radio"
+            aria-checked={to?.id === f.id}
+            className={`filter-chip all ${to?.id === f.id ? 'on' : ''}`}
+            onClick={() => {
+              setTo(f)
+              setSent(null)
+            }}
+          >
+            {f.username}
+          </button>
+        ))}
+      </div>
+      <textarea
+        className="input report-note"
+        value={note}
+        maxLength={280}
+        rows={2}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={ply ? 'A note (optional): “Would you find this move?”' : 'A note (optional): “Look what happened in this one”'}
+        aria-label="Note"
+      />
+      {error && <p className="form-error">{error}</p>}
+      {sent && <p className="friends-ok">Sent to {sent}. It’s in their Friends tab.</p>}
+      <div className="form-actions">
+        <button className="btn primary" disabled={!to || !token || sending} onClick={() => void send()}>
+          {sending ? 'Sending…' : to ? `Send to ${to.username}` : 'Pick a friend'}
+        </button>
+      </div>
+    </div>
   )
 }

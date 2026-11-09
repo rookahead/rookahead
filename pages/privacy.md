@@ -27,6 +27,10 @@ Your profile is private: only you see it. If you choose **Make public** on it, a
 
 Anyone can report a public profile's name or photo. A report holds the username, the reason and an optional note, plus your account if you're signed in; we read them only to keep profiles within the rules.
 
+## Friends
+
+With an account you can add friends by their Rookahead username; you're friends once they accept, and either of you can remove it at any time. Friends see each other's username, photo, Lichess username (if you've connected Lichess) and when you last opened Rookahead. Games you send a friend, with your note, are stored for the two of you and deleted when either of you removes them or deletes their account. Nobody else can see your friends or the games you send.
+
 ## Your games are analysed on your device
 
 The chess engine runs in your browser. Games you load or play are analysed on your computer or phone. Without an account nothing is logged, and your settings, progress and the game you're working on are saved only in your browser's storage, so they survive a refresh; clearing your browser's site data removes them. With an account, the progress listed above is also copied to your account.

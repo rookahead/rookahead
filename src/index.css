@@ -9587,6 +9587,220 @@ button.chip:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.profile-tab-count.new {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 650;
+  text-align: center;
+}
+
+/* Friends: add one, answer requests, games they sent, and the list. Row actions are quiet text links. */
+.friends-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.friends-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.friends-count {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.friends-add {
+  display: flex;
+  gap: 8px;
+}
+
+.friends-add .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.friends-ok {
+  margin: 0;
+  color: var(--tone-green);
+  font-size: 13px;
+}
+
+.friends-sub {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.friend-row:first-child {
+  border-top: 0;
+}
+
+.friend-avatar {
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+}
+
+.friend-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.friend-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friend-text strong,
+.friend-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.friend-name:hover {
+  text-decoration: underline;
+}
+
+.friend-text small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.friend-online {
+  color: var(--tone-green);
+}
+
+.friend-new {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.friend-note {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-style: italic;
+}
+
+.friend-actions {
+  flex: none;
+  display: flex;
+  gap: 14px;
+}
+
+.friend-actions .link-btn.strong {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.friend-actions .link-btn.danger {
+  color: var(--danger);
+}
+
+/* A friend request or a game from a friend not seen yet, on your avatar. */
+.user-avatar,
+.tab-icon {
+  position: relative;
+}
+
+/* Inside the avatar's corner: avatars clip what spills over. */
+.unseen-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.tab-icon .unseen-dot {
+  top: 1px;
+  right: 11px;
+}
+
+.account-menu-count {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 11.5px;
+  font-weight: 650;
+  text-align: center;
+}
+
+/* On someone's public profile: add them, or where that stands, beside Report. */
+.player-actions {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.player-friend {
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.friends-guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.friends-guest-actions .btn {
+  height: 44px;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.share-friend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .profile-cols {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);

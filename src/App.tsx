@@ -13,6 +13,7 @@ import { finishAppSignIn, openAccountPage, startAccounts, useAccount } from './l
 import { startUsage } from './lib/usage'
 import { heldBy, holdBatch } from './lib/batchReview'
 import { runningInstalled } from './lib/install'
+import { shareLichessName } from './lib/friends'
 import { finishLichess, isLichessReturn, useLichess } from './lib/lichessAuth'
 import { listenForReturns, setBarIcons } from './lib/nativeApp'
 import { BoardPrefsContext } from './lib/boardPrefs'
@@ -98,7 +99,8 @@ export default function App() {
     document.title = titleFor(pathname)
   }, [pathname])
   const phone = useMediaQuery('(max-width: 1000px)')
-  const { status: accountStatus, needsUsername } = useAccount()
+  const { status: accountStatus, needsUsername, account } = useAccount()
+  const accountId = account?.id
   const [rail, setRail] = useState(readRail)
   // Analysis mounts on first visit and then stays, hidden, so a running review or a loaded game
   // survives a trip to Home. Opening a game from Home remounts it (new key) to read that game.
@@ -237,6 +239,11 @@ export default function App() {
   useEffect(() => {
     if (lichessName && !settingsNow.current.lichessUser.trim()) updateSettings({ lichessUser: lichessName })
   }, [lichessName, updateSettings])
+  // Your Lichess username on your account, so friends can challenge you there (off again when you disconnect).
+  const signedInId = accountStatus === 'signed-in' ? accountId : null
+  useEffect(() => {
+    if (signedInId) void shareLichessName(lichessName ?? null)
+  }, [signedInId, lichessName])
   // The Android app: a sign-in finished in its Chrome tab comes back here.
   useEffect(
     () =>

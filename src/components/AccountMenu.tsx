@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { hasUnsynced, logOut, useAccount } from '../lib/account'
+import { unseenCount, useFriends } from '../lib/friends'
 import { navigate } from '../lib/router'
 import { AvatarFace, Gear } from './UserCard'
 
@@ -14,6 +15,7 @@ interface Props {
 
 const LOG_OUT = 'M9 4H5v16h4M14 8l4 4-4 4M18 12H9'
 export const PROFILE = 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0'
+const FRIENDS = 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.3a3.5 3.5 0 0 1 0 6.4M18 14a6.5 6.5 0 0 1 3.5 6'
 
 const icon = (d: string) => (
   <svg viewBox="0 0 24 24" aria-hidden>
@@ -61,6 +63,8 @@ export function AccountMenu({ anchor, placement, onClose }: Props) {
     onClose()
   }
 
+  const unseen = unseenCount(useFriends())
+
   return createPortal(
     <div ref={root} className={`account-menu ${placement}`} style={style} role="menu" aria-label="Account">
       <div className="account-menu-who">
@@ -74,6 +78,11 @@ export function AccountMenu({ anchor, placement, onClose }: Props) {
       <button className="account-menu-item" role="menuitem" onClick={() => go('/profile')}>
         {icon(PROFILE)}
         Profile
+      </button>
+      <button className="account-menu-item" role="menuitem" onClick={() => go('/profile/friends')}>
+        {icon(FRIENDS)}
+        Friends
+        {unseen > 0 && <span className="account-menu-count">{unseen}</span>}
       </button>
       <button className="account-menu-item" role="menuitem" onClick={() => go('/settings')}>
         <Gear />

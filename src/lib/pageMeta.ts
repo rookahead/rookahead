@@ -52,7 +52,7 @@ export function titleFor(pathname: string): string {
   if (/^\/settings/.test(path)) return 'Settings · Rookahead'
   if (/^\/(analysis|r)$/.test(path)) return 'Game review · Rookahead'
   if (path === '/you') return 'You · Rookahead'
-  if (/^\/profile(\/(games|stats))?$/.test(path)) return 'Profile · Rookahead'
+  if (/^\/profile(\/(games|stats|friends))?$/.test(path)) return 'Profile · Rookahead'
   const player = /^\/(?:@|%40)([A-Za-z0-9_-]+)$/.exec(path)
   if (player) return `${player[1]} · Rookahead`
   if (/^\/(signup|login|reset-password)$/.test(path)) return 'Sign in · Rookahead'

@@ -3,6 +3,7 @@ import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
 import { Skel } from '../components/Skeleton'
 import { useAccount } from '../lib/account'
+import { acceptFriend, requestFriend, useFriends } from '../lib/friends'
 import { fetchPublicProfile, reportProfile, type PublicProfile, type ReportReason } from '../lib/publicProfile'
 import { NOTE_MAX } from '../lib/reports'
 
@@ -62,9 +63,12 @@ export function PublicProfilePage({ name }: { name: string }) {
               )}
             </div>
             {!own && (
-              <button className="link-btn player-report" onClick={() => setReporting(true)}>
-                Report
-              </button>
+              <div className="player-actions">
+                {username && <FriendButton name={profile.username} />}
+                <button className="link-btn player-report" onClick={() => setReporting(true)}>
+                  Report
+                </button>
+              </div>
             )}
           </div>
         </section>
@@ -129,6 +133,33 @@ export function PublicProfilePage({ name }: { name: string }) {
       <main className="profile player-page">{body}</main>
       {reporting && profile && <ReportProfileDialog username={profile.username} onClose={() => setReporting(false)} />}
     </div>
+  )
+}
+
+/** Add them as a friend, or where that stands: asked, asking you, or friends already. */
+function FriendButton({ name }: { name: string }) {
+  const { friends } = useFriends()
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const f = friends.find((x) => x.username.toLowerCase() === name.toLowerCase())
+  if (f?.status === 'accepted') return <span className="player-friend">Friends</span>
+  if (f && !f.incoming) return <span className="player-friend">Request sent</span>
+  const act = async () => {
+    setBusy(true)
+    if (f) await acceptFriend(f.id)
+    else {
+      const r = await requestFriend(name)
+      if (r !== 'sent' && r !== 'accepted' && r !== 'already') setNote('Couldn’t send it. Try again.')
+    }
+    setBusy(false)
+  }
+  return (
+    <>
+      <button className="btn primary small" disabled={busy} onClick={() => void act()}>
+        {f ? 'Accept friend request' : 'Add friend'}
+      </button>
+      {note && <span className="form-error">{note}</span>}
+    </>
   )
 }
 

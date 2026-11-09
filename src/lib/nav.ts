@@ -77,8 +77,8 @@ export const PHONE_ACTIONS: Partial<Record<Route, { label: string; to?: string; 
 /** The tabs whose pages slide as real elements (App.tsx). Analyze is full screen and has its bar to send away. */
 const HAND_SLID = new Set(['/', '/puzzles', '/blog', '/profile'])
 
-/** The tab an address belongs to: the profile and its Stats are the You tab; All games is a page you go into. */
-const tabPath = (path: string) => (/^\/profile(\/stats)?\/?$/.test(path) ? '/profile' : path)
+/** The tab an address belongs to: the profile, its Stats and Friends are the You tab; All games is a page you go into. */
+const tabPath = (path: string) => (/^\/profile(\/(stats|friends))?\/?$/.test(path) ? '/profile' : path)
 
 /**
  * Whether going from one tab to another slides the real pages rather than a view transition. A view transition

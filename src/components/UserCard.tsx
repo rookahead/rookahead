@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount, type Account } from '../lib/account'
+import { unseenCount, useFriends } from '../lib/friends'
 import { navigate, useRoute } from '../lib/router'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
 import { AccountMenu, PROFILE } from './AccountMenu'
@@ -54,6 +55,8 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
   const closeMenu = useCallback(() => setMenuAt(null), [])
   const guest = status !== 'signed-in'
   const onProfile = useRoute() === 'games'
+  // A friend request or a game from a friend you haven't seen yet.
+  const unseen = unseenCount(useFriends())
   // Keyed: the card's layout changes as a saved sign-in comes back (signing in, then you), and the gear moves
   // among its siblings; without a key it would be a new button each time, and a click landing then is lost.
   const settings = (
@@ -131,6 +134,7 @@ export function UserCard({ rail, settingsOpen, onSettings, settings: prefs, onCh
         >
           <span className="user-avatar" aria-hidden>
             <AvatarFace account={account} />
+            {unseen > 0 && <span className="unseen-dot" />}
           </span>
           <span className="user-card-text">
             <strong>{username}</strong>

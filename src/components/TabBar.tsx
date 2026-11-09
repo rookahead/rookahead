@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useMistakes } from '../hooks/useMistakes'
 import { useAccount } from '../lib/account'
+import { unseenCount, useFriends } from '../lib/friends'
 import { PHONE_ACTIONS, PHONE_TABS } from '../lib/nav'
 import { loadProgress } from '../lib/puzzleStore'
 import { isPuzzleHub, type Route } from '../lib/router'
@@ -11,6 +12,7 @@ import { AvatarFace } from './UserCard'
 /** Phone navigation along the bottom of the screen. Your photo, when you've uploaded one, is the You tab's icon. */
 export function TabBar({ route }: { route: Route }) {
   const { account, avatarUrl } = useAccount()
+  const unseen = unseenCount(useFriends())
   // A tab lights up at the touch, not when its page has opened, so a page that takes a moment still answers at once.
   const [pressed, setPressed] = useState<string | null>(null)
   // Puzzles' menu of modes, open over the page.
@@ -19,7 +21,8 @@ export function TabBar({ route }: { route: Route }) {
     setPressed(null)
     setModes(false)
   }, [route])
-  const action = PHONE_ACTIONS[route]
+  // Load a game belongs with your games, not with your friends.
+  const action = route === 'games' && /\/friends\/?$/.test(location.pathname) ? undefined : PHONE_ACTIONS[route]
   const puzzles = route === 'puzzles' && isPuzzleHub(location.pathname)
   const lit = PHONE_TABS.findIndex((tab) => (pressed ? pressed === tab.id : tab.routes.includes(route)))
   return (
@@ -54,6 +57,7 @@ export function TabBar({ route }: { route: Route }) {
               onPointerCancel={() => setPressed(null)}
             >
               <span className="tab-icon">
+                {tab.id === 'you' && unseen > 0 && <span className="unseen-dot" aria-label={`${unseen} new`} />}
                 {photo ? (
                   <span className="tab-photo">
                     <AvatarFace account={account} />

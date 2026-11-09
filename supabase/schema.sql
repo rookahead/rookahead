@@ -319,3 +319,212 @@ revoke execute on function public.profile_reports_limit() from public, anon, aut
 -- Supabase's own switch that turns RLS on for every new table in public (the ensure_rls event trigger):
 -- the database runs it, so it isn't callable through the API.
 revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+
+-- Friends. You add someone by their Rookahead username (request_friend); they accept, and you're friends
+-- until either of you removes it. Friends see each other's username, photo, Lichess username and when they
+-- last opened Rookahead (my_friends), and can send each other games (shared_games). Nobody reads another
+-- account's rows directly.
+
+-- Your Lichess username, as your app last connected it: friends use it to challenge you there.
+alter table public.profiles add column if not exists lichess text check (lichess is null or lichess ~ '^[A-Za-z0-9_-]{2,30}$');
+grant update (lichess) on public.profiles to authenticated;
+
+create table if not exists public.friendships (
+  id bigint generated always as identity primary key,
+  requester uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  addressee uuid not null references public.profiles (id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at timestamptz not null default now(),
+  accepted_at timestamptz,
+  check (requester <> addressee)
+);
+create unique index if not exists friendships_pair on public.friendships (least(requester, addressee), greatest(requester, addressee));
+create index if not exists friendships_addressee on public.friendships (addressee);
+
+alter table public.friendships enable row level security;
+
+drop policy if exists "Either side: read" on public.friendships;
+drop policy if exists "Addressee: accept" on public.friendships;
+drop policy if exists "Either side: remove" on public.friendships;
+create policy "Either side: read" on public.friendships for select to authenticated using ((select auth.uid()) in (requester, addressee));
+create policy "Addressee: accept" on public.friendships for update to authenticated using ((select auth.uid()) = addressee) with check ((select auth.uid()) = addressee and status = 'accepted');
+create policy "Either side: remove" on public.friendships for delete to authenticated using ((select auth.uid()) in (requester, addressee));
+
+-- Requests are made through request_friend() only; accepting sets the time.
+revoke all on public.friendships from anon, authenticated;
+grant select, delete on public.friendships to authenticated;
+grant update (status) on public.friendships to authenticated;
+
+create or replace function public.friendships_accepted_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.status = 'accepted' and old.status <> 'accepted' then
+    new.accepted_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists friendships_accepted_at on public.friendships;
+create trigger friendships_accepted_at before update on public.friendships for each row execute function public.friendships_accepted_at();
+revoke execute on function public.friendships_accepted_at() from public, anon, authenticated;
+
+-- Asks `name` to be your friend. Says what happened: sent, accepted (they had already asked you), already
+-- (friends, or asked), self, not-found, or busy (too many requests in an hour).
+create or replace function public.request_friend(name text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := auth.uid();
+  them uuid;
+  existing public.friendships;
+begin
+  if me is null then
+    return 'not-found';
+  end if;
+  select id into them from public.profiles where lower(username) = lower(name);
+  if them is null then
+    return 'not-found';
+  end if;
+  if them = me then
+    return 'self';
+  end if;
+  select * into existing from public.friendships
+  where least(requester, addressee) = least(me, them) and greatest(requester, addressee) = greatest(me, them);
+  if found then
+    if existing.status = 'pending' and existing.addressee = me then
+      update public.friendships set status = 'accepted' where id = existing.id;
+      return 'accepted';
+    end if;
+    return 'already';
+  end if;
+  if (select count(*) from public.friendships where requester = me and created_at > now() - interval '1 hour') >= 30 then
+    return 'busy';
+  end if;
+  insert into public.friendships (requester, addressee) values (me, them);
+  return 'sent';
+end;
+$$;
+
+revoke execute on function public.request_friend(text) from public, anon;
+grant execute on function public.request_friend(text) to authenticated;
+
+-- Your friends and requests, with what friends may see of each other.
+create or replace function public.my_friends()
+returns table (
+  id bigint,
+  user_id uuid,
+  username text,
+  avatar_url text,
+  lichess text,
+  status text,
+  incoming boolean,
+  since timestamptz,
+  active_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    f.id,
+    p.id,
+    p.username,
+    p.avatar_url,
+    case when f.status = 'accepted' then p.lichess end,
+    f.status,
+    f.addressee = auth.uid(),
+    coalesce(f.accepted_at, f.created_at),
+    case when f.status = 'accepted' then (select max(e.at) from public.usage_events e where e.user_id = p.id and e.event = 'open') end
+  from public.friendships f
+  join public.profiles p on p.id = case when f.requester = auth.uid() then f.addressee else f.requester end
+  where auth.uid() in (f.requester, f.addressee);
+$$;
+
+revoke execute on function public.my_friends() from public, anon;
+grant execute on function public.my_friends() to authenticated;
+
+-- Games sent to a friend: the game (a share-link token, with its review), the move to open at, and a note.
+create table if not exists public.shared_games (
+  id bigint generated always as identity primary key,
+  sender uuid not null default auth.uid() references public.profiles (id) on delete cascade,
+  recipient uuid not null references public.profiles (id) on delete cascade,
+  token text not null check (length(token) between 10 and 20000),
+  ply smallint check (ply is null or ply between 0 and 2000),
+  title text not null default '' check (length(title) <= 120),
+  note text not null default '' check (length(note) <= 280),
+  created_at timestamptz not null default now(),
+  seen_at timestamptz
+);
+create index if not exists shared_games_recipient on public.shared_games (recipient, created_at desc);
+
+alter table public.shared_games enable row level security;
+
+drop policy if exists "Either side: read" on public.shared_games;
+drop policy if exists "Friends: send" on public.shared_games;
+drop policy if exists "Recipient: mark seen" on public.shared_games;
+drop policy if exists "Either side: delete" on public.shared_games;
+create policy "Either side: read" on public.shared_games for select to authenticated using ((select auth.uid()) in (sender, recipient));
+create policy "Friends: send" on public.shared_games for insert to authenticated with check (
+  sender = (select auth.uid())
+  and exists (
+    select 1 from public.friendships f
+    where f.status = 'accepted'
+      and least(f.requester, f.addressee) = least(sender, recipient)
+      and greatest(f.requester, f.addressee) = greatest(sender, recipient)
+  )
+);
+create policy "Recipient: mark seen" on public.shared_games for update to authenticated using ((select auth.uid()) = recipient) with check ((select auth.uid()) = recipient);
+create policy "Either side: delete" on public.shared_games for delete to authenticated using ((select auth.uid()) in (sender, recipient));
+
+revoke all on public.shared_games from anon, authenticated;
+grant select, insert, delete on public.shared_games to authenticated;
+grant update (seen_at) on public.shared_games to authenticated;
+
+-- A ceiling per sender, so one account can't flood a friend.
+create or replace function public.shared_games_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select count(*) from public.shared_games where sender = new.sender and created_at > now() - interval '1 hour') >= 60 then
+    raise exception 'Too many games sent right now' using errcode = 'P0001';
+  end if;
+  new.created_at := now();
+  new.seen_at := null;
+  return new;
+end;
+$$;
+
+drop trigger if exists shared_games_limit on public.shared_games;
+create trigger shared_games_limit before insert on public.shared_games for each row execute function public.shared_games_limit();
+-- Only the trigger runs it: not callable through the API.
+revoke execute on function public.shared_games_limit() from public, anon, authenticated;
+
+-- Games friends sent you, newest first, with who sent them.
+create or replace function public.my_inbox()
+returns table (id bigint, sender_name text, sender_avatar text, token text, ply smallint, title text, note text, created_at timestamptz, seen_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select g.id, p.username, p.avatar_url, g.token, g.ply, g.title, g.note, g.created_at, g.seen_at
+  from public.shared_games g
+  join public.profiles p on p.id = g.sender
+  where g.recipient = auth.uid()
+  order by g.created_at desc
+  limit 100;
+$$;
+
+revoke execute on function public.my_inbox() from public, anon;
+grant execute on function public.my_inbox() to authenticated;

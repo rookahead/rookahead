@@ -19,6 +19,7 @@ import { gameDays } from '../lib/homeGames'
 import { SOURCE_LABEL, type GameSource, type MyGame } from '../lib/myGames'
 import { LOAD_GAME_EVENT } from '../lib/nav'
 import { PHASES, phaseAccuracy, phaseMoves, type Phase } from '../lib/phases'
+import { unseenCount, useFriends } from '../lib/friends'
 import { SITE } from '../lib/pageMeta'
 import { perfsFor, perfStats, type Perf, type RatingPoint, type Results } from '../lib/profile'
 import { profilePath, setPublic, updatePublicStats, usePublicProfile, type PublicStats } from '../lib/publicProfile'
@@ -29,6 +30,7 @@ import { navigate, usePathname } from '../lib/router'
 import type { Settings } from '../lib/settings'
 import { decodeSaved, type SharedGame } from '../lib/share'
 import { useStoreVersion } from '../lib/syncBus'
+import { FriendsPanel } from './profile/FriendsPanel'
 
 const PAGE = 40
 /** A phone shows a few at a time, so it has a much shorter list to draw before the page can open. */
@@ -37,7 +39,7 @@ const MONTH_MS = 30 * 86400000
 /** Reviewed games a rating's accuracy by phase is read from. */
 const PHASE_GAMES = 20
 
-type Tab = 'overview' | 'games' | 'stats'
+type Tab = 'overview' | 'games' | 'stats' | 'friends'
 type Show = 'all' | 'unreviewed' | MyGame['result']
 type SourceFilter = 'all' | GameSource
 /** Where a rating comes from on the Stats tab: Rookahead (online play through Lichess, our puzzles, the computer) or Chess.com. */
@@ -45,10 +47,11 @@ type StatsSource = 'rookahead' | 'chesscom'
 
 const PUZZLES = 'puzzles'
 
-/** /profile, /profile/games (or the old /games), /profile/stats. */
-const tabFor = (path: string): Tab => (/\/stats\/?$/.test(path) ? 'stats' : /games\/?$/.test(path) ? 'games' : 'overview')
-const TABS: Tab[] = ['overview', 'games', 'stats']
-const TAB_PATH: Record<Tab, string> = { overview: '/profile', games: '/profile/games', stats: '/profile/stats' }
+/** /profile, /profile/games (or the old /games), /profile/stats, /profile/friends. */
+const tabFor = (path: string): Tab => (/\/stats\/?$/.test(path) ? 'stats' : /\/friends\/?$/.test(path) ? 'friends' : /games\/?$/.test(path) ? 'games' : 'overview')
+const TABS: Tab[] = ['overview', 'games', 'stats', 'friends']
+const TAB_PATH: Record<Tab, string> = { overview: '/profile', games: '/profile/games', stats: '/profile/stats', friends: '/profile/friends' }
+const TAB_LABEL: Record<Tab, string> = { overview: 'Overview', games: 'Games', stats: 'Stats', friends: 'Friends' }
 
 const matches = (g: MyGame, s: Show, reviews: Record<string, CachedReview>) => (s === 'all' ? true : s === 'unreviewed' ? !reviews[g.key] : g.result === s)
 const pct = (n: number, of: number) => `${Math.round((n / Math.max(1, of)) * 100)}%`
@@ -167,6 +170,8 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
         )}
       </>
     )
+  } else if (tab === 'friends') {
+    body = <FriendsPanel onOpenAnalysis={onOpenAnalysis} />
   } else if (tab === 'games') {
     body = none ? bringIn : <GamesCard games={games} reviews={reviews} busy={busy} phone={phone} error={importError} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} />
   } else {
@@ -251,7 +256,7 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
               </button>
             )}
           </aside>
-          <div key={tab} className={`profile-main ${was.dir}`} role="tabpanel" aria-label={tab === 'overview' ? 'Overview' : tab === 'games' ? 'Games' : 'Stats'}>
+          <div key={tab} className={`profile-main ${was.dir}`} role="tabpanel" aria-label={TAB_LABEL[tab]}>
             {body}
           </div>
         </div>
@@ -276,6 +281,7 @@ function ProfileCard({
   onLinked: () => void
 }) {
   const { status, account, username } = useAccount()
+  const unseen = unseenCount(useFriends())
   const signedIn = status === 'signed-in' && account
   const name = username ?? (signedIn ? account.name : status === 'loading' ? 'Signing in…' : 'Guest')
   const linked = (['lichess', 'chesscom'] as const).filter((s) => users[s].trim())
@@ -292,7 +298,7 @@ function ProfileCard({
     const watch = new ResizeObserver(place)
     if (bar.current) watch.observe(bar.current)
     return () => watch.disconnect()
-  }, [tab, counted])
+  }, [tab, counted, unseen > 0])
   return (
     <section className="home-card profile-card" aria-label="You">
       <div className="profile-who">
@@ -338,8 +344,9 @@ function ProfileCard({
         {ink && <span className={`profile-tabs-ink ${ink.moved ? 'moves' : ''}`} aria-hidden style={{ '--x': `${ink.left}px`, '--w': `${ink.width}px` } as CSSProperties} />}
         {TABS.map((t) => (
           <Link key={t} to={TAB_PATH[t]} role="tab" aria-selected={tab === t} className={`profile-tab ${tab === t ? 'active' : ''}`}>
-            {t === 'overview' ? 'Overview' : t === 'games' ? 'Games' : 'Stats'}
+            {TAB_LABEL[t]}
             {t === 'games' && games > 0 && <span className="profile-tab-count">{games}</span>}
+            {t === 'friends' && unseen > 0 && <span className="profile-tab-count new">{unseen}</span>}
           </Link>
         ))}
       </nav>
