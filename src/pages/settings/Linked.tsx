@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { connectLichess, disconnectLichess, useLichess } from '../../lib/lichessAuth'
 import { cachedFor, importGames, loadImportCache, SOURCE_LABEL, type ImportSite } from '../../lib/myGames'
 import type { Settings } from '../../lib/settings'
 import { Section } from './shared'
@@ -107,6 +108,42 @@ export function LinkedSection({ settings, onChange }: { settings: Settings; onCh
           <SiteRow key={site} site={site} user={settings[FIELD[site]]} onSave={(name) => onChange({ [FIELD[site]]: name })} />
         ))}
       </div>
+      <LichessSignIn />
     </Section>
+  )
+}
+
+/** Signing in with Lichess itself (not just a username): it opens the opening explorer, and later online play. */
+function LichessSignIn() {
+  const { link, busy, error } = useLichess()
+  return (
+    <div className="linked-site lichess linked-signin">
+      <div className="linked-head">
+        <div className="linked-text">
+          <strong>Sign in with Lichess</strong>
+          <span>
+            {link ? (
+              <>
+                Connected as <b>{link.username}</b>. The opening explorer in Analysis uses it.
+              </>
+            ) : (
+              'Opens the opening explorer in Analysis, and online play when it comes. Your password stays with Lichess.'
+            )}
+          </span>
+        </div>
+        <div className="linked-actions">
+          {link ? (
+            <button className="btn ghost small" onClick={() => void disconnectLichess()}>
+              Disconnect
+            </button>
+          ) : (
+            <button className="btn primary small" disabled={busy} onClick={() => void connectLichess()}>
+              {busy ? 'Connecting…' : 'Connect Lichess'}
+            </button>
+          )}
+        </div>
+      </div>
+      {error && <p className="form-error">{error}</p>}
+    </div>
   )
 }

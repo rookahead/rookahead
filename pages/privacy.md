@@ -35,6 +35,10 @@ The chess engine runs in your browser. Games you load or play are analysed on yo
 
 When you load games by Chess.com or Lichess username, your browser fetches that player's public games directly from that site's public API. That site's own privacy policy applies to the request.
 
+## Connecting your Lichess account
+
+If you choose **Connect Lichess**, you sign in on lichess.org itself and Lichess gives your browser a token for your account. The token stays in your browser's storage only: it is never sent to Rookahead's servers or stored in your Rookahead account, and we never see your Lichess password. Your browser uses it to ask Lichess's opening explorer about the position on your board (Lichess requires a signed-in account for that). **Disconnect** under Settings → Linked accounts deletes the token here and asks Lichess to cancel it.
+
 ## Lichess cloud evals
 
 When a game is reviewed, your browser asks lichess.org for its stored deep evaluations of the opening positions, one position at a time, until Lichess has none. Only the positions are sent, never your name or the game's players. You can turn this off under Game review → Lichess cloud evals.

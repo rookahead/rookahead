@@ -10566,6 +10566,14 @@ strong.settings-value {
   --site: var(--tone-amber);
 }
 
+.linked-signin {
+  margin-top: 10px;
+}
+
+/* No dot of its own: its text lines up with the sites' names above. */
+.linked-signin .linked-text {
+  padding-left: 22px;
+}
 .linked-head {
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { OpenGameDialog } from './components/LoadGameDialog'
 import { faviconUrl } from './components/RookLogo'
@@ -13,6 +13,7 @@ import { finishAppSignIn, openAccountPage, startAccounts, useAccount } from './l
 import { startUsage } from './lib/usage'
 import { heldBy, holdBatch } from './lib/batchReview'
 import { runningInstalled } from './lib/install'
+import { finishLichess, isLichessReturn, useLichess } from './lib/lichessAuth'
 import { listenForReturns, setBarIcons } from './lib/nativeApp'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
@@ -225,11 +226,22 @@ export default function App() {
   useEffect(() => {
     void startAccounts()
     startUsage()
+    // Back from Lichess after Connect Lichess (lichessAuth.ts).
+    if (isLichessReturn(location.pathname)) void finishLichess(location.pathname + location.search)
   }, [])
+  // Just connected to Lichess with no Lichess username yet: your games and online ratings come from that account.
+  // Only as it connects, so clearing the username afterwards sticks.
+  const lichessName = useLichess().link?.username
+  const settingsNow = useRef(settings)
+  settingsNow.current = settings
+  useEffect(() => {
+    if (lichessName && !settingsNow.current.lichessUser.trim()) updateSettings({ lichessUser: lichessName })
+  }, [lichessName, updateSettings])
   // The Android app: a sign-in finished in its Chrome tab comes back here.
   useEffect(
     () =>
       listenForReturns((path) => {
+        if (isLichessReturn(new URL(path, location.origin).pathname)) return void finishLichess(path)
         setBackFromApp(true)
         void finishAppSignIn(path)
       }),
