@@ -97,9 +97,18 @@ function notify(first?: () => void) {
     const root = document.documentElement
     const slide = phone ? (tabSlide(shownPath, location.pathname) ?? (shownPage === 'all-games' ? 'forward' : from === 'all-games' ? 'back' : null)) : null
     if (slide) root.dataset.slide = slide
-    void startViewTransition(() => flushSync(update), 'page-change')
+    // The page's picture is drawn where the next page sits (at the top, mostly): the one you left is moved
+    // back to where you had it scrolled (index.css, ::view-transition-old(page)), so it doesn't jump first.
+    const wasAt = leftAt
+    void startViewTransition(() => {
+      flushSync(update)
+      root.style.setProperty('--page-was-at', `${window.scrollY - wasAt}px`)
+    }, 'page-change')
       .finished.catch(() => {})
-      .finally(() => delete root.dataset.slide)
+      .finally(() => {
+        delete root.dataset.slide
+        root.style.removeProperty('--page-was-at')
+      })
   } else update()
 }
 if (typeof window !== 'undefined') window.addEventListener('popstate', () => notify())

@@ -6817,6 +6817,7 @@ button.user-avatar.guest:hover {
 }
 
 ::view-transition-old(page) {
+  translate: 0 var(--page-was-at, 0px);
   animation: page-out 0.12s ease-in both;
 }
 
