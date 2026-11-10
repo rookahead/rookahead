@@ -96,12 +96,15 @@ export function parseGame(g: ApiGame): LichessGame | null {
   }
 }
 
-/** Most recent standard-chess games, newest first. */
-export async function fetchRecentGames(username: string, max = 30): Promise<LichessGame[]> {
+/** Most recent standard-chess games, newest first. With your token, for your own games, Lichess sends them three
+ * times faster; a token it no longer takes is dropped and the games asked for without it. */
+export async function fetchRecentGames(username: string, max = 30, token?: string): Promise<LichessGame[]> {
   const user = username.trim().toLowerCase()
   if (!user) return []
   const params = new URLSearchParams({ max: String(max), pgnInJson: 'true', opening: 'true', clocks: 'true', perfType: PERF_TYPES })
-  const res = await fetch(`${API}/games/user/${encodeURIComponent(user)}?${params}`, { headers: { Accept: 'application/x-ndjson' } })
+  const url = `${API}/games/user/${encodeURIComponent(user)}?${params}`
+  let res = await fetch(url, { headers: { Accept: 'application/x-ndjson', ...(token && { Authorization: `Bearer ${token}` }) } })
+  if (token && res.status === 401) res = await fetch(url, { headers: { Accept: 'application/x-ndjson' } })
   if (res.status === 404) throw new Error('No Lichess player with that username.')
   if (res.status === 429) throw new Error('Lichess is busy. Try again in a minute.')
   if (!res.ok) throw new Error(`Lichess returned ${res.status}. Try again in a moment.`)

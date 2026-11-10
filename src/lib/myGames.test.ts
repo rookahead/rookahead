@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChesscomGame } from './chesscom'
 import type { PlayedGame } from './games'
 import type { LichessGame } from './lichess'
-import { cachedFor, dayLabel, finalPosition, FRESH_MS, gameStats, importGames, isFresh, loadImportCache, myGames, type ImportCache, type MyGame } from './myGames'
+import { cachedFor, dayLabel, finalPosition, FRESH_MS, FULL_MS, gameStats, importGames, isFresh, loadImportCache, myGames, type ImportCache, type MyGame } from './myGames'
 import { mainline, treeFromPgn } from './tree'
 import type { CachedReview } from './reviewCache'
 
@@ -108,6 +108,33 @@ describe('importGames', () => {
     expect(saved.chesscom).toEqual(cache.chesscom)
     expect(saved.lichess?.user).toBe('bijoyv9')
     expect(saved.lichess?.games[0].url).toBe('https://lichess.org/abc')
+  })
+
+  it('tops up a Chess.com list read in full from the latest month alone, newest first', async () => {
+    const s = memoryStorage()
+    const now = Date.now()
+    const old = { ...cc, url: 'https://www.chess.com/game/live/0', endTime: 1000 }
+    s.setItem('rookahead.imported.v1', JSON.stringify({ chesscom: { user: 'Bijoy_V9', at: now - 2 * FRESH_MS, fullAt: now - 60_000, games: [cc, old] } }))
+    const api = (g: ChesscomGame) => ({ ...g, rules: 'chess', time_class: g.timeClass, time_control: g.timeControl, end_time: g.endTime })
+    const newer = { ...cc, url: 'https://www.chess.com/game/live/2', endTime: 4000 }
+    const fetch = vi.fn(async (_url: string) => Response.json({ games: [api(cc), api(newer)] }))
+    vi.stubGlobal('fetch', fetch)
+    await importGames('chesscom', 'bijoy_v9', s)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch.mock.calls[0][0]).toMatch(/\/player\/bijoy_v9\/games\/\d{4}\/\d{2}$/)
+    const saved = loadImportCache(s).chesscom!
+    expect(saved.games.map((g) => g.url)).toEqual([newer.url, cc.url, old.url])
+    expect(saved.fullAt).toBe(now - 60_000)
+  })
+
+  it('reads a Chess.com list in full when it is due one', async () => {
+    const s = memoryStorage()
+    s.setItem('rookahead.imported.v1', JSON.stringify({ chesscom: { user: 'Bijoy_V9', at: 0, fullAt: Date.now() - FULL_MS, games: [cc] } }))
+    const fetch = vi.fn(async (url: string) => Response.json(url.endsWith('/archives') ? { archives: [] } : { games: [] }))
+    vi.stubGlobal('fetch', fetch)
+    await importGames('chesscom', 'bijoy_v9', s)
+    expect(fetch.mock.calls[0][0]).toMatch(/\/archives$/)
+    expect(loadImportCache(s).chesscom?.games).toEqual([])
   })
 
   it('passes the site’s error on and caches nothing', async () => {

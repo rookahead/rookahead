@@ -8,6 +8,7 @@ import { loadGames, type PlayedGame } from './games'
 import { movesInPgn } from './home'
 import { levelInfo } from './levels'
 import * as lichess from './lichess'
+import { lichessNow } from './lichessAuth'
 import { gameKey, type CachedReview } from './reviewCache'
 import { mainline, treeFromPgn } from './tree'
 
@@ -37,12 +38,16 @@ export interface MyGame {
 // ── Imported games, cached on this device (re-fetchable, so not synced) ──
 
 const CACHE_KEY = 'rookahead.imported.v1'
-/** How long a fetched list counts as fresh. */
-export const FRESH_MS = 5 * 60 * 1000
+/** How long a fetched list counts as fresh: coming back sooner doesn't ask the site again. */
+export const FRESH_MS = 60 * 1000
+/** How often the Chess.com list is read in full; in between, only the latest month is, and added to it. */
+export const FULL_MS = 12 * 60 * 60 * 1000
 
 interface CachedList<G> {
   user: string
   at: number
+  /** When the list was last read in full (a list from before this was kept has none). */
+  fullAt?: number
   games: G[]
 }
 
@@ -80,15 +85,32 @@ export function cachedFor<S extends ImportSite>(cache: ImportCache, site: S, use
 
 export const isFresh = (entry: { at: number } | undefined, now = Date.now()) => !!entry && now - entry.at < FRESH_MS
 
-/** Fetches `user`'s recent games from `site` and caches them. Throws the site's error (unknown player, busy…). */
+/** Newest first, each game once (the newer copy wins). */
+function merged(newer: chesscom.ChesscomGame[], older: chesscom.ChesscomGame[]): chesscom.ChesscomGame[] {
+  const seen = new Set(newer.map((g) => g.url))
+  return [...newer, ...older.filter((g) => !seen.has(g.url))].sort((a, b) => b.endTime - a.endTime)
+}
+
+/**
+ * Fetches `user`'s recent games from `site` and caches them. Throws the site's error (unknown player, busy…).
+ * Chess.com's list, once read in full, is topped up from the latest month alone until it's due a full read: the
+ * full one asks for the list of months and can read a whole month before (megabytes, for someone who plays a lot).
+ */
 export async function importGames(site: ImportSite, user: string, storage = defaultStorage()): Promise<void> {
   const name = user.trim()
   const at = Date.now()
   if (site === 'chesscom') {
-    const games = await chesscom.fetchRecentGames(name)
-    saveImportCache({ ...loadImportCache(storage), chesscom: { user: name, at, games } }, storage)
+    const had = cachedFor(loadImportCache(storage), 'chesscom', name)
+    const entry =
+      had?.fullAt && at - had.fullAt < FULL_MS
+        ? { user: name, at, fullAt: had.fullAt, games: merged(await chesscom.fetchGamesSince(name, had.at, at), had.games) }
+        : { user: name, at, fullAt: at, games: await chesscom.fetchRecentGames(name) }
+    saveImportCache({ ...loadImportCache(storage), chesscom: entry }, storage)
   } else {
-    const games = await lichess.fetchRecentGames(name)
+    // Lichess sends you your own games faster when it knows it's you.
+    const link = lichessNow()
+    const token = link && sameUser(link.username, name) ? link.token : undefined
+    const games = await lichess.fetchRecentGames(name, undefined, token)
     saveImportCache({ ...loadImportCache(storage), lichess: { user: name, at, games } }, storage)
   }
 }
