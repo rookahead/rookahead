@@ -7917,66 +7917,6 @@ button.user-avatar.guest:hover {
   fill: #ffd27a;
 }
 
-.streak-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.streak-tile {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 8px;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-
-.streak-tile > svg {
-  grid-row: span 2;
-}
-
-.streak-tile strong {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.streak-tile span {
-  grid-column: 2;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.streak-tile.hot {
-  background: color-mix(in srgb, var(--streak) 14%, var(--surface-2));
-}
-
-.streak-tile.hot strong {
-  color: var(--streak);
-}
-
-.tile-icon {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.streak-tile.hot .tile-icon {
-  stroke: var(--streak);
-}
-
 .day-streak {
   margin-left: auto;
   align-self: center;
@@ -8068,6 +8008,342 @@ button.user-avatar.guest:hover {
 
 .play-actions.single {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* The panel's head on Puzzles has no buttons beside the title: as tall as Analysis's all the same. */
+.puzzle-layout .panel-top {
+  min-height: 49px;
+}
+
+/* Puzzles, round 3 (Rated and Daily): the rook's line, one number and one bar, the clock, one clear next step. */
+.puzzle-coach {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Room for the label and two lines, so a longer line moves nothing. */
+  min-height: 92px;
+  padding: 16px 18px 4px;
+}
+
+.puzzle-coach-rook {
+  flex: none;
+  width: 54px;
+  height: 63px;
+}
+
+.puzzle-say {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.puzzle-who {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.puzzle-who.good {
+  color: var(--win);
+}
+
+.puzzle-who.bad {
+  color: var(--danger);
+}
+
+.puzzle-who svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.puzzle-who svg * {
+  stroke-width: 3;
+}
+
+/* Whose move it is: a dot in that side's colour (a disc, so it isn't taken for a tick box). */
+.puzzle-side {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--white-piece);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.puzzle-side.black {
+  background: var(--black-piece);
+  box-shadow: 0 0 0 1.5px var(--guide-strong);
+}
+
+.puzzle-line {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.puzzle-score {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 18px 14px;
+}
+
+.puzzle-score-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.puzzle-num {
+  font-size: 36px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.puzzle-num.date {
+  align-self: center;
+  font-size: 24px;
+}
+
+.puzzle-delta {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.puzzle-delta.up {
+  color: var(--win);
+}
+
+.puzzle-delta.down {
+  color: var(--danger);
+}
+
+/* The run you're on: the flame and how many in a row. */
+.puzzle-run {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-run.lit {
+  color: var(--streak);
+}
+
+/* With the clock on the row (phones) it takes the right-hand end, and the run sits by the number. */
+.puzzle-score-top.with-clock .puzzle-run,
+.puzzle-score-top.with-clock .day-streak {
+  margin-left: 0;
+}
+
+.puzzle-score-top .puzzle-time {
+  margin-left: auto;
+  align-self: center;
+}
+
+/* How far the next hundred is. */
+.puzzle-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-4);
+  overflow: hidden;
+}
+
+.puzzle-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.puzzle-to {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-time svg {
+  width: 16px;
+  height: 16px;
+}
+
+.puzzle-time-row {
+  flex-shrink: 0;
+  padding: 0 18px 12px;
+}
+
+.puzzle-acts {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.puzzle-acts .btn {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  margin-top: 0;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.puzzle-acts .btn.accent-btn {
+  font-size: 16px;
+}
+
+.puzzle-acts .btn svg {
+  width: 19px;
+  height: 19px;
+}
+
+.puzzle-acts .btn.puzzle-skip {
+  flex: none;
+}
+
+.puzzle-acts .ctrl {
+  flex: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+}
+
+.puzzle-acts .ctrl svg {
+  width: 20px;
+  height: 20px;
+}
+
+.puzzle-stats {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* What a clean solve earned, popping over the square with the tick. */
+.badge-note {
+  position: absolute;
+  left: 50%;
+  bottom: 104%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--win);
+  color: #0d2a06;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  box-shadow: var(--shadow-chip);
+  animation: note-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--slide-ms) * 0.6) backwards;
+}
+
+/* On the top row there's no room over the square: under it. */
+.board-badge.top-row .badge-note {
+  top: 104%;
+  bottom: auto;
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 60%) scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-note,
+  .puzzle-delta {
+    animation: none;
+  }
+
+  .puzzle-track span {
+    transition: none;
+  }
+}
+
+/* Phones: the rook's line over the board, on the page itself (its face takes the page's colour). */
+.puzzle-above {
+  --surface: var(--bg);
+}
+
+@media (max-width: 1000px) {
+  .puzzle-above .puzzle-coach {
+    min-height: 62px;
+    padding: 0 16px;
+  }
+
+  .puzzle-layout .puzzle-coach-rook {
+    width: 44px;
+    height: 52px;
+  }
+
+  .puzzle-layout .puzzle-line {
+    font-size: 16px;
+  }
+
+  .puzzle-layout .puzzle-num {
+    font-size: 30px;
+  }
+
+  .puzzle-layout .puzzle-num.date {
+    font-size: 20px;
+  }
+
+  .puzzle-layout .puzzle-score {
+    padding: 14px 16px 12px;
+  }
+
+  .puzzle-acts .btn,
+  .puzzle-acts .ctrl {
+    height: 48px;
+  }
+
+  .puzzle-acts .ctrl {
+    width: 46px;
+  }
+
+  .puzzle-layout .puzzle-body {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border);
+  }
+
+  .badge-note {
+    padding: 1px 8px;
+    font-size: 14px;
+  }
 }
 
 .sprint-title {
@@ -8226,8 +8502,12 @@ button.user-avatar.guest:hover {
 }
 
 @media (min-width: 1001px) {
-  /* No player bars: the board takes the height, less a row for the chips under it. */
+  /* No bar above the page (its name is in the panel) and no player bars: the board takes the height,
+     less a row for the chips under it. */
   .play-layout.puzzle-layout {
+    --nav-h: 0px;
+    /* Centred in the window's height, like Analysis: the padding above wins over the shared rule that does it. */
+    padding-top: calc(var(--pad-y) + max(0px, (100vh - var(--nav-h) - 2 * var(--pad-y) - var(--column-h)) / 2));
     --board-size: round(
       down,
       max(280px, min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 40px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)),
@@ -10378,7 +10658,7 @@ h2 {
 
 /* Big numbers in DM Sans: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
 .puzzle-rating strong,
-.streak-tile strong,
+.puzzle-num,
 .sprint-score strong,
 .sprint-result strong,
 .player-clock,

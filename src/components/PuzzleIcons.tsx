@@ -26,3 +26,36 @@ export function Flame({ size = 18, lit = true }: { size?: number; lit?: boolean 
     </svg>
   )
 }
+
+const ICONS = {
+  hint: <path d="M9 18h6M10 21h4M8.2 14.5a6 6 0 1 1 7.6 0c-.6.5-.8 1-.8 1.500H9c0-.5-.2-1-.8-1.500Z" />,
+  retry: <path d="M4 5v5h5M4.6 14a7.5 7.5 0 1 0 1.7-7.300L4 9" />,
+  analyse: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.500M11 8.500v5M8.5 11h5" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.500V12l3 2" />
+    </>
+  ),
+  options: (
+    <>
+      <path d="M4 7h8M18 7h2M4 17h2M12 17h8" />
+      <circle cx="15" cy="7" r="2.5" />
+      <circle cx="9" cy="17" r="2.5" />
+    </>
+  ),
+}
+
+/** The puzzle panel's line icons (24×24), drawn like the page's other actions. */
+export function PuzzleIcon({ name }: { name: keyof typeof ICONS }) {
+  return (
+    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+      {ICONS[name]}
+    </svg>
+  )
+}

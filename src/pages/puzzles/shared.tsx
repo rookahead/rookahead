@@ -7,6 +7,7 @@ import { PieceIcon } from '../../components/PieceIcon'
 import { Flame } from '../../components/PuzzleIcons'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
 import { formatScore, type Color } from '../../lib/evaluation'
+import { NAV_ITEMS } from '../../lib/nav'
 import { revealSolution, startSolve, tryMove, type Puzzle } from '../../lib/puzzles'
 import type { PuzzleProgress } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
@@ -39,16 +40,34 @@ export function walk(fen: string, moves: string[]): { fens: string[]; tree: Game
   return { fens: mainline(tree).map((n) => n.fen), tree }
 }
 
-/** Board on the left, panel on the right (tabs on top); `below` sits under the board. */
-export function PuzzleLayout({ board, tabs, below, children }: { board: ReactNode; tabs: ReactNode; below?: ReactNode; children: ReactNode }) {
+const PUZZLES_ICON = NAV_ITEMS.find((item) => item.id === 'puzzles')!.icon
+
+/**
+ * Board on the left, panel on the right; `below` sits under the board, `above` over it. On desktop the panel
+ * opens with the page's name and the mode tabs (the page has no bar of its own there, so the board gets the height).
+ */
+export function PuzzleLayout({ board, tabs, above, below, children }: { board: ReactNode; tabs: ReactNode; above?: ReactNode; below?: ReactNode; children: ReactNode }) {
   return (
     <main className="play-layout puzzle-layout">
       <section className="play-board">
+        {above && <div className="puzzle-above">{above}</div>}
         {board}
         <div className="puzzle-below">{below}</div>
       </section>
       <aside className="panel play-panel">
         <div className="panel-card">
+          {tabs && (
+            <div className="panel-top">
+              <div className="panel-top-side" />
+              <h1 className="panel-title">
+                <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
+                  <path d={PUZZLES_ICON} />
+                </svg>
+                Puzzles
+              </h1>
+              <div className="panel-top-side end" />
+            </div>
+          )}
           {tabs}
           {children}
         </div>
@@ -249,11 +268,31 @@ export function usePuzzleSolve(puzzle: Puzzle, volume: number, timing: SolveTimi
     setSolve(revealSolution(puzzle, solve))
   }
 
+  /** The solution's next move, played for you: the result, or null when it isn't your turn. The puzzle is a miss from here. */
+  const show = () => {
+    if (!yourTurn) return null
+    const r = tryMove(puzzle, solve, puzzle.moves[solve.played.length])
+    // Not your find: it gets no tick.
+    setLastResult(null)
+    setSolve({ ...r.state, failed: true })
+    setVisible(solve.played.length + 1)
+    return r.result
+  }
+
+  /** The same puzzle again, from its first move. */
+  const restart = () => {
+    setSolve(startSolve(puzzle))
+    setVisible(0)
+    setWrong(null)
+    setLastResult(null)
+    setViewPly(null)
+  }
+
   // ✓ on your move while it's the last one on the board (and on the final move); ✗ on a wrong one.
   const yourMoveLast = viewPly === null && shownMoves.length % 2 === 0 && shownMoves.length > 0
   const mark: 'correct' | 'wrong' | undefined = wrong ? 'wrong' : yourMoveLast && lastResult === 'correct' && !solve.revealed ? 'correct' : undefined
 
-  return { solve, node, ply, lastPly, viewing: viewPly !== null, settled, over, wrong, lastResult, yourTurn, mark, step, play, reveal }
+  return { solve, node, ply, lastPly, viewing: viewPly !== null, settled, over, wrong, lastResult, yourTurn, mark, step, play, reveal, show, restart }
 }
 
 /** Chessground's last-move pair for a node. */

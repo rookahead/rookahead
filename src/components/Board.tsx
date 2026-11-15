@@ -94,6 +94,8 @@ interface Props {
   autoQueen?: boolean
   /** A puzzle's verdict on the last move: a ✓ or ✗ badge on its square. */
   mark?: 'correct' | 'wrong'
+  /** A few characters beside the mark, popping in with it: the points a solved puzzle earned ("+12"). */
+  markNote?: string
   /** How the game ended, marked on the kings (see endMarks). */
   ends?: EndMark[]
   /** Arrived by stepping forward onto a Legendary move: the board shakes as the piece lands. */
@@ -164,7 +166,7 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, premove, autoQueen = false, mark, ends, legendary = false }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, premove, autoQueen = false, mark, markNote, ends, legendary = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
@@ -525,6 +527,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
         <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''} ${badge.left === 87.5 ? 'edge-right' : ''} ${badge.top === 0 ? 'top-row' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
           {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
+          {mark && markNote && <span className="badge-note">{markNote}</span>}
         </div>
       )}
       {promotion && (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyIndex, DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, pickBand, playerColor, revealSolution, sprintRating, startSolve, themeLabels, tryMove, type Puzzle } from './puzzles'
+import { dailyIndex, DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, pickBand, playerColor, puzzleGoal, revealSolution, solvedLine, sprintRating, startSolve, themeLabels, tryMove, type Puzzle } from './puzzles'
 
 const MATE_IN_2 = 'XPBtt r3r1k1/pp3p1R/2nb1p2/8/4B1N1/4P3/PP3P2/2K5_b_-_-_0_25 d6e5,g4h6,g8f8,h7f7 1559 mate,mateIn2,middlegame,short'
 const puzzle = (line: string) => parsePuzzleLine(line) as Puzzle
@@ -141,5 +141,45 @@ describe('localDayNumber', () => {
     expect(localDayNumber(new Date(2026, 0, 1, 23, 59))).toBe(0)
     expect(localDayNumber(new Date(2026, 0, 2, 0, 0))).toBe(1)
     expect(localDayNumber(new Date(2026, 9, 20, 2, 0))).toBe(localDayNumber(new Date(2026, 9, 20, 22, 0)))
+  })
+})
+
+const FORK = 'AZ5C4 6Q1/2k1p2p/5n2/5q2/2pP4/3bPNK1/1P3PPP/2B4R_w_-_-_9_20 g8g5,f6e4,g3h4,e4g5 1506 crushing,fork,middlegame,short'
+const ROOK_UP = 'DuCe3 2rr4/p5pk/7p/1p2R3/4n2P/4N1P1/PR2nN2/7K_w_-_-_0_33 b2e2,e4g3,h1h2,g3e2 1504 crushing,fork,middlegame,short'
+const QUEEN_FOR_KNIGHT = 'NW0LU r7/3p1p2/pp2k1p1/8/1Qn1q3/1P6/P5KP/R1BR4_w_-_-_1_29 g2f1,c4e3,c1e3,e4b4 1558 advantage,discoveredAttack,fork,middlegame,short'
+const PROMOTES = 'S2RYu 4r1k1/1r2P2p/5Qp1/8/p1b5/Bq6/5PPP/R4RK1_b_-_-_0_30 c4f1,f6f8,e8f8,e7f8q 1003 advancedPawn,mate,mateIn2,middlegame,promotion,short'
+
+describe('puzzleGoal', () => {
+  it('names the mate and its length', () => {
+    expect(puzzleGoal(puzzle(MATE_IN_2))).toBe('Find the checkmate in 2.')
+    expect(puzzleGoal(puzzle(PROMOTES))).toBe('Find the checkmate in 2.')
+  })
+
+  it('names the piece the solution wins outright', () => {
+    expect(puzzleGoal(puzzle(FORK))).toBe('Find the move that wins the queen.')
+  })
+
+  it('counts what the solution gives up, and leaves the set-up move out', () => {
+    // Rxe2 takes a knight to set the puzzle up; the solution then takes a pawn and a rook for nothing.
+    expect(puzzleGoal(puzzle(ROOK_UP))).toBe('Find the move that wins a rook.')
+    // A knight goes for the queen: ahead, but not by a whole queen.
+    expect(puzzleGoal(puzzle(QUEEN_FOR_KNIGHT))).toBe('Find the move that wins material.')
+  })
+
+  it('falls back to the best move when nothing is won', () => {
+    const quiet = { ...puzzle(FORK), moves: ['g8g5', 'f6e4'], themes: ['equality'] }
+    expect(puzzleGoal(quiet)).toBe('Find the best move for Black.')
+  })
+})
+
+describe('solvedLine', () => {
+  it('says what the idea was, from the themes', () => {
+    expect(solvedLine(puzzle(FORK))).toBe('A knight fork.')
+    expect(solvedLine(puzzle(MATE_IN_2))).toBe('Checkmate.')
+    expect(solvedLine({ ...puzzle(FORK), themes: ['pin', 'middlegame'] })).toBe('The pin did the work.')
+  })
+
+  it('has a plain line for themes without one', () => {
+    expect(solvedLine({ ...puzzle(FORK), themes: ['middlegame', 'short'] })).toBe('Nicely found.')
   })
 })

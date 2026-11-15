@@ -1,6 +1,6 @@
 // Lichess puzzles: reading the shard lines, solving by Lichess's rules, the puzzle rating.
 // Data format: docs/superpowers/specs/2026-10-18-puzzles-design.md.
-import { Chess } from 'chess.js'
+import { Chess, type Square } from 'chess.js'
 import type { Color } from './evaluation'
 
 export interface Puzzle {
@@ -92,6 +92,72 @@ export const dayNumber = (date: Date) => Math.floor((date.getTime() - DAY_ZERO) 
 
 /** Whole days since 2026-01-01 on your own calendar, turning over at your midnight: the puzzle streak's days. */
 export const localDayNumber = (date: Date) => Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - DAY_ZERO) / 86_400_000)
+
+const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
+const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' }
+
+/**
+ * What to look for, said before you move: the mate and its length, or the piece the solution wins outright
+ * (what it gives up on the way counted against it). It says what there is to win, never how.
+ */
+export function puzzleGoal(p: Puzzle): string {
+  const mate = p.themes.map((t) => /^mateIn(\d)$/.exec(t)?.[1]).find(Boolean)
+  if (mate) return mate === '1' ? 'Find the checkmate.' : `Find the checkmate in ${mate}.`
+  if (p.themes.includes('mate')) return 'Find the checkmate.'
+  let gained = 0
+  let top: keyof typeof PIECE_VALUES | null = null
+  try {
+    const chess = new Chess(p.fen)
+    p.moves.forEach((m, i) => {
+      const move = chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] })
+      // The opponent's first move sets the puzzle up: it's on the board before you look.
+      if (i === 0) return
+      const yours = i % 2 === 1
+      const worth = (move.captured ? PIECE_VALUES[move.captured] : 0) + (move.promotion ? PIECE_VALUES[move.promotion] - 1 : 0)
+      gained += yours ? worth : -worth
+      if (yours && move.captured && (!top || PIECE_VALUES[move.captured] > PIECE_VALUES[top])) top = move.captured
+    })
+  } catch {
+    gained = 0
+  }
+  if (top && gained >= PIECE_VALUES[top]) return `Find the move that wins ${top === 'q' ? 'the queen' : `a ${PIECE_NAMES[top]}`}.`
+  if (gained > 0) return 'Find the move that wins material.'
+  return `Find the best move for ${playerColor(p) === 'white' ? 'White' : 'Black'}.`
+}
+
+/** A puzzle's idea in a line, by theme: the first that fits. */
+const IDEAS: [theme: string, line: string][] = [
+  ['smotheredMate', 'A smothered mate.'],
+  ['backRankMate', 'A back-rank mate.'],
+  ['mate', 'Checkmate.'],
+  ['pin', 'The pin did the work.'],
+  ['skewer', 'A skewer: the piece behind fell.'],
+  ['discoveredAttack', 'A discovered attack.'],
+  ['doubleCheck', 'A double check.'],
+  ['deflection', 'The defender was pulled away.'],
+  ['attraction', 'The piece was lured onto the wrong square.'],
+  ['capturingDefender', 'The defender was removed.'],
+  ['trappedPiece', 'The piece had nowhere to go.'],
+  ['hangingPiece', 'A loose piece, picked up.'],
+  ['promotion', 'The pawn made it.'],
+  ['zugzwang', 'Zugzwang: every move loses.'],
+  ['intermezzo', 'An in-between move.'],
+  ['quietMove', 'A quiet move, and it holds.'],
+  ['sacrifice', 'The sacrifice paid off.'],
+]
+
+/** What the idea was, said once it's solved. */
+export function solvedLine(p: Puzzle): string {
+  if (p.themes.includes('fork') && !p.themes.includes('mate')) {
+    try {
+      const piece = positionAfter(p, [p.moves[0]]).get(p.moves[1].slice(0, 2) as Square)?.type
+      if (piece) return `A ${PIECE_NAMES[piece]} fork.`
+    } catch {
+      // An unreadable line: the plain wording below.
+    }
+  }
+  return IDEAS.find(([theme]) => p.themes.includes(theme))?.[1] ?? 'Nicely found.'
+}
 
 /** Which line of the daily list is today's. */
 export function dailyIndex(date: Date, length: number): number {
