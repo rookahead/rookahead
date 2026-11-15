@@ -1,12 +1,61 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-05
+date: 2026-11-16
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 16 November 2026
+
+- While Rookahead looks for an opponent, the panel beside the board is the search: the time control you asked for, how long it has looked, and Cancel. Your choices come back when it ends.
+
+## 15 November 2026
+
+- A new Play page. Play online, play the computer or play a friend, each with its own setup beside the board. Moving between them slides, the way the arrows point.
+- On a computer, Home has a Play card: pick a time, rated or casual, and start an online game from there, or head to the computer or a friend. Import and Review latest game sit beside the greeting.
+- Play a friend: challenge someone by their Lichess username, with your Rookahead friends' Lichess names one tap away. A challenge sent to you shows up on Play with Accept.
+- Online games have tabs beside the board: Moves, Chat and Info. Chat with your opponent, with quick messages like Good luck and Good game. On a phone, Chat and Info open from the foot of the game.
+- While Rookahead looks for an opponent, the rook in their place looks around for one. When the game starts, the two of you meet over the board, with a clank of blades. Another clank closes the game, however it ends.
+- Lichess calls a game off if the first move doesn't come in time. The player to move now sees how long is left: 30 seconds in rapid, 35 in classical.
+- When your time runs low, your clock turns red and pulses once with a soft tick-tock. That's at a minute in a 10-minute game, sooner in shorter ones. It works against the computer too.
+- If you're on another tab when your opponent moves, Rookahead's tab title says "Your move" and what they played.
+- After an online game: switch on the engine to look at it (with the eval bar), see the opening in the explorer, and see your new Lichess rating. Then Review, a new game at the same time, or Rematch.
+- How long each move took shows while you play online too. The times have their own column now, White's over Black's, and the game's longest think stands out.
+- Bolder player names, ratings that are easier to read, and bigger clocks.
+- Takeback, Hint, Draw and Resign are a quiet row of words under the move buttons instead of a row of boxes.
+- The board stays in the same place from Play to the review, and the review has an arrow back to Play.
+- A new puzzle panel. The rook tells you what to find (a mate in two, the piece you can win) and reacts to your move. Your rating shows how close you are to the next hundred, Hint shows the move one step at a time, and your best run and day streak sit under the options.
+- Fixed: an online game could fall out of step with Lichess late in the game. Premoves can be played in quick succession online.
+
+## 10 November 2026
+
+- A game you've just finished on Chess.com or Lichess shows up sooner: Rookahead checks again when you come back to its tab.
+
+## 9 November 2026
+
+- Play real people online, through your Lichess account. Pick a rapid or classical time, rated or casual, and play on Rookahead's board with Lichess's clocks. Tap your opponent's name to see how old their account is and how much they've played. Offer a rematch afterwards, or answer theirs.
+- Connect your Lichess account in Settings → Linked accounts. It also brings Lichess's opening explorer under the engine in Analysis: what masters and Lichess players played from the position, and how it went for them.
+- Friends: send and accept friend requests, see your friends list, and send a game to a friend.
+- Make your profile public at rookahead.com/@yourname, or keep it private. A public profile has a Report button.
+- On a phone, the You tab is your profile, with your settings behind the gear.
+
+## 8 November 2026
+
+- My games is now your Profile, opened from your account menu: your ratings, a rating graph, your recent games and your stats.
+- Pasting a PGN asks which side you played, and says where a PGN can't be read.
+- When taking a sacrificed piece wins nothing back, Explain shows the attack the sacrifice was for.
+
+## 7 November 2026
+
+- If you're signed in, Rookahead now notes when you open it and what you do (reviews, puzzles, games against the computer), so we can see what's used. Never your games or moves. The privacy policy says more.
+
+## 6 November 2026
+
+- The analysis board shows each player's clock, and the move list shows how long each move took, for games whose clocks were recorded.
+- Clicking quickly through a game is smoother.
 
 ## 5 November 2026
 
