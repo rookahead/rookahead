@@ -4645,6 +4645,55 @@ button.explain-row {
   line-height: 1.45;
 }
 
+/* Desktop Home's top: the greeting across both columns, and the ways into a review at its right. */
+.home-top {
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.home-top .home-welcome {
+  min-width: 0;
+}
+
+.home-top-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.home-top-actions .btn {
+  height: 42px;
+  border-radius: 12px;
+  gap: 8px;
+}
+
+.home-top-actions .btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-top-actions .btn svg .filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+.home-review {
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 650;
+}
+
+.home-review:hover {
+  filter: brightness(1.08);
+}
+
 .home-card {
   box-sizing: border-box;
   padding: 20px;
@@ -4983,21 +5032,129 @@ button.explain-row {
   stroke-linejoin: round;
 }
 
-/* Desktop Home's two ways in under the greeting, side by side; each keeps to one line of detail. */
-.home-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+/* Home's Play card (HomePlay.tsx): an online game at the time you last picked, a press away, with the computer
+   and a friend under it. Its parts keep their height whatever the card has to say. */
+.home-play {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.home-actions .quick-card small {
+.home-play-head {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-play-head .quick-lines {
+  flex: 1;
+}
+
+.home-play-head small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-play-rated {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+/* The times, or a line or two in their place. */
+.home-play-mid {
+  height: 40px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.home-play-mid.says {
+  display: flex;
+  align-items: center;
+}
+
+.home-play-mid p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.home-play-go {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.home-play-ways {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-play-ways[inert] {
+  opacity: 0.5;
+}
+
+.home-play-way {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px 9px 9px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.home-play-way:hover {
+  background: var(--surface-4);
+}
+
+:root[data-theme='light'] .home-play-way {
+  background: var(--side);
+}
+
+:root[data-theme='light'] .home-play-way:hover {
+  background: var(--surface-3);
+}
+
+.home-play-way > span:last-child {
+  min-width: 0;
+}
+
+.home-play-way strong,
+.home-play-way small {
+  display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.home-actions .quick-lines .skel + .skel {
-  margin-top: 6px;
+.home-play-way strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.home-play-way small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
 }
 
 /* Your form in one strip of three (HomeCards.tsx, FormStrip): accuracy and its bars, the streak and this week,
@@ -9563,6 +9720,11 @@ button.user-avatar.guest:hover {
   }
 }
 
+/* Home's Play card: its head, the times, the button and the two other ways. */
+.boot-play {
+  --h: 260.9px;
+}
+
 /* My games: six rows under a day's heading, and the colours' key when some have been reviewed. */
 .boot-games {
   --h: 528px;
@@ -9734,15 +9896,11 @@ button.user-avatar.guest:hover {
   view-transition-name: form-strip;
 }
 
-:root.settling .home-actions > :first-child {
-  view-transition-name: review-action;
-}
-
 :root.settling .home-main > .games-card {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.legendary-strip, .legendary-teaser, .daily-card, .plan-card, .form-strip, .home-actions > :first-child, .home-main > .games-card) {
+:root.settling :is(.legendary-strip, .legendary-teaser, .daily-card, .plan-card, .form-strip, .home-main > .games-card) {
   view-transition-class: card;
 }
 

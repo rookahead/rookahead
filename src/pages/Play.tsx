@@ -40,7 +40,6 @@ import {
   acceptChallenge,
   challengeFriend,
   declineChallenge,
-  isOnlineClock,
   loadLiveOnline,
   ONLINE_CLOCKS,
   saveLiveOnline,
@@ -52,6 +51,7 @@ import {
   type StartedGame,
 } from '../lib/lichessPlay'
 import { useFriends } from '../lib/friends'
+import { loadOnlineSetup, saveOnlineSetup, takeSeekAsk, type OnlineSetup } from '../lib/onlineSetup'
 import { navigate, onReselect, playView, usePathname, type PlayView } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
@@ -173,6 +173,13 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
     if (!seekNext || view !== 'online' || online) return
     setSeekNext(false)
     void findOpponent(onlineSetup)
+  })
+  // Home's Play button: it saved the time it was pressed at, and the search starts here as Play shows.
+  useEffect(() => {
+    if (!active || view !== 'online' || !takeSeekAsk()) return
+    const asked = loadOnlineSetup()
+    setOnlineSetup(asked)
+    if (!online && !game && !searching) void findOpponent(asked)
   })
   // Moving between them after a game has ended: the game is saved, so the setup comes back.
   const [lastPath, setLastPath] = useState(pathname)
@@ -305,40 +312,6 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
 }
 
 const meta = (g: LiveGame) => ({ color: g.color, level: g.setup.level, clock: g.setup.clock, outcome: g.outcome, startFen: g.startFen })
-
-const ONLINE_SETUP_KEY = 'rookahead.onlineSetup'
-
-interface OnlineSetup {
-  clock: OnlineClock
-  rated: boolean
-  /** Play a friend: their Lichess username, and your side. */
-  friend: string
-  color: Side | 'random'
-}
-
-const DEFAULT_ONLINE: OnlineSetup = { clock: '10+0', rated: true, friend: '', color: 'random' }
-
-function loadOnlineSetup(): OnlineSetup {
-  try {
-    const raw = JSON.parse(localStorage.getItem(ONLINE_SETUP_KEY) ?? 'null')
-    return {
-      clock: isOnlineClock(raw?.clock) ? raw.clock : DEFAULT_ONLINE.clock,
-      rated: raw?.rated !== false,
-      friend: typeof raw?.friend === 'string' ? raw.friend : '',
-      color: raw?.color === 'white' || raw?.color === 'black' ? raw.color : 'random',
-    }
-  } catch {
-    return DEFAULT_ONLINE
-  }
-}
-
-function saveOnlineSetup(s: OnlineSetup) {
-  try {
-    localStorage.setItem(ONLINE_SETUP_KEY, JSON.stringify(s))
-  } catch {
-    // Not remembered.
-  }
-}
 
 /** The time controls on offer, in their speed groups: what's kept (`value`) and what's shown ("10+5"). */
 interface ClockGroup {

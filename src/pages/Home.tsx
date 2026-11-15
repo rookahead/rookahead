@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { HomeFooter } from '../components/HomeFooter'
+import { HomePlay } from '../components/HomePlay'
 import { FormStrip, PlanCard, PlanCardSkeleton, type AccuracyPoint } from '../components/HomeCards'
 import { GameLines, GameLinesSkeleton, HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
-import { IconTile } from '../components/IconTile'
+import { IconTile, TILE_FILLS, TILE_ICONS } from '../components/IconTile'
 import { OpenGameDialog } from '../components/LoadGameDialog'
 import { Link } from '../components/Link'
 import { MiniBoard } from '../components/MiniBoard'
@@ -222,51 +223,38 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
   )
 
   const opponentOf = (g: MyGame) => (g.color === 'white' ? g.black : g.white).name
+  const reviewIcon = (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d={TILE_ICONS.review} />
+      <path d={TILE_FILLS.review} className="filled" />
+    </svg>
+  )
   // Phones: the page's one big card.
-  const reviewStyle = phone ? 'accent-card game-review' : ''
+  const reviewCard = 'home-card quick-card accent-card game-review'
   const reviewAction = batchActive ? (
     <BatchCard />
   ) : waiting ? (
-    <div className={`home-card quick-card skel-group ${reviewStyle}`} aria-busy aria-label="Loading your latest game">
+    <div className={`${reviewCard} skel-group`} aria-busy aria-label="Loading your latest game">
       <IconTile tone="review" size="big" />
       <span className="quick-lines">
         <Skel w="150px" h="16px" />
         <Skel w="200px" h="12px" />
       </span>
     </div>
-  ) : several ? (
-    <button className={`home-card quick-card ${reviewStyle}`} onClick={() => setBatchOpen(true)}>
-      <IconTile tone="review" size="big" />
-      <span className="quick-lines">
-        <strong>{phone ? 'Game review' : 'Review latest games'}</strong>
-        <small>{toReview.length > MAX_BATCH ? `${MAX_BATCH}+` : toReview.length} games not reviewed</small>
-      </span>
-      <span className="quick-go" aria-hidden>
-        ›
-      </span>
-    </button>
-  ) : next ? (
-    <button className={`home-card quick-card ${reviewStyle}`} onClick={openNext}>
-      <IconTile tone="review" size="big" />
-      <span className="quick-lines">
-        <strong>{phone ? 'Game review' : 'Review latest game'}</strong>
-        <small>
-          vs {opponentOf(next)} ·{' '}
-          {nextReview
-            ? `${nextReview.accuracy[next.color]?.toFixed(1) ?? '–'} accuracy`
-            : `${next.result === 'win' ? 'won' : next.result === 'loss' ? 'lost' : 'drawn'}, ${next.moves} ${next.moves === 1 ? 'move' : 'moves'}`}
-        </small>
-      </span>
-      <span className="quick-go" aria-hidden>
-        ›
-      </span>
-    </button>
   ) : (
-    <button className={`home-card quick-card ${reviewStyle}`} onClick={loadGame}>
+    <button className={reviewCard} onClick={next ? openNext : loadGame}>
       <IconTile tone="review" size="big" />
       <span className="quick-lines">
-        <strong>{phone ? 'Game review' : 'Review a game'}</strong>
-        <small>Paste a PGN or a game link</small>
+        <strong>Game review</strong>
+        <small>
+          {next
+            ? `vs ${opponentOf(next)} · ${
+                nextReview
+                  ? `${nextReview.accuracy[next.color]?.toFixed(1) ?? '–'} accuracy`
+                  : `${next.result === 'win' ? 'won' : next.result === 'loss' ? 'lost' : 'drawn'}, ${next.moves} ${next.moves === 1 ? 'move' : 'moves'}`
+              }`
+            : 'Paste a PGN or a game link'}
+        </small>
       </span>
       <span className="quick-go" aria-hidden>
         ›
@@ -284,6 +272,33 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         ›
       </span>
     </button>
+  )
+
+  // Desktop: the ways into a review sit by the greeting. While many games are being reviewed, that run's card
+  // (in the page, under the greeting) says how it's going instead.
+  const reviewButton = batchActive ? null : waiting ? (
+    <Skel w="186px" h="42px" className="skel-button" />
+  ) : several ? (
+    <button className="btn home-review" onClick={() => setBatchOpen(true)} title={`${toReview.length > MAX_BATCH ? `${MAX_BATCH}+` : toReview.length} games not reviewed`}>
+      {reviewIcon}
+      Review latest games
+    </button>
+  ) : next ? (
+    <button className="btn home-review" onClick={openNext} title={`vs ${opponentOf(next)}`}>
+      {reviewIcon}
+      Review latest game
+    </button>
+  ) : null
+  const topActions = (
+    <div className="home-top-actions">
+      <button className="btn ghost" onClick={loadGame} title="Paste a PGN or a game link">
+        <svg viewBox="0 0 24 24" aria-hidden>
+          <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+        </svg>
+        Import
+      </button>
+      {reviewButton}
+    </div>
   )
 
   const formStrip = (
@@ -435,7 +450,7 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
     <div className="home-page">
       <PageHeader phoneOnly />
       <main className="home">
-        <div className="home-main">
+        <header className="home-top">
           <div className="home-welcome">
             <h1>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
             {waiting ? (
@@ -446,17 +461,17 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
               !firstVisit && <span>{line}</span>
             )}
           </div>
+          {!firstVisit && topActions}
+        </header>
 
+        <div className="home-main">
           {guestNudge}
 
           {firstVisit && hero}
 
           {!firstVisit && (
             <>
-              <div className="home-actions">
-                {reviewAction}
-                {analysisAction}
-              </div>
+              {batchActive && <BatchCard />}
               {formStrip}
               {legendaryRow}
             </>
@@ -466,13 +481,13 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         </div>
 
         <aside className="home-side" aria-label="Today">
+          {firstVisit ? playAction : <HomePlay active={active} games={games} />}
           {!firstVisit &&
             (waiting ? (
               <PlanCardSkeleton steps={3 + (hasReviews ? 1 : 0)} />
             ) : (
               <PlanCard expectMistakes={hasReviews} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
             ))}
-          {playAction}
           <DailyCard theme={settings.boardTheme} />
           {firstVisit && analysisAction}
         </aside>
