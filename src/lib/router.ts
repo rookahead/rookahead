@@ -12,7 +12,7 @@ const SECTIONS = 'profile|linked|board|appearance|account'
 
 export function routeFor(pathname: string): Route {
   if (/^\/(analysis|r)\/?$/.test(pathname)) return 'analysis'
-  if (/^\/play\/?$/.test(pathname)) return 'play'
+  if (/^\/play(\/(online|computer|friend))?\/?$/.test(pathname)) return 'play'
   // Your profile and its tabs; /games is its Games tab (the address My games had).
   if (/^\/(games|profile(\/(games|stats|friends))?)\/?$/.test(pathname)) return 'games'
   if (/^\/legendary\/?$/.test(pathname)) return 'legendary'
@@ -33,6 +33,14 @@ export function playerName(pathname: string): string | null {
   // Some browsers send the @ as %40.
   const m = /^\/(?:@|%40)([A-Za-z0-9][A-Za-z0-9_-]{2,19})\/?$/.exec(pathname)
   return m ? m[1] : null
+}
+
+export type PlayView = 'hub' | 'online' | 'computer' | 'friend'
+
+/** Play's part: plain /play lists the ways to play; /play/online, /play/computer and /play/friend set one up. */
+export function playView(pathname: string): PlayView {
+  const m = /^\/play\/(online|computer|friend)\/?$/.exec(pathname)
+  return m ? (m[1] as PlayView) : 'hub'
 }
 
 /** The Puzzles page's tab: /puzzles (or /puzzles/rated), /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */

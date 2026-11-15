@@ -49,6 +49,7 @@ export function titleFor(pathname: string): string {
   const path = pathname.replace(/\/+$/, '') || '/'
   if (PAGE_META[path]) return PAGE_META[path].title
   if (/^\/puzzles\//.test(path)) return PAGE_META['/puzzles'].title
+  if (/^\/play\//.test(path)) return PAGE_META['/play'].title
   if (/^\/settings/.test(path)) return 'Settings · Rookahead'
   if (/^\/(analysis|r)$/.test(path)) return 'Game review · Rookahead'
   if (path === '/you') return 'You · Rookahead'

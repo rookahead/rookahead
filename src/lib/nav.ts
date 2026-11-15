@@ -70,7 +70,7 @@ export const LOAD_GAME_EVENT = 'rookahead:load-game'
 
 /** Each phone tab's main thing to do, as a big button in the tab bar above the tabs. */
 export const PHONE_ACTIONS: Partial<Record<Route, { label: string; to?: string; event?: string }>> = {
-  home: { label: 'Play the computer', to: '/play' },
+  home: { label: 'Play', to: '/play' },
   games: { label: 'Load a game', event: LOAD_GAME_EVENT },
 }
 

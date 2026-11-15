@@ -1,5 +1,5 @@
 /** What a tile stands for: a section of the app, or one of Home's numbers. Each has its own colour (index.css, .icon-tile). */
-export type TileTone = 'play' | 'puzzles' | 'games' | 'review' | 'analyze' | 'accuracy' | 'legendary' | 'mistakes' | 'streak' | 'clock' | 'openings'
+export type TileTone = 'play' | 'puzzles' | 'games' | 'review' | 'analyze' | 'accuracy' | 'legendary' | 'mistakes' | 'streak' | 'clock' | 'openings' | 'online' | 'computer' | 'friend'
 
 const ICONS: Record<TileTone, string> = {
   play: 'M6 4l14 8-14 8z',
@@ -15,6 +15,10 @@ const ICONS: Record<TileTone, string> = {
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   // An open book.
   openings: 'M12 6.5C10.5 5 8 4.5 4 4.5v14c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-14c-4 0-6.5.5-8 2zM12 6.5v14',
+  // Play's ways to play: the world, a chip, two people.
+  online: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z',
+  computer: 'M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4',
+  friend: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.3a3.5 3.5 0 0 1 0 6.4M18.5 14.3a6.5 6.5 0 0 1 3 5.7',
 }
 
 /** Solid shapes drawn over a tile's strokes. */

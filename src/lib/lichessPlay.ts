@@ -279,6 +279,27 @@ export interface IncomingChallenge {
   from: string
   /** The game it's a rematch of, if it is one. */
   rematchOf: string | null
+  /** Its clock, "10+5" (null for no clock or days a move), and whether it's rated. */
+  clock: string | null
+  rated: boolean
+  /** A game Rookahead's board can play: standard chess at rapid or classical (Lichess's rule for apps). */
+  playable: boolean
+}
+
+/** What a challenge on the event stream says about itself. */
+export function incomingFrom(c: Record<string, unknown>): IncomingChallenge {
+  const from = (c.challenger as Record<string, unknown> | undefined)?.name
+  const tc = (c.timeControl ?? {}) as Record<string, unknown>
+  const variant = (c.variant as Record<string, unknown> | undefined)?.key
+  const clock = tc.type === 'clock' && typeof tc.limit === 'number' && typeof tc.increment === 'number' ? `${tc.limit / 60}+${tc.increment}` : null
+  return {
+    id: c.id as string,
+    from: typeof from === 'string' ? from : 'Your opponent',
+    rematchOf: typeof c.rematchOf === 'string' ? c.rematchOf : null,
+    clock,
+    rated: c.rated === true,
+    playable: (variant === undefined || variant === 'standard') && ['rapid', 'classical'].includes(c.speed as string),
+  }
 }
 
 export interface EventHandlers {
@@ -298,10 +319,8 @@ export function watchEvents(handlers: EventHandlers, signal: AbortSignal): Promi
       if (started) return handlers.onGameStart(started)
       const c = line.challenge as Record<string, unknown> | undefined
       if (!c || typeof c.id !== 'string') return
-      if (line.type === 'challenge' && c.direction === 'in') {
-        const from = (c.challenger as Record<string, unknown> | undefined)?.name
-        handlers.onChallenge({ id: c.id, from: typeof from === 'string' ? from : 'Your opponent', rematchOf: typeof c.rematchOf === 'string' ? c.rematchOf : null })
-      } else if (line.type === 'challengeCanceled' || line.type === 'challengeDeclined') handlers.onChallengeGone(c.id)
+      if (line.type === 'challenge' && c.direction === 'in') handlers.onChallenge(incomingFrom(c))
+      else if (line.type === 'challengeCanceled' || line.type === 'challengeDeclined') handlers.onChallengeGone(c.id)
     },
     signal,
   )
@@ -312,7 +331,14 @@ export function watchEvents(handlers: EventHandlers, signal: AbortSignal): Promi
  * does (Lichess's keep-alive), and resolves with how it ended: accepted (the game's start comes on the event
  * stream), declined, cancelled, or 'failed' when Lichess turned it down outright.
  */
-export async function challenge(opponent: string, game: { initial: number; increment: number; rated: boolean }, color: Side, signal: AbortSignal): Promise<string> {
+export async function challenge(
+  opponent: string,
+  game: { initial: number; increment: number; rated: boolean },
+  color: Side | 'random',
+  signal: AbortSignal,
+  /** Hears the challenge's id once Lichess has made it (a game from it takes the same id). */
+  onId?: (id: string) => void,
+): Promise<string> {
   let done = 'canceled'
   const status = await stream(
     `${API}/challenge/${encodeURIComponent(opponent)}`,
@@ -323,10 +349,58 @@ export async function challenge(opponent: string, game: { initial: number; incre
     },
     (line) => {
       if (typeof line.done === 'string') done = line.done
+      const c = (line.challenge ?? line) as Record<string, unknown>
+      if (typeof c.id === 'string') onId?.(c.id)
     },
     signal,
   ).catch((e: Error) => (e.name === 'AbortError' ? 200 : 0))
   return status >= 200 && status < 300 ? done : 'failed'
+}
+
+/**
+ * Challenges a friend by their Lichess username: listens for your games starting, then sends the challenge and
+ * keeps it open until they answer. Resolves with the game once it starts, 'declined', 'failed' (Lichess turned it
+ * down: no such player, or they don't take challenges), or null when you called it off with `signal`.
+ */
+export async function challengeFriend(username: string, clock: OnlineClock, rated: boolean, color: Side | 'random', signal: AbortSignal): Promise<StartedGame | 'declined' | 'failed' | null> {
+  const [minutes, increment] = clock.split('+').map(Number)
+  const stop = new AbortController()
+  const end = () => stop.abort()
+  signal.addEventListener('abort', end)
+  let found: StartedGame | null = null
+  let challengeId: string | null = null
+  let sent = false
+  // Games already going when the stream opens (a correspondence game on lichess.org, say) aren't this one.
+  const before = new Set<string>()
+  // As with a seek: the event stream first, so a game that starts at once isn't missed.
+  const events = stream(
+    `${API}/stream/event`,
+    {},
+    (line) => {
+      const g = startedFrom(line)
+      if (!g || found) return
+      if (!sent) before.add(g.id)
+      else if (g.id === challengeId || (!challengeId && !before.has(g.id))) {
+        found = g
+        end()
+      }
+    },
+    stop.signal,
+  ).catch(() => 0)
+  await new Promise((r) => setTimeout(r, 400))
+  let done = 'canceled'
+  if (!stop.signal.aborted) {
+    sent = true
+    done = await challenge(username, { initial: minutes * 60_000, increment: increment * 1000, rated }, color, stop.signal, (id) => (challengeId = id))
+    // Accepted: the game's start comes on the event stream a moment later.
+    if (done === 'accepted' && !stop.signal.aborted) await Promise.race([events, new Promise((r) => setTimeout(r, 3000))])
+  }
+  end()
+  signal.removeEventListener('abort', end)
+  await events
+  if (found) return found
+  if (signal.aborted) return null
+  return done === 'declined' ? 'declined' : done === 'failed' ? 'failed' : null
 }
 
 export const acceptChallenge = (id: string) => post(`/challenge/${id}/accept`)

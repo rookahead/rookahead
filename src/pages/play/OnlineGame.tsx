@@ -72,6 +72,8 @@ interface Props {
   onStarted: (game: StartedGame) => void
   /** Back to choosing a game. */
   onDone: () => void
+  /** The game ended (or is gone from Lichess): nothing left to come back to. */
+  onOver: () => void
 }
 
 /**
@@ -79,7 +81,7 @@ interface Props {
  * Lichess keeps the moves and the clocks; this page follows them, sends your moves, and has no engine in it
  * (outside help is against Lichess's rules).
  */
-export function OnlineGameView({ started, settings, phone, active, gear, onToggleSound, onReview, onAgain, onStarted, onDone }: Props) {
+export function OnlineGameView({ started, settings, phone, active, gear, onToggleSound, onReview, onAgain, onStarted, onDone, onOver }: Props) {
   const [game, setGame] = useState<Game | null>(null)
   const [state, setState] = useState<OnlineState | null>(null)
   const [gone, setGone] = useState<{ claimAt: number } | null>(null)
@@ -191,8 +193,10 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
   const live = Boolean(state && LIVE_STATUSES.has(state.status))
   const over = Boolean(state && !live)
   useEffect(() => {
-    if (over) saveLiveOnline(null)
-  }, [over])
+    if (!over) return
+    saveLiveOnline(null)
+    onOver()
+  }, [over, onOver])
   // Over: it's a Lichess game now, so fetch your Lichess games again and it shows in My games straight away
   // (a moment first, for Lichess to file it).
   const lichessUser = (settings.lichessUser || lichessNow()?.username || '').trim()

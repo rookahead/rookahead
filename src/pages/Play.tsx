@@ -1,7 +1,7 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { Chess, DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../components/Board'
 import { BoardOptions } from '../components/BoardOptions'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -13,7 +13,10 @@ import { PlayerBar } from '../components/PlayerBar'
 import { ToolIcon } from '../components/PlayToolIcon'
 import { ROOK } from '../components/RookLogo'
 import { SettingsDialog } from '../components/SettingsDialog'
+import { Sheet } from '../components/Sheet'
 import { ShareDialog } from '../components/ShareDialog'
+import { IconTile } from '../components/IconTile'
+import { Link } from '../components/Link'
 import { AvatarFace, Gear } from '../components/UserCard'
 import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
@@ -31,8 +34,23 @@ import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { acceptsDraw, DRAW_AFTER_PLIES, outcomeOf, playHeaders, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
 import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type LiveGame, type PlaySetup } from '../lib/playStore'
 import { canPlay, connectLichess, useLichess } from '../lib/lichessAuth'
-import { isOnlineClock, loadLiveOnline, ONLINE_CLOCKS, saveLiveOnline, seek, type OnlineClock, type StartedGame } from '../lib/lichessPlay'
-import { onReselect } from '../lib/router'
+import {
+  acceptChallenge,
+  challengeFriend,
+  declineChallenge,
+  isOnlineClock,
+  loadLiveOnline,
+  ONLINE_CLOCKS,
+  saveLiveOnline,
+  seek,
+  watchEvents,
+  type IncomingChallenge,
+  type OnlineClock,
+  type Side,
+  type StartedGame,
+} from '../lib/lichessPlay'
+import { useFriends } from '../lib/friends'
+import { onReselect, playView, usePathname, type PlayView } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import { useAccount } from '../lib/account'
@@ -84,10 +102,13 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   const [setup, setSetup] = useState<PlaySetup>(loadSetup)
   const [game, setGame] = useState<LiveGame | null>(restoreGame)
   // Online: the game you're playing on Lichess (kept, so a reload goes back to it), and the search for one.
-  const [mode, setMode] = useState<PlayMode>(loadMode)
   const [onlineSetup, setOnlineSetup] = useState<OnlineSetup>(loadOnlineSetup)
   const [online, setOnline] = useState<StartedGame | null>(loadLiveOnline)
-  const [searching, setSearching] = useState<{ since: number; ctrl: AbortController } | null>(null)
+  // The online game that has ended: it stays on the board until you leave, then Play is the setup again.
+  const [overId, setOverId] = useState<string | null>(null)
+  const onlineOver = Boolean(online && online.id === overId)
+  const markOver = useCallback(() => setOverId(online?.id ?? null), [online?.id])
+  const [searching, setSearching] = useState<{ since: number; ctrl: AbortController; friend?: string } | null>(null)
   const [onlineNote, setOnlineNote] = useState<string | null>(null)
   // Phones play full screen: no tab bar while a game is on the board.
   const phone = useMediaQuery('(max-width: 1000px)')
@@ -113,10 +134,40 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
       setOnline(found)
     } else if (!ctrl.signal.aborted) setOnlineNote('No opponent turned up. Try again, or pick another time control.')
   }
+  // A friend, by their Lichess username: the challenge stays open until they answer (or you call it off).
+  const challengeOne = async (s: OnlineSetup) => {
+    const friend = s.friend.trim()
+    if (!friend) return
+    saveOnlineSetup(s)
+    setOnlineNote(null)
+    const ctrl = new AbortController()
+    setSearching({ since: Date.now(), ctrl, friend })
+    const found = await challengeFriend(friend, s.clock, s.rated, s.color, ctrl.signal)
+    setSearching((was) => (was?.ctrl === ctrl ? null : was))
+    if (found === 'declined') setOnlineNote(`${friend} declined the challenge.`)
+    else if (found === 'failed') setOnlineNote(`Lichess didn’t send it. Check the username, and that ${friend} takes challenges.`)
+    else if (found) startOnline(found)
+  }
+  // Which part of Play is showing: its front (the ways to play) or one way's setup.
+  const pathname = usePathname()
+  const view = playView(pathname)
+  // Moving between them after a game has ended: the game is saved, so the setup comes back.
+  const [lastPath, setLastPath] = useState(pathname)
+  if (pathname !== lastPath) {
+    setLastPath(pathname)
+    if (game?.outcome) setGame(null)
+    if (onlineOver) setOnline(null)
+    // A search (or a challenge) belongs to the setup it was started from.
+    searching?.ctrl.abort()
+    setOnlineNote(null)
+  }
   // Left the page after the game ended: it's saved in My recent games, so come back to a new setup.
   if (!active && game?.outcome) setGame(null)
+  // An online game that ended is on Lichess (and in My games), so it goes the same way.
+  if (!active && onlineOver) setOnline(null)
   // Clicking Play again after the game ended does the same.
   useEffect(() => onReselect((path) => path === '/play' && setGame((g) => (g?.outcome ? null : g))), [])
+  useEffect(() => onReselect((path) => path === '/play' && onlineOver && setOnline(null)), [onlineOver])
 
   const start = (s: PlaySetup) => {
     saveSetup(s)
@@ -140,14 +191,14 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   return (
     <div className="play-page">
       <PageHeader
-        // Desktop has a game's actions in the panel's own heading, so the board gets the height.
-        phoneOnly={Boolean(game || online)}
+        // Desktop has the page's heading and actions in the panel, so the board gets the height.
+        phoneOnly
         title="Play"
-        back={game || online ? '/' : undefined}
-        phoneTitle={online ? 'Online' : game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : undefined}
+        back={game || online ? '/' : view !== 'hub' ? '/play' : undefined}
+        phoneTitle={online ? 'Online' : game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : view !== 'hub' ? WAY_TITLES[view] : undefined}
         phoneSub={online ? `On Lichess · you play ${online.color}` : game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
       >
-        {phone && (game || online) && gear}
+        {phone && gear}
       </PageHeader>
       {boardSettings && (
         <SettingsDialog title="Board settings" onClose={() => setBoardSettings(false)}>
@@ -172,6 +223,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
             void findOpponent(onlineSetup)
           }}
           onStarted={startOnline}
+          onOver={markOver}
           onDone={() => {
             saveLiveOnline(null)
             setOnline(null)
@@ -207,21 +259,18 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
           onChange={setSetup}
           onStart={() => start(setup)}
           gear={gear}
-          mode={mode}
-          onMode={(m) => {
-            saveMode(m)
-            setMode(m)
-          }}
-          online={
-            <OnlineSetupView
-              setup={onlineSetup}
-              onChange={setOnlineSetup}
-              searching={searching?.since ?? null}
-              note={onlineNote}
-              onFind={() => void findOpponent(onlineSetup)}
-              onCancel={() => searching?.ctrl.abort()}
-            />
-          }
+          view={view}
+          online={onlineSetup}
+          onOnline={setOnlineSetup}
+          searching={searching?.since ?? null}
+          waitingFor={searching?.friend ?? null}
+          note={onlineNote}
+          onFind={() => void (view === 'friend' ? challengeOne(onlineSetup) : findOpponent(onlineSetup))}
+          onCancel={() => searching?.ctrl.abort()}
+          onStarted={startOnline}
+          settings={settings}
+          phone={phone}
+          active={active}
         />
       )}
     </div>
@@ -230,136 +279,29 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
 
 const meta = (g: LiveGame) => ({ color: g.color, level: g.setup.level, clock: g.setup.clock, outcome: g.outcome, startFen: g.startFen })
 
-function SetupView({
-  setup,
-  onChange,
-  onStart,
-  gear,
-  mode,
-  onMode,
-  online,
-}: {
-  setup: PlaySetup
-  onChange: (s: PlaySetup) => void
-  onStart: () => void
-  gear: ReactNode
-  mode: PlayMode
-  onMode: (m: PlayMode) => void
-  online: ReactNode
-}) {
-  return (
-    <main className="play-setup">
-      <section className="home-card setup-card" aria-labelledby="setup-title">
-        <div className="segmented play-mode" role="radiogroup" aria-label="Play">
-          {(['computer', 'online'] as const).map((m) => (
-            <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? 'active' : ''} onClick={() => onMode(m)}>
-              {m === 'computer' ? 'Computer' : 'Online'}
-            </button>
-          ))}
-        </div>
-        <div className="setup-head">
-          <h2 id="setup-title">{mode === 'online' ? 'Play online' : 'Play the computer'}</h2>
-          {gear}
-        </div>
-        {mode === 'online' ? online : <ComputerSetup setup={setup} onChange={onChange} onStart={onStart} />}
-      </section>
-    </main>
-  )
-}
-
-function ComputerSetup({ setup, onChange, onStart }: { setup: PlaySetup; onChange: (s: PlaySetup) => void; onStart: () => void }) {
-  return (
-    <>
-      <p className="muted">Takebacks and hints allowed. Your game is saved to My recent games when it ends.</p>
-
-      <div className="level-pick">
-        <div className="level-readout">
-          <h3 className="setup-label" id="level-label">
-            Level <strong>{setup.level}</strong>
-          </h3>
-          <span>Strength {levelInfo(setup.level).rating}</span>
-        </div>
-        <input
-          type="range"
-          className="level-slider"
-          min={1}
-          max={LEVELS.length}
-          step={1}
-          value={setup.level}
-          aria-labelledby="level-label"
-          aria-valuetext={`Level ${setup.level}, strength ${levelInfo(setup.level).rating}`}
-          style={{ '--p': (setup.level - 1) / (LEVELS.length - 1) } as CSSProperties}
-          onChange={(e) => onChange({ ...setup, level: Number(e.target.value) })}
-        />
-        <div className="level-ticks" aria-hidden>
-          {LEVELS.map((l) => (
-            <span key={l.level} className={l.level === setup.level ? 'active' : ''}>
-              {l.level}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <h3 className="setup-label">Your colour</h3>
-      <div className="segmented" role="radiogroup" aria-label="Your colour">
-        {(['white', 'random', 'black'] as const).map((c) => (
-          <button key={c} role="radio" aria-checked={setup.color === c} className={setup.color === c ? 'active' : ''} onClick={() => onChange({ ...setup, color: c })}>
-            {c === 'random' ? 'Random' : c === 'white' ? 'White' : 'Black'}
-          </button>
-        ))}
-      </div>
-
-      <h3 className="setup-label">Clock</h3>
-      <div className="clock-grid" role="radiogroup" aria-label="Clock">
-        <ClockChip value="none" setup={setup} onChange={onChange} />
-        {CLOCK_GROUPS.map((g) => (
-          <div key={g.name} className="clock-row">
-            <span className="clock-group">{g.name}</span>
-            {g.settings.map((value) => (
-              <ClockChip key={value} value={value} setup={setup} onChange={onChange} />
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <button className="btn accent-btn setup-start" onClick={onStart}>
-        Start game
-      </button>
-    </>
-  )
-}
-
-type PlayMode = 'computer' | 'online'
-const MODE_KEY = 'rookahead.playMode'
 const ONLINE_SETUP_KEY = 'rookahead.onlineSetup'
 
 interface OnlineSetup {
   clock: OnlineClock
   rated: boolean
+  /** Play a friend: their Lichess username, and your side. */
+  friend: string
+  color: Side | 'random'
 }
 
-function loadMode(): PlayMode {
-  try {
-    return localStorage.getItem(MODE_KEY) === 'online' ? 'online' : 'computer'
-  } catch {
-    return 'computer'
-  }
-}
-
-function saveMode(m: PlayMode) {
-  try {
-    localStorage.setItem(MODE_KEY, m)
-  } catch {
-    // Not remembered.
-  }
-}
+const DEFAULT_ONLINE: OnlineSetup = { clock: '10+0', rated: true, friend: '', color: 'random' }
 
 function loadOnlineSetup(): OnlineSetup {
   try {
     const raw = JSON.parse(localStorage.getItem(ONLINE_SETUP_KEY) ?? 'null')
-    return { clock: isOnlineClock(raw?.clock) ? raw.clock : '10+0', rated: raw?.rated !== false }
+    return {
+      clock: isOnlineClock(raw?.clock) ? raw.clock : DEFAULT_ONLINE.clock,
+      rated: raw?.rated !== false,
+      friend: typeof raw?.friend === 'string' ? raw.friend : '',
+      color: raw?.color === 'white' || raw?.color === 'black' ? raw.color : 'random',
+    }
   } catch {
-    return { clock: '10+0', rated: true }
+    return DEFAULT_ONLINE
   }
 }
 
@@ -371,99 +313,474 @@ function saveOnlineSetup(s: OnlineSetup) {
   }
 }
 
+/** The time controls on offer, in their speed groups: what's kept (`value`) and what's shown ("10+5"). */
+interface ClockGroup {
+  name: string
+  clocks: { value: string; label: string }[]
+}
+
+const COMPUTER_CLOCKS: ClockGroup[] = CLOCK_GROUPS.map((g) => ({ name: g.name, clocks: g.settings.map((value) => ({ value, label: clockLabel(value) })) }))
+const ONLINE_CLOCK_GROUPS: ClockGroup[] = ONLINE_CLOCKS.map((g) => ({ name: g.group, clocks: g.clocks.map((value) => ({ value, label: value })) }))
+
+/** Play's front: the ways to play, each opening its own setup. */
+const WAYS: { view: Exclude<PlayView, 'hub'>; title: string; text: string }[] = [
+  { view: 'online', title: 'Play online', text: 'A real player near your rating, on Lichess' },
+  { view: 'computer', title: 'Play the computer', text: '8 levels, 400 to 2600, with takebacks and hints' },
+  { view: 'friend', title: 'Play a friend', text: 'Challenge someone by their Lichess username' },
+]
+const WAY_TITLES = Object.fromEntries(WAYS.map((w) => [w.view, w.title])) as Record<Exclude<PlayView, 'hub'>, string>
+
 /**
- * Playing a real person, through your Lichess account: connect it (or allow playing, for a connection from
- * before online play), pick a time control, and Lichess finds the opponent.
+ * Before a game: on desktop the board as it will start, and beside it Play's front (the ways to play) or the setup
+ * for one of them. A phone has the same front and setups, without the board.
  */
-function OnlineSetupView({
+function SetupView({
+  view,
   setup,
   onChange,
+  onStart,
+  gear,
+  online,
+  onOnline,
   searching,
+  waitingFor,
   note,
   onFind,
   onCancel,
+  onStarted,
+  settings,
+  phone,
+  active,
 }: {
-  setup: OnlineSetup
-  onChange: (s: OnlineSetup) => void
+  view: PlayView
+  setup: PlaySetup
+  onChange: (s: PlaySetup) => void
+  onStart: () => void
+  gear: ReactNode
+  online: OnlineSetup
+  onOnline: (s: OnlineSetup) => void
+  /** When the search for an opponent (or the wait for a friend) began, while it runs. */
   searching: number | null
+  /** The friend a challenge is waiting on. */
+  waitingFor: string | null
   note: string | null
+  /** Find an opponent, or challenge the friend, as the view says. */
   onFind: () => void
   onCancel: () => void
+  /** A game of yours started from a challenge you accepted here. */
+  onStarted: (g: StartedGame) => void
+  settings: Settings
+  phone: boolean
+  active: boolean
 }) {
   const { link, busy, error } = useLichess()
+  const { account, username } = useAccount()
+  const { friends } = useFriends()
+  // A tall desktop lists every time. A phone shows the one picked and opens the rest as a page of their own; a
+  // window too short for the list opens them in a small dialog.
+  const compact = useMediaQuery('(max-height: 859px)') || phone
+  const [picking, setPicking] = useState(false)
   const [now, setNow] = useState(Date.now)
   useEffect(() => {
     if (searching == null) return
     const id = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(id)
   }, [searching])
-  if (!link || !canPlay(link))
-    return (
+
+  const linked = Boolean(link && canPlay(link))
+  // Challenges to you, from friends (on Rookahead or lichess.org), while Play is showing: accept one and its game starts here.
+  const [incoming, setIncoming] = useState<IncomingChallenge[]>([])
+  const accepted = useRef<string | null>(null)
+  const [answering, setAnswering] = useState(false)
+  useEffect(() => {
+    if (!active || !linked || searching != null) return
+    const ctrl = new AbortController()
+    void watchEvents(
+      {
+        onGameStart: (g) => g.id === accepted.current && onStarted(g),
+        onChallenge: (c) => !c.rematchOf && setIncoming((list) => (list.some((x) => x.id === c.id) ? list : [...list, c])),
+        onChallengeGone: (id) => setIncoming((list) => list.filter((x) => x.id !== id)),
+      },
+      ctrl.signal,
+    ).catch(() => {})
+    return () => {
+      ctrl.abort()
+      setIncoming([])
+    }
+  }, [active, linked, searching, onStarted])
+  const challenger = incoming[0]
+  const answer = async (yes: boolean) => {
+    if (!challenger) return
+    setAnswering(true)
+    if (yes) accepted.current = challenger.id
+    const ok = yes ? await acceptChallenge(challenger.id) : await declineChallenge(challenger.id)
+    setAnswering(false)
+    if (ok || !yes) setIncoming((list) => list.filter((x) => x.id !== challenger.id))
+  }
+
+  const isComputer = view === 'computer'
+  // A phone's front is New game: an online game at the time you last picked, a tap away, with the other ways under it.
+  const quick = phone && view === 'hub'
+  const onlineSetupShown = !isComputer && (view !== 'hub' || quick)
+  const isFriend = view === 'friend'
+  const level = levelInfo(setup.level)
+  const side = isComputer ? setup.color : isFriend ? online.color : 'random'
+  const orientation: Color = side === 'black' ? 'black' : 'white'
+  const groups = isComputer ? COMPUTER_CLOCKS : ONLINE_CLOCK_GROUPS
+  const clock: string = isComputer ? setup.clock : online.clock
+  const chosen = groups.flatMap((g) => g.clocks.map((c) => ({ ...c, group: g.name }))).find((c) => c.value === clock)
+  // Both clocks start on the time picked: online times are minutes, the computer's are seconds.
+  const seconds = (view === 'hub' && !quick) || clock === 'none' ? null : Number(clock.split('+')[0]) * (isComputer ? 1 : 60)
+  const face = seconds == null ? undefined : <span className="player-clock">{formatClockFace(seconds)}</span>
+  const pick = (value: string) => {
+    if (isComputer) onChange({ ...setup, clock: value as ClockSetting })
+    else onOnline({ ...online, clock: value as OnlineClock })
+    setPicking(false)
+  }
+  const busyNow = searching != null
+  const picker = <ClockPicker groups={groups} value={clock} onPick={pick} untimed={isComputer} disabled={busyNow} />
+  const waited = searching == null ? 0 : Math.floor((now - searching) / 1000)
+  const onlineRule = 'Lichess lets apps like Rookahead play rapid and classical only.'
+  const timeRule = isComputer ? 'Minutes each + seconds added a move.' : `Minutes each + seconds added a move. ${onlineRule}`
+  const friendName = online.friend.trim()
+  const lichessFriends = friends.filter((f) => f.status === 'accepted' && f.lichess)
+
+  const opponentName = isComputer
+    ? `Rookahead · Level ${level.level}`
+    : isFriend
+      ? friendName || 'Your friend'
+      : view === 'online'
+        ? busyNow
+          ? 'Looking for an opponent…'
+          : 'Your opponent'
+        : 'Opponent'
+  const opponent = (
+    <PlayerBar
+      color={other(orientation)}
+      name={opponentName}
+      rating={isComputer ? String(level.rating) : undefined}
+      avatar={
+        isComputer ? (
+          <svg className="player-avatar-mark" viewBox="0 0 24 24" fill="currentColor">
+            <path d={ROOK} />
+          </svg>
+        ) : isFriend && friendName ? undefined : (
+          '?'
+        )
+      }
+      captured={[]}
+      advantage={0}
+      clock={face}
+    />
+  )
+  const lichessYou = !isComputer && view !== 'hub' && link
+  const you = (
+    <PlayerBar
+      color={orientation}
+      name={lichessYou ? link.username : (username ?? 'You')}
+      avatar={username && !lichessYou ? <AvatarFace account={account} /> : undefined}
+      captured={[]}
+      advantage={0}
+      clock={face}
+    />
+  )
+
+  const colourField = (value: Side | 'random', onPick: (c: Side | 'random') => void) => (
+    <div className="setup-field">
+      <h3 className="setup-label" id="colour-label">
+        You play
+      </h3>
+      <div className="setup-tiles colour-tiles" role="radiogroup" aria-labelledby="colour-label">
+        {(['white', 'random', 'black'] as const).map((c) => (
+          <button key={c} role="radio" aria-checked={value === c} className={`setup-tile ${value === c ? 'active' : ''}`} disabled={busyNow} onClick={() => onPick(c)}>
+            {c === 'random' ? 'Random' : c === 'white' ? 'White' : 'Black'}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+  const timeField = compact ? (
+    <div className="setup-field">
+      <h3 className="setup-label">Time</h3>
+      <button className="setup-time" aria-haspopup="dialog" disabled={busyNow} onClick={() => setPicking(true)}>
+        <strong>{chosen?.label ?? 'Untimed'}</strong>
+        <span>{chosen?.group ?? 'No clock'}</span>
+        <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+    </div>
+  ) : (
+    <>
+      {picker}
+      {!isComputer && <p className="setup-rule muted">{onlineRule}</p>}
+    </>
+  )
+  const ratedField = (
+    <label className="online-rated">
+      <span>Rated</span>
+      <span className="switch">
+        <input type="checkbox" role="switch" checked={online.rated} disabled={busyNow} onChange={() => onOnline({ ...online, rated: !online.rated })} />
+        <span className="switch-track" />
+      </span>
+    </label>
+  )
+  // A challenge to you, at the top of whatever's showing.
+  const challengeCard = challenger && (
+    <div className="setup-challenge" role="status">
+      <p>
+        <span>
+          <strong>{challenger.from}</strong> challenges you
+        </span>
+        {challenger.playable ? (
+          <span className="muted">{[challenger.clock ?? 'No clock', challenger.rated ? 'Rated' : 'Casual'].join(' · ')}</span>
+        ) : (
+          <span className="muted">To a game Rookahead can’t play here. {onlineRule}</span>
+        )}
+      </p>
+      <div className="setup-challenge-actions">
+        {challenger.playable ? (
+          <button className="btn accent-btn small" disabled={answering} onClick={() => void answer(true)}>
+            Accept
+          </button>
+        ) : (
+          <a className="btn ghost small" href={`https://lichess.org/${challenger.id}`} target="_blank" rel="noreferrer">
+            Open on Lichess
+          </a>
+        )}
+        <button className="btn ghost small" disabled={answering} onClick={() => void answer(false)}>
+          Decline
+        </button>
+      </div>
+    </div>
+  )
+
+  const needsLichess = onlineSetupShown && !linked
+  const ways = (
+    <nav className="play-ways" aria-label={quick ? 'Other ways to play' : 'Ways to play'}>
+      {WAYS.filter((w) => !quick || w.view !== 'online').map((w) => (
+        <Link key={w.view} to={`/play/${w.view}`} className="home-card quick-card play-way">
+          <IconTile tone={w.view} size="big" />
+          <span className="quick-lines">
+            <strong>{w.title}</strong>
+            <small>{w.text}</small>
+          </span>
+          <span className="quick-go" aria-hidden>
+            ›
+          </span>
+        </Link>
+      ))}
+    </nav>
+  )
+  const body =
+    quick ? (
+      <>
+        <p className="muted">{linked ? `A real player near your rating, on Lichess as ${link?.username}.` : 'Play real people through your Lichess account.'}</p>
+        {linked && timeField}
+      </>
+    ) : view === 'hub' ? (
+      ways
+    ) : needsLichess ? (
+      <p className="muted">
+        {link
+          ? 'One more step: allow Rookahead to play games for your Lichess account. It’s one tap on Lichess.'
+          : isFriend
+            ? 'Games with friends are played on Lichess, through your account. Your friend needs a Lichess account too.'
+            : 'Real players, through your Lichess account. Rated games count for your Lichess rating, the one on your profile.'}
+      </p>
+    ) : isComputer ? (
+      <>
+        <div className="setup-field">
+          <div className="setup-readout">
+            <h3 className="setup-label" id="level-label">
+              Level
+            </h3>
+            <span>Strength {level.rating}</span>
+          </div>
+          <div className="setup-tiles level-tiles" role="radiogroup" aria-labelledby="level-label">
+            {LEVELS.map((l) => (
+              <button
+                key={l.level}
+                role="radio"
+                aria-checked={l.level === setup.level}
+                aria-label={`Level ${l.level}, strength ${l.rating}`}
+                className={`setup-tile ${l.level === setup.level ? 'active' : ''}`}
+                onClick={() => onChange({ ...setup, level: l.level })}
+              >
+                {l.level}
+              </button>
+            ))}
+          </div>
+        </div>
+        {colourField(setup.color, (c) => onChange({ ...setup, color: c }))}
+        {timeField}
+      </>
+    ) : isFriend ? (
+      <>
+        <div className="setup-field">
+          <label className="setup-label" htmlFor="friend-name">
+            Their Lichess username
+          </label>
+          <input
+            id="friend-name"
+            className="setup-input"
+            value={online.friend}
+            placeholder="Username"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            disabled={busyNow}
+            onChange={(e) => onOnline({ ...online, friend: e.target.value.replace(/\s/g, '') })}
+          />
+          {lichessFriends.length > 0 && (
+            <div className="friend-picks" aria-label="Your friends on Lichess">
+              {lichessFriends.map((f) => (
+                <button
+                  key={f.id}
+                  className={`setup-tile friend-pick ${friendName.toLowerCase() === f.lichess!.toLowerCase() ? 'active' : ''}`}
+                  disabled={busyNow}
+                  onClick={() => onOnline({ ...online, friend: f.lichess! })}
+                >
+                  {f.username}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {colourField(online.color, (c) => onOnline({ ...online, color: c }))}
+        {timeField}
+        {ratedField}
+      </>
+    ) : (
       <>
         <p className="muted">
-          {link
-            ? 'One more step: allow Rookahead to play games for your Lichess account. It’s one tap on Lichess.'
-            : 'Real players, through your Lichess account. Rated games count for your Lichess rating, the one on your profile.'}
+          Real players on Lichess, as <b>{link?.username}</b>. No engine while you play: that’s Lichess’s rule.
         </p>
-        <button className="btn accent-btn setup-start" disabled={busy} onClick={() => void connectLichess()}>
+        {timeField}
+        {ratedField}
+      </>
+    )
+
+  const foot =
+    view === 'hub' && !quick ? null : isComputer ? (
+      <>
+        <p className="muted">Takebacks and hints allowed. Saved to My recent games.</p>
+        <button className="btn accent-btn" onClick={onStart}>
+          Start game
+        </button>
+      </>
+    ) : needsLichess ? (
+      <>
+        <button className="btn accent-btn" disabled={busy} onClick={() => void connectLichess()}>
           {busy ? 'Connecting…' : link ? 'Allow on Lichess' : 'Connect Lichess'}
         </button>
         {error && <p className="form-error">{error}</p>}
       </>
-    )
-  const waited = searching == null ? 0 : Math.floor((now - searching) / 1000)
-  return (
-    <>
-      <p className="muted">
-        Real players on Lichess, as <b>{link.username}</b>. No engine while you play: that’s Lichess’s rule.
-      </p>
-      <h3 className="setup-label">Time control</h3>
-      <div className="clock-grid" role="radiogroup" aria-label="Time control">
-        {ONLINE_CLOCKS.map((g) => (
-          <div key={g.group} className="clock-row">
-            <span className="clock-group">{g.group}</span>
-            {g.clocks.map((c) => (
-              <button key={c} role="radio" aria-checked={setup.clock === c} className={`clock-chip ${setup.clock === c ? 'active' : ''}`} disabled={searching != null} onClick={() => onChange({ ...setup, clock: c })}>
-                {c}
-              </button>
-            ))}
+    ) : (
+      <>
+        {busyNow ? (
+          <div className="online-searching" role="status">
+            <span className="online-pulse" aria-hidden />
+            <span>
+              {waitingFor ? `Waiting for ${waitingFor}` : 'Looking for an opponent'} · {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
+            </span>
+            <button className="btn ghost small" onClick={onCancel}>
+              Cancel
+            </button>
           </div>
-        ))}
-      </div>
-      <p className="online-note muted">Lichess pairs apps like Rookahead at rapid and classical only.</p>
-      <label className="online-rated">
-        <span>Rated</span>
-        <span className="switch">
-          <input type="checkbox" role="switch" checked={setup.rated} disabled={searching != null} onChange={() => onChange({ ...setup, rated: !setup.rated })} />
-          <span className="switch-track" />
-        </span>
-      </label>
-      {searching != null ? (
-        <div className="online-searching" role="status">
-          <span className="online-pulse" aria-hidden />
-          <span>
-            Looking for an opponent · {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
-          </span>
-          <button className="btn ghost small" onClick={onCancel}>
-            Cancel
+        ) : (
+          <button className="btn accent-btn" disabled={isFriend && !friendName} onClick={onFind}>
+            {isFriend ? 'Send challenge' : quick ? 'Start game' : 'Find an opponent'}
           </button>
-        </div>
-      ) : (
-        <button className="btn accent-btn setup-start" onClick={onFind}>
-          Find an opponent
-        </button>
+        )}
+        {note && <p className="form-error">{note}</p>}
+      </>
+    )
+
+  return (
+    <main className={`play-layout play-new ${view === 'hub' ? 'play-hub' : ''}`}>
+      {/* A phone has no room for both: the choices come first, all on one screen, and the board arrives with the game. */}
+      {!phone && (
+        <section className="play-board">
+          {opponent}
+          <Board fen={DEFAULT_POSITION} orientation={orientation} shapes={NO_SHAPES} theme={settings.boardTheme} coordinates={settings.coordinates} onMove={noMove} viewOnly />
+          {you}
+        </section>
       )}
-      {note && <p className="form-error">{note}</p>}
-    </>
+
+      <aside className="panel play-panel">
+        <div className="panel-card setup-panel">
+          {phone && picking ? (
+            <div className="setup-body setup-pick">
+              <div className="setup-head setup-back">
+                <button className="icon-btn" onClick={() => setPicking(false)} aria-label="Back">
+                  <NavIcon name="back" />
+                </button>
+                <h2>Time</h2>
+              </div>
+              <p className="muted">{timeRule}</p>
+              {picker}
+              {!isComputer && ratedField}
+            </div>
+          ) : (
+            <>
+              <div className="setup-body">
+                {/* A phone has a setup's title (and Back) in the page's bar; its front keeps the heading. */}
+                {(!phone || view === 'hub') && (
+                  <div className="setup-head">
+                    {view !== 'hub' && (
+                      <Link to="/play" className="icon-btn" aria-label="Back to the ways to play">
+                        <NavIcon name="back" />
+                      </Link>
+                    )}
+                    <h2 id="setup-title">{quick ? 'New game' : view === 'hub' ? 'Play' : WAY_TITLES[view]}</h2>
+                    {!phone && gear}
+                  </div>
+                )}
+                {challengeCard}
+                {body}
+              </div>
+              {foot && <div className="setup-foot">{foot}</div>}
+              {quick && ways}
+            </>
+          )}
+        </div>
+      </aside>
+
+      {picking && !phone && (
+        <Sheet title="Time" sub={timeRule} onClose={() => setPicking(false)}>
+          {picker}
+        </Sheet>
+      )}
+    </main>
   )
 }
 
-function ClockChip({ value, setup, onChange }: { value: ClockSetting; setup: PlaySetup; onChange: (s: PlaySetup) => void }) {
-  const active = setup.clock === value
-  return (
-    <button role="radio" aria-checked={active} className={`clock-chip ${value === 'none' ? 'untimed' : ''} ${active ? 'active' : ''}`} onClick={() => onChange({ ...setup, clock: value })}>
-      {clockLabel(value)}
+const NO_SHAPES: DrawShape[] = []
+const noMove = () => {}
+
+/** The time controls, a section a speed (Bullet, Blitz, Rapid, Classical), and no clock at all against the computer. */
+function ClockPicker({ groups, value, onPick, untimed, disabled }: { groups: ClockGroup[]; value: string; onPick: (value: string) => void; untimed: boolean; disabled: boolean }) {
+  const tile = (v: string, label: string) => (
+    <button key={v} role="radio" aria-checked={value === v} className={`setup-tile ${value === v ? 'active' : ''}`} disabled={disabled} onClick={() => onPick(v)}>
+      {label}
     </button>
+  )
+  return (
+    <div className="clock-groups" role="radiogroup" aria-label="Time">
+      {groups.map((g) => (
+        <div key={g.name} className="setup-field">
+          <h3 className="setup-label">{g.name}</h3>
+          <div className="setup-tiles clock-tiles">{g.clocks.map((c) => tile(c.value, c.label))}</div>
+        </div>
+      ))}
+      {untimed && (
+        <div className="setup-field">
+          <h3 className="setup-label">No clock</h3>
+          <div className="setup-tiles untimed-tile">{tile('none', 'Untimed')}</div>
+        </div>
+      )}
+    </div>
   )
 }
 

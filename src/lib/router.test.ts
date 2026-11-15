@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { afterSignIn, navigate, onReselect, puzzleTab, routeFor, settingsSection } from './router'
+import { afterSignIn, navigate, onReselect, playView, puzzleTab, routeFor, settingsSection } from './router'
 
 describe('routeFor', () => {
   it('maps paths to pages', () => {
@@ -23,6 +23,17 @@ describe('routeFor', () => {
     expect(routeFor('/puzzles/daily')).toBe('puzzles')
     expect(routeFor('/puzzles/mistakes/')).toBe('puzzles')
     expect(routeFor('/puzzles/other')).toBe('home')
+  })
+
+  it('reads the part of Play', () => {
+    expect(routeFor('/play/online')).toBe('play')
+    expect(routeFor('/play/friend/')).toBe('play')
+    expect(routeFor('/play/other')).toBe('home')
+    expect(playView('/play')).toBe('hub')
+    expect(playView('/play/')).toBe('hub')
+    expect(playView('/play/online')).toBe('online')
+    expect(playView('/play/computer/')).toBe('computer')
+    expect(playView('/play/friend')).toBe('friend')
   })
 
   it('reads the puzzle tab', () => {
