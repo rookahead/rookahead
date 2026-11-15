@@ -51,8 +51,10 @@ import { addLine, createTree, mainline, ROOT_ID } from '../../lib/tree'
 const other = (c: Side): Side => (c === 'white' ? 'black' : 'white')
 /** A dropped connection is tried again after this long. */
 const RETRY_MS = 2000
-/** Lichess keeps a game's connection busy (keep-alives): this long without a word, it's opened again. */
-const QUIET_MS = 20000
+/** Lichess sends a keep-alive every 7 seconds: this long without a word, the connection is opened again. */
+const QUIET_MS = 11000
+/** Lichess shows a move it took on the game's connection at once: this long without it, the connection is dead. */
+const CONFIRM_MS = 2500
 
 interface Props {
   started: StartedGame
@@ -82,29 +84,53 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
   const [state, setState] = useState<OnlineState | null>(null)
   const [gone, setGone] = useState<{ claimAt: number } | null>(null)
   // Your move, sent and waiting for Lichess to confirm it (it shows at once), and how many moves there were then.
-  const [sent, setSent] = useState<{ uci: string; after: number } | null>(null)
+  // `problem`: sending it went wrong, which doesn't say Lichess hasn't got it (its answer can be lost on the way),
+  // so the move stays on the board until the game has been read again and shows which it is.
+  const [sent, setSent] = useState<{ uci: string; after: number; problem?: string } | null>(null)
+  const sentNow = useRef(sent)
+  useEffect(() => {
+    sentNow.current = sent
+  })
   const [notice, setNotice] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<'resign' | 'abort' | null>(null)
   const [reviewing, setReviewing] = useState(false)
   const [now, setNow] = useState(Date.now)
   const you = started.color
 
+  const say = (text: string) => {
+    setNotice(text)
+    setTimeout(() => setNotice((n) => (n === text ? null : n)), 3000)
+  }
+
   // Follow the game; a dropped connection reconnects while the game is on. A connection can also die without
   // closing (Lichess drops it when the game is opened elsewhere, a network blip): one that's gone quiet for a
-  // while, or that just missed a move Lichess turned down, is dropped and opened again, which brings the game
-  // back up to date.
+  // while, that hasn't shown a move Lichess took, or that just missed a move Lichess turned down, is dropped
+  // and opened again, which brings the game back up to date. So is one that slept through the page being
+  // hidden or the network changing.
   // Since when the connection has been down (null: up); a quick reopen doesn't flash a message.
   const [downSince, setDownSince] = useState<number | null>(null)
   const resync = useRef<() => void>(() => {})
+  // How many moves the connection has shown.
+  const heard = useRef(0)
   useEffect(() => {
     const ctrl = new AbortController()
     let over = false
     let lastHeard = Date.now()
     let current: AbortController | null = null
+    // Tries in a row that brought no game.
+    let failed = 0
     resync.current = () => current?.abort()
-    const watchdog = setInterval(() => {
+    const check = () => {
       if (!over && Date.now() - lastHeard > QUIET_MS) current?.abort()
-    }, 5000)
+    }
+    const watchdog = setInterval(check, 2000)
+    // Back on the page (a phone's browser stops a hidden page, and its connection dies unnoticed): look at once.
+    const woke = () => document.visibilityState === 'visible' && check()
+    // The network came back or changed: the old connection is gone with it.
+    const online = () => current?.abort()
+    document.addEventListener('visibilitychange', woke)
+    window.addEventListener('pageshow', woke)
+    window.addEventListener('online', online)
     void (async () => {
       while (!ctrl.signal.aborted && !over) {
         current = new AbortController()
@@ -115,12 +141,21 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
           started.id,
           {
             onGame: (g) => {
+              failed = 0
+              heard.current = g.state.moves.length
               setGame(g)
               setState(g.state)
               setDownSince(null)
+              // A move that went wrong on the way, and the game read again doesn't have it: it comes off the board.
+              const p = sentNow.current
+              if (p?.problem && g.state.moves.length <= p.after) {
+                setSent(null)
+                say(`Lichess didn’t take that move (${p.problem}). Try again.`)
+              }
               over = !LIVE_STATUSES.has(g.state.status)
             },
             onState: (s) => {
+              heard.current = s.moves.length
               setState(s)
               over = !LIVE_STATUSES.has(s.status)
             },
@@ -139,12 +174,16 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
         }
         if (!over && !ctrl.signal.aborted) {
           setDownSince((d) => d ?? Date.now())
-          await new Promise((r) => setTimeout(r, current?.signal.aborted ? 300 : RETRY_MS))
+          // A connection that was working is opened again at once; one that won't open is given a moment.
+          await new Promise((r) => setTimeout(r, failed++ ? RETRY_MS : 300))
         }
       }
     })()
     return () => {
       clearInterval(watchdog)
+      document.removeEventListener('visibilitychange', woke)
+      window.removeEventListener('pageshow', woke)
+      window.removeEventListener('online', online)
       ctrl.abort()
     }
   }, [started.id])
@@ -218,22 +257,24 @@ export function OnlineGameView({ started, settings, phone, active, gear, onToggl
     return () => clearInterval(id)
   }, [live])
 
-  const say = (text: string) => {
-    setNotice(text)
-    setTimeout(() => setNotice((n) => (n === text ? null : n)), 3000)
-  }
 
   const onMove = (move: { from: string; to: string; promotion?: string }) => {
     if (!yourTurn) return
     const uci = move.from + move.to + (move.promotion ?? '')
     if (!new Chess(line[lastPly].fen).moves({ verbose: true }).some((m) => m.lan === uci)) return
-    setSent({ uci, after: confirmed.length })
+    const after = confirmed.length
+    setSent({ uci, after })
     void sendMove(started.id, uci).then((problem) => {
-      if (!problem) return
-      setSent((p) => (p?.uci === uci ? null : p))
-      // Most likely this page missed a move: catch up, then say what Lichess said.
+      if (!problem) {
+        // Lichess has the move, so the connection should show it: if it doesn't, it's dead, and your opponent's
+        // reply would never arrive on it.
+        setTimeout(() => heard.current <= after && resync.current(), CONFIRM_MS)
+        return
+      }
+      // The move stays where it is, and the board shut, until the game read again says whether Lichess has it:
+      // taking it back now would invite a second move while the first one stands.
+      setSent((p) => (p?.uci === uci && p.after === after ? { ...p, problem } : p))
       resync.current()
-      say(`Lichess didn’t take that move (${problem}). The board is catching up: try again.`)
     })
   }
 
