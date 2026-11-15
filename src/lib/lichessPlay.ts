@@ -33,8 +33,19 @@ export interface OnlineGame {
   /** Starting clock, ms, and increment, ms. */
   initial: number
   increment: number
+  /** When Lichess made the game, ms (null if it didn't say). */
+  createdAt: number | null
   state: OnlineState
 }
+
+/** A line of the game's chat between the two players. `user` is "lichess" for Lichess's own notes. */
+export interface ChatLine {
+  user: string
+  text: string
+}
+
+/** Lichess's limit on a chat message's length. */
+export const CHAT_MAX = 140
 
 export interface OnlineState {
   /** UCI moves from the start. */
@@ -204,6 +215,8 @@ export interface GameStreamHandlers {
   onState: (state: OnlineState) => void
   /** The opponent left; you can claim the win after this many seconds (null: they're back). */
   onGone: (claimInSeconds: number | null) => void
+  /** A chat line between the players. */
+  onChat?: (line: ChatLine) => void
   /** Anything arrived, keep-alives included (a quiet connection may have died). */
   onAlive?: () => void
 }
@@ -224,9 +237,13 @@ export function followGame(id: string, handlers: GameStreamHandlers, signal: Abo
           rated: line.rated === true,
           initial: typeof clock.initial === 'number' ? clock.initial : 0,
           increment: typeof clock.increment === 'number' ? clock.increment : 0,
+          createdAt: typeof line.createdAt === 'number' ? line.createdAt : null,
           state: stateFrom((line.state ?? {}) as Record<string, unknown>, at),
         })
       } else if (line.type === 'gameState') handlers.onState(stateFrom(line, at))
+      else if (line.type === 'chatLine') {
+        if (line.room === 'player' && typeof line.username === 'string' && typeof line.text === 'string') handlers.onChat?.({ user: line.username, text: line.text })
+      }
       else if (line.type === 'opponentGone') handlers.onGone(line.gone === true && typeof line.claimWinInSeconds === 'number' ? line.claimWinInSeconds : null)
     },
     signal,
@@ -238,6 +255,37 @@ export const resign = (id: string) => post(`/board/game/${id}/resign`)
 export const abort = (id: string) => post(`/board/game/${id}/abort`)
 export const answerDraw = (id: string, yes: boolean) => post(`/board/game/${id}/draw/${yes ? 'yes' : 'no'}`)
 export const claimVictory = (id: string) => post(`/board/game/${id}/claim-victory`)
+
+/** The game's chat so far (the stream only brings lines said after it opened). Null if Lichess couldn't be asked. */
+export async function chatHistory(id: string): Promise<ChatLine[] | null> {
+  const t = token()
+  if (!t) return null
+  try {
+    const res = await fetch(`${API}/board/game/${id}/chat`, { headers: { Authorization: `Bearer ${t}` } })
+    if (!res.ok) return null
+    const lines = (await res.json()) as unknown
+    if (!Array.isArray(lines)) return null
+    return lines.flatMap((l: Record<string, unknown>) => (typeof l?.user === 'string' && typeof l.text === 'string' ? [{ user: l.user, text: l.text }] : []))
+  } catch {
+    return null
+  }
+}
+
+/** Says something in the game's chat, to your opponent. */
+export const sendChat = (id: string, text: string) => post(`/board/game/${id}/chat`, { room: 'player', text: text.slice(0, CHAT_MAX) })
+
+/** Your rating after a finished game, and what the game changed it by (null for a casual or aborted game). */
+export async function ratingAfter(id: string, you: Side): Promise<{ rating: number; diff: number } | null> {
+  try {
+    const res = await fetch(`https://lichess.org/game/export/${id}?moves=false`, { headers: { Accept: 'application/json' } })
+    if (!res.ok) return null
+    const g = (await res.json()) as { players?: Record<string, { rating?: unknown; ratingDiff?: unknown }> }
+    const p = g.players?.[you]
+    return typeof p?.rating === 'number' && typeof p.ratingDiff === 'number' ? { rating: p.rating + p.ratingDiff, diff: p.ratingDiff } : null
+  } catch {
+    return null
+  }
+}
 
 /** The finished game's PGN, with its clocks, for the review. */
 export async function gamePgn(id: string): Promise<string | null> {
@@ -454,6 +502,12 @@ export async function playerFacts(name: string, speed: 'rapid' | 'classical'): P
 
 /** An account this young is worth a look (many fair-play bans hit accounts in their first weeks). */
 export const NEW_ACCOUNT_DAYS = 30
+
+/**
+ * How long Lichess waits for each side's first move before it calls the game off, ms: 30 s in rapid, 35 s in
+ * classical (lila's Game.timeForFirstMove, outside tournaments).
+ */
+export const firstMoveMs = (initialMs: number, incrementMs: number) => (speedOf(initialMs, incrementMs) === 'classical' ? 35000 : 30000)
 
 /** The game you're playing, kept so a reload goes back to it. */
 const LIVE_KEY = 'rookahead.online'

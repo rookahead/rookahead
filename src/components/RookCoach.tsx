@@ -15,7 +15,7 @@ const star = (cx: number, cy: number, r: number) => {
   return `M${cx} ${cy - r}Q${cx + k} ${cy - k} ${cx + r} ${cy}Q${cx + k} ${cy + k} ${cx} ${cy + r}Q${cx - k} ${cy + k} ${cx - r} ${cy}Q${cx - k} ${cy - k} ${cx} ${cy - r}Z`
 }
 
-const ROOK = 'M20 16Q20 12 24 12H36Q40 12 40 16V22H50V16Q50 12 54 12H66Q70 12 70 16V22H80V16Q80 12 84 12H96Q100 12 100 16V34Q100 38 96 38H90L92 102H100Q106 102 106 108V122Q106 128 100 128H20Q14 128 14 122V108Q14 102 20 102H28L30 38H24Q20 38 20 34Z'
+export const ROOK_PATH = 'M20 16Q20 12 24 12H36Q40 12 40 16V22H50V16Q50 12 54 12H66Q70 12 70 16V22H80V16Q80 12 84 12H96Q100 12 100 16V34Q100 38 96 38H90L92 102H100Q106 102 106 108V122Q106 128 100 128H20Q14 128 14 122V108Q14 102 20 102H28L30 38H24Q20 38 20 34Z'
 const ARROW = 'M34 89H72V84.5L86 92L72 99.5V95H34Z'
 
 type Part = { d: string; kind: 'fill' | 'line' | 'thin' | 'white' | 'star' | 'drop' }
@@ -101,7 +101,7 @@ export function RookCoach({ mood, moodKey }: Props) {
     <svg className="rook-coach" viewBox="0 0 120 140" role="img" aria-label={LABEL[shown]}>
       {/* A small lift as a reaction comes in; keyed, so each new moment plays it again. */}
       <g key={reacting ? moodKey : 'rest'} className={reacting ? 'rook-react' : undefined}>
-        <path className="rook-body" d={ROOK} />
+        <path className="rook-body" d={ROOK_PATH} />
         <path className="rook-carve" d={ARROW} />
         {parts.map((p, i) => (
           <path key={i} className={`rook-${p.kind}`} d={p.d} />

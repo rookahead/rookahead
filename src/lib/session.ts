@@ -22,6 +22,8 @@ export interface Session {
   engine?: boolean
   /** When the game was last worked on (ms): Game review reopens it only while it's recent. */
   seenAt?: number
+  /** The page that sent the game here (Play, for a game just played): the review offers the way back to it. */
+  from?: string
 }
 
 export function readSession(): Session | null {

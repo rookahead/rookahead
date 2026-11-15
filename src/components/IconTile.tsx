@@ -1,7 +1,7 @@
 /** What a tile stands for: a section of the app, or one of Home's numbers. Each has its own colour (index.css, .icon-tile). */
 export type TileTone = 'play' | 'puzzles' | 'games' | 'review' | 'analyze' | 'accuracy' | 'legendary' | 'mistakes' | 'streak' | 'clock' | 'openings' | 'online' | 'computer' | 'friend'
 
-const ICONS: Record<TileTone, string> = {
+export const TILE_ICONS: Record<TileTone, string> = {
   play: 'M6 4l14 8-14 8z',
   puzzles: 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z',
   games: 'M4 5h16M4 12h16M4 19h10',
@@ -32,7 +32,7 @@ export function IconTile({ tone, size }: { tone: TileTone; size?: 'small' | 'big
   return (
     <span className={`icon-tile ${tone} ${size ?? ''}`} aria-hidden>
       <svg viewBox="0 0 24 24">
-        <path d={ICONS[tone]} className={tone === 'streak' ? 'filled' : undefined} />
+        <path d={TILE_ICONS[tone]} className={tone === 'streak' ? 'filled' : undefined} />
         {FILLS[tone] && <path d={FILLS[tone]} className="filled" />}
       </svg>
     </span>

@@ -2,6 +2,7 @@
 import { Chess } from 'chess.js'
 import type { ClockSetting } from './clock'
 import type { Color } from './evaluation'
+import { levelInfo } from './levels'
 import { formatClock } from './pgn'
 import { uciToMove } from './tree'
 
@@ -71,6 +72,8 @@ export function playHeaders(meta: PlayMeta): Record<string, string> {
     Result: meta.outcome?.result ?? '*',
     TimeControl: meta.clock === 'none' ? '-' : meta.clock,
   }
+  // The computer's strength as its rating, so the review shows it beside its name as Play did.
+  headers[meta.color === 'white' ? 'BlackElo' : 'WhiteElo'] = String(levelInfo(meta.level).rating)
   if (meta.outcome) {
     const { result, reason } = meta.outcome
     const winner = result === '1-0' ? white : result === '0-1' ? black : null

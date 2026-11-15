@@ -26,7 +26,10 @@ export interface ExplorerResult {
   moves: ExplorerMove[]
 }
 
-export type ExplorerAnswer = { ok: ExplorerResult } | { error: 'connect' | 'busy' | 'offline' }
+export type ExplorerAnswer = { ok: ExplorerResult } | { error: 'connect' | 'busy' | 'offline' | 'slow' }
+
+/** Lichess's explorer can hang without answering: past this, ms, it's given up on and can be asked again. */
+const WAIT_MS = 10000
 
 /** Games on Lichess: the speeds and ratings most club players would compare themselves with. */
 const LICHESS_QUERY = { speeds: 'blitz,rapid,classical', ratings: '1600,1800,2000,2200,2500' }
@@ -61,8 +64,9 @@ export async function explore(source: ExplorerSource, fen: string, signal?: Abor
   const hit = cache.get(key)
   if (hit) return { ok: hit }
   const params = new URLSearchParams({ fen, moves: String(MOVES), topGames: '0', ...(source === 'lichess' ? { recentGames: '0', ...LICHESS_QUERY } : {}) })
+  const slow = AbortSignal.timeout(WAIT_MS)
   try {
-    const res = await fetch(`${API}/${source}?${params}`, { headers: { Authorization: `Bearer ${link.token}` }, signal })
+    const res = await fetch(`${API}/${source}?${params}`, { headers: { Authorization: `Bearer ${link.token}` }, signal: signal ? AbortSignal.any([signal, slow]) : slow })
     if (res.status === 401) {
       lichessTokenRefused()
       return { error: 'connect' }
@@ -74,6 +78,7 @@ export async function explore(source: ExplorerSource, fen: string, signal?: Abor
     cache.set(key, result)
     return { ok: result }
   } catch (e) {
+    if (slow.aborted && !signal?.aborted) return { error: 'slow' }
     if ((e as Error).name === 'AbortError') throw e
     return { error: 'offline' }
   }

@@ -16,3 +16,12 @@ export function faviconUrl(tile: string, rook: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="${tile}"/><path transform="translate(4 4)" fill="${rook}" d="${ROOK}"/></svg>`
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
+
+/** The computer's picture in a player bar: the Rookahead rook, where a person's initial would be. */
+export function RookMark() {
+  return (
+    <svg className="player-avatar-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d={ROOK} />
+    </svg>
+  )
+}

@@ -8,6 +8,7 @@ import { FlipIcon, LoadIcon, NavIcon, NewBoardIcon, ShareIcon, SoundIcon } from 
 import { CoachCard } from '../components/CoachCard'
 import { ReviewCoachCard } from '../components/ReviewCoachCard'
 import { RookCoach } from '../components/RookCoach'
+import { RookMark } from '../components/RookLogo'
 import { Segmented, SwitchRow } from '../components/controls'
 import { AnalysisSettings } from '../components/AnalysisSettings'
 import { EngineLines } from '../components/EngineLines'
@@ -401,6 +402,9 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
   // there is one: a game just played through on the board has nowhere to go back to).
   const backTo: 'summary' | 'review' | null = plainBoard || blank ? null : tab === 'review' ? 'summary' : tab === 'analysis' && reviewed ? 'review' : null
   const goBack = () => setTab(backTo === 'review' ? 'review' : 'summary')
+  // A game just played, reviewed from Play: on the review's first view, the arrow goes back to that game's setup.
+  const [cameFrom] = useState(() => readSession()?.from ?? null)
+  const toPlay = !backTo && cameFrom?.startsWith('/play') ? cameFrom : null
   const canAnalyse = !plainBoard && !blank && tab !== 'analysis'
   const pageTitle = tab === 'analysis' || blank ? 'Analysis' : 'Game review'
   // Stepping through the review: the board shows what was better, not the live engine's lines.
@@ -711,6 +715,8 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       color={c}
       name={headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')}
       rating={headers[c === 'white' ? 'WhiteElo' : 'BlackElo']}
+      // A game against Rookahead's computer keeps the rook it had on Play.
+      avatar={/^Rookahead Level \d/.test(headers[c === 'white' ? 'White' : 'Black'] ?? '') ? <RookMark /> : undefined}
       result={resultFor(c)?.replace('1/2', '½')}
       captured={material.captured[c]}
       advantage={material.advantage[c]}
@@ -1193,12 +1199,20 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
               {!phone && (
                 <div className="panel-top">
                   <div className="panel-top-side">
-                    {backTo && (
+                    {backTo ? (
                       <button className="icon-btn" onClick={goBack} aria-label={`Back to the ${backTo}`} title={`Back to the ${backTo}`}>
                         <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
                           <path d="M19 12H5M11 6l-6 6 6 6" />
                         </svg>
                       </button>
+                    ) : (
+                      toPlay && (
+                        <button className="icon-btn" onClick={() => navigate(toPlay)} aria-label="Back to Play" title="Back to Play">
+                          <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+                            <path d="M19 12H5M11 6l-6 6 6 6" />
+                          </svg>
+                        </button>
+                      )
                     )}
                   </div>
                   <h1 className="panel-title">

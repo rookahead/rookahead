@@ -19,6 +19,8 @@ interface Props {
   onName?: () => void
   /** A short flag after the rating, e.g. "New account". */
   note?: React.ReactNode
+  /** A line of its own under the name, in place of the captured pieces (the first-move countdown). */
+  sub?: React.ReactNode
 }
 
 function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
@@ -44,7 +46,7 @@ function Captured({ pieces, color }: { pieces: Role[]; color: Color }) {
   )
 }
 
-export function PlayerBar({ color, name, rating, result, captured, advantage, clock, avatar, onName, note }: Props) {
+export function PlayerBar({ color, name, rating, result, captured, advantage, clock, avatar, onName, note, sub }: Props) {
   const opponent: Color = color === 'white' ? 'black' : 'white'
   return (
     <div className="player-bar">
@@ -65,8 +67,12 @@ export function PlayerBar({ color, name, rating, result, captured, advantage, cl
           {result && <span className="player-result">{result}</span>}
         </div>
         <div className="player-material">
-          <Captured pieces={captured} color={opponent} />
-          {advantage > 0 && <span className="material-lead">+{advantage}</span>}
+          {sub ?? (
+            <>
+              <Captured pieces={captured} color={opponent} />
+              {advantage > 0 && <span className="material-lead">+{advantage}</span>}
+            </>
+          )}
         </div>
       </div>
       {clock}

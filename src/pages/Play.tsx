@@ -10,21 +10,23 @@ import { MoveStrip } from '../components/MoveStrip'
 import { FlipIcon, NavIcon, ShareIcon, SoundIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { PlayerBar } from '../components/PlayerBar'
+import { ROOK_PATH } from '../components/RookCoach'
 import { ToolIcon } from '../components/PlayToolIcon'
 import { ROOK } from '../components/RookLogo'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { Sheet } from '../components/Sheet'
 import { ShareDialog } from '../components/ShareDialog'
-import { IconTile } from '../components/IconTile'
+import { IconTile, TILE_ICONS } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { AvatarFace, Gear } from '../components/UserCard'
 import type { AnalysisResult } from '../engine/Engine'
 import { useEngine } from '../hooks/useEngine'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMoveSounds } from '../hooks/useMoveSounds'
+import { useLowTimeNudge } from '../hooks/useLowTime'
 import { endMarks } from '../lib/gameEnd'
 import { bookMove, candidates, decide, isComplete, pickLapse, soundMove } from '../lib/botMove'
-import { CLOCK_GROUPS, clockLabel, flagged, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
+import { CLOCK_GROUPS, clockLabel, flagged, lowTimeMs, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
 import { winPercent, type Color } from '../lib/evaluation'
 import { saveGame } from '../lib/games'
 import { useImmersive } from '../lib/immersive'
@@ -50,12 +52,13 @@ import {
   type StartedGame,
 } from '../lib/lichessPlay'
 import { useFriends } from '../lib/friends'
-import { onReselect, playView, usePathname, type PlayView } from '../lib/router'
+import { navigate, onReselect, playView, usePathname, type PlayView } from '../lib/router'
 import { encodeShare, toSharedGame } from '../lib/share'
 import { writeSession } from '../lib/session'
 import { useAccount } from '../lib/account'
 import { logUse } from '../lib/usage'
 import { DEFAULT_SETTINGS, type Settings } from '../lib/settings'
+import { playSound } from '../lib/sound'
 import { formatClockFace, timeSpent } from '../lib/clocks'
 import { addLine, createTree, mainline, ROOT_ID } from '../lib/tree'
 import { OnlineGameView } from './play/OnlineGame'
@@ -116,8 +119,11 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   useEffect(() => () => searching?.ctrl.abort(), [searching])
 
   // A rematch started from the game's end: the next game takes its place.
+  // A game that starts here (not one a reload came back to) opens with the two players face to face.
+  const [freshId, setFreshId] = useState<string | null>(null)
   const startOnline = useCallback((g: StartedGame) => {
     saveLiveOnline(g)
+    setFreshId(g.id)
     setOnline(g)
   }, [])
 
@@ -125,14 +131,14 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
     saveOnlineSetup(s)
     setOnlineNote(null)
     const ctrl = new AbortController()
-    setSearching({ since: Date.now(), ctrl })
+    const since = Date.now()
+    setSearching({ since, ctrl })
     const found = await seek(s.clock, s.rated, ctrl.signal)
     setSearching((was) => (was?.ctrl === ctrl ? null : was))
-    if (found === 'refused') setOnlineNote('Lichess turned the search down. Check your Lichess account (a game already open there, or a new account still being checked), then try again.')
-    else if (found) {
-      saveLiveOnline(found)
-      setOnline(found)
-    } else if (!ctrl.signal.aborted) setOnlineNote('No opponent turned up. Try again, or pick another time control.')
+    if (found === 'refused') setOnlineNote(`Lichess turned the search down. ${TIMED_OUT} Otherwise check lichess.org for a game already open there.`)
+    else if (found) startOnline(found)
+    // A search Lichess ends almost at once (a real one runs until someone joins) is usually a time-out.
+    else if (!ctrl.signal.aborted) setOnlineNote(Date.now() - since < QUICK_END_MS ? `Lichess ended the search straight away. ${TIMED_OUT}` : 'No opponent turned up. Try again, or pick another time control.')
   }
   // A friend, by their Lichess username: the challenge stays open until they answer (or you call it off).
   const challengeOne = async (s: OnlineSetup) => {
@@ -151,6 +157,23 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   // Which part of Play is showing: its front (the ways to play) or one way's setup.
   const pathname = usePathname()
   const view = playView(pathname)
+  // The next game from a finished one (its New button or New game tab): the finished game goes, and the search
+  // runs on Play online's board, the opponent's place showing it. From another part of Play it goes there first.
+  const [seekNext, setSeekNext] = useState(false)
+  const searchAgain = () => {
+    saveLiveOnline(null)
+    setOnline(null)
+    if (view === 'online' || (phone && view === 'hub')) void findOpponent(onlineSetup)
+    else {
+      setSeekNext(true)
+      navigate('/play/online')
+    }
+  }
+  useEffect(() => {
+    if (!seekNext || view !== 'online' || online) return
+    setSeekNext(false)
+    void findOpponent(onlineSetup)
+  })
   // Moving between them after a game has ended: the game is saved, so the setup comes back.
   const [lastPath, setLastPath] = useState(pathname)
   if (pathname !== lastPath) {
@@ -209,19 +232,23 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
         <OnlineGameView
           key={online.id}
           started={online}
+          fresh={online.id === freshId}
           settings={settings}
           phone={phone}
           active={active}
           gear={gear}
           onToggleSound={() => updateSettings({ soundVolume: settings.soundVolume === 0 ? DEFAULT_SETTINGS.soundVolume : 0 })}
           onReview={(pgn, color) => {
-            writeSession({ pgn, orientation: color, currentPly: 0, evals: {}, review: true })
+            writeSession({ pgn, orientation: color, currentPly: 0, evals: {}, review: true, from: '/play/online' })
             onOpenAnalysis()
           }}
-          onAgain={() => {
-            setOnline(null)
-            void findOpponent(onlineSetup)
-          }}
+          onAgain={searchAgain}
+          engine={ready ? engine : null}
+          engineStatus={status}
+          nextClock={onlineSetup.clock}
+          newGame={
+            <NewOnlineGame setup={onlineSetup} onChange={setOnlineSetup} onFind={searchAgain} playing={!onlineOver} />
+          }
           onStarted={startOnline}
           onOver={markOver}
           onDone={() => {
@@ -249,7 +276,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
             setGame(null)
           }}
           onReview={() => {
-            writeSession({ pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }, game.clocks), orientation: game.color, currentPly: 0, evals: {}, review: true })
+            writeSession({ pgn: playPgn(game.moves, { ...meta(game), date: new Date(game.startedAt) }, game.clocks), orientation: game.color, currentPly: 0, evals: {}, review: true, from: '/play/computer' })
             onOpenAnalysis()
           }}
         />
@@ -328,7 +355,8 @@ const WAYS: { view: Exclude<PlayView, 'hub'>; title: string; text: string }[] = 
   { view: 'computer', title: 'Play the computer', text: '8 levels, 400 to 2600, with takebacks and hints' },
   { view: 'friend', title: 'Play a friend', text: 'Challenge someone by their Lichess username' },
 ]
-const WAY_TITLES = Object.fromEntries(WAYS.map((w) => [w.view, w.title])) as Record<Exclude<PlayView, 'hub'>, string>
+// A setup's title: a new game, online or against the computer (the icon beside it says which); a friend's is its own.
+const WAY_TITLES: Record<Exclude<PlayView, 'hub'>, string> = { online: 'New game', computer: 'New game', friend: 'Play a friend' }
 
 /**
  * Before a game: on desktop the board as it will start, and beside it Play's front (the ways to play) or the setup
@@ -458,13 +486,16 @@ function SetupView({
     <PlayerBar
       color={other(orientation)}
       name={opponentName}
-      rating={isComputer ? String(level.rating) : undefined}
+      // The search's time runs beside it, where the rating will be.
+      rating={isComputer ? String(level.rating) : busyNow && !phone ? `${Math.floor(waited / 60)}:${String(waited % 60).padStart(2, '0')}` : undefined}
       avatar={
         isComputer ? (
           <svg className="player-avatar-mark" viewBox="0 0 24 24" fill="currentColor">
             <path d={ROOK} />
           </svg>
-        ) : isFriend && friendName ? undefined : (
+        ) : isFriend && friendName ? undefined : busyNow ? (
+          <SearchingRook />
+        ) : (
           '?'
         )
       }
@@ -678,9 +709,17 @@ function SetupView({
       </>
     ) : (
       <>
-        {busyNow ? (
+        {busyNow && !quick ? (
+          // The board's opponent place says it's looking, and for how long: here there's only the way out.
+          <button className="btn ghost" onClick={onCancel}>
+            {waitingFor ? `Cancel the challenge to ${waitingFor}` : 'Cancel search'}
+          </button>
+        ) : busyNow ? (
+          // A phone has no board while it searches: the rook and the time are in this row instead.
           <div className="online-searching" role="status">
-            <span className="online-pulse" aria-hidden />
+            <span className="player-avatar searching-mini" aria-hidden>
+              <SearchingRook />
+            </span>
             <span>
               {waitingFor ? `Waiting for ${waitingFor}` : 'Looking for an opponent'} · {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
             </span>
@@ -725,17 +764,30 @@ function SetupView({
           ) : (
             // The card stays put while what's in it slides across between Play's front and a setup (index.css).
             <div className="setup-slide">
-              <div className="setup-body">
-                {/* A phone has a setup's title (and Back) in the page's bar; its front keeps the heading. */}
-                {(!phone || view === 'hub') && (
-                  <div className="setup-head">
+              {/* Desktop: the panel's title in the middle of its top, like the review's and Puzzles', Back on its left. */}
+              {!phone && (
+                <div className="panel-top">
+                  <div className="panel-top-side">
                     {view !== 'hub' && (
-                      <Link to="/play" className="icon-btn" aria-label="Back to the ways to play">
+                      <Link to="/play" className="icon-btn" aria-label="Back to the ways to play" title="Back to the ways to play">
                         <NavIcon name="back" />
                       </Link>
                     )}
-                    <h2 id="setup-title">{quick ? 'New game' : view === 'hub' ? 'Play' : WAY_TITLES[view]}</h2>
-                    {!phone && gear}
+                  </div>
+                  <h2 className="panel-title" id="setup-title">
+                    <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
+                      <path d={TILE_ICONS[view === 'hub' ? 'play' : view]} />
+                    </svg>
+                    {view === 'hub' ? 'Play' : WAY_TITLES[view]}
+                  </h2>
+                  <div className="panel-top-side end">{gear}</div>
+                </div>
+              )}
+              <div className="setup-body">
+                {/* A phone has a setup's title (and Back) in the page's bar; its front keeps the heading. */}
+                {phone && view === 'hub' && (
+                  <div className="setup-head">
+                    <h2 id="setup-title">New game</h2>
                   </div>
                 )}
                 {challengeCard}
@@ -761,6 +813,52 @@ const NO_SHAPES: DrawShape[] = []
 const noMove = () => {}
 
 /** The time controls, a section a speed (Bullet, Blitz, Rapid, Classical), and no clock at all against the computer. */
+/**
+ * The next online game's setup, in the New game tab beside the game: its time and Rated. Its search waits for the
+ * game on the board to end, then runs on Play online's board like any other.
+ */
+function NewOnlineGame({ setup, onChange, onFind, playing }: { setup: OnlineSetup; onChange: (s: OnlineSetup) => void; onFind: () => void; playing: boolean }) {
+  return (
+    <>
+      <div className="setup-body">
+        <ClockPicker groups={ONLINE_CLOCK_GROUPS} value={setup.clock} onPick={(v) => onChange({ ...setup, clock: v as OnlineClock })} untimed={false} disabled={false} />
+        <p className="setup-rule muted">Lichess lets apps like Rookahead play rapid and classical only.</p>
+        <label className="online-rated">
+          <span>Rated</span>
+          <span className="switch">
+            <input type="checkbox" role="switch" checked={setup.rated} onChange={() => onChange({ ...setup, rated: !setup.rated })} />
+            <span className="switch-track" />
+          </span>
+        </label>
+      </div>
+      <div className="setup-foot">
+        {playing && <p className="muted">Finish the game on the board first.</p>}
+        <button className="btn accent-btn" disabled={playing} onClick={onFind}>
+          Find an opponent
+        </button>
+      </div>
+    </>
+  )
+}
+
+/** A search that Lichess ends sooner than this, ms, with no game, was ended by Lichess (often a time-out). */
+const QUICK_END_MS = 8000
+const TIMED_OUT = 'If you’ve aborted several games lately, Lichess times you out from playing for a few minutes: lichess.org shows how long.'
+
+/** The opponent's picture while the search runs: the Rookahead rook, looking left and right for someone to play. */
+function SearchingRook() {
+  return (
+    // Its head and shoulders, peeking up from the tile's foot, so the eyes read at an avatar's size.
+    <svg className="searching-rook" viewBox="10 2 100 100" aria-hidden>
+      <path className="searching-rook-body" d={ROOK_PATH} />
+      <g className="searching-rook-eyes">
+        <ellipse cx="47" cy="60" rx="7" ry="9" />
+        <ellipse cx="73" cy="60" rx="7" ry="9" />
+      </g>
+    </svg>
+  )
+}
+
 function ClockPicker({ groups, value, onPick, untimed, disabled }: { groups: ClockGroup[]; value: string; onPick: (value: string) => void; untimed: boolean; disabled: boolean }) {
   const tile = (v: string, label: string) => (
     <button key={v} role="radio" aria-checked={value === v} className={`setup-tile ${value === v ? 'active' : ''}`} disabled={disabled} onClick={() => onPick(v)}>
@@ -1061,7 +1159,14 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   }
 
   const shapes: DrawShape[] = hint && hint.ply === game.moves.length && viewPly === null ? [{ orig: hint.uci.slice(0, 2) as Key, dest: hint.uci.slice(2, 4) as Key, brush: 'suggest' }] : []
-  useMoveSounds(tree, shown, settings.soundVolume, Boolean(game.outcome))
+  // The end gets its own sound, whatever ended it (a resignation or a flag too), once, as it happens.
+  useMoveSounds(tree, shown, settings.soundVolume, false)
+  const hadOutcome = useRef(Boolean(game.outcome))
+  useEffect(() => {
+    if (game.outcome && !hadOutcome.current) playSound('gameover', settings.soundVolume)
+    hadOutcome.current = Boolean(game.outcome)
+    // Only the outcome arriving plays it.
+  }, [game.outcome])
 
   const material = materialState(shown.fen)
   const computerName = `Rookahead · Level ${level.level}`
@@ -1074,9 +1179,14 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       <path d={ROOK} />
     </svg>
   )
+  // Your time running low: your clock turns red (both do, below the game's mark) and pulses once, with a tick-tock.
+  const startMs = game.setup.clock === 'none' ? 0 : Number(game.setup.clock.split('+')[0]) * 1000
+  const nudging = useLowTimeNudge(game.clock && !game.outcome ? remaining(game.clock, game.color, now) : null, startMs, settings.soundVolume)
   const clockOf = (c: Color) =>
     game.clock && (
-      <span className={`player-clock ${game.clock.running === c && !game.outcome ? 'running' : ''} ${remaining(game.clock, c, now) < 30000 ? 'low' : ''}`}>
+      <span
+        className={`player-clock ${game.clock.running === c && !game.outcome ? 'running' : ''} ${remaining(game.clock, c, now) < lowTimeMs(startMs) ? 'low' : ''} ${c === game.color && nudging ? 'nudge' : ''}`}
+      >
         {formatClockFace(remaining(game.clock, c, now) / 1000)}
       </span>
     )
@@ -1206,27 +1316,32 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           {game.outcome ? (
             <ResultCard game={game} onReview={onReview} onRematch={onRematch} onNewGame={onNewGame} />
           ) : (
-            <div className="play-actions play-tools">
-              <button className="ctrl" onClick={takeback} disabled={!canTakeBack} aria-label="Takeback" title="Takeback">
+            <div className="play-quiet">
+              <button className="quiet-act" onClick={takeback} disabled={!canTakeBack}>
                 <ToolIcon name="takeback" />
-                {game.takebacks > 0 && <span className="play-tool-count">{game.takebacks}</span>}
+                Takeback
+                {game.takebacks > 0 && <span className="quiet-count">{game.takebacks}</span>}
               </button>
-              <button className="ctrl" onClick={() => void showHint()} disabled={!yourTurn || !engine} aria-label="Hint" title="Hint">
+              <button className="quiet-act" onClick={() => void showHint()} disabled={!yourTurn || !engine}>
                 <ToolIcon name="hint" />
-                {game.hints > 0 && <span className="play-tool-count">{game.hints}</span>}
+                Hint
+                {game.hints > 0 && <span className="quiet-count">{game.hints}</span>}
               </button>
-              <button className="ctrl" onClick={() => void offerDraw()} disabled={!engine || !yourTurn} aria-label="Offer draw" title="Offer draw">
+              <button className="quiet-act" onClick={() => void offerDraw()} disabled={!engine || !yourTurn} title="Offer a draw">
                 <span className="play-tool-half" aria-hidden>
                   ½
                 </span>
+                Draw
               </button>
               {canAbort ? (
-                <button className="ctrl" onClick={() => setConfirming('abort')} aria-label="Abort" title="Abort: call the game off, it isn't saved or counted">
+                <button className="quiet-act" onClick={() => setConfirming('abort')} title="Call the game off: it isn’t saved or counted">
                   <ToolIcon name="abort" />
+                  Abort
                 </button>
               ) : (
-                <button className="ctrl" onClick={() => setConfirming('resign')} aria-label="Resign" title="Resign">
+                <button className="quiet-act" onClick={() => setConfirming('resign')}>
                   <ToolIcon name="resign" />
+                  Resign
                 </button>
               )}
             </div>
@@ -1301,11 +1416,13 @@ function ResultCard({ game, onReview, onRematch, onNewGame }: { game: LiveGame; 
         Review this game
       </button>
       <div className="result-more">
-        <button className="btn ghost" onClick={onRematch}>
-          Rematch
-        </button>
         <button className="btn ghost" onClick={onNewGame}>
+          <ToolIcon name="plus" />
           New game
+        </button>
+        <button className="btn ghost" onClick={onRematch}>
+          <ToolIcon name="rematch" />
+          Rematch
         </button>
       </div>
     </div>

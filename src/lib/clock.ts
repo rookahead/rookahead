@@ -33,6 +33,12 @@ export interface ClockState {
   increment: number
 }
 
+/**
+ * Below this much time left (ms) a clock counts as low, scaled to the game as Lichess does it: an eighth of the
+ * starting time, at least 10 seconds and at most a minute (so a minute for 10+0 and anything longer).
+ */
+export const lowTimeMs = (startMs: number) => Math.min(60, Math.max(10, startMs / 8000)) * 1000
+
 export function startClock(setting: ClockSetting, now: number, first: Color): ClockState | null {
   if (setting === 'none') return null
   const [base, inc] = setting.split('+').map(Number)

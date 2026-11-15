@@ -48,7 +48,9 @@ export function Explorer({ fen, onPlay, onPreview }: Props) {
       return next
     })
   const [answer, setAnswer] = useState<{ key: string; value: ExplorerAnswer } | null>(null)
-  const key = `${saved.source} ${fen}`
+  // Asking again after Lichess didn't answer.
+  const [retry, setRetry] = useState(0)
+  const key = `${saved.source} ${fen} ${retry}`
   const live = Boolean(link) && saved.on
 
   useEffect(() => {
@@ -65,6 +67,10 @@ export function Explorer({ fen, onPlay, onPreview }: Props) {
       abort.abort()
     }
   }, [live, saved.source, fen, key])
+  const again = () => {
+    setAnswer(null)
+    setRetry((n) => n + 1)
+  }
 
   const current = answer?.key === key ? answer.value : null
   const result = current && 'ok' in current ? current.ok : null
@@ -93,7 +99,18 @@ export function Explorer({ fen, onPlay, onPreview }: Props) {
   else if ('error' in current)
     body = (
       <div className="engine-empty">
-        {current.error === 'busy' ? 'Lichess is busy. Try again in a minute.' : current.error === 'offline' ? 'Couldn’t reach Lichess.' : 'Connect Lichess again to use the explorer.'}
+        {current.error === 'busy'
+          ? 'Lichess is busy. Try again in a minute.'
+          : current.error === 'slow'
+            ? 'Lichess’s explorer isn’t answering right now.'
+            : current.error === 'offline'
+              ? 'Couldn’t reach Lichess.'
+              : 'Connect Lichess again to use the explorer.'}
+        {current.error !== 'connect' && (
+          <button className="link-btn explorer-retry" onClick={again}>
+            Try again
+          </button>
+        )}
       </div>
     )
   else if (!result || !result.moves.length) body = <div className="engine-empty">No {saved.source === 'masters' ? 'master' : 'Lichess'} games reached this position</div>

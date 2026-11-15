@@ -24,12 +24,19 @@ const isWhiteMove = (ply: number) => ply % 2 === 1
 // Icons in the list: the notable ones plus "best" and "book", like a review sheet.
 const LIST_ICONS = new Set<MoveClass>([...NOTABLE, 'best', 'book'])
 
-/** How long a move took, as a small bar (square-rooted, so the quick moves still show) and the time. */
-const MoveTime = memo(function MoveTime({ seconds, longest }: { seconds: number; longest: number }) {
+/**
+ * How long a move took: the time, and a bar growing towards it (square-rooted, so the quick moves still show),
+ * in the mover's colour. The game's longest think stands out.
+ */
+const MoveTime = memo(function MoveTime({ seconds, longest, side }: { seconds: number | undefined; longest: number; side: 'white' | 'black' }) {
+  if (seconds === undefined) return <span className="move-time" />
   const share = longest > 0 ? Math.sqrt(Math.min(1, seconds / longest)) : 0
+  const most = longest > 0 && seconds === longest
   return (
-    <span className="move-time" title={`Took ${formatSpent(seconds)}`}>
-      <span className="move-time-bar" style={{ width: `${Math.max(8, share * 100)}%` }} />
+    <span className={`move-time ${side} ${most ? 'longest' : ''}`} title={`${side === 'white' ? 'White' : 'Black'} took ${formatSpent(seconds)}${most ? ', the longest think' : ''}`}>
+      <span className="move-time-track">
+        <span className="move-time-bar" style={{ width: `${Math.max(6, share * 100)}%` }} />
+      </span>
       <span className="move-time-text">{formatSpent(seconds)}</span>
     </span>
   )
@@ -165,20 +172,20 @@ export const MoveList = memo(function MoveList({ tree, currentId, onSelect, resu
     <div className="move-list" ref={container}>
       {rows.map((row) => (
         <Fragment key={row.key}>
-          <div className="move-row">
+          <div className={`move-row ${times ? 'timed' : ''}`}>
             <span className="move-num">{row.number}.</span>
             {[row.white, row.black].map((node, i) => (
-              <span key={i} className={`move-cell ${times ? 'timed' : ''}`}>
-                {node ? (
-                  <>
-                    <MoveButton node={node} current={node.id === currentId} onSelect={onSelect} report={report} />
-                    {times?.[node.id] !== undefined && <MoveTime seconds={times[node.id]} longest={longest} />}
-                  </>
-                ) : (
-                  i === 0 && <span className="move placeholder">…</span>
-                )}
+              <span key={i} className="move-cell">
+                {node ? <MoveButton node={node} current={node.id === currentId} onSelect={onSelect} report={report} /> : i === 0 && <span className="move placeholder">…</span>}
               </span>
             ))}
+            {/* Both moves' times in a column of their own at the row's end, White's over Black's. */}
+            {times && (
+              <span className="move-times">
+                <MoveTime seconds={row.white ? times[row.white.id] : undefined} longest={longest} side="white" />
+                <MoveTime seconds={row.black ? times[row.black.id] : undefined} longest={longest} side="black" />
+              </span>
+            )}
           </div>
           {row.variations.length > 0 && (
             <div className="variations">

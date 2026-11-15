@@ -7,10 +7,12 @@ interface Props {
   sub?: string
   onClose: () => void
   children: ReactNode
+  /** Rises from the screen's foot, most of its height, for something to read or type in (a game's chat). */
+  bottom?: boolean
 }
 
 /** A short list of choices in a small dialog over the page, which goes when you pick or click outside. */
-export function Sheet({ title, sub, onClose, children }: Props) {
+export function Sheet({ title, sub, onClose, children, bottom }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export function Sheet({ title, sub, onClose, children }: Props) {
   return (
     <dialog
       ref={dialog}
-      className="dialog sheet"
+      className={`dialog sheet ${bottom ? 'bottom' : ''}`}
       aria-label={title}
       onClose={() => {
         // Unmount once the closing fade (0.16s in index.css) has played.

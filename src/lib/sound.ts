@@ -2,7 +2,7 @@
 // Every sound is built from two parts: a "tap" (a wooden piece meeting the board) and
 // a "chime" (a soft bell, for the moments that deserve a little ceremony).
 
-export type SoundKind = 'move' | 'premove' | 'capture' | 'castle' | 'check' | 'promote' | 'end' | 'success' | 'fail' | 'legendary' | 'swell'
+export type SoundKind = 'move' | 'premove' | 'capture' | 'castle' | 'check' | 'promote' | 'end' | 'success' | 'fail' | 'legendary' | 'swell' | 'lowtime' | 'start' | 'gameover'
 
 /** The sound for a move, read off its SAN. A check outranks everything else it might also be. */
 export function moveSoundKind(san: string): SoundKind {
@@ -191,6 +191,48 @@ function swell(out: AudioNode, t: number, length: number) {
   tone.stop(t + length + 0.02)
 }
 
+/**
+ * A muffled metal strike, like two blades meeting: a low note with a slightly sour metal partial above it, all of
+ * it rolled off above ~1.5 kHz, and a short thump of weight underneath.
+ */
+function clank(out: AudioNode, t: number, freq: number, gain: number, ring: number) {
+  const { ctx, noise } = audio()
+  const muffle = ctx.createBiquadFilter()
+  muffle.type = 'lowpass'
+  muffle.frequency.value = 1500
+  muffle.Q.value = 0.7
+  muffle.connect(out)
+  for (const [ratio, level, decay] of [
+    [1, 1, ring],
+    [1.34, 0.22, ring * 0.7],
+    [2.01, 0.07, ring * 0.45],
+    [2.71, 0.04, ring * 0.3],
+  ]) {
+    const osc = ctx.createOscillator()
+    // It lands a hair sharp and settles, as struck metal does.
+    osc.frequency.setValueAtTime(freq * ratio * 1.006, t)
+    osc.frequency.exponentialRampToValueAtTime(freq * ratio, t + 0.05)
+    osc.connect(envelope(ctx, t, gain * level * 0.45, 0.006, decay)).connect(muffle)
+    osc.start(t)
+    osc.stop(t + decay + 0.05)
+  }
+  const thump = ctx.createOscillator()
+  thump.frequency.setValueAtTime(190, t)
+  thump.frequency.exponentialRampToValueAtTime(90, t + 0.08)
+  thump.connect(envelope(ctx, t, gain * 0.36, 0.004, 0.1)).connect(muffle)
+  thump.start(t)
+  thump.stop(t + 0.15)
+  const hit = ctx.createBufferSource()
+  hit.buffer = noise
+  const band = ctx.createBiquadFilter()
+  band.type = 'bandpass'
+  band.frequency.value = freq * 1.5
+  band.Q.value = 2
+  hit.connect(band).connect(envelope(ctx, t, gain * 0.4, 0.001, 0.03)).connect(muffle)
+  hit.start(t, Math.random() * 0.5)
+  hit.stop(t + 0.05)
+}
+
 /** A Legendary move landing: a deep drop under the board, and a shimmer rising above it. */
 function legendary(out: AudioNode, t: number) {
   const { ctx } = audio()
@@ -278,6 +320,23 @@ export function playSound(kind: SoundKind, volume: number, lengthMs = 800) {
       case 'fail':
         // One low, short note: not the move.
         chime(out, t, 220, 0.32, 0.3)
+        break
+      case 'start':
+        // The game is on: two blades meet, then again, softer.
+        clank(out, t, 523.25, 1, 0.42)
+        clank(out, t + 0.24, 523.25, 0.55, 0.3)
+        break
+      case 'gameover':
+        // It's over, however it ended: the same strikes, the second one lower, closing rather than opening.
+        clank(out, t, 523.25, 0.9, 0.35)
+        clank(out, t + 0.2, 392, 0.7, 0.45)
+        break
+      case 'lowtime':
+        // A soft tick-tock: your time is running low.
+        tap(out, t, { gain: 0.3, pitch: 1.5, bright: 1.8, contact: 0.4 })
+        chime(out, t + 0.01, 1567.98, 0.07, 0.12)
+        tap(out, t + 0.22, { gain: 0.3, pitch: 1.2, bright: 1.8, contact: 0.4 })
+        chime(out, t + 0.23, 1174.66, 0.07, 0.12)
         break
     }
   } catch {

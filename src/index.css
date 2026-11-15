@@ -1389,16 +1389,31 @@ svg {
 }
 
 .player-username {
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.player-sub {
+  color: var(--tone-amber);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.player-sub.bad {
+  color: var(--danger);
+}
+
 .player-rating {
-  color: var(--muted);
+  /* Readable on the dark page, a step back from the name. */
+  color: var(--text-2);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 12.5px;
+  font-weight: 500;
 }
 
 .player-result {
@@ -2283,6 +2298,37 @@ svg {
   line-height: 16px;
   text-align: center;
   font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* A tab's ✕ (a finished game's Analysis): in its top right corner. */
+.tabs-close {
+  position: absolute;
+  top: 6px;
+  left: calc(100% / var(--n) * (var(--i) + 1) - 30px);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabs-close:hover {
+  color: var(--text);
+  background: var(--tint);
+}
+
+.tabs-close svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .panel-body {
@@ -3441,6 +3487,11 @@ button.explain-row {
   color: var(--muted);
 }
 
+.explorer-retry {
+  margin-left: 8px;
+  color: var(--accent);
+}
+
 .engine-empty.error {
   color: var(--danger);
 }
@@ -3626,35 +3677,65 @@ button.explain-row {
 }
 
 /* A game with clocks: the move, and how long it took at the cell's right end. */
-.move-cell.timed {
+/* With times: a column at the row's end holds both moves' times, White's over Black's. */
+.move-row.timed {
+  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 84px;
+}
+
+.move-times {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
   padding-right: 10px;
 }
 
 .move-time {
-  margin-left: auto;
-  flex: 0 1 56px;
-  width: 56px;
-  min-width: 0;
+  height: 11px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
+/* The bar grows leftwards, towards its time. */
+.move-time-track {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .move-time-bar {
-  height: 3px;
-  border-radius: 2px;
+  height: 5px;
+  border-radius: 3px;
+}
+
+.move-time.white .move-time-bar {
+  background: var(--white-piece);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.move-time.black .move-time-bar {
   background: var(--muted);
-  opacity: 0.45;
-  align-self: flex-end;
+}
+
+.move-time-text {
+  min-width: 34px;
+  text-align: right;
+}
+
+.move-time.longest .move-time-bar {
+  background: var(--tone-amber);
+  box-shadow: none;
+}
+
+.move-time.longest .move-time-text {
+  color: var(--tone-amber);
+  font-weight: 600;
 }
 
 .move {
@@ -5128,6 +5209,11 @@ button.explain-row {
 
 .accent-btn:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+
+.accent-btn:disabled {
+  background: var(--surface-4);
+  color: var(--muted);
 }
 
 @media (max-width: 1000px) {
@@ -6789,6 +6875,60 @@ button.user-avatar.guest:hover {
   width: min(420px, calc(100vw - 32px));
 }
 
+/* A sheet risen from the foot of the screen (a phone's game chat): the full width, most of the height. */
+.dialog.sheet.bottom {
+  width: 100vw;
+  max-width: 100vw;
+  height: 72dvh;
+  max-height: 72dvh;
+  margin: auto 0 0;
+  border-width: 1px 0 0;
+  border-radius: 16px 16px 0 0;
+  transform: translateY(24px);
+}
+
+.dialog.sheet.bottom[open] {
+  transform: none;
+}
+
+.sheet.bottom .sheet-inner {
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  gap: 6px;
+  padding: 16px 0 calc(6px + var(--safe-bottom, 0px));
+}
+
+.sheet.bottom .sheet-head {
+  padding: 0 16px;
+}
+
+.sheet.bottom .online-info {
+  padding: 12px 16px;
+}
+
+/* A count on a panel-strip icon (the phone's Chat). */
+.strip-badged {
+  position: relative;
+}
+
+.strip-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
 .sheet-inner {
   display: flex;
   flex-direction: column;
@@ -6824,14 +6964,15 @@ button.user-avatar.guest:hover {
 .play-ways {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
+/* Each way to play: a compact filled row (nothing is selected here, so each one wears its own fill). */
 .play-way {
-  min-height: 92px;
-  padding: 18px;
-  gap: 16px;
-  border-radius: 14px;
+  min-height: 64px;
+  padding: 10px 12px;
+  gap: 14px;
+  border-radius: 11px;
   background: var(--surface-2);
   box-shadow: none;
   text-decoration: none;
@@ -6842,22 +6983,22 @@ button.user-avatar.guest:hover {
 }
 
 .play-way .icon-tile.big {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
 }
 
 .play-way .icon-tile.big svg {
-  width: 25px;
-  height: 25px;
+  width: 21px;
+  height: 21px;
 }
 
 .play-way strong {
-  font-size: 18px;
+  font-size: 15.5px;
 }
 
 .play-way small {
-  font-size: 13.5px;
+  font-size: 13px;
 }
 
 .play-way .quick-go {
@@ -6959,6 +7100,355 @@ button.user-avatar.guest:hover {
   margin-top: 0;
   font-size: 14px;
   font-weight: 600;
+}
+
+/* The search's opponent picture: the rook looking left and right for someone to play. */
+.player-avatar:has(.searching-rook) {
+  background: var(--surface-3);
+  box-shadow: none;
+}
+
+.searching-rook {
+  width: 100%;
+  height: 100%;
+  translate: 0 14%;
+}
+
+.searching-rook-body {
+  fill: var(--text);
+}
+
+.searching-rook-eyes {
+  fill: var(--surface-3);
+  animation: rook-look 2.4s ease-in-out infinite;
+}
+
+@keyframes rook-look {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  25%,
+  42% {
+    transform: translateX(-8px);
+  }
+  58%,
+  75% {
+    transform: translateX(8px);
+  }
+  88%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searching-rook-eyes {
+    animation: none;
+  }
+}
+
+.player-avatar.searching-mini {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+/* A new online game: the two players face to face over the board (it sits between the two bars, so it's the
+   middle of the section), then it clears for the first move. */
+.play-board {
+  position: relative;
+}
+
+.vs-intro {
+  position: absolute;
+  right: 0;
+  width: var(--board-size);
+  top: 50%;
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.38);
+  pointer-events: none;
+  animation: vs-scrim 1.9s ease both;
+}
+
+.vs-card {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  animation: 1.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.vs-card.them {
+  animation-name: vs-from-top;
+}
+
+.vs-card.you {
+  animation-name: vs-from-bottom;
+}
+
+.vs-card .player-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 19px;
+}
+
+.vs-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vs-name strong {
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vs-name span {
+  color: var(--text-2);
+  font-size: 13px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.vs-chip {
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  animation: vs-pop 1.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes vs-scrim {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vs-from-top {
+  0% {
+    opacity: 0;
+    transform: translateY(-36px);
+  }
+  18%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vs-from-bottom {
+  0% {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  18%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vs-pop {
+  0%,
+  8% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  24%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-card,
+  .vs-chip {
+    animation-name: vs-scrim;
+  }
+}
+
+/* An online game's chat, in its tab: the lines scroll, quick messages and the box stay at the foot. */
+.online-chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.online-chat-lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+/* The newest lines sit at the bottom while there are few, as in a chat app. */
+.online-chat-lines > :first-child {
+  margin-top: auto;
+}
+
+.online-chat-lines p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.online-chat-line strong {
+  margin-right: 4px;
+  color: var(--text);
+}
+
+.online-chat-line.mine strong {
+  color: var(--accent);
+}
+
+.online-chat-note {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--text-2);
+}
+
+.online-chat-note strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.online-chat-note.lichess {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.online-chat-quick {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.online-chat-quick .setup-tile {
+  flex: 1 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.online-chat-form {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 12px;
+}
+
+.online-chat-form .setup-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.online-chat .form-error {
+  margin: 0 16px 10px;
+}
+
+/* An online game's facts. */
+.online-info {
+  gap: 18px;
+  padding: 16px;
+}
+
+.online-info-result {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13.5px;
+}
+
+.online-info-result strong {
+  font-size: 17px;
+}
+
+.online-info-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.online-info-facts div {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+}
+
+.online-info-facts dt {
+  color: var(--muted);
+}
+
+.online-info-facts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.online-info-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.online-info-links .link-btn {
+  text-decoration: none;
+}
+
+.online-openings {
+  padding: 4px 0;
 }
 
 .online-searching {
@@ -7413,16 +7903,62 @@ button.user-avatar.guest:hover {
   padding-left: 0;
 }
 
+/* Desktop: Play keeps the review's shape, a place for the eval bar beside the board and the same panel width,
+   so the board doesn't shift when a game goes on to its review. The place is empty while you play (no engine
+   then); after an online game the engine's bar can fill it. Focus has its own layout. */
+@media (min-width: 1001px) {
+  :root:not([data-focus]) .play-layout {
+    --board-size: round(
+      down,
+      max(
+        280px,
+        min(
+          calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px),
+          calc(100cqw - var(--panel-w) - var(--evalbar-w) - 12px - var(--gap) - 2 * var(--pad-x)),
+          880px
+        )
+      ),
+      var(--board-step)
+    );
+  }
+
+  :root:not([data-focus]) .play-layout .play-board {
+    box-sizing: content-box;
+    padding-left: calc(var(--evalbar-w) + 12px);
+  }
+
+  .play-board > .eval-bar {
+    position: absolute;
+    left: 0;
+    top: calc(var(--player-h) + 10px);
+  }
+}
+
+@media (min-width: 1400px) {
+  .play-layout {
+    --panel-w: 440px;
+  }
+}
+
+@media (min-width: 1700px) {
+  .play-layout {
+    --panel-w: 480px;
+  }
+}
+
 .player-clock {
   margin-left: auto;
-  padding: 4px 10px;
-  border-radius: 8px;
+  min-width: 84px;
+  padding: 5px 12px;
+  box-sizing: border-box;
+  border-radius: 9px;
   background: var(--surface-2);
   color: var(--text-2);
   font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .player-clock.running {
@@ -7433,6 +7969,30 @@ button.user-avatar.guest:hover {
 .player-clock.running.low {
   background: #c7372f;
   color: #fff;
+}
+
+/* Your time just ran low: the clock swells twice, once, with the tick-tock. */
+.player-clock.nudge {
+  animation: clock-nudge 1.2s ease-in-out;
+}
+
+@keyframes clock-nudge {
+  0%,
+  50%,
+  100% {
+    transform: scale(1);
+  }
+  20%,
+  70% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 4px rgb(199 55 47 / 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-clock.nudge {
+    animation: none;
+  }
 }
 
 /* It reuses the Analysis panel's card, but not its place in the Analysis grid. */
@@ -7626,18 +8186,6 @@ button.user-avatar.guest:hover {
   gap: 8px;
 }
 
-/* A game's actions: Takeback, Hint, Draw and Resign as one row of icons, like the move controls. */
-.play-actions.play-tools {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  padding: 0 12px 12px;
-  border-top: 0;
-}
-
-.play-tools .ctrl {
-  position: relative;
-}
-
 /* The view's actions (Share, Sound, Flip…): plain icons in a row at the panel's foot, on Play and Analysis. */
 .panel-strip {
   flex-shrink: 0;
@@ -7652,27 +8200,11 @@ button.user-avatar.guest:hover {
   margin-left: auto;
 }
 
-.play-tools .ctrl svg {
-  width: 20px;
-  height: 20px;
-}
-
 .play-tool-half {
   font-size: 20px;
   /* About the weight of the line icons beside it. */
   font-weight: 500;
   line-height: 1;
-}
-
-/* How many takebacks or hints so far. */
-.play-tool-count {
-  position: absolute;
-  top: 5px;
-  right: 8px;
-  font-size: 11px;
-  font-weight: 650;
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
 }
 
 .result-card {
@@ -7694,6 +8226,94 @@ button.user-avatar.guest:hover {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/* After a game: Review a step up from New and Rematch, all of them slim, as on Chess.com. */
+.result-card .accent-btn {
+  height: 42px;
+  margin-top: 0;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.result-more .btn {
+  height: 38px;
+  font-size: 13.5px;
+}
+
+.result-more .btn .line-icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* A game's own actions (Takeback, Hint, Draw, Resign): a quiet row of words with their icons, under the move
+   buttons, rather than another row of boxes. */
+.play-quiet {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 8px 4px;
+}
+
+.quiet-act {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quiet-act:hover:not(:disabled) {
+  background: var(--tint);
+  color: var(--text);
+}
+
+.quiet-act:disabled {
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.quiet-act.active {
+  color: var(--accent);
+}
+
+.quiet-act .line-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.quiet-act .play-tool-half {
+  font-size: 17px;
+}
+
+/* How many takebacks or hints so far. */
+.quiet-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Play's move buttons: slimmer than Analysis's, the board's actions sitting under them. */
+.play-nav .ctrl {
+  height: 36px;
 }
 
 @media (max-width: 1000px) {

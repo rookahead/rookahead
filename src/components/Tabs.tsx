@@ -18,6 +18,8 @@ export interface TabItem<T extends string> {
   to?: string
   /** Shown but not open yet (Review while a review is still running). */
   disabled?: boolean
+  /** A small ✕ in the tab's corner that closes what it holds (a finished game), named for screen readers. */
+  close?: { label: string; onClose: () => void }
 }
 
 /** The app's one tab bar: equal columns across the full width, icon over label, a coloured underline on the active tab. */
@@ -65,6 +67,24 @@ export function Tabs<T extends string>({ items, value, onSelect, label }: { item
           </button>
         )
       })}
+      {items.map(
+        (item, i) =>
+          item.close && (
+            <button
+              key={`${item.id}-close`}
+              type="button"
+              className="tabs-close"
+              style={{ '--i': i, '--n': items.length } as CSSProperties}
+              onClick={item.close.onClose}
+              aria-label={item.close.label}
+              title={item.close.label}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M7 7l10 10M17 7 7 17" />
+              </svg>
+            </button>
+          ),
+      )}
     </nav>
   )
 }
