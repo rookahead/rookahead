@@ -625,7 +625,9 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
           theme={settings.boardTheme}
           coordinates={settings.coordinates}
           onMove={onMove}
-          locked={!live || viewPly !== null || Boolean(pending) || (!settings.premoves && !yourTurn)}
+          // Your move on its way to Lichess already stands on the board, so with premoves on you can queue the next one
+          // straight away (blitzing through premoves); only a send that went wrong holds the board until it's settled.
+          locked={!live || viewPly !== null || Boolean(sent?.problem) || (!settings.premoves && (Boolean(pending) || !yourTurn))}
           premove={settings.premoves ? you : undefined}
           autoQueen={settings.autoQueen}
           ends={ends}
