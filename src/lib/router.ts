@@ -73,7 +73,20 @@ const pageOf = (pathname: string): string => {
   const route = routeFor(pathname)
   if (route === 'board') return 'analysis'
   if (route === 'games' && /games\/?$/.test(pathname) && typeof matchMedia === 'function' && matchMedia('(max-width: 1000px)').matches) return 'all-games'
+  // Play's front and each way's setup come in like pages of their own.
+  if (route === 'play') return `play-${playView(pathname)}`
   return route
+}
+
+// How far into Play a path is: Home, Play's front, then a way's setup (or its game).
+const playDepth = (pathname: string) => (routeFor(pathname) !== 'play' ? 0 : playView(pathname) === 'hub' ? 1 : 2)
+
+/** On a phone, going further into Play slides the next page in from the right, and coming back out slides it away, like an app. */
+function playSlide(from: string, to: string): 'forward' | 'back' | null {
+  const a = playDepth(from)
+  const b = playDepth(to)
+  if (a === b || (a === 0 && from !== '/') || (b === 0 && to !== '/')) return null
+  return b > a ? 'forward' : 'back'
 }
 let shownPage = typeof location === 'undefined' ? 'home' : pageOf(location.pathname)
 // The path the app shows. It moves on with the redraw, not with the address: a page that re-renders between the
@@ -110,10 +123,14 @@ function notify(first?: () => void) {
   if (animate && phone && slidesByHand(shownPath, location.pathname)) flushSync(update)
   else if (animate) {
     // On a phone, going to Analyze slides the two pages along together (index.css, :root[data-slide]), and so
-    // does going into All games and back out, like the tabs.
+    // does going into All games or Play and back out, like the tabs.
     const root = document.documentElement
-    const slide = phone ? (tabSlide(shownPath, location.pathname) ?? (shownPage === 'all-games' ? 'forward' : from === 'all-games' ? 'back' : null)) : null
+    const slide = phone
+      ? (tabSlide(shownPath, location.pathname) ?? (shownPage === 'all-games' ? 'forward' : from === 'all-games' ? 'back' : playSlide(shownPath, location.pathname)))
+      : null
     if (slide) root.dataset.slide = slide
+    // Between Play's front and a way's setup on a wide screen the board stays put and what's in the panel slides across.
+    else if (from.startsWith('play-') && shownPage.startsWith('play-')) root.dataset.swap = playSlide(shownPath, location.pathname) ?? 'fade'
     // The page's picture is drawn where the next page sits (at the top, mostly): the one you left is moved
     // back to where you had it scrolled (index.css, ::view-transition-old(page)), so it doesn't jump first.
     const wasAt = leftAt
@@ -124,6 +141,7 @@ function notify(first?: () => void) {
       .finished.catch(() => {})
       .finally(() => {
         delete root.dataset.slide
+        delete root.dataset.swap
         root.style.removeProperty('--page-was-at')
       })
   } else update()

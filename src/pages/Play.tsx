@@ -723,7 +723,8 @@ function SetupView({
               {!isComputer && ratedField}
             </div>
           ) : (
-            <>
+            // The card stays put while what's in it slides across between Play's front and a setup (index.css).
+            <div className="setup-slide">
               <div className="setup-body">
                 {/* A phone has a setup's title (and Back) in the page's bar; its front keeps the heading. */}
                 {(!phone || view === 'hub') && (
@@ -742,7 +743,7 @@ function SetupView({
               </div>
               {foot && <div className="setup-foot">{foot}</div>}
               {quick && ways}
-            </>
+            </div>
           )}
         </div>
       </aside>

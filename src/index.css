@@ -6593,6 +6593,13 @@ button.user-avatar.guest:hover {
   flex-shrink: 0;
 }
 
+.setup-slide {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .setup-body {
   flex: 1;
   min-height: 0;
@@ -7257,6 +7264,57 @@ button.user-avatar.guest:hover {
 
 :root[data-slide='back']::view-transition-new(page) {
   animation-name: slide-from-left;
+}
+
+/* Play's front to a way's setup and back on a wide screen: the board and the panel's card stay where they are, and
+   what's in the card slides across, the way its arrows point (in from the right going in, back out to the right). */
+:root.page-change[data-swap] .setup-slide {
+  view-transition-name: play-panel;
+}
+
+:root[data-swap]::view-transition-old(page) {
+  display: none;
+}
+
+:root[data-swap]::view-transition-new(page),
+::view-transition-group(play-panel) {
+  animation: none;
+}
+
+::view-transition-group(play-panel) {
+  overflow: clip;
+}
+
+::view-transition-old(play-panel),
+::view-transition-new(play-panel) {
+  mix-blend-mode: normal;
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.25, 0.1, 0.15, 1);
+  animation-fill-mode: both;
+}
+
+:root[data-swap='forward']::view-transition-old(play-panel) {
+  animation-name: slide-to-left;
+}
+
+:root[data-swap='forward']::view-transition-new(play-panel) {
+  animation-name: slide-from-right;
+}
+
+:root[data-swap='back']::view-transition-old(play-panel) {
+  animation-name: slide-to-right;
+}
+
+:root[data-swap='back']::view-transition-new(play-panel) {
+  animation-name: slide-from-left;
+}
+
+:root[data-swap='fade']::view-transition-old(play-panel) {
+  animation: page-out 0.12s ease-in both;
+}
+
+:root[data-swap='fade']::view-transition-new(play-panel) {
+  animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.04s both;
 }
 
 @keyframes slide-to-left {
