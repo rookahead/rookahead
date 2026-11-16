@@ -7022,8 +7022,7 @@ button.user-avatar.guest:hover {
   text-align: center;
 }
 
-.setup-foot .accent-btn,
-.setup-foot .online-searching {
+.setup-foot .accent-btn {
   margin-top: 0;
 }
 
@@ -7305,10 +7304,50 @@ button.user-avatar.guest:hover {
   }
 }
 
-.player-avatar.searching-mini {
-  width: 28px;
-  height: 28px;
-  font-size: 12px;
+/* The setup panel while it looks for an opponent: the search in the middle of where the choices were. */
+.setup-search {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 8px 0 24px;
+  text-align: center;
+}
+
+.player-avatar.setup-search-rook {
+  width: 96px;
+  height: 96px;
+}
+
+.setup-search-lines h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.setup-search-lines p,
+.setup-search-note {
+  margin: 0;
+}
+
+.setup-search-time {
+  min-width: 96px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.setup-search-note {
+  max-width: 300px;
+  font-size: 13px;
+  text-wrap: balance;
 }
 
 /* A new online game: the two players face to face over the board (it sits between the two bars, so it's the
@@ -7606,21 +7645,6 @@ button.user-avatar.guest:hover {
 
 .online-openings {
   padding: 4px 0;
-}
-
-.online-searching {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--surface-3);
-  font-weight: 600;
-}
-
-.online-searching .btn {
-  margin-left: auto;
 }
 
 .online-pulse {

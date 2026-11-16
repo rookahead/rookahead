@@ -1,7 +1,7 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { Chess, DEFAULT_POSITION } from 'chess.js'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../components/Board'
 import { BoardOptions } from '../components/BoardOptions'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -174,8 +174,9 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
     setSeekNext(false)
     void findOpponent(onlineSetup)
   })
-  // Home's Play button: it saved the time it was pressed at, and the search starts here as Play shows.
-  useEffect(() => {
+  // Home's Play button: it saved the time it was pressed at, and the search starts here as Play shows (before the
+  // first paint, so the choices never flash by on the way to it).
+  useLayoutEffect(() => {
     if (!active || view !== 'online' || !takeSeekAsk()) return
     const asked = loadOnlineSetup()
     setOnlineSetup(asked)
@@ -459,8 +460,7 @@ function SetupView({
     <PlayerBar
       color={other(orientation)}
       name={opponentName}
-      // The search's time runs beside it, where the rating will be.
-      rating={isComputer ? String(level.rating) : busyNow && !phone ? `${Math.floor(waited / 60)}:${String(waited % 60).padStart(2, '0')}` : undefined}
+      rating={isComputer ? String(level.rating) : undefined}
       avatar={
         isComputer ? (
           <svg className="player-avatar-mark" viewBox="0 0 24 24" fill="currentColor">
@@ -576,8 +576,30 @@ function SetupView({
       ))}
     </nav>
   )
+  // While it looks (or waits on a friend) the choices are gone: the panel is the search, what it's for and how long
+  // it has run. They come back when it ends.
+  const searchFor = [chosen?.group, online.rated ? 'Rated' : 'Casual', isFriend && online.color !== 'random' ? `You play ${online.color === 'white' ? 'White' : 'Black'}` : null].filter(Boolean).join(' · ')
+  const search = (
+    <div className="setup-search">
+      <span className="player-avatar setup-search-rook" aria-hidden>
+        <SearchingRook />
+      </span>
+      <div className="setup-search-lines" role="status">
+        <h3>{waitingFor ? `Waiting for ${waitingFor}` : `Looking for a ${online.clock} game`}</h3>
+        <p className="muted">{waitingFor ? `${online.clock} · ${searchFor}` : searchFor}</p>
+      </div>
+      <span className="setup-search-time" role="timer" aria-label="Time waited">
+        {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
+      </span>
+      <p className="setup-search-note muted">
+        {waitingFor ? `The game starts when ${waitingFor} accepts, on Lichess or on Rookahead.` : `A real player near your rating, on Lichess as ${link?.username}.`}
+      </p>
+    </div>
+  )
   const body =
-    quick ? (
+    busyNow ? (
+      search
+    ) : quick ? (
       <>
         <p className="muted">{linked ? `A real player near your rating, on Lichess as ${link?.username}.` : 'Play real people through your Lichess account.'}</p>
         {linked && timeField}
@@ -682,24 +704,11 @@ function SetupView({
       </>
     ) : (
       <>
-        {busyNow && !quick ? (
-          // The board's opponent place says it's looking, and for how long: here there's only the way out.
+        {busyNow ? (
+          // The panel above is the search: here there's only the way out.
           <button className="btn ghost" onClick={onCancel}>
             {waitingFor ? `Cancel the challenge to ${waitingFor}` : 'Cancel search'}
           </button>
-        ) : busyNow ? (
-          // A phone has no board while it searches: the rook and the time are in this row instead.
-          <div className="online-searching" role="status">
-            <span className="player-avatar searching-mini" aria-hidden>
-              <SearchingRook />
-            </span>
-            <span>
-              {waitingFor ? `Waiting for ${waitingFor}` : 'Looking for an opponent'} · {Math.floor(waited / 60)}:{String(waited % 60).padStart(2, '0')}
-            </span>
-            <button className="btn ghost small" onClick={onCancel}>
-              Cancel
-            </button>
-          </div>
         ) : (
           <button className="btn accent-btn" disabled={isFriend && !friendName} onClick={onFind}>
             {isFriend ? 'Send challenge' : quick ? 'Start game' : 'Find an opponent'}
@@ -767,7 +776,8 @@ function SetupView({
                 {body}
               </div>
               {foot && <div className="setup-foot">{foot}</div>}
-              {quick && ways}
+              {/* A phone's search has the screen to itself: another way to play would end it. */}
+              {quick && !busyNow && ways}
             </div>
           )}
         </div>
