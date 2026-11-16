@@ -22,17 +22,20 @@
   --accent-hover: #ffffff;
   --accent-ink: #0b0b0c;
   --accent-soft: rgba(255, 255, 255, 0.08);
-  /* Rookahead's colour: the home page's main card, Play's slider and Start button. */
-  --brand: var(--t-primary);
-  --brand-ink: var(--t-on-primary);
-  --brand-card: var(--t-pc);
-  --brand-card-text: var(--t-opc);
+  /* Rookahead's colour: the home page's main card, Play's slider and Start button. On dark pages it's the theme's
+     strong colour (--t-vivid) wherever it fills something, and a deep shade of it under the big cards; words in
+     the colour (--link) keep the softer tone, which reads better small. */
+  --brand: var(--t-vivid);
+  --brand-ink: var(--t-on-vivid);
+  --brand-card: var(--t-deep);
+  --brand-card-text: var(--t-on-deep);
+  --link: var(--t-primary);
   /* Home cards and the sidebar: a clear step up from the page, with a hairline edge to lift them. */
   --card: var(--t-cont);
   --card-hover: var(--t-high);
   /* The sidebar and the phone's tab bar: a step tinted off the page, with the cards on it a step further. */
   --side: var(--t-low);
-  --card-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --card-edge: none;
   --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
   --danger: #ef6b5f;
@@ -119,10 +122,11 @@
   --brand-ink: var(--t-on-primary);
   --brand-card: var(--t-pc);
   --brand-card-text: var(--t-opc);
+  --link: var(--t-primary);
   --card: var(--t-lowest);
   --card-hover: var(--t-low);
   --side: var(--t-low);
-  --card-edge: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --card-edge: none;
   --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
   --danger: #d4433a;
@@ -166,6 +170,10 @@
   --t-opc: #f6dfb2;
   --t-sc: #4a4031;
   --t-osc: #f8dfbb;
+  --t-vivid: #f7b500;
+  --t-on-vivid: #2b1c00;
+  --t-deep: #5c3f00;
+  --t-on-deep: #ffe9b0;
 }
 
 :root[data-palette='gold'][data-theme='light'] {
@@ -201,6 +209,10 @@
   --t-opc: #c4e7ff;
   --t-sc: #374955;
   --t-osc: #d1e5f4;
+  --t-vivid: #22a2ff;
+  --t-on-vivid: #00182b;
+  --t-deep: #063a66;
+  --t-on-deep: #d6ecff;
 }
 
 :root[data-theme='light'],
@@ -236,6 +248,10 @@
   --t-opc: #e0e0ff;
   --t-sc: #444559;
   --t-osc: #e1e0f9;
+  --t-vivid: #5d5af5;
+  --t-on-vivid: #ffffff;
+  --t-deep: #211b73;
+  --t-on-deep: #e2e1ff;
 }
 
 :root[data-palette='indigo'][data-theme='light'] {
@@ -270,6 +286,10 @@
   --t-opc: #fbdcd4;
   --t-sc: #5d4038;
   --t-osc: #ffdad2;
+  --t-vivid: #e8472f;
+  --t-on-vivid: #ffffff;
+  --t-deep: #6b1c10;
+  --t-on-deep: #ffe0d9;
 }
 
 :root[data-palette='coral'][data-theme='light'] {
@@ -304,6 +324,10 @@
   --t-opc: #a9f2cd;
   --t-sc: #364b40;
   --t-osc: #cfe9d9;
+  --t-vivid: #00d68f;
+  --t-on-vivid: #00311f;
+  --t-deep: #00513a;
+  --t-on-deep: #b8f5d8;
 }
 
 :root[data-palette='forest'][data-theme='light'] {
@@ -338,6 +362,10 @@
   --t-opc: #000000;
   --t-sc: #474747;
   --t-osc: #e2e2e2;
+  --t-vivid: #ffffff;
+  --t-on-vivid: #1b1b1b;
+  --t-deep: #d4d4d4;
+  --t-on-deep: #000000;
 }
 
 :root[data-palette='ivory'][data-theme='light'] {
@@ -372,6 +400,10 @@
   --t-opc: #dcecc3;
   --t-sc: #2a2a2e;
   --t-osc: #e4e4e7;
+  --t-vivid: #b2e22a;
+  --t-on-vivid: #1b2700;
+  --t-deep: #3a5200;
+  --t-on-deep: #e6f5bf;
 }
 
 :root[data-palette='lime'][data-theme='light'] {
@@ -393,16 +425,19 @@
 
 /* ═══════════════ Black: true black for AMOLED screens, cards just lifted off it ═══════════════ */
 :root[data-black] {
+  /* No tint here: the greys are plain greys, whatever the colour theme, so the theme's colour is only where it
+     means something and reads stronger for it. They step up as the dark theme's do (sidebar and panels, then
+     cards, then what sits on those), each clear of the black page. */
+  --t-surface: #000000;
+  --t-lowest: #0e0e0e;
+  --t-low: #181818;
+  --t-cont: #1f1f1f;
+  --t-high: #2a2a2a;
+  --t-highest: #363636;
+  --t-on: #e4e4e4;
+  --t-on-var: #c6c6c6;
   --bg: #000000;
-  --surface: var(--t-lowest);
-  --surface-2: var(--t-low);
-  --surface-3: var(--t-cont);
-  --surface-4: var(--t-high);
   --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
-  --card: var(--t-low);
-  --card-hover: var(--t-cont);
-  --side: var(--t-lowest);
-  --bar-dark: var(--t-cont);
   --float-bg: rgba(0, 0, 0, 0.95);
 }
 
@@ -2060,7 +2095,8 @@ svg {
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  /* Flat: no line round it, but the pixel it took stays, so the board beside it doesn't move. */
+  border: 1px solid transparent;
   background: var(--surface);
   overflow: hidden;
 }
@@ -5613,7 +5649,7 @@ button.explain-row {
 
 .plan-go {
   margin-top: auto;
-  color: var(--brand);
+  color: var(--link);
   font-size: 13.5px;
   font-weight: 650;
   line-height: 1.45;
@@ -5871,7 +5907,7 @@ button.user-avatar.guest:hover {
 }
 
 .user-card-text.user-card-signup span {
-  color: var(--brand);
+  color: var(--link);
 }
 
 .user-card-signup:hover span {
@@ -6887,7 +6923,7 @@ button.user-avatar.guest:hover {
 .setup-readout span {
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--brand);
+  color: var(--link);
   font-variant-numeric: tabular-nums;
 }
 
@@ -10167,7 +10203,7 @@ button.home-game:hover .home-game-go {
 }
 
 .home-game-go.review {
-  color: var(--brand);
+  color: var(--link);
 }
 
 button.home-game:hover .home-game-go.review {
@@ -11016,7 +11052,7 @@ button.chip:hover {
 }
 
 .friend-actions .link-btn.strong {
-  color: var(--brand);
+  color: var(--link);
   font-weight: 600;
 }
 
@@ -13028,7 +13064,7 @@ strong.settings-value {
 /* ═══════════════ Phone app: tab bar, full-screen board pages, the You tab ═══════════════ */
 
 .tab-item.active {
-  color: var(--brand);
+  color: var(--link);
   font-weight: 650;
 }
 
@@ -13831,7 +13867,7 @@ a.you-row:active {
   border: 0;
   border-top: 1px solid var(--border);
   background: none;
-  color: var(--brand);
+  color: var(--link);
   font-size: 14px;
   font-weight: 600;
 }
@@ -13883,7 +13919,7 @@ a.you-row:active {
 }
 
 .game-line-end.review {
-  color: var(--brand);
+  color: var(--link);
   font-family: var(--font-ui);
   font-size: 12.5px;
   font-weight: 600;
@@ -14893,7 +14929,7 @@ a.blog-card:not(.latest) .blog-card-desc {
   display: grid;
   place-items: center;
   background: var(--brand-ink);
-  color: var(--brand);
+  color: var(--link);
   font-size: 12px;
   font-weight: 800;
 }
