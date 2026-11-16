@@ -2805,7 +2805,6 @@ svg {
   gap: 6px;
 }
 
-
 /* The coach's face beside a speech bubble: the verdict and its note are what the rook says. The bubble
    is the rook's own colour (the theme's text colour), with the card's colours turned round inside it. */
 .coach-speech {
@@ -4653,12 +4652,62 @@ button.explain-row {
   gap: 20px;
 }
 
+.home-side-thumb {
+  display: none;
+}
+
 .home-side {
   flex: 1 1 300px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* Beside the middle column it stays put, as tall as the screen, and scrolls by itself: the page is only as long
+   as the middle, with no gap under either. */
+@container page (min-width: 920px) {
+  .home-side {
+    position: sticky;
+    top: 26px;
+    max-height: calc(100vh - 52px);
+    overflow-y: auto;
+    border-radius: 18px;
+    scrollbar-width: none;
+  }
+
+  .home-side > * {
+    flex-shrink: 0;
+  }
+
+  /* Scrolling it stops at its ends: the page under it doesn't take over the wheel. */
+  .home-side {
+    overscroll-behavior: contain;
+  }
+
+  /* Its scrollbar (Home.tsx sizes and places it): fixed just outside the column's right edge. */
+  .home-side-thumb {
+    display: block;
+    position: fixed;
+    z-index: 3;
+    width: 4px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--text) 42%, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .home-side-thumb[data-on] {
+    opacity: 1;
+    transition-duration: 0.1s;
+  }
+
+  /* The footer ends where the middle column does (the same sum as the columns' own), clear of the pinned one. */
+  .home > .home-footer {
+    box-sizing: border-box;
+    flex: 0 0 calc(560px + (100% - 880px) * 2 / 3);
+  }
 }
 
 .home-welcome {
@@ -4670,9 +4719,10 @@ button.explain-row {
 
 .home-welcome h1 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 31.9px;
+  letter-spacing: -0.02em;
 }
 
 .home-welcome span {
@@ -4683,7 +4733,6 @@ button.explain-row {
 
 /* Desktop Home's top: the greeting across both columns, and the ways into a review at its right. */
 .home-top {
-  flex: 1 1 100%;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -4693,6 +4742,14 @@ button.explain-row {
 
 .home-top .home-welcome {
   min-width: 0;
+}
+
+/* One line each beside the buttons: a long username ends in an ellipsis rather than pushing them off. */
+.home-top .home-welcome h1,
+.home-top .home-welcome > span:not(.skel-line) {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .home-top-actions {
@@ -4744,8 +4801,10 @@ button.explain-row {
 
 .home-card h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 650;
+  font-size: 19px;
+  font-weight: 750;
+  /* The line box it always had (18px at the page's 1.45), so no card grows with the bigger title. */
+  line-height: 26.1px;
 }
 
 .home-card-head {
@@ -5071,13 +5130,50 @@ button.explain-row {
 /* Home's Play card (HomePlay.tsx): an online game at the time you last picked, a press away, with the computer
    and a friend under it. Its parts keep their height whatever the card has to say. */
 .home-play {
+  /* The card, its ink, and the button on it. Dark themes: the deep tone under a bright button. */
+  --play-card: var(--brand-card);
+  --play-ink: var(--brand-card-text);
+  --play-btn: var(--brand);
+  --play-btn-ink: var(--brand-ink);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  background: var(--play-card);
+  color: var(--play-ink);
+}
+
+/* Behind it all: a board's corner in the card's own, fading out before it reaches the words. */
+.home-play::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: 264px;
+  height: 176px;
+  background: color-mix(in srgb, var(--play-ink) 9%, transparent);
+  /* The squares are a mask (a drawn checker, as gradients of squares came out as triangles in Firefox), cut again
+     by the fade. */
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'%3E%3Cpath d='M0 0h1v1H0zM1 1h1v1H1z'/%3E%3C/svg%3E") 100% 0 / 88px 88px,
+    radial-gradient(farthest-side at 100% 0, #000 30%, transparent 100%);
+  mask-composite: intersect;
+  pointer-events: none;
+}
+
+/* Light themes: the strong colour itself, with a pale button, or the card would be the palest thing on the page. */
+:root[data-theme='light'] .home-play {
+  --play-card: var(--brand);
+  --play-ink: var(--brand-ink);
+  --play-btn: var(--brand-card);
+  --play-btn-ink: var(--brand-card-text);
 }
 
 .home-play-head {
-  min-height: 40px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -5087,12 +5183,19 @@ button.explain-row {
   flex: 1;
 }
 
+.home-play-head h2 {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 30.45px;
+  letter-spacing: -0.025em;
+}
+
 .home-play-head small {
   overflow: hidden;
-  color: var(--muted);
   font-size: 13px;
   white-space: nowrap;
   text-overflow: ellipsis;
+  opacity: 0.76;
 }
 
 .home-play-rated {
@@ -5100,18 +5203,31 @@ button.explain-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-2);
   font-size: 13px;
   font-weight: 550;
   cursor: pointer;
 }
 
-/* The times, or a line or two in their place. */
+/* On the filled card everything is the card's ink, or a wash of it. */
+.home-play .switch-track {
+  background: color-mix(in srgb, var(--play-ink) 22%, transparent);
+}
+
+.home-play .switch-track::after {
+  background: var(--play-ink);
+}
+
+.home-play .switch input:checked + .switch-track {
+  background: var(--play-btn);
+}
+
+.home-play .switch input:checked + .switch-track::after {
+  background: var(--play-btn-ink);
+}
+
+/* The time picked (it opens the others), or a line or two in its place. */
 .home-play-mid {
-  height: 40px;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  height: 52px;
 }
 
 .home-play-mid.says {
@@ -5121,76 +5237,193 @@ button.explain-row {
 
 .home-play-mid p {
   margin: 0;
-  color: var(--muted);
   font-size: 13px;
   line-height: 18px;
+  opacity: 0.8;
 }
 
-.home-play-go {
+.home-play-time {
   width: 100%;
-  height: 46px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 650;
-}
-
-.home-play-ways {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.home-play-ways[inert] {
-  opacity: 0.5;
-}
-
-.home-play-way {
-  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px 9px 9px;
-  border-radius: 12px;
-  background: var(--surface-3);
-  color: var(--text);
+  padding: 0 14px 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--play-ink) 11%, transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.home-play-time:hover {
+  background: color-mix(in srgb, var(--play-ink) 18%, transparent);
+}
+
+.home-play-time strong {
+  font: 700 19px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-play-time span {
+  flex: 1;
+  font-size: 14px;
+  opacity: 0.76;
+}
+
+.home-play-time svg {
+  width: 20px;
+  height: 20px;
+}
+
+.home-play-by {
+  margin: -2px 0 -4px;
+  font-size: 12.5px;
+  line-height: 18px;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.home-play .home-play-go {
+  width: 100%;
+  height: 54px;
+  margin-top: 0;
+  border-radius: 14px;
+  background: var(--play-btn);
+  color: var(--play-btn-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* The tiles under it (HomePlay.tsx, HomeTiles): a title, a line, and a picture rising from the foot. */
+.home-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home-tile {
+  position: relative;
+  height: 156px;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   text-decoration: none;
   transition: background 0.12s;
 }
 
-.home-play-way:hover {
-  background: var(--surface-4);
+.home-tile:hover {
+  background: var(--card-hover);
 }
 
-:root[data-theme='light'] .home-play-way {
-  background: var(--side);
+.home-tile[inert] {
+  opacity: 0.5;
 }
 
-:root[data-theme='light'] .home-play-way:hover {
-  background: var(--surface-3);
+.home-tile strong {
+  font: 750 16px/20px var(--font-display);
+  letter-spacing: -0.02em;
 }
 
-.home-play-way > span:last-child {
-  min-width: 0;
+/* Between you and a friend: "vs", huge and faint, behind the two faces. */
+.home-tile-mark {
+  position: absolute;
+  inset: auto 0 2px;
+  color: color-mix(in srgb, var(--text) 6%, transparent);
+  font: 800 104px/1 var(--font-display);
+  letter-spacing: -0.06em;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
 }
 
-.home-play-way strong,
-.home-play-way small {
-  display: block;
+/* Under the rook and the puzzle piece: a board's squares, fading up into the tile. */
+.home-tile.on-board::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 96px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'%3E%3Cpath d='M0 0h1v1H0zM1 1h1v1H1z'/%3E%3C/svg%3E") 50% 100% / 64px 64px,
+    linear-gradient(to top, #000 10%, transparent 100%);
+  mask-composite: intersect;
+  pointer-events: none;
+}
+
+.home-tile small {
   overflow: hidden;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.home-play-way strong {
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 18px;
+.home-tile-art {
+  position: absolute;
+  inset: auto 0 0;
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
 }
 
-.home-play-way small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
+/* A friend: you and whoever it'll be, face to face. */
+.tile-friend {
+  align-items: center;
+  gap: 14px;
+}
+
+.tile-friend .player-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 19px;
+}
+
+.tile-friend .player-avatar:first-child {
+  background: var(--brand);
+  color: var(--brand-ink);
+  box-shadow: none;
+}
+
+/* The computer: Rookahead's rook, looking up over the tile's foot. */
+.tile-rook svg {
+  width: 104px;
+  height: 104px;
+  translate: 0 20%;
+}
+
+.tile-rook path {
+  fill: var(--brand);
+}
+
+.tile-rook ellipse {
+  fill: var(--brand-ink);
+}
+
+/* Today's puzzle: its board, tipped, the far half below the tile's foot. */
+.tile-board .mini-board,
+.tile-board-blank {
+  width: 112px;
+  height: 112px;
+  border-radius: 10px;
+  overflow: hidden;
+  rotate: -7deg;
+  translate: 0 14px;
+}
+
+/* Rated puzzles: the piece, in the puzzles' own colour. */
+.tile-piece svg {
+  width: 96px;
+  height: 96px;
+  fill: var(--tone-amber);
+  rotate: 12deg;
+  translate: 0 18px;
 }
 
 /* Your form in one strip of three (HomeCards.tsx, FormStrip): accuracy and its bars, the streak and this week,
@@ -5432,155 +5665,251 @@ button.explain-row {
   }
 }
 
-/* Home's plan for today (HomeCards.tsx). */
-.plan-card {
+/* Desktop Home's goals for today (HomeCards.tsx, PlanCard): a row of small tiles under the greeting, each a count
+   in a ring that fills as you go, green once the goal is met. */
+.plan-row {
+  display: grid;
+  gap: 12px;
+}
+
+.plan-tile {
+  min-width: 0;
+  height: 140px;
+  padding: 16px 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-
-.plan-head {
-  display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.12s;
 }
 
-.plan-head > div {
-  min-width: 0;
+.plan-tile:hover {
+  background: var(--card-hover);
 }
 
-.plan-head p {
-  margin: 2px 0 0;
+.plan-tile:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.plan-tile > .skel-round {
+  flex: none;
+}
+
+.plan-tile strong,
+.plan-tile small {
+  max-width: 100%;
   overflow: hidden;
-  color: var(--muted);
-  font-size: 13.5px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.plan-ring {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+.plan-tile strong {
+  margin-top: 10px;
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 19px;
 }
 
-.plan-ring circle {
+.plan-tile small {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+.plan-tile.done strong {
+  color: var(--text-2);
+}
+
+.step-ring {
+  flex: none;
+  width: 60px;
+  height: 60px;
+}
+
+.step-ring circle {
   fill: none;
-  stroke-width: 5;
+  stroke-width: 4.5;
 }
 
-.plan-ring .track {
-  stroke: color-mix(in srgb, var(--text) 9%, transparent);
+.step-ring .track {
+  stroke: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
-.plan-ring .fill {
+.step-ring .arc {
   stroke: var(--brand);
   stroke-linecap: round;
   transition: stroke-dasharray 0.4s ease;
 }
 
-.plan-ring text {
-  font: 700 13px var(--font-display);
+.step-ring .arc.done {
+  stroke: var(--win);
+}
+
+.step-ring text {
   fill: var(--text);
+  font: 700 15px var(--font-display);
+  font-variant-numeric: lining-nums;
   text-anchor: middle;
 }
 
-.plan-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
+.plan-tile.done .step-ring text {
+  fill: var(--win);
+}
+
+/* Desktop Home's numbers (HomeCards.tsx, StatStrip): small cards in a row that scrolls sideways at the top of the
+   right column, with a button at each end while there's more that way. */
+.stat-strip {
+  position: relative;
+}
+
+.stat-row {
+  display: flex;
   gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: 18px;
 }
 
-/* Desktop: a list down the right column, a row per tile (PlanCard sets them). A tile leaving the plan folds to
-   nothing, the gap above it (its own) with it. */
-.plan-steps.column {
-  gap: 0;
-  transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+.stat-row::-webkit-scrollbar {
+  display: none;
 }
 
-.plan-steps.column > li {
-  min-height: 0;
+.stat-card {
+  flex: 0 0 152px;
+  height: 104px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.stat-card:hover {
+  background: var(--card-hover);
+}
+
+.stat-label,
+.stat-sub {
   overflow: hidden;
-  transition: padding-top 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
-}
-
-.plan-steps.column > li + li {
-  padding-top: 8px;
-}
-
-.plan-steps.column > li.off {
-  padding-top: 0;
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plan-steps.column,
-  .plan-steps.column > li {
-    transition: none;
-  }
-}
-
-.plan-steps.column .plan-step {
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-}
-
-.plan-steps.column .plan-text {
-  flex: 1;
-  min-width: 0;
-}
-
-/* One line each, so every tile is the same height whatever it says. */
-.plan-steps.column .plan-text strong,
-.plan-steps.column .plan-text small {
-  display: block;
-  min-height: 1.45em;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.plan-steps.column .plan-go {
-  margin: 0;
+.stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: 700 24px/32px var(--font-display);
+  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-.plan-steps.column .plan-step:not(.next) .plan-go {
-  display: none;
+.stat-value i {
+  font: 650 12.5px var(--font-ui);
+  font-style: normal;
+  letter-spacing: 0;
 }
 
-.plan-step {
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
+.stat-value .up,
+.stat-sub.up {
+  color: var(--win);
+}
+
+.stat-value .down,
+.stat-sub.down {
+  color: var(--danger);
+}
+
+.stat-value.streak {
+  color: var(--streak);
+}
+
+.stat-value.empty,
+.stat-value.phase {
+  font-size: 17px;
+}
+
+.stat-value.empty {
+  color: var(--text-2);
+}
+
+.stat-bars {
+  height: 18px;
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.stat-bars i {
+  flex: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 32%, transparent);
+}
+
+.stat-bars i.last {
+  background: var(--brand);
+}
+
+.stat-sub {
+  margin-top: auto;
+}
+
+.stat-card .skel {
+  flex: none;
+}
+
+.stat-more {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-4);
+  color: var(--text);
+  box-shadow: var(--shadow-chip);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.stat-strip:hover .stat-more,
+.stat-more:focus-visible {
+  opacity: 1;
+}
+
+.stat-more.back {
+  left: 6px;
+}
+
+.stat-more.on {
+  right: 6px;
+}
+
+.stat-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Home's plan for today on phones (HomeCards.tsx). */
+.plan-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px;
-  border: 0;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.plan-step:hover {
-  background: color-mix(in srgb, var(--text) 7%, transparent);
-}
-
-.plan-step.next {
-  background: color-mix(in srgb, var(--brand) 13%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
-}
-
-.plan-step.next:hover {
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  gap: 14px;
 }
 
 .plan-check {
@@ -5595,15 +5924,6 @@ button.explain-row {
   justify-content: center;
 }
 
-.plan-step.next .plan-check {
-  border-color: var(--brand);
-}
-
-.plan-step.done .plan-check {
-  border: 0;
-  background: var(--win);
-}
-
 .plan-check svg {
   width: 15px;
   height: 15px;
@@ -5612,57 +5932,6 @@ button.explain-row {
   stroke-width: 2.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.plan-text {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Every tile keeps two lines for its title, two for its detail and one for the button's words, whatever it
-   says, so the card is the same height loading or loaded, and whatever the day holds. */
-.plan-text strong,
-.plan-text small {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  line-height: 1.45;
-  min-height: calc(2em * 1.45);
-}
-
-.plan-text strong {
-  font-size: 14.5px;
-  font-weight: 600;
-}
-
-.plan-step.done .plan-text strong {
-  color: var(--text-2);
-}
-
-.plan-text small {
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-.plan-go {
-  margin-top: auto;
-  color: var(--link);
-  font-size: 13.5px;
-  font-weight: 650;
-  line-height: 1.45;
-  white-space: nowrap;
-}
-
-.plan-step:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
-}
-
-.plan-step:not(.next) .plan-go {
-  visibility: hidden;
 }
 
 a.see-all {
@@ -7282,7 +7551,6 @@ button.user-avatar.guest:hover {
   margin-top: 0;
   height: 38px;
 }
-
 
 /* Online: the Rated switch, and the search while it runs. */
 .online-rated {
@@ -9780,9 +10048,14 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* Home's Play card: its head, the times, the button and the two other ways. */
+/* Home's Play card: its head, the time, the button and whose game it is, in your colour; the four tiles under it
+   are Home's own. */
 .boot-play {
-  --h: 260.9px;
+  --h: 251.3px;
+}
+
+.home-play .skel {
+  --skel-ink: var(--play-ink);
 }
 
 /* My games: six rows under a day's heading, and the colours' key when some have been reviewed. */
@@ -9794,13 +10067,31 @@ button.user-avatar.guest:hover {
   --h: 560px;
 }
 
-/* Today's plan: three steps, or four with your mistakes to fix. */
-.boot-plan {
-  --h: 321.4px;
+/* Today's plan, under the greeting: its row of small tiles, four when there are reviews (mistakes to fix). */
+.boot-plan-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-:root[data-boot-reviews] .boot-plan {
-  --h: 394.6px;
+.boot-plan-row .boot-fourth {
+  display: none;
+}
+
+:root[data-boot-reviews] .boot-plan-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+:root[data-boot-reviews] .boot-plan-row .boot-fourth {
+  display: flex;
+}
+
+.boot-ring {
+  width: 60px;
+  height: 60px;
+}
+
+/* Your numbers, at the top of the right column: its strip of small cards. */
+.boot-stat-row {
+  overflow: hidden;
 }
 
 .boot-daily-head {
@@ -13484,6 +13775,9 @@ a.you-row:active {
 
 /* Home's Legendary moves on desktop: a slim strip of small boards. */
 .legendary-strip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   padding: 12px 0 6px;
 }
 
@@ -13496,6 +13790,7 @@ a.you-row:active {
   align-items: center;
   gap: 8px;
   font-size: 17px;
+  line-height: 1.45;
 }
 
 /* The row's room keeps the ring from being cut off. */
@@ -13536,6 +13831,9 @@ a.you-row:active {
 
 /* No Legendary moves yet: what they are, in the same violet. */
 .legendary-teaser {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: flex-start;
   gap: 14px;
@@ -13543,8 +13841,24 @@ a.you-row:active {
   background: color-mix(in srgb, #8b5cf6 12%, var(--card));
 }
 
+.legendary-teaser::after,
+.legendary-strip::after {
+  content: '!!';
+  position: absolute;
+  z-index: -1;
+  right: 22px;
+  top: 50%;
+  translate: 0 -50%;
+  rotate: 8deg;
+  color: color-mix(in srgb, #8b5cf6 9%, transparent);
+  font: 800 128px/1 var(--font-display);
+  letter-spacing: -0.08em;
+  pointer-events: none;
+}
+
 .legendary-teaser h2 {
   font-size: 17px;
+  line-height: 1.45;
 }
 
 .legendary-teaser p {
@@ -15070,8 +15384,6 @@ a.blog-card:not(.latest) .blog-card-desc {
 .path-dots i.on {
   background: var(--brand);
 }
-
-
 
 /* What a stop is, beside its tile: on the side with room. */
 .path-label {

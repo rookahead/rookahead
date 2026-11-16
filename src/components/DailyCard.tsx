@@ -15,11 +15,9 @@ import { DailyCardSkeleton } from './Skeleton'
 // Today's puzzle once it's loaded, so coming back to Home shows it at once instead of its placeholder.
 let loaded: { day: number; puzzle: Puzzle | null } | null = null
 
-/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). On phones
- * (`compact`), a short card: the board beside what it is, with the button under the words. */
-export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compact?: boolean }) {
+/** Today's puzzle (undefined while it loads, null if it couldn't: offline, say), whether you've done it, and your day streak. */
+export function useDailyPuzzle() {
   const day = dayNumber(new Date())
-  // Undefined while it loads; null if it couldn't (offline, say), and the card stays away.
   const [puzzle, setPuzzle] = useState<Puzzle | null | undefined>(() => (loaded?.day === day ? loaded.puzzle : undefined))
   useEffect(() => {
     if (loaded?.day === day) return
@@ -33,11 +31,18 @@ export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compa
     )
   }, [day])
   const version = useStoreVersion('puzzles')
-  const { done, days } = useMemo(() => {
+  const { done, days, rating } = useMemo(() => {
     const progress = loadProgress()
     const now = new Date()
-    return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)) }
+    return { done: progress.daily?.day === dayNumber(now) ? progress.daily.result : undefined, days: dayStreak(progress, localDayNumber(now)), rating: progress.rating }
   }, [version])
+  return { puzzle, done, days, rating }
+}
+
+/** Today's puzzle: the position to solve, and whether it's done. Hidden until it loads (or if it can't). On phones
+ * (`compact`), a short card: the board beside what it is, with the button under the words. */
+export function DailyCard({ theme, compact = false }: { theme: BoardTheme; compact?: boolean }) {
+  const { puzzle, done, days } = useDailyPuzzle()
   const loading = useSettled(puzzle === undefined)
   if (loading) return <DailyCardSkeleton compact={compact} />
   if (!puzzle) return null

@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
 import { Skel } from './Skeleton'
+import type { RatingLine } from '../lib/gameRecord'
 import { CLASS_INFO } from '../lib/classify'
 import { Link } from './Link'
 import { WEAKEST_MIN_REVIEWED, type Phase } from '../lib/phases'
@@ -13,6 +15,11 @@ const MISTAKES_GOAL = 3
 
 interface Step {
   id: string
+  /** Desktop's goal tile: what it counts (a noun, not an order), the count and its target, and a quiet line. */
+  goal: string
+  count: number
+  of: number
+  note: string
   /** The one word for it in the phone's row. */
   short: string
   title: string
@@ -25,8 +32,6 @@ interface Step {
 }
 
 /** The list of tiles takes the grid's rows, one each; a tile that isn't in the plan has a row of nothing. */
-const track = (on: boolean) => (on ? 'minmax(0, 1fr)' : 'minmax(0, 0fr)')
-
 /**
  * Today's plan: three or four things worth doing today, ticked off as you do them, the next one lit up. On
  * desktop a list down the right of Home, each tile one line of title and one of detail, so the card is the same
@@ -66,6 +71,10 @@ export function PlanCard({
   const all: Step[] = [
     latest && {
       id: 'review',
+      goal: 'Game reviewed',
+      count: review ? 1 : 0,
+      of: 1,
+      note: review ? `${review.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy` : 'Your latest',
       short: 'Review',
       title: review ? 'Latest game reviewed' : 'Review your latest game',
       sub: review ? `vs ${opponent} · ${review.accuracy[latest.color]?.toFixed(1) ?? '–'} accuracy` : `vs ${opponent} · ${dayLabel(latest.endedAt)}`,
@@ -76,6 +85,10 @@ export function PlanCard({
     },
     {
       id: 'daily',
+      goal: 'Daily puzzle',
+      count: daily ? 1 : 0,
+      of: 1,
+      note: daily === 'solved' ? 'Solved' : daily === 'failed' ? 'Tried' : 'Today',
       short: 'Puzzle',
       title: 'Solve the daily puzzle',
       sub: daily === 'solved' ? 'Solved' : daily === 'failed' ? 'Tried today' : 'One position, a new one every day',
@@ -86,6 +99,10 @@ export function PlanCard({
     },
     {
       id: 'mistakes',
+      goal: 'Mistakes fixed',
+      count: Math.min(fixed, goal || MISTAKES_GOAL),
+      of: goal || MISTAKES_GOAL,
+      note: mistakes ? `${mistakes} waiting` : 'Today',
       short: 'Mistakes',
       title: `Fix ${goal || MISTAKES_GOAL} of your mistakes`,
       sub: goal ? `${Math.min(fixed, goal)} of ${goal} today · ${mistakes} waiting` : '',
@@ -96,6 +113,10 @@ export function PlanCard({
     },
     {
       id: 'play',
+      goal: 'Game played',
+      count: Math.min(played, 1),
+      of: 1,
+      note: 'Today',
       short: 'Play',
       title: 'Play a game',
       sub: played ? `${played} played today` : 'Against the computer, any level',
@@ -108,25 +129,6 @@ export function PlanCard({
   const steps = all.filter((s) => s.on)
   const done = steps.filter((s) => s.done).length
   const next = steps.find((s) => !s.done)
-  const tile = (s: Step) => (
-    <button className={`plan-step ${s.done ? 'done' : ''} ${s === next ? 'next' : ''}`} onClick={s.go} aria-label={s.done ? `${s.title}: done` : undefined}>
-      <span className="plan-check" aria-hidden>
-        {s.done && (
-          <svg viewBox="0 0 24 24">
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-        )}
-      </span>
-      <span className="plan-text">
-        <strong>{s.title}</strong>
-        <small>{s.sub}</small>
-      </span>
-      <span className="plan-go" aria-hidden={s !== next}>
-        {s.action} ›
-      </span>
-    </button>
-  )
-
   if (compact)
     return (
       <section className="plan-card compact" aria-labelledby="plan-title">
@@ -150,27 +152,36 @@ export function PlanCard({
       </section>
     )
 
+  // Desktop: today's goals, a row of small tiles under the greeting: a count in a ring that fills as you go (green
+  // once it's met), what it counts, and a quiet line. Each is a way in, not an order.
   return (
-    <section className="home-card plan-card" aria-labelledby="plan-title">
-      <header className="plan-head">
-        <Ring done={done} total={steps.length} />
-        <div>
-          <h2 id="plan-title">Today's plan</h2>
-          <p>{next ? `${steps.length - done} to go. Next: ${next.title.toLowerCase()}.` : 'All done for today. See you tomorrow.'}</p>
-        </div>
-      </header>
-      <ol className="plan-steps column" style={{ gridTemplateRows: all.map((s) => track(s.on)).join(' ') }}>
-        {all.map((s) => (
-          <li key={s.id} className={s.on ? '' : 'off'} inert={!s.on}>
-            {tile(s)}
-          </li>
-        ))}
-      </ol>
+    <section className="plan-row" aria-label={`Today's goals: ${done} of ${steps.length} met`} style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+      {steps.map((s) => (
+        <button key={s.id} className={`home-card plan-tile ${s.done ? 'done' : ''}`} onClick={s.go} aria-label={`${s.goal}: ${s.count} of ${s.of}. ${s.title}`}>
+          <GoalRing count={s.count} of={s.of} done={s.done} />
+          <strong>{s.goal}</strong>
+          <small>{s.note}</small>
+        </button>
+      ))}
     </section>
   )
 }
 
-/** Today's plan on its way: the same card, with as many tiles as it's about to have. */
+/** A goal's ring: the count inside, the arc as far as it has got, green once it's met. */
+function GoalRing({ count, of, done }: { count: number; of: number; done: boolean }) {
+  const r = 25
+  const c = 2 * Math.PI * r
+  return (
+    <svg className="step-ring" viewBox="0 0 60 60" aria-hidden>
+      <circle cx="30" cy="30" r={r} className="track" />
+      {count > 0 && <circle cx="30" cy="30" r={r} className={done ? 'arc done' : 'arc'} strokeDasharray={`${(count / of) * c} ${c}`} transform="rotate(-90 30 30)" />}
+      <text x="30" y="35.5">
+        {count}/{of}
+      </text>
+    </svg>
+  )
+}
+
 export function PlanCardSkeleton({ compact = false, steps = 3 }: { compact?: boolean; steps?: number }) {
   if (compact)
     return (
@@ -184,47 +195,19 @@ export function PlanCardSkeleton({ compact = false, steps = 3 }: { compact?: boo
       </section>
     )
   return (
-    <section className="home-card plan-card skel-group" aria-busy aria-label="Loading today's plan">
-      <header className="plan-head">
-        <Skel w="48px" h="48px" className="skel-round" />
-        <div>
-          <Skel w="140px" h="18px" />
-          <Skel w="220px" h="13px" className="skel-gap" />
-        </div>
-      </header>
-      <ol className="plan-steps column" style={{ gridTemplateRows: Array.from({ length: steps }, () => track(true)).join(' ') }}>
-        {Array.from({ length: steps }, (_, i) => (
-          <li key={i}>
-            <span className="plan-step">
-              <Skel w="24px" h="24px" className="skel-round" />
-              <span className="plan-text">
-                <strong className="skel-line">
-                  <Skel w={`${70 - (i % 2) * 18}%`} h="14px" />
-                </strong>
-                <small className="skel-line">
-                  <Skel w={`${56 - (i % 3) * 8}%`} h="11px" />
-                </small>
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
+    <section className="plan-row skel-group" aria-busy aria-label="Loading today's plan" style={{ gridTemplateColumns: `repeat(${steps}, minmax(0, 1fr))` }}>
+      {Array.from({ length: steps }, (_, i) => (
+        <span key={i} className="home-card plan-tile">
+          <Skel w="60px" h="60px" className="skel-round" />
+          <strong className="skel-line">
+            <Skel w={`${74 - (i % 2) * 16}%`} h="13px" />
+          </strong>
+          <small className="skel-line">
+            <Skel w={`${56 - (i % 3) * 8}%`} h="11px" />
+          </small>
+        </span>
+      ))}
     </section>
-  )
-}
-
-/** How much of the plan is done, as a ring with the count inside. */
-function Ring({ done, total }: { done: number; total: number }) {
-  const r = 20
-  const c = 2 * Math.PI * r
-  return (
-    <svg className="plan-ring" viewBox="0 0 48 48" role="img" aria-label={`${done} of ${total} done`}>
-      <circle cx="24" cy="24" r={r} className="track" />
-      {done > 0 && <circle cx="24" cy="24" r={r} className="fill" strokeDasharray={`${(done / total) * c} ${c}`} transform="rotate(-90 24 24)" />}
-      <text x="24" y="28.5">
-        {done}/{total}
-      </text>
-    </svg>
   )
 }
 
@@ -388,6 +371,121 @@ export function FormStrip({
           )}
         </span>
       </div>
+    </section>
+  )
+}
+
+/**
+ * Desktop Home's right column, at its top: your numbers as a strip of small cards that scrolls sideways
+ * (accuracy, rating, puzzle streak, weakest phase). One that has nothing to say yet stays out, except accuracy,
+ * which asks for a review.
+ */
+export function StatStrip({
+  pending = false,
+  accuracy,
+  trend,
+  recent,
+  rating,
+  progress,
+  weakest,
+}: {
+  pending?: boolean
+  accuracy: number | null
+  trend: number | null
+  recent: number[]
+  rating: RatingLine | null
+  progress: PuzzleProgress
+  weakest: { phase: Phase; accuracy: number } | null | undefined
+}) {
+  const row = useRef<HTMLDivElement>(null)
+  // Which way there's more to see, for the two buttons at the strip's ends.
+  const [more, setMore] = useState({ back: false, on: false })
+  const measure = () => {
+    const el = row.current
+    if (el) setMore({ back: el.scrollLeft > 4, on: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 })
+  }
+  useEffect(measure)
+  const slide = (by: number) => row.current?.scrollBy({ left: by * 160, behavior: 'smooth' })
+
+  const today = localDayNumber(new Date())
+  const streak = dayStreak(progress, today)
+  const best = Math.max(progress.days?.best ?? 0, streak)
+  const bars = recent.slice(-10)
+  const lo = Math.min(...bars) - 4
+  const hi = Math.max(...bars)
+  const signed = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n)}`
+
+  const cards = pending
+    ? [0, 1, 2].map((i) => (
+        <span key={i} className="home-card stat-card">
+          <Skel w="60%" h="11px" />
+          <Skel w="70px" h="24px" />
+          <Skel w="50%" h="11px" />
+        </span>
+      ))
+    : [
+        <Link key="accuracy" to="/profile/games" className="home-card stat-card">
+          <span className="stat-label">Accuracy</span>
+          {accuracy == null ? (
+            <b className="stat-value empty">Not yet</b>
+          ) : (
+            <b className="stat-value">
+              {accuracy.toFixed(1)}
+              {trend != null && <i className={trend >= 0 ? 'up' : 'down'}>{(trend >= 0 ? '+' : '−') + Math.abs(trend).toFixed(1)}</i>}
+            </b>
+          )}
+          {bars.length > 1 ? (
+            <span className="stat-bars" aria-hidden>
+              {bars.map((v, i) => (
+                <i key={i} className={i === bars.length - 1 ? 'last' : ''} style={{ height: `${22 + ((v - lo) / (hi - lo || 1)) * 78}%` }} />
+              ))}
+            </span>
+          ) : (
+            <span className="stat-sub">{accuracy == null ? 'Review a game' : 'Your reviewed games'}</span>
+          )}
+        </Link>,
+        rating && (
+          <Link key="rating" to="/profile/stats" className="home-card stat-card">
+            <span className="stat-label">{rating.label} rating</span>
+            <b className="stat-value">{rating.now}</b>
+            <span className={`stat-sub ${rating.change > 0 ? 'up' : rating.change < 0 ? 'down' : ''}`}>
+              {rating.change ? `${signed(rating.change)} ${rating.over === 'month' ? 'this month' : `in ${rating.points.length} games`}` : 'Level this month'}
+            </span>
+          </Link>
+        ),
+        <Link key="streak" to="/puzzles/daily" className="home-card stat-card">
+          <span className="stat-label">Puzzle streak</span>
+          <b className={`stat-value ${streak ? 'streak' : 'empty'}`}>{streak ? `${streak} ${streak === 1 ? 'day' : 'days'}` : 'Start today'}</b>
+          <span className="stat-sub">{best ? `Best ${best}` : 'Solve the daily'}</span>
+        </Link>,
+        weakest && (
+          <Link key="weakest" to="/profile/stats" className="home-card stat-card">
+            <span className="stat-label">Weakest phase</span>
+            <b className="stat-value phase">{PHASE_LABEL[weakest.phase]}</b>
+            <span className="stat-sub">{weakest.accuracy.toFixed(1)} accuracy</span>
+          </Link>
+        ),
+      ].filter(Boolean)
+
+  return (
+    <section className="stat-strip" aria-label="Your numbers" aria-busy={pending}>
+      <div className="stat-row" ref={row} onScroll={measure}>
+        {cards}
+      </div>
+      {more.back && (
+        <button className="stat-more back" onClick={() => slide(-1)} aria-label="Back" title="Back">
+          <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </button>
+      )}
+      {more.on && (
+        <button className="stat-more on" onClick={() => slide(1)} aria-label="More" title="More">
+          <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      )}
     </section>
   )
 }
