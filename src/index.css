@@ -15234,8 +15234,11 @@ a.blog-card:not(.latest) .blog-card-desc {
 }
 
 /* ---- Legendary moves page ---- */
+/* Its own layer: Chessground gives pieces a z-index, which would otherwise lift them over anything laid on the
+   board's corner (the W and L on Home's games). */
 .mini-board {
   position: relative;
+  isolation: isolate;
 }
 
 /* The graded move: an arrow along it and its badge on the corner of the square it went to. */
