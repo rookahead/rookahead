@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { HomeFooter } from '../components/HomeFooter'
@@ -60,26 +60,6 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
   const users = { chesscom: settings.chesscomUser, lichess: settings.lichessUser }
   const { games, reviews, loading: importing, errors } = useMyGames(users, active)
   const account = useAccount()
-  // The right column's own scrollbar (desktop): sized and placed from the column's scroll, shown while it moves.
-  const side = useRef<HTMLElement>(null)
-  const sideThumb = useRef<HTMLElement>(null)
-  const sideThumbOff = useRef(0)
-  const showSideThumb = () => {
-    const el = side.current
-    const thumb = sideThumb.current
-    if (!el || !thumb || el.scrollHeight <= el.clientHeight) return
-    const box = el.getBoundingClientRect()
-    // A short thumb with room to travel, inset from the column's ends: one nearly as tall as its track barely
-    // moves and reads as the page jumping.
-    const track = el.clientHeight - 48
-    const height = Math.min(track * 0.18, Math.max(28, (el.clientHeight / el.scrollHeight) * track))
-    thumb.style.height = `${height}px`
-    thumb.style.left = `${box.right + 6}px`
-    thumb.style.top = `${box.top + 24 + (el.scrollTop / (el.scrollHeight - el.clientHeight)) * (track - height)}px`
-    thumb.dataset.on = ''
-    clearTimeout(sideThumbOff.current)
-    sideThumbOff.current = window.setTimeout(() => delete thumb.dataset.on, 900)
-  }
   // Just signed in on a device with nothing yet: your games are on their way down, so wait for them
   // rather than showing the empty welcome for a moment.
   const restoring = !games.length && (account.status === 'loading' || (account.status === 'signed-in' && account.sync === 'syncing'))
@@ -507,9 +487,7 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
           {gamesCard}
         </div>
 
-        {/* The right column's scrollbar: a thin thumb just outside its right edge, there while the column scrolls. */}
-        <b className="home-side-thumb" ref={sideThumb} aria-hidden />
-        <aside className="home-side" aria-label="Today" ref={side} onScroll={showSideThumb}>
+        <aside className="home-side" aria-label="Today">
           {/* Your numbers first, a strip of small cards that scrolls sideways, then the ways to play. */}
           {!firstVisit && (
             <StatStrip pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} rating={rating} progress={progress} weakest={known?.weakest} />

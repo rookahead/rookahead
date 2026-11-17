@@ -405,7 +405,12 @@ export function StatStrip({
     if (el) setMore({ back: el.scrollLeft > 4, on: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 })
   }
   useEffect(measure)
-  const slide = (by: number) => row.current?.scrollBy({ left: by * 160, behavior: 'smooth' })
+  // A card at a time, exactly (its width and the gap), so it lands where the snapping would put it anyway.
+  const slide = (by: number) => {
+    const el = row.current
+    const card = el?.firstElementChild as HTMLElement | null
+    if (el && card) el.scrollBy({ left: by * (card.offsetWidth + parseFloat(getComputedStyle(el).columnGap || '0')), behavior: 'smooth' })
+  }
 
   const today = localDayNumber(new Date())
   const streak = dayStreak(progress, today)
@@ -468,7 +473,7 @@ export function StatStrip({
       ].filter(Boolean)
 
   return (
-    <section className="stat-strip" aria-label="Your numbers" aria-busy={pending}>
+    <section className={`stat-strip ${more.back ? 'has-back' : ''} ${more.on ? 'has-more' : ''}`} aria-label="Your numbers" aria-busy={pending}>
       <div className="stat-row" ref={row} onScroll={measure}>
         {cards}
       </div>

@@ -4652,10 +4652,6 @@ button.explain-row {
   gap: 20px;
 }
 
-.home-side-thumb {
-  display: none;
-}
-
 .home-side {
   flex: 1 1 300px;
   min-width: 0;
@@ -4680,27 +4676,11 @@ button.explain-row {
     flex-shrink: 0;
   }
 
-  /* Scrolling it stops at its ends: the page under it doesn't take over the wheel. */
+  /* Scrolling it stops at its ends: the page under it doesn't take over the wheel. Its cards sit as close as the
+     tiles do, so on most screens it all fits and doesn't need to scroll at all. */
   .home-side {
+    gap: 12px;
     overscroll-behavior: contain;
-  }
-
-  /* Its scrollbar (Home.tsx sizes and places it): fixed just outside the column's right edge. */
-  .home-side-thumb {
-    display: block;
-    position: fixed;
-    z-index: 3;
-    width: 4px;
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--text) 42%, transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-  }
-
-  .home-side-thumb[data-on] {
-    opacity: 1;
-    transition-duration: 0.1s;
   }
 
   /* The footer ends where the middle column does (the same sum as the columns' own), clear of the pinned one. */
@@ -5306,7 +5286,7 @@ button.explain-row {
 
 .home-tile {
   position: relative;
-  height: 156px;
+  height: 140px;
   padding: 16px;
   overflow: hidden;
   display: flex;
@@ -5766,12 +5746,26 @@ button.explain-row {
 }
 
 .stat-row {
+  --fade-back: 0px;
+  --fade-on: 0px;
   display: flex;
   gap: 10px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   border-radius: 18px;
+  /* The cards fade out under the end that has more, where its button sits, instead of being cut by it. */
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-back), #000 calc(100% - var(--fade-on)), transparent);
+}
+
+.stat-strip.has-back .stat-row {
+  --fade-back: 56px;
+}
+
+.stat-strip.has-more .stat-row {
+  --fade-on: 56px;
 }
 
 .stat-row::-webkit-scrollbar {
@@ -5873,8 +5867,8 @@ button.explain-row {
   position: absolute;
   top: 50%;
   translate: 0 -50%;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 0;
@@ -5893,11 +5887,11 @@ button.explain-row {
 }
 
 .stat-more.back {
-  left: 6px;
+  left: 2px;
 }
 
 .stat-more.on {
-  right: 6px;
+  right: 2px;
 }
 
 .stat-more svg {
