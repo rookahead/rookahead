@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Link } from '../components/Link'
-import { Tabs } from '../components/Tabs'
+import { ROOK } from '../components/RookLogo'
 import {
   chooseUsername,
   clearAccountError,
@@ -19,7 +19,6 @@ import {
 } from '../lib/account'
 import { inApp } from '../lib/install'
 import { afterSignIn, navigate, usePathname } from '../lib/router'
-import { Brand } from './auth/Brand'
 import { GoogleG, PasswordField, UsernameField } from './auth/fields'
 
 const RESEND_AFTER = 60
@@ -72,8 +71,6 @@ export function AuthPage() {
   const [passwordSaved, setPasswordSaved] = useState(false)
   // Leaving for Google: only its button says so (the email form's button used to flash "Signing in…").
   const [googling, setGoogling] = useState(false)
-  // Which way the form slides in after a Sign in ⇄ Register switch (none on arrival).
-  const [switchedTo, setSwitchedTo] = useState<'left' | 'right' | null>(null)
 
   useEffect(() => preloadAccounts(), [])
   const pickedName = name ?? suggestUsername(account?.name)
@@ -303,56 +300,51 @@ export function AuthPage() {
       </>
     )
   } else {
+    // Google first: one press for most people. Then email, and the way across to the other form.
     body = (
       <>
-        <Tabs
-          label="Account"
-          value={register ? 'signup' : 'login'}
-          items={[
-            { id: 'login', label: 'Sign in', to: `/login${location.search}` },
-            { id: 'signup', label: 'Register', to: `/signup${location.search}` },
-          ]}
-          onSelect={(id) => {
-            go('form')
-            setSwitchedTo(id === 'signup' ? 'right' : 'left')
-          }}
-        />
-        <div key={register ? 'signup' : 'login'} className={`auth-switch ${switchedTo ? `from-${switchedTo}` : ''}`}>
-          <form className="auth-form" onSubmit={submitForm}>
-            <label className="auth-field">
-              <span className="auth-label">Email</span>
-              <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </label>
-            <PasswordField
-              value={password}
-              onChange={setPasswordValue}
-              fresh={register ? { min: PASSWORD_MIN } : undefined}
-              aside={
-                !register && (
-                  <button type="button" className="link-btn auth-forgot" onClick={() => go('forgot')}>
-                    Forgot password?
-                  </button>
-                )
-              }
-            />
-            <button className="btn big primary" disabled={pending || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
-              {pending && !googling ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
-            </button>
-          </form>
-          <div className="auth-or" role="separator">
-            <span>or</span>
-          </div>
-          <button className="btn big ghost auth-google" onClick={() => void google()} disabled={pending}>
-            <GoogleG />
-            {googling ? 'Opening Google…' : 'Continue with Google'}
-          </button>
-          {register && (
-            <p className="auth-fine">
-              You’ll pick a username next. We use your email only for your account: confirming it, and resetting your password.{' '}
-              <a href="/privacy">Privacy</a>
-            </p>
-          )}
+        <h2>{register ? 'Create your account' : 'Sign in'}</h2>
+        <p className="auth-lead">{register ? 'Your games, reviews and streaks on every device.' : 'Pick up where you left off, on any device.'}</p>
+        <button className="btn big ghost auth-google" onClick={() => void google()} disabled={pending}>
+          <GoogleG />
+          {googling ? 'Opening Google…' : 'Continue with Google'}
+        </button>
+        <div className="auth-or" role="separator">
+          <span>or with email</span>
         </div>
+        <form className="auth-form" onSubmit={submitForm}>
+          <label className="auth-field">
+            <span className="auth-label">Email</span>
+            <input className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <PasswordField
+            value={password}
+            onChange={setPasswordValue}
+            fresh={register ? { min: PASSWORD_MIN } : undefined}
+            aside={
+              !register && (
+                <button type="button" className="link-btn auth-forgot" onClick={() => go('forgot')}>
+                  Forgot password?
+                </button>
+              )
+            }
+          />
+          <button className="btn big primary" disabled={pending || !email.trim() || (register ? password.length < PASSWORD_MIN : !password)}>
+            {pending && !googling ? (register ? 'Creating…' : 'Signing in…') : register ? 'Create account' : 'Sign in'}
+          </button>
+        </form>
+        {register && (
+          <p className="auth-fine">
+            You’ll pick a username next. We use your email only for your account: confirming it, and resetting your password.{' '}
+            <a href="/privacy">Privacy</a>
+          </p>
+        )}
+        <p className="auth-links">
+          {register ? 'Have an account?' : 'New to Rookahead?'}
+          <Link to={`${register ? '/login' : '/signup'}${location.search}`} className="link-btn" onClick={() => go('form')}>
+            {register ? 'Sign in' : 'Create one'}
+          </Link>
+        </p>
       </>
     )
   }
@@ -370,13 +362,74 @@ export function AuthPage() {
             </p>
           )}
           {notice && !shown && <p className="auth-notice">{notice}</p>}
-          {status === 'guest' && !awayAtGoogle && (
-            <Link to={nextPath()} className="auth-guest">
-              Not now, continue as a guest
-            </Link>
-          )}
         </div>
+        {status === 'guest' && !awayAtGoogle && (
+          <Link to={nextPath()} className="auth-guest">
+            Not now, continue as a guest
+          </Link>
+        )}
       </main>
     </div>
+  )
+}
+
+/** What Rookahead is, a line at a time. */
+const TAGLINE = ['Reviews your chess games for free.', 'Puzzles from your own mistakes.', 'Play online or the computer.', 'No limits, no pop-ups.']
+/**
+ * The left half, in your colour. It builds itself as the page opens, one sequence (index.css, .auth-brand): the rank's
+ * squares ripple in, "rook" flies in from the left and "ahead" from the right to meet, the mark is put together
+ * on the rank (its foot rises, its body brings the arrow in from the left, the battlements drop on), and the lines
+ * come in one after another. Then it all stays still. Phones get the same, as a band over the form.
+ */
+function Brand() {
+  return (
+    <aside className="auth-brand">
+      <Link to="/" className="auth-name" aria-label="Rookahead home">
+        <span aria-hidden>
+          {[...'rook'].map((c, i) => (
+            <i key={i} style={{ '--i': 3 - i } as CSSProperties}>
+              {c}
+            </i>
+          ))}
+        </span>
+        <span aria-hidden>
+          {[...'ahead'].map((c, i) => (
+            <i key={i} style={{ '--i': i } as CSSProperties}>
+              {c}
+            </i>
+          ))}
+        </span>
+      </Link>
+      <p className="auth-tag">
+        {TAGLINE.map((line, i) => (
+          <span key={i} className="auth-tag-line" style={{ '--i': i } as CSSProperties}>
+            {line}
+          </span>
+        ))}
+      </p>
+      <div className="auth-rank" aria-hidden>
+        <div className="auth-squares">
+          {Array.from({ length: 16 }, (_, i) => (
+            <i key={i} className={(i + Math.floor(i / 8)) % 2 ? 'light' : ''} style={{ '--i': (i % 8) + Math.floor(i / 8) * 1.5 } as CSSProperties} />
+          ))}
+        </div>
+        <svg className="auth-rook" viewBox="4.5 3 15 18">
+          <defs>
+            <clipPath id="rook-crown">
+              <rect x="0" y="0" width="24" height="5.02" />
+            </clipPath>
+            <clipPath id="rook-body">
+              <rect x="0" y="5" width="24" height="6.02" />
+            </clipPath>
+            <clipPath id="rook-foot">
+              <rect x="0" y="11" width="24" height="12" />
+            </clipPath>
+          </defs>
+          <path className="part-foot" clipPath="url(#rook-foot)" d={ROOK} />
+          <path className="part-body" clipPath="url(#rook-body)" d={ROOK} />
+          <path className="part-crown" clipPath="url(#rook-crown)" d={ROOK} />
+        </svg>
+      </div>
+    </aside>
   )
 }

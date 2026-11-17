@@ -6254,586 +6254,292 @@ button.user-avatar.guest:hover {
   color: var(--muted);
 }
 
-/* Account page (/signup, /login): Rookahead on the left (the big logo, then a tour of what it
-   offers), the forms on the right. */
+/* Account page (/signup, /login, the email and password steps): two halves. The left is Rookahead's, in your
+   colour: the name set big, a line on what it is, and the mark standing on a rank of squares, its arrow pointing at
+   the form. The right is the form, on the page's own colour. */
 .auth-page {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
 }
 
 .auth-brand {
-  --pad: clamp(32px, 5vw, 72px);
-  --intro-scale: 3;
-  --ease-move: cubic-bezier(0.65, 0, 0.2, 1);
+  /* Dark themes: the deep tone, the name light, the mark and "ahead" bright, as Home's Play card. */
+  --panel: var(--brand-card);
+  --panel-ink: var(--brand-card-text);
+  --panel-mark: var(--brand);
+  --pad: clamp(32px, 4.5vw, 80px);
+  /* A rank: eight squares across the half. */
+  --sq: calc(50vw / 8);
   position: sticky;
   top: 0;
+  isolation: isolate;
+  overflow: hidden;
   box-sizing: border-box;
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 24px;
-  padding: 32px var(--pad);
-  /* The sidebar's tone, so the mark and the boards are what's in your colour on it. */
-  background: var(--side);
-  color: var(--text);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(32px, 7vh, 72px) var(--pad) 0;
+  background: var(--panel);
+  color: var(--panel-ink);
 }
 
-/* The logo and wordmark: big in the middle at first, then in the corner as the home link. */
-.auth-mark {
-  position: relative;
-  z-index: 2;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: inherit;
+/* Light themes: the strong colour itself, the mark pale on it. */
+:root[data-theme='light'] .auth-brand {
+  --panel: var(--brand);
+  --panel-ink: var(--brand-ink);
+  --panel-mark: var(--brand-card);
+}
+
+/* The name in one word, as the wordmark is everywhere, set as wide as the half allows. */
+.auth-name {
+  align-self: flex-start;
+  color: var(--panel-ink);
+  font-family: var(--font-display);
+  font-size: min(calc(100cqi / 6.2), 190px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
   text-decoration: none;
-  font-size: 22px;
-  transform-origin: left top;
-  transition: transform 0.95s var(--ease-move);
-  animation: auth-fade 0.6s ease both;
 }
 
-.auth-brand[data-phase='intro'] .auth-mark {
-  transform: translateY(calc(50dvh - 32px - 30px * var(--intro-scale) - 12px)) scale(var(--intro-scale));
-}
-
-.auth-intro {
-  position: absolute;
-  top: 50%;
-  left: var(--pad);
-  right: var(--pad);
-  margin-top: 8px;
-  pointer-events: none;
-  transition:
-    opacity 0.45s ease,
-    transform 0.8s var(--ease-move);
-  animation: auth-rise 0.7s 0.15s ease both;
-}
-
-.auth-brand:not([data-phase='intro']) .auth-intro {
-  opacity: 0;
-  transform: translateY(-28px);
-}
-
-.auth-intro-line {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(24px, 2.4vw, 34px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.auth-intro-sub {
-  margin: 10px 0 0;
-  font-size: 16px;
-  line-height: 1.5;
-  opacity: 0.72;
-}
-
-@keyframes auth-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes auth-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-}
-
-/* The tour: one slide at a time; the next comes in from the right as the last leaves to the left. */
-.tour {
-  align-self: center;
-  justify-self: center;
-  width: min(100%, 460px);
-  min-height: 0;
-}
-
-.tour-stage {
-  display: grid;
-}
-
-.tour-slide {
-  grid-area: 1 / 1;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(-40px);
-  transition:
-    opacity 0.4s ease,
-    transform 0.6s ease,
-    visibility 0s 0.6s;
-}
-
-.tour-slide.is-active {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition-delay: 0s;
-  animation: tour-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-@keyframes tour-in {
-  from {
-    opacity: 0;
-    transform: translateX(56px);
-  }
-}
-
-.tour-slide h2 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(28px, 2.6vw, 38px);
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.025em;
-}
-
-.tour-slide p {
-  margin: 10px 0 0;
-  max-width: 38ch;
-  font-size: 16px;
-  line-height: 1.5;
-  opacity: 0.75;
-}
-
-.tour-scene {
-  position: relative;
-  width: min(100%, 400px, 46dvh);
-  margin-bottom: 40px;
-}
-
-.tour-board .mini-board {
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 28px 60px -24px rgba(0, 0, 0, 0.55);
-}
-
-.tour-board {
-  position: relative;
-}
-
-/* The verdict badge is the small boards' own (MiniBoard), a little larger on these big boards, and it pops in. */
-.tour-board .mini-badge {
-  width: 8%;
-}
-
-.is-active .tour-board .mini-badge {
-  animation: tour-pop 0.5s 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both;
-}
-
-@keyframes tour-pop {
-  from {
-    scale: 0;
-  }
-}
-
-/* The caption card on each picture, like the coach's note in a review. */
-.tour-note {
-  position: absolute;
-  z-index: 3;
-  right: -32px;
-  bottom: -24px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 300px;
-  padding: 10px 16px 10px 10px;
-  border-radius: 12px;
-  background: var(--card);
-  color: var(--text);
-  box-shadow: var(--shadow-pop);
-}
-
-.is-active .tour-note {
-  animation: auth-rise 0.5s 0.35s ease both;
-}
-
-.tour-note > span:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: 12.5px;
-  line-height: 1.35;
-}
-
-.tour-note strong {
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.tour-note > span:last-child span {
-  color: var(--text-2);
-}
-
-.tour-flame,
-.tour-check,
-.tour-level {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-}
-
-.tour-flame {
-  background: var(--streak);
-}
-
-.tour-check {
-  background: var(--tone-green);
-}
-
-.tour-flame svg,
-.tour-check svg {
-  width: 16px;
-  height: 16px;
-}
-
-.tour-flame path {
-  fill: #fff;
-}
-
-.tour-check path {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.tour-level {
-  background: var(--brand);
-  color: var(--brand-ink);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* Play: the eight levels as a rising ladder. */
-.tour-ladder {
-  aspect-ratio: 1;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-end;
-  gap: 7px;
-  padding: 26px 22px;
-  border-radius: 10px;
-  background: color-mix(in srgb, currentColor 7%, transparent);
-}
-
-.tour-ladder span {
-  flex: 1;
-  height: var(--h);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0 7px;
-  box-sizing: border-box;
-  border-radius: 6px 6px 3px 3px;
-  background: color-mix(in srgb, currentColor 14%, transparent);
-  transform-origin: bottom;
-}
-
-.is-active .tour-ladder span {
-  animation: tour-grow 0.6s calc(0.25s + var(--i) * 55ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-@keyframes tour-grow {
-  from {
-    transform: scaleY(0);
-  }
-}
-
-.tour-ladder b {
-  font-family: var(--font-mono);
-  font-size: 10px;
+.auth-name span:last-child {
+  color: var(--panel-mark);
   font-weight: 500;
-  opacity: 0.8;
 }
 
-.tour-ladder i {
-  font-style: normal;
-  font-size: 14px;
-  font-weight: 700;
+.auth-name:focus-visible {
+  outline: 2px solid var(--panel-ink);
+  outline-offset: 8px;
+  border-radius: 6px;
 }
 
-.tour-ladder .is-pick {
-  background: var(--brand);
-  color: var(--brand-ink);
+/* What it is, in the wordmark's face, one thing a line. */
+.auth-tag {
+  max-width: 30ch;
+  margin: clamp(24px, 5vh, 44px) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5em;
+  font-family: var(--font-display);
+  font-size: clamp(17px, 1.45vw, 26px);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
 }
 
-/* Sync: one profile, on a laptop and a phone. */
-.tour-devices {
+/* The foot: a rank of squares in the panel's own colour, the mark standing on it. */
+.auth-rank {
   position: relative;
-  display: block;
-  aspect-ratio: 1;
+  flex: 1;
+  min-height: calc(var(--sq) * 1.6);
+  margin: 24px calc(-1 * var(--pad)) 0;
 }
 
-.tour-laptop,
-.tour-phone {
+/* Two rows of the rank, each square its own (they ripple in), fading up into the half. */
+.auth-squares {
   position: absolute;
-  box-sizing: border-box;
+  inset: auto 0 0;
   display: grid;
-  place-items: center;
-  border: 3px solid color-mix(in srgb, currentColor 55%, transparent);
-  background: color-mix(in srgb, currentColor 6%, var(--side));
+  grid-template-columns: repeat(8, var(--sq));
+  grid-auto-rows: var(--sq);
+  mask: linear-gradient(to top, #000 40%, transparent 100%);
 }
 
-.tour-laptop {
-  top: 14%;
-  left: 0;
-  width: 84%;
-  aspect-ratio: 16 / 10;
-  border-radius: 12px 12px 4px 4px;
-  font-size: 14px;
+.auth-squares .light {
+  background: color-mix(in srgb, var(--panel-ink) 9%, transparent);
 }
 
-.tour-laptop::after {
-  content: '';
+/* Bottom right, across from the words: its arrow points over the line to the form. */
+.auth-rook {
   position: absolute;
-  top: 100%;
-  left: -9%;
-  right: -9%;
-  height: 12px;
-  border-radius: 0 0 10px 10px;
-  background: color-mix(in srgb, currentColor 55%, transparent);
+  right: calc(var(--sq) * 0.75);
+  bottom: calc(var(--sq) * 0.16);
+  height: min(calc(var(--sq) * 2.7), calc(100% - var(--sq) * 0.16));
+  width: auto;
+  aspect-ratio: 15 / 18;
+  fill: var(--panel-mark);
 }
 
-.tour-phone {
-  right: 0;
-  bottom: 16%;
-  width: 31%;
-  aspect-ratio: 9 / 18;
-  border-radius: 18px;
-  font-size: 9px;
-  background: var(--side);
+/* ── The half builds itself as the page opens (Auth.tsx, Brand), about 1.6 seconds, then stays still ──
+   First the rank's squares ripple in from the left; "rook" flies in from the left and "ahead" from the right, the
+   letters nearest the middle first, to meet; the mark is put together on the rank (foot up from the squares, the
+   body bringing the arrow in from the left, the battlements dropped on); last, the lines, one after another. */
+.auth-squares i {
+  animation: auth-square 0.45s calc(var(--i) * 45ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.tour-profile {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-items: center;
-  gap: 1em 1.4em;
+@keyframes auth-square {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
 }
 
-.tour-phone .tour-profile {
-  grid-template-columns: auto;
+.auth-name i {
+  display: inline-block;
+  font-style: normal;
+  animation: auth-from-left-far 0.8s calc(0.12s + var(--i) * 55ms) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.tour-avatar {
-  grid-column: 1 / -1;
-  width: 3em;
-  height: 3em;
-  border-radius: 50%;
-  background: var(--brand);
+.auth-name span:last-child i {
+  animation-name: auth-from-right-far;
 }
 
-.tour-lines {
-  grid-column: 1 / -1;
-  display: grid;
-  justify-items: center;
-  gap: 0.4em;
-  margin-top: -0.4em;
+@keyframes auth-from-left-far {
+  from {
+    opacity: 0;
+    transform: translateX(-70cqi);
+  }
+
+  40% {
+    opacity: 1;
+  }
 }
 
-.tour-lines span {
-  width: 6em;
-  height: 0.55em;
-  border-radius: 1em;
-  background: color-mix(in srgb, currentColor 40%, transparent);
+@keyframes auth-from-right-far {
+  from {
+    opacity: 0;
+    transform: translateX(70cqi);
+  }
+
+  40% {
+    opacity: 1;
+  }
 }
 
-.tour-lines span + span {
-  width: 4em;
-  opacity: 0.5;
+.auth-rook path {
+  transform-box: fill-box;
+  animation: 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) both;
 }
 
-.tour-stat {
-  display: grid;
-  justify-items: center;
+.auth-rook .part-foot {
+  animation-name: auth-rook-foot;
+  animation-delay: 0.45s;
 }
 
-.tour-stat b {
-  font-size: 1.7em;
-  font-weight: 700;
-  line-height: 1.1;
+.auth-rook .part-body {
+  animation-name: auth-rook-body;
+  animation-delay: 0.62s;
 }
 
-.tour-stat span {
-  font-size: 0.85em;
-  opacity: 0.7;
+.auth-rook .part-crown {
+  animation-name: auth-rook-crown;
+  animation-delay: 0.8s;
 }
 
-.is-active .tour-phone {
-  animation: auth-rise 0.6s 0.3s ease both;
+@keyframes auth-rook-foot {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+  }
 }
 
-/* The foot: a step per slide (the current one fills as it plays; pointing at the slide pauses it), and the fine print. */
-.auth-brand-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  font-size: 13px;
+@keyframes auth-rook-body {
+  from {
+    opacity: 0;
+    transform: translateX(-160%);
+  }
 }
 
-.auth-brand-foot p {
-  margin: 0;
-  opacity: 0.6;
-  text-align: right;
+@keyframes auth-rook-crown {
+  from {
+    opacity: 0;
+    transform: translateY(-220%);
+  }
 }
 
-.tour-steps {
-  display: flex;
-  gap: 4px;
-  transition: opacity 0.5s ease;
+.auth-tag-line {
+  animation: auth-line 0.6s calc(1s + var(--i) * 0.12s) cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
-.auth-brand:not([data-phase='tour']) .tour-steps {
-  opacity: 0;
-}
+@keyframes auth-line {
+  from {
+    opacity: 0;
+    clip-path: inset(-0.3em 100% -0.3em 0);
+    transform: translateX(-0.5em);
+  }
 
-.tour-step {
-  display: grid;
-  align-items: center;
-  width: 38px;
-  height: 22px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.tour-step::before,
-.tour-step span {
-  content: '';
-  grid-area: 1 / 1;
-  height: 3px;
-  border-radius: 2px;
-}
-
-.tour-step::before {
-  background: color-mix(in srgb, currentColor 22%, transparent);
-}
-
-.tour-step span {
-  background: var(--brand);
-  transform: scaleX(0);
-  transform-origin: left;
-}
-
-.tour-step.is-done span {
-  transform: none;
-}
-
-.auth-brand[data-phase='tour'] .tour-step.is-active span {
-  animation: tour-fill 5.5s linear forwards;
-}
-
-.auth-brand:has(.tour:hover, .tour-steps:hover) .tour-step.is-active span {
-  animation-play-state: paused;
-}
-
-@keyframes tour-fill {
   to {
-    transform: none;
+    clip-path: inset(-0.3em -0.3em -0.3em 0);
   }
 }
 
-.tour-step:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-@media (max-width: 1300px) {
-  .auth-brand {
-    --intro-scale: 2.5;
-  }
-}
-
-@media (max-width: 1080px) {
-  .auth-brand {
-    --intro-scale: 2;
-  }
-}
-
-/* No motion: no intro, no sliding; the steps change slides by hand. */
 @media (prefers-reduced-motion: reduce) {
-  .auth-mark,
-  .auth-intro,
-  .tour-slide {
-    transition: none;
-  }
-
-  .auth-mark,
-  .auth-intro,
-  .tour-slide.is-active,
-  .tour-board .mini-badge,
-  .tour-note,
-  .tour-phone,
-  .tour-ladder span,
-  .tour-step span,
-  .auth-switch {
+  .auth-brand * {
     animation: none !important;
   }
-
-  .tour-step.is-active span {
-    transform: none;
-  }
 }
 
-/* Switching Sign in ⇄ Register: the form comes in from the side of the tab picked. It wraps the
-   form and what follows it, laid out as if they sat in .auth-box directly. */
-.auth-switch {
+/* The form's half, top-aligned so it stays put between Sign in and Create account. */
+.auth-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.auth-switch.from-right {
-  animation: auth-switch-right 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-.auth-switch.from-left {
-  animation: auth-switch-left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-@keyframes auth-switch-right {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-}
-
-@keyframes auth-switch-left {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-}
-
-.auth-panel {
-  display: grid;
-  /* Top-aligned at a fixed height, so the tabs stay put when the form's length changes. */
-  place-items: start center;
-  padding: max(40px, 18vh) 24px 40px;
+  align-items: center;
+  gap: 20px;
+  padding: max(48px, 16vh) 24px 48px;
 }
 
 .auth-box {
-  width: min(380px, 100%);
+  width: min(400px, 100%);
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Filled boxes and buttons, a step up from the page (AMOLED's black too); the main button in your colour, fainter
+   until it can go. */
+.auth-box .input {
+  border-color: transparent;
+  background: var(--surface-2);
+}
+
+.auth-box .input:focus {
+  border-color: var(--brand);
+}
+
+.auth-box .btn.ghost {
+  background: var(--surface-2);
+}
+
+.auth-box .btn.ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+/* Light themes: white fields and Google's button with an edge, so none of it is pale on pale. */
+:root[data-theme='light'] .auth-box .input,
+:root[data-theme='light'] .auth-box .btn.ghost {
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+}
+
+:root[data-theme='light'] .auth-box .input:focus {
+  border-color: var(--brand);
+}
+
+:root[data-theme='light'] .auth-box .btn.ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.auth-box .btn.primary {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.auth-box .btn.primary:hover:not(:disabled) {
+  background: var(--brand);
+  filter: brightness(1.08);
+}
+
+.auth-box .btn.primary:disabled {
+  background: var(--brand);
+  color: var(--brand-ink);
+  opacity: 0.45;
 }
 
 .auth-box h2 {
@@ -7013,8 +6719,6 @@ button.user-avatar.guest:hover {
 }
 
 .auth-guest {
-  align-self: center;
-  margin-top: 8px;
   color: var(--muted);
   font-size: 13px;
   text-decoration: none;
@@ -7026,7 +6730,7 @@ button.user-avatar.guest:hover {
   text-underline-offset: 2px;
 }
 
-/* Phones and narrow windows: the logo on top, the form below; no line, no tour. */
+/* Phones and narrow windows: the same half as a band over the form; the mark stands at its right. */
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;
@@ -7035,48 +6739,37 @@ button.user-avatar.guest:hover {
   }
 
   .auth-brand {
-    position: static;
+    --pad: 20px;
+    --sq: calc(100vw / 8);
+    position: relative;
     height: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 48px 20px 8px;
-    background: none;
+    padding: calc(28px + var(--safe-top)) var(--pad) 0;
   }
 
-  .auth-brand .auth-intro,
-  .auth-brand .tour-cards {
-    display: none;
+
+  .auth-tag {
+    /* Sized with the screen so the shorter lines, level with the rook, stay clear of it. */
+    max-width: none;
+    margin-top: 14px;
+    gap: 3px;
+    font-size: clamp(13px, 3.7vw, 15px);
+    letter-spacing: 0;
   }
 
-  .auth-brand[data-phase] .auth-mark {
-    transform: none;
-    transition: none;
+  .auth-rank {
+    flex: none;
+    height: calc(var(--sq) * 1.1);
+    min-height: 0;
+    margin-top: 16px;
   }
 
-  .auth-brand[data-phase] .auth-intro {
-    position: static;
-    margin: 0;
-    opacity: 1;
-    transform: none;
-  }
-
-  .auth-intro-line {
-    font-size: 24px;
-  }
-
-  .auth-intro-sub {
-    margin-top: 6px;
-    font-size: 14px;
-  }
-
-  .tour,
-  .auth-brand-foot {
-    display: none;
+  .auth-rook {
+    right: calc(var(--sq) * 0.35);
+    bottom: calc(var(--sq) * 0.12);
+    height: calc(var(--sq) * 2.1);
   }
 
   .auth-panel {
-    place-items: start center;
     padding: 28px 16px 40px;
   }
 }
@@ -13180,10 +12873,9 @@ strong.settings-value {
   }
 }
 
-/* Into and out of the account page (App.tsx): the brand panel slides in from the left over the page you
-   were on, the rest of the window fades to the page colour, and the sign-in form rises in; back to the
-   app, the other way round. The real elements move (transform and opacity only), so the browser runs it
-   at the screen's own rate, with nothing to capture first. */
+/* Into and out of the account page (App.tsx): the window fades to the page colour over the page you were on,
+   Rookahead's half builds itself (above) and the form rises in; back to the app, the half slides off to the left. The real elements move (transform and opacity
+   only), so the browser runs it at the screen's own rate, with nothing to capture first. */
 .auth-layer.entering,
 .auth-layer.leaving {
   position: fixed;
@@ -13213,8 +12905,7 @@ strong.settings-value {
 }
 
 .auth-layer.entering .auth-brand {
-  will-change: transform;
-  animation: auth-from-left 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: auth-fade 0.3s ease both;
 }
 
 .auth-layer.entering .auth-panel {
@@ -13234,21 +12925,36 @@ strong.settings-value {
   animation: auth-fade-out 0.2s ease both;
 }
 
-@keyframes auth-from-left {
-  from {
-    transform: translateX(-100%);
-  }
-}
-
 @keyframes auth-to-left {
   to {
     transform: translateX(-100%);
   }
 }
 
+@keyframes auth-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
 @keyframes auth-fade-out {
   to {
     opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-layer .auth-panel,
+  .auth-layer .auth-brand,
+  .auth-layer::before {
+    animation: none !important;
   }
 }
 
@@ -15448,71 +15154,6 @@ a.blog-card:not(.latest) .blog-card-desc {
   /* Full screen, what to do next comes first; the rating and streaks follow. */
   .puzzles-page .puzzle-layout .puzzle-head {
     order: 1;
-  }
-}
-
-/* The tour's points on phones: a row of cards to swipe, the next one peeking in. */
-.tour-cards {
-  display: none;
-}
-
-@media (max-width: 860px) {
-  .tour-cards {
-    display: flex;
-    gap: 10px;
-    margin: 0 -20px;
-    padding: 0 20px;
-    list-style: none;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding: 0 20px;
-    scrollbar-width: none;
-  }
-
-  .tour-cards::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tour-card {
-    --tone: var(--brand);
-    flex: 0 0 78%;
-    scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: var(--card);
-    box-shadow: var(--card-edge);
-  }
-
-  .tour-card.mistakes {
-    --tone: var(--tone-rose);
-  }
-
-  .tour-card.puzzles {
-    --tone: var(--tone-amber);
-  }
-
-  .tour-card.play {
-    --tone: var(--tone-green);
-  }
-
-  .tour-card.sync {
-    --tone: var(--tone-violet);
-  }
-
-  .tour-card strong {
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--tone);
-  }
-
-  .tour-card span {
-    font-size: 13.5px;
-    line-height: 1.4;
-    color: var(--text-2);
   }
 }
 
