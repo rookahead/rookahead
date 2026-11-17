@@ -1,12 +1,18 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-16
+date: 2026-11-17
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 17 November 2026
+
+- A new Home on computers. Today's goals sit under the greeting, each a ring that fills as you go. On the right: your numbers (accuracy, rating, puzzle streak, weakest phase) in a row you can slide, a bigger Play online card with the time in a menu, and tiles for a friend, the computer, the daily puzzle and rated puzzles. The right side scrolls on its own.
+- Flatter cards, and stronger colours in the dark themes. AMOLED's greys are plain grey now, so your colour stands out.
+- Fixed: the W and L on your games could be hidden under the pieces.
 
 ## 16 November 2026
 
