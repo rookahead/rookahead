@@ -15,6 +15,9 @@ This page lists every change to the verdict rules, so you can see why a move's v
 - Fixed: the W and L on your games could be hidden under the pieces.
 - New here? Home on a computer now looks like everyone's Home from the start: today's goals, the Play online card and the tiles, with the box for your username at the top.
 - A new sign-in page: Rookahead on one half in your colour, a simpler form on the other with Google first. Easier to see on AMOLED.
+- Games against the computer now start like online ones: you and the computer face to face over the board, with the start sound. The clocks start when the board clears.
+- On phones, after an online game: switch on the engine to see its best move and the eval bar, and open the opening explorer from the book button.
+- Fixed: Accept draw and Decline were different sizes.
 
 ## 16 November 2026
 
