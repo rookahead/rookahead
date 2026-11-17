@@ -13,6 +13,8 @@ This page lists every change to the verdict rules, so you can see why a move's v
 - A new Home on computers. Today's goals sit under the greeting, each a ring that fills as you go. On the right: your numbers (accuracy, rating, puzzle streak, weakest phase) in a row you can slide, a bigger Play online card with the time in a menu, and tiles for a friend, the computer, the daily puzzle and rated puzzles. The right side scrolls on its own.
 - Flatter cards, and stronger colours in the dark themes. AMOLED's greys are plain grey now, so your colour stands out.
 - Fixed: the W and L on your games could be hidden under the pieces.
+- New here? Home on a computer now looks like everyone's Home from the start: today's goals, the Play online card and the tiles, with the box for your username at the top.
+- A new sign-in page: Rookahead on one half in your colour, a simpler form on the other with Google first. Easier to see on AMOLED.
 
 ## 16 November 2026
 
