@@ -42,6 +42,13 @@ const ICONS = {
       <path d="M12 7.500V12l3 2" />
     </>
   ),
+  // Play it out: a position played on against the computer.
+  playout: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M10.2 8.6v6.8l5.4-3.4z" />
+    </>
+  ),
   options: (
     <>
       <path d="M4 7h8M18 7h2M4 17h2M12 17h8" />

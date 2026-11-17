@@ -9065,6 +9065,24 @@ button.user-avatar.guest:hover {
   font-size: 15px;
 }
 
+/* An icon button with its word beside it, in a panel's foot (Play it out). */
+.icon-btn.strip-label {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.icon-btn.strip-label svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* A link styled as a button (Play a game). */
 .puzzle-acts a.btn {
   text-decoration: none;

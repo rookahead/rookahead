@@ -34,7 +34,7 @@ import { ALL_MOVES, LEVELS, levelInfo, searchLimits } from '../lib/levels'
 import { materialState } from '../lib/material'
 import { loadOpeningBook, openingOf, type OpeningBook } from '../lib/openings'
 import { acceptsDraw, DRAW_AFTER_PLIES, outcomeOf, playHeaders, playPgn, takebackPlies, type Outcome } from '../lib/playGame'
-import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, type LiveGame, type PlaySetup } from '../lib/playStore'
+import { clearLiveGame, loadLiveGame, loadSetup, saveLiveGame, saveSetup, takePracticeAsk, type LiveGame, type PlaySetup, type PracticeAsk } from '../lib/playStore'
 import { canPlay, connectLichess, useLichess } from '../lib/lichessAuth'
 import {
   acceptChallenge,
@@ -205,27 +205,42 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   useEffect(() => onReselect((path) => path === '/play' && setGame((g) => (g?.outcome ? null : g))), [])
   useEffect(() => onReselect((path) => path === '/play' && onlineOver && setOnline(null)), [onlineOver])
 
-  const start = (s: PlaySetup) => {
-    saveSetup(s)
-    const color: Color = s.color === 'random' ? (Math.random() < 0.5 ? 'white' : 'black') : s.color
+  /** A new game; `from` a position (Play it out) it's practice: no clock, no intro, not saved or counted. */
+  const start = (s: PlaySetup, from?: PracticeAsk) => {
+    if (!from) saveSetup(s)
+    const color: Color = from?.color ?? (s.color === 'random' ? (Math.random() < 0.5 ? 'white' : 'black') : s.color)
+    const startFen = from?.fen ?? DEFAULT_POSITION
+    const played: PlaySetup = from ? { ...s, color, clock: 'none' } : s
     const now = Date.now()
     const id = `${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`
-    setFreshGame(id)
+    setFreshGame(from ? null : id)
     setGame({
       id,
-      startFen: DEFAULT_POSITION,
+      startFen,
       color,
-      setup: s,
+      setup: played,
       moves: [],
       // The clocks start once the players' face-to-face has cleared.
-      clock: startClock(s.clock, now + INTRO_MS, 'white'),
+      clock: startClock(played.clock, now + INTRO_MS, turnOf(startFen)),
       takebacks: 0,
       hints: 0,
       outcome: null,
       startedAt: now,
       saved: false,
+      practice: from ? { from: from.from } : undefined,
     })
   }
+  // Play it out: a position handed over from a puzzle or a board starts as Play shows (before the first paint).
+  useLayoutEffect(() => {
+    if (!active || view !== 'computer') return
+    const ask = takePracticeAsk()
+    if (!ask) return
+    if (online) {
+      saveLiveOnline(null)
+      setOnline(null)
+    }
+    start(setup, ask)
+  })
 
   return (
     <div className="play-page">
@@ -233,8 +248,8 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
         // Desktop has the page's heading and actions in the panel, so the board gets the height.
         phoneOnly
         title="Play"
-        back={game || online ? '/' : view !== 'hub' ? '/play' : undefined}
-        phoneTitle={online ? 'Online' : game ? `Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : view !== 'hub' ? WAY_TITLES[view] : undefined}
+        back={game?.practice ? game.practice.from : game || online ? '/' : view !== 'hub' ? '/play' : undefined}
+        phoneTitle={online ? 'Online' : game ? `${game.practice ? 'Practice · ' : ''}Level ${game.setup.level} · ${levelInfo(game.setup.level).rating}` : view !== 'hub' ? WAY_TITLES[view] : undefined}
         phoneSub={online ? `On Lichess · you play ${online.color}` : game ? `${clockLabel(game.setup.clock)} · you play ${game.color}` : undefined}
       >
         {phone && gear}
@@ -287,7 +302,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
           setGame={setGame}
           engine={ready ? engine : null}
           settings={settings}
-          onRematch={() => start(game.setup)}
+          onRematch={() => start(game.setup, game.practice ? { fen: game.startFen, color: game.color, from: game.practice.from } : undefined)}
           onNewGame={() => {
             clearLiveGame()
             setGame(null)
@@ -1025,6 +1040,8 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const savedGame = useRef(game.saved)
   useEffect(() => {
     const snapshot = game.clock && !game.outcome ? { ...game, clock: pause(game.clock, Date.now()) } : game
+    // Practice from a position isn't a game of yours: nothing saved or counted.
+    if (game.outcome && !savedGame.current && game.practice) savedGame.current = true
     if (game.outcome && !savedGame.current) {
       savedGame.current = true
       const yours = game.outcome.result === '1/2-1/2' ? 'draw' : (game.outcome.result === '1-0') === (game.color === 'white') ? 'win' : 'loss'
@@ -1224,11 +1241,11 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   const ends = game.outcome && viewPly === null ? endMarks(shown.fen, { result: game.outcome.result, termination: game.outcome.reason }) : undefined
   const canTakeBack = !game.outcome && takebackPlies(game.moves.length, game.color, turnOf(game.startFen)) > 0
   // Until both sides have moved, the game can be called off instead: not saved, not counted.
-  const canAbort = !game.outcome && game.moves.length < 2
+  const canAbort = !game.outcome && (game.moves.length < 2 || Boolean(game.practice))
 
   // The opening the moves on show have reached: it stays named once the game leaves the book.
   const opening = useMemo(() => (book ? openingOf(book, line.slice(0, shownPly + 1)) : undefined), [book, line, shownPly])
-  const openingText = shownPly === 0 ? 'Starting position' : opening ? opening.name : '\u00a0'
+  const openingText = game.practice ? 'Practice from a position · not saved' : shownPly === 0 ? 'Starting position' : opening ? opening.name : '\u00a0'
 
   const headers = playHeaders({ ...meta(game), date: new Date(game.startedAt) })
 
@@ -1236,7 +1253,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     <main className="play-layout play-game">
       {confirming === 'abort' && (
         <ConfirmDialog title="Abort this game?" confirm="Abort game" cancel="Keep playing" onConfirm={onNewGame} onClose={() => setConfirming(null)}>
-          It’s called off: not saved to My games and not counted as a loss.
+          {game.practice ? 'Practice games aren’t saved or counted.' : 'It’s called off: not saved to My games and not counted as a loss.'}
         </ConfirmDialog>
       )}
       {confirming === 'resign' && (
@@ -1447,7 +1464,7 @@ function ResultCard({ game, onReview, onRematch, onNewGame }: { game: LiveGame; 
         </button>
         <button className="btn ghost" onClick={onRematch}>
           <ToolIcon name="rematch" />
-          Rematch
+          {game.practice ? 'Try again' : 'Rematch'}
         </button>
       </div>
     </div>

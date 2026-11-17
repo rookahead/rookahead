@@ -13,9 +13,11 @@ import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
 import { CLASS_INFO } from '../../lib/classify'
 import type { RookMood } from '../../lib/coach'
+import type { Color } from '../../lib/evaluation'
 import { formatDay } from '../../lib/home'
 import { cachedPlan, lineGoal, lineSan, mateFor, planMistake, tacticEnd, type LinePlan, type LineSearch } from '../../lib/mistakeLine'
 import { acceptable, loadMistakes, type MistakePuzzle } from '../../lib/mistakes'
+import { canPlayOut, playItOut } from '../../lib/practice'
 import { localDayNumber } from '../../lib/puzzles'
 import { dayStreak, recordMistakeSolved } from '../../lib/puzzleStore'
 import { writeSession } from '../../lib/session'
@@ -322,6 +324,7 @@ function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engin
   useStepKeys(step, flip)
 
   const label = CLASS_INFO[mistake.cls].label
+  const orientation: Color = flipped ? (mistake.color === 'white' ? 'black' : 'white') : mistake.color
   const side = `${sideName(mistake.color)} to move`
   const lastSan = line.length ? new Chess(fens[line.length - 1]).move(toMove(line[line.length - 1])).san : null
   const multi = plan && plan.kind !== 'single'
@@ -375,7 +378,7 @@ function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engin
         <Board
           key={turn}
           fen={fens[ply]}
-          orientation={flipped ? (mistake.color === 'white' ? 'black' : 'white') : mistake.color}
+          orientation={orientation}
           lastMove={lastMoveOf(node)}
           shapes={shapes}
           theme={settings.boardTheme}
@@ -450,6 +453,12 @@ function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engin
           <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
             <FlipIcon />
           </button>
+          {done && canPlayOut(fens[ply]) && (
+            <button className="icon-btn strip-label" onClick={() => playItOut(fens[ply], orientation)} title="Play this position on against the computer">
+              <PuzzleIcon name="playout" />
+              Play it out
+            </button>
+          )}
           {!phone && steps}
         </div>
       }

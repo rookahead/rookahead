@@ -26,6 +26,8 @@ export interface LiveGame {
   startedAt: number
   /** Already written to the games list. */
   saved: boolean
+  /** Played out from a position (a puzzle, a mistake, the analysis board): not saved or counted; Back returns to `from`. */
+  practice?: { from: string }
 }
 
 export const DEFAULT_SETUP: PlaySetup = { level: 3, color: 'random', clock: 'none' }
@@ -67,3 +69,24 @@ export function loadLiveGame(storage = defaultStorage()): LiveGame | null {
 
 export const saveLiveGame = (game: LiveGame, storage = defaultStorage()) => write(GAME_KEY, game, storage)
 export const clearLiveGame = (storage = defaultStorage()) => write(GAME_KEY, null, storage)
+
+/** A position to play out against the computer, handed to Play as it opens (once). */
+export interface PracticeAsk {
+  fen: string
+  /** The side you play. */
+  color: Color
+  /** Where it came from, for Back. */
+  from: string
+}
+
+let practiceAsk: PracticeAsk | null = null
+
+export const askPractice = (ask: PracticeAsk) => {
+  practiceAsk = ask
+}
+
+export function takePracticeAsk(): PracticeAsk | null {
+  const ask = practiceAsk
+  practiceAsk = null
+  return ask
+}

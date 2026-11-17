@@ -11,7 +11,9 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMistakes } from '../hooks/useMistakes'
 import { formatDay } from '../lib/home'
 import type { RookMood } from '../lib/coach'
+import type { Color } from '../lib/evaluation'
 import { useImmersive } from '../lib/immersive'
+import { canPlayOut, playItOut } from '../lib/practice'
 import { dailyLine, nextRatedLine } from '../lib/puzzleData'
 import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, puzzleGoal, solvedLine, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress, recordDay, recordRated, saveProgress, startRated, type PuzzleProgress } from '../lib/puzzleStore'
@@ -405,6 +407,7 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
     s.restart()
   }
 
+  const orientation: Color = flipped ? (color === 'white' ? 'black' : 'white') : color
   const toMove = `${sideName(color)} to move`
   const hintPiece = hintSquare ? new Chess(s.node.fen).get(hintSquare as Square)?.type : undefined
   const say: { tone: Tone; label: string; line: string; mood: RookMood } = s.solve.solved
@@ -505,6 +508,12 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
       <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
         <FlipIcon />
       </button>
+      {s.over && canPlayOut(s.node.fen) && (
+        <button className="icon-btn strip-label" onClick={() => playItOut(s.node.fen, orientation)} title="Play this position on against the computer">
+          <PuzzleIcon name="playout" />
+          Play it out
+        </button>
+      )}
       {!phone && steps}
     </div>
   )
@@ -517,7 +526,7 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
         <Board
           key={puzzle.id}
           fen={s.node.fen}
-          orientation={flipped ? (color === 'white' ? 'black' : 'white') : color}
+          orientation={orientation}
           lastMove={lastMoveOf(s.node)}
           shapes={shapes}
           theme={settings.boardTheme}

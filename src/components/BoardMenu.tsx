@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FlipIcon, LoadIcon, NewBoardIcon } from './NavIcons'
+import { PuzzleIcon } from './PuzzleIcons'
 import { Gear } from './UserCard'
 
 interface Props {
@@ -7,11 +8,14 @@ interface Props {
   onNewBoard: () => void
   onLoadGame: () => void
   onSettings: () => void
+  /** Play the position on against the computer; left out when there's nothing to play. */
+  onPlayOut?: () => void
   /** Which way the list opens: up from the move controls (the default), or down from a page header. */
   placement?: 'up' | 'down'
 }
 
 const ITEMS = [
+  { id: 'playout', label: 'Play it out', icon: <PuzzleIcon name="playout" /> },
   { id: 'flip', label: 'Flip board', key: 'F', icon: <FlipIcon /> },
   { id: 'new', label: 'New board', icon: <NewBoardIcon /> },
   { id: 'load', label: 'Load game', icon: <LoadIcon /> },
@@ -19,7 +23,7 @@ const ITEMS = [
 ] as const
 
 /** The last move control: a menu with the board's other actions (flip, a new board, load a game). */
-export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placement = 'up' }: Props) {
+export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, onPlayOut, placement = 'up' }: Props) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -35,17 +39,17 @@ export function BoardMenu({ onFlip, onNewBoard, onLoadGame, onSettings, placemen
     }
   }, [open])
 
-  const actions = { flip: onFlip, new: onNewBoard, load: onLoadGame, settings: onSettings }
+  const actions = { playout: onPlayOut ?? (() => {}), flip: onFlip, new: onNewBoard, load: onLoadGame, settings: onSettings }
   return (
     <div className={`board-menu ${placement}`} ref={root}>
-      <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Flip, new board, load game, settings">
+      <button className={`ctrl more ${open ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label="More" title="Play it out, flip, new board, load game, settings">
         <svg viewBox="0 0 24 24" aria-hidden>
           <path d="M5 7h14M5 12h14M5 17h14" />
         </svg>
       </button>
       {open && (
         <div className="board-menu-list" role="menu">
-          {ITEMS.map((item) => (
+          {ITEMS.filter((item) => item.id !== 'playout' || onPlayOut).map((item) => (
             <button
               key={item.id}
               role="menuitem"

@@ -18,6 +18,7 @@ import { EvalGraph } from '../components/EvalGraph'
 import { MovePreview, type Preview } from '../components/MovePreview'
 import { ExplainPanel } from '../components/ExplainPanel'
 import { BoardMenu } from '../components/BoardMenu'
+import { PuzzleIcon } from '../components/PuzzleIcons'
 import { Gear } from '../components/UserCard'
 import { GameInfo } from '../components/GameInfo'
 import { LoadGameDialog, loadError, type LoadRequest } from '../components/LoadGameDialog'
@@ -25,6 +26,7 @@ import { MoveList } from '../components/MoveList'
 import { MoveStrip } from '../components/MoveStrip'
 import { PlayerBar } from '../components/PlayerBar'
 import { clocksAt, formatClockFace, timeSpent } from '../lib/clocks'
+import { canPlayOut, playItOut } from '../lib/practice'
 import { ReviewSummary } from '../components/ReviewSummary'
 import { San } from '../components/San'
 import { ShareBanner } from '../components/ShareBanner'
@@ -1154,7 +1156,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
             <span className="page-header-label">Share</span>
           </button>
         )}
-        {phone && <BoardMenu placement="down" onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
+        {phone && <BoardMenu placement="down" onPlayOut={canPlayOut(node.fen) ? () => playItOut(node.fen, orientation) : undefined} onFlip={flip} onNewBoard={newBoard} onLoadGame={() => setLoadOpen(true)} onSettings={() => setOptionsOpen(true)} />}
       </PageHeader>
 
       <main
@@ -1316,6 +1318,10 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   </button>
                   <button className="icon-btn" onClick={() => setLoadOpen(true)} aria-label="Load game" title="Load game">
                     <LoadIcon />
+                  </button>
+                  <button className="icon-btn strip-label" onClick={() => playItOut(node.fen, orientation)} disabled={!canPlayOut(node.fen)} title="Play this position on against the computer, from the side at the bottom">
+                    <PuzzleIcon name="playout" />
+                    Play it out
                   </button>
                   <button
                     className="icon-btn panel-strip-end"
