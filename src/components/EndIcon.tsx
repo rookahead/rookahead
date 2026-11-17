@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { EndKind, EndMark } from '../lib/gameEnd'
 
 // How a game ended, on a king's square: first a label on the square's corner, which then morphs into a
@@ -58,15 +58,35 @@ interface ChipProps {
   settleAfter: number
 }
 
+/** How a game ended, on the king's square: its label, then its badge. */
+export function EndChip({ mark, ...place }: ChipProps) {
+  return <MorphChip label={mark.label} tone={END_COLOR[mark.kind]} glyph={<Mark kind={mark.kind} />} {...place} />
+}
+
+interface MorphProps {
+  /** Said first, in full ("Checkmate", "Mistake"). */
+  label: string
+  /** The badge's colour, and the label's. */
+  tone: string
+  /** The badge's white mark, drawn on a 100×100 square. */
+  glyph: ReactNode
+  /** The square is on the board's top row: the label sits inside it rather than over its edge. */
+  topRow: boolean
+  /** The square is on the board's right-hand file: the label keeps to the board. */
+  rightEdge: boolean
+  /** How long the label shows before it morphs into the badge. */
+  settleAfter: number
+}
+
 /**
- * The label for how the game ended, which then morphs into its badge: the pill shrinks into the
- * square's corner as it takes the badge's colour, its text fading out and the mark fading in.
- * (FLIP: the pill is measured, the element becomes the badge, then it's animated from the pill's box.)
+ * A label on a square's corner that then morphs into a badge: the pill shrinks into the corner as it takes the
+ * badge's colour, its text fading out and the mark fading in. (FLIP: the pill is measured, the element becomes the
+ * badge, then it's animated from the pill's box.) For how a game ended, and for a move's verdict.
  */
-export function EndChip({ mark, topRow, rightEdge, settleAfter }: ChipProps) {
+export function MorphChip({ label, tone, glyph, topRow, rightEdge, settleAfter }: MorphProps) {
   const chip = useRef<HTMLDivElement>(null)
   const text = useRef<HTMLSpanElement>(null)
-  const glyph = useRef<SVGSVGElement>(null)
+  const mark = useRef<SVGSVGElement>(null)
   const pill = useRef<DOMRect | null>(null)
   const [settled, setSettled] = useState(false)
 
@@ -100,24 +120,24 @@ export function EndChip({ mark, topRow, rightEdge, settleAfter }: ChipProps) {
           borderRadius: `${r / sx}px / ${r / sy}px`,
           backgroundColor: '#ffffff',
         },
-        { transformOrigin: '0 0', transform: 'none', borderRadius: `${last.width * BADGE_ROUND}px`, backgroundColor: END_COLOR[mark.kind] },
+        { transformOrigin: '0 0', transform: 'none', borderRadius: `${last.width * BADGE_ROUND}px`, backgroundColor: tone },
       ],
       { duration: MORPH_MS, easing: ease },
     )
-    glyph.current?.animate([{ opacity: 0, scale: '0.5' }, { opacity: 1, scale: '1' }], { duration: MORPH_MS * 0.6, delay: MORPH_MS * 0.4, easing: ease, fill: 'backwards' })
-  }, [settled, mark.kind])
+    mark.current?.animate([{ opacity: 0, scale: '0.5' }, { opacity: 1, scale: '1' }], { duration: MORPH_MS * 0.6, delay: MORPH_MS * 0.4, easing: ease, fill: 'backwards' })
+  }, [settled, tone])
 
   const place = settled ? 'badge' : `pill${topRow ? ' top-row' : ''}${rightEdge ? ' edge-right' : ''}`
   return (
-    <div ref={chip} className={`board-end-chip ${place}`} style={{ '--tone': END_COLOR[mark.kind] } as CSSProperties}>
+    <div ref={chip} className={`board-end-chip ${place}`} style={{ '--tone': tone } as CSSProperties}>
       {!settled && (
         <span ref={text} className="board-end-text">
-          {mark.label}
+          {label}
         </span>
       )}
       {settled && (
-        <svg ref={glyph} className="board-end-glyph" viewBox="0 0 100 100" role="img" aria-label={mark.label}>
-          <Mark kind={mark.kind} />
+        <svg ref={mark} className="board-end-glyph" viewBox="0 0 100 100" role="img" aria-label={label}>
+          {glyph}
         </svg>
       )}
     </div>

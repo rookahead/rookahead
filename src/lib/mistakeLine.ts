@@ -1,14 +1,16 @@
 // Your mistakes as puzzles of more than one move: a missed mate is played out to the mate, a missed tactic to the
-// piece it wins. Anything else stays one move, judged "good enough".
+// piece it wins, and anything else over LINE_MOVES of your moves, each one good enough. The replies are the engine's best.
 import { Chess, type PieceSymbol } from 'chess.js'
-import type { Color } from './evaluation'
+import { winPercent, type Color } from './evaluation'
+import { nullMoveFen } from './explain'
 import type { Score } from './uci'
 
-export type LineKind = 'mate' | 'tactic' | 'single'
+/** 'line': a few good moves in a row, any good move counting; 'single': one move (only when the engine had nothing). */
+export type LineKind = 'mate' | 'tactic' | 'line' | 'single'
 
 export interface LinePlan {
   kind: LineKind
-  /** From the mistake's position: your moves and the replies, ending on your last move. One move for 'single'. */
+  /** From the mistake's position: your moves and the replies (the engine's line). One move for 'single'. */
   moves: string[]
   /** 'mate': your moves to the mate. */
   mateIn?: number
@@ -16,12 +18,22 @@ export interface LinePlan {
   wins?: string
   /** The best line's score, White POV. */
   score: Score
+  /** For saying why it was a mistake (Explain): the best line after the move you played, and what the other side was threatening. */
+  why?: { best: string[]; reply: { pv: string[]; score: Score }; threat: { pv: string[]; score: Score } | null }
 }
 
 /** The longest missed mate played out (your moves). */
 export const MAX_MATE = 8
 /** A tactic is played out over at most this many of your moves, to the piece it wins. */
 export const MAX_TACTIC = 3
+/**
+ * A 'line' puzzle runs at least LINE_MOVES of your moves, then on while your next move is the only good one (as
+ * Lichess makes its puzzles), up to MAX_LINE.
+ */
+export const LINE_MOVES = 2
+export const MAX_LINE = 8
+/** The best move is the only good one when the next best is this far behind, in your win chance (0–100). */
+const ONLY_GAP = 10
 /** What a tactic must win, in pawns, and keep. */
 const MIN_GAIN = 2
 
@@ -90,9 +102,31 @@ export function planFrom(fen: string, color: Color, best: { score: Score; pv: st
   const mate = mateFor(best.score, color)
   if (mate && mate <= MAX_MATE) return { kind: 'mate', moves: best.pv.slice(0, 2 * mate - 1), mateIn: mate, score: best.score }
   const { end, gain, taken } = tacticEnd(fen, color, best.pv)
-  // Won on the first move: a one-move puzzle, as it always was.
+  // Won on the first move: that's no line to play out, so it's a few good moves like any other.
   if (end > 0) return { kind: 'tactic', moves: best.pv.slice(0, end + 1), wins: winsWords(taken, gain), score: best.score }
-  return { kind: 'single', moves: [best.pv[0]], score: best.score }
+  return { kind: 'line', moves: best.pv, score: best.score }
+}
+
+/** Whether the side to move has one good move only (or one legal move): the puzzle goes on. */
+export function onlyMove(best: Score, second: Score | undefined, color: Color): boolean {
+  if (!second) return true
+  const win = (s: Score) => (color === 'white' ? winPercent(s) : 100 - winPercent(s))
+  return win(best) - win(second) >= ONLY_GAP
+}
+
+/**
+ * A forcing move keeps a line going even when it isn't the only good one: a check, a capture, a promotion, or a pawn
+ * pushing to its sixth or seventh rank. Those are the moves that carry a win through to where it's plain.
+ */
+export function forcing(fen: string, uci: string): boolean {
+  try {
+    const move = new Chess(fen).move(toMove(uci))
+    if (move.captured || move.promotion || /[+#]/.test(move.san)) return true
+    const rank = Number(move.to[1])
+    return move.piece === 'p' && (move.color === 'w' ? rank >= 6 : rank <= 3)
+  } catch {
+    return false
+  }
 }
 
 /** The goal, said before you move. */
@@ -121,7 +155,7 @@ export function lineSan(fen: string, moves: string[]): string {
   return parts.join(' ')
 }
 
-const CACHE_KEY = 'rookahead.mistakeLines.v1'
+const CACHE_KEY = 'rookahead.mistakeLines.v4'
 const CACHE_SIZE = 300
 
 /** Plans already worked out, by mistake id (on this device only: the engine can always make them again). */
@@ -148,14 +182,17 @@ function savePlan(id: string, plan: LinePlan) {
 }
 
 /** Searches a line's position (White-POV score and PV), or null when the search was dropped. */
-export type LineSearch = (fen: string, opts: { depth: number; movetime?: number; signal?: AbortSignal }) => Promise<{ score: Score; pv: string[]; depth: number } | null>
+export type LineSearch = (
+  fen: string,
+  opts: { depth: number; movetime?: number; fresh?: boolean; multiPv?: number; signal?: AbortSignal },
+) => Promise<{ score: Score; pv: string[]; depth: number; second?: Score } | null>
 
 /** Deep enough to trust a plan with (and keep it); a search stopped sooner is used once, not saved. */
 const TRUSTED_DEPTH = 14
 
 /** The puzzle for a mistake: from the cache, or from a search of its position. */
 export async function planMistake(
-  m: { id: string; fen: string; color: Color; best: string; bestScore: Score },
+  m: { id: string; fen: string; color: Color; played: string; best: string; bestScore: Score; playedScore: Score },
   search: LineSearch,
   signal?: AbortSignal,
 ): Promise<LinePlan | null> {
@@ -163,7 +200,18 @@ export async function planMistake(
   if (saved) return saved
   const found = await search(m.fen, { depth: 22, movetime: 2500, signal })
   if (signal?.aborted) return null
-  const plan = planFrom(m.fen, m.color, found, m.best, m.bestScore)
+  // Why it was a mistake: what the move let the other side do, and what they were threatening before it.
+  const after = new Chess(m.fen)
+  after.move(toMove(m.played))
+  const reply = after.isGameOver() ? null : await search(after.fen(), { depth: 18, fresh: true, signal })
+  if (signal?.aborted) return null
+  const nullFen = nullMoveFen(m.fen)
+  const threat = nullFen ? await search(nullFen, { depth: 16, fresh: true, signal }) : null
+  if (signal?.aborted) return null
+  const plan: LinePlan = {
+    ...planFrom(m.fen, m.color, found, m.best, m.bestScore),
+    why: { best: found?.pv ?? [m.best], reply: { pv: reply?.pv ?? [], score: reply?.score ?? m.playedScore }, threat: threat ? { pv: threat.pv, score: threat.score } : null },
+  }
   if (found && found.depth >= TRUSTED_DEPTH) savePlan(m.id, plan)
   return plan
 }

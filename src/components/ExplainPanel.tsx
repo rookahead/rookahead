@@ -17,13 +17,18 @@ interface Props {
   /** Clicking a row: the board plays its moves. */
   onPlay: (index: number) => void
   onShowLine: (index: number) => void
-  onClose: () => void
+  /** Left out where the panel can't be closed (a mistake puzzle). */
+  onClose?: () => void
+  /** Bring the panel into view as it opens (off where the board must stay in view). */
+  scrollIn?: boolean
+  /** No heading of its own: it sits in a card that has one. */
+  bare?: boolean
   /** Pointing at a move of a line: a preview of the position after it. */
   onPreview?: (preview: Preview | null) => void
 }
 
 /** Why the move was good or bad: short rows, one idea each. Pointing at a row draws it on the board; clicking plays it. */
-export function ExplainPanel({ title, explanation, bestText, active, onPick, onPlay, onShowLine, onClose, onPreview }: Props) {
+export function ExplainPanel({ title, explanation, bestText, active, onPick, onPlay, onShowLine, onClose, onPreview, scrollIn = true, bare = false }: Props) {
   const rows =
     explanation === null
       ? [{ key: 'better', label: 'Better', text: bestText ? `${bestText} was stronger, though not for one reason we can show in a line.` : 'There’s no one reason we can show in a line.' }]
@@ -31,18 +36,20 @@ export function ExplainPanel({ title, explanation, bestText, active, onPick, onP
   // It opens below the coach: bring it up to where it can be read.
   const ref = useRef<HTMLElement>(null)
   useEffect(() => {
-    ref.current?.scrollIntoView({ block: 'nearest' })
-  }, [])
+    if (scrollIn) ref.current?.scrollIntoView({ block: 'nearest' })
+  }, [scrollIn])
   return (
     <section ref={ref} className="explain" aria-label={title} aria-busy={explanation === undefined}>
-      <header className="explain-head">
+      {!bare && <header className="explain-head">
         <h3>{title}</h3>
-        <button className="explain-close" onClick={onClose} aria-label="Close" title="Back to the moves">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-      </header>
+        {onClose && (
+          <button className="explain-close" onClick={onClose} aria-label="Close" title="Back to the moves">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        )}
+      </header>}
       {rows ? (
         rows.map((row, i) => (
           <button

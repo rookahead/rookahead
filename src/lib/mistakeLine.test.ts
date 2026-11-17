@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lineGoal, lineSan, mateFor, planFrom, tacticEnd } from './mistakeLine'
+import { forcing, lineGoal, lineSan, mateFor, onlyMove, planFrom, tacticEnd } from './mistakeLine'
 
 const SCHOLAR = 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4'
 // Nc7+ forks the king on e8 and the rook on a8.
@@ -45,16 +45,22 @@ describe('planFrom', () => {
     expect(lineGoal(plan, 'Kd2')).toBe('You missed a way to win a rook. Find it.')
   })
 
-  it('keeps a quiet move, or a piece taken at once, to one move', () => {
-    expect(planFrom(FORK, 'white', { score: { type: 'cp', value: 40 }, pv: ['e1d2', 'e8d7'] }, 'x', { type: 'cp', value: 0 })).toMatchObject({ kind: 'single', moves: ['e1d2'] })
+  it('makes a quiet move, or a piece taken at once, a few good moves in a row', () => {
+    const pv = ['e1d2', 'e8d7', 'd2e3', 'd7e6', 'e3f4', 'e6f6', 'f4g5']
+    const quiet = planFrom(FORK, 'white', { score: { type: 'cp', value: 40 }, pv }, 'x', { type: 'cp', value: 0 })
+    expect(quiet).toMatchObject({ kind: 'line', moves: pv })
+    expect(lineGoal(quiet, 'Kf2')).toBe('Find a better move than Kf2.')
     const hanging = '4k3/8/8/8/8/8/1r6/RK6 w - - 0 1'
-    expect(planFrom(hanging, 'white', { score: { type: 'cp', value: 500 }, pv: ['b1b2', 'e8d7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('single')
+    expect(planFrom(hanging, 'white', { score: { type: 'cp', value: 500 }, pv: ['b1b2', 'e8d7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('line')
+  })
+
+  it('falls back to one move when the engine has nothing', () => {
     expect(lineGoal(planFrom(FORK, 'white', null, 'e1d2', { type: 'cp', value: 0 }), 'Kf2')).toBe('Find a better move than Kf2.')
   })
 
-  it('leaves a mate the other side has, and a mate too long to play, as one move', () => {
-    expect(planFrom(SCHOLAR, 'white', { score: { type: 'mate', value: -3 }, pv: ['h5f7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('single')
-    expect(planFrom(SCHOLAR, 'white', { score: { type: 'mate', value: 12 }, pv: ['h5f7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('single')
+  it('plays a mate the other side has, or one too long to play, as good moves in a row', () => {
+    expect(planFrom(SCHOLAR, 'white', { score: { type: 'mate', value: -3 }, pv: ['h5f7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('line')
+    expect(planFrom(SCHOLAR, 'white', { score: { type: 'mate', value: 12 }, pv: ['h5f7'] }, 'x', { type: 'cp', value: 0 }).kind).toBe('line')
   })
 })
 
@@ -62,5 +68,26 @@ describe('lineSan', () => {
   it('numbers a line, starting with Black when it is Black to move', () => {
     expect(lineSan(FORK, FORK_LINE)).toBe('1. Nc7+ Kd7 2. Nxa8')
     expect(lineSan('r3k3/8/8/8/8/8/8/4K3 b - - 0 7', ['e8d7', 'e1d2'])).toBe('7… Kd7 8. Kd2')
+  })
+})
+
+describe('onlyMove', () => {
+  it('goes on while the next best is far behind, for either side', () => {
+    expect(onlyMove({ type: 'cp', value: 600 }, { type: 'cp', value: 0 }, 'white')).toBe(true)
+    expect(onlyMove({ type: 'cp', value: 600 }, { type: 'cp', value: 560 }, 'white')).toBe(false)
+    expect(onlyMove({ type: 'cp', value: -600 }, { type: 'cp', value: -50 }, 'black')).toBe(true)
+    expect(onlyMove({ type: 'cp', value: 0 }, undefined, 'black')).toBe(true)
+  })
+})
+
+describe('forcing', () => {
+  // The queen ending from a real game: the checks chase the king, then the b-pawn runs.
+  const QUEENS = 'k7/2KP4/p3q3/8/1p2PB2/6P1/8/8 b - - 1 65'
+  it('counts checks, captures, promotions and far-advanced pawn pushes', () => {
+    expect(forcing(QUEENS, 'e6c4')).toBe(true)
+    expect(forcing(QUEENS, 'e6e4')).toBe(true)
+    expect(forcing(QUEENS, 'b4b3')).toBe(true)
+    expect(forcing(QUEENS, 'a6a5')).toBe(false)
+    expect(forcing(QUEENS, 'e6e8')).toBe(false)
   })
 })

@@ -9083,6 +9083,104 @@ button.user-avatar.guest:hover {
   height: 18px;
 }
 
+/* Fix your mistakes: where the mistake is from, in one quiet line. */
+.mistake-context {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mistake-context strong {
+  color: var(--text);
+}
+
+/* The coach's note, arriving like a message: who it's from, one or two sentences, then the explainer's rows. */
+.coach-card {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 8px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  animation: coach-card-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes coach-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+.coach-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* The rook's face takes the card's colour. */
+  --surface: var(--surface-2);
+}
+
+.coach-card-rook {
+  flex: none;
+  width: 30px;
+  height: 35px;
+}
+
+.coach-card-who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.coach-card-who strong {
+  font-size: 13px;
+}
+
+.coach-card-who span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.coach-card-text,
+.coach-card-line {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.coach-card-line {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+/* In the card, the explainer's rows sit on the card. */
+.coach-card .explain {
+  margin: 0 -6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-card {
+    animation: none;
+  }
+}
+
+/* How many mistakes are left, quiet in the panel's foot. */
+.puzzle-strip-note {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* A link styled as a button (Play a game). */
 .puzzle-acts a.btn {
   text-decoration: none;

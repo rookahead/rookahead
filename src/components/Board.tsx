@@ -8,12 +8,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import type { Color } from '../lib/evaluation'
 import { useBoardPrefs } from '../lib/boardPrefs'
 import { ANIMATION_MS, type BoardTheme, type Palette } from '../lib/settings'
-import type { MoveClass } from '../lib/classify'
+import { CLASS_INFO, type MoveClass } from '../lib/classify'
 import type { EndKind, EndMark } from '../lib/gameEnd'
 import { BOARD_SETTLE, boardResizing } from '../lib/pixelGrid'
 import { playSound } from '../lib/sound'
-import { ClassIcon } from './ClassIcon'
-import { EndChip } from './EndIcon'
+import { ClassIcon, ClassMark } from './ClassIcon'
+import { EndChip, MorphChip } from './EndIcon'
 import { PuzzleMark } from './PuzzleIcons'
 import { PieceIcon } from './PieceIcon'
 
@@ -98,6 +98,8 @@ interface Props {
   markNote?: string
   /** How the game ended, marked on the kings (see endMarks). */
   ends?: EndMark[]
+  /** The last move's verdict, said in full on its square ("Mistake"), then settling into its class badge. */
+  verdict?: MoveClass
   /** Arrived by stepping forward onto a Legendary move: the board shakes as the piece lands. */
   legendary?: boolean
 }
@@ -147,6 +149,8 @@ const LIFTED = { scale: '1.12', translate: '0 -6%', filter: 'drop-shadow(0 8px 6
 
 /** How long a game's end is spelled out (coloured square, label on its corner) before it settles to a badge. */
 const END_INTRO_MS = 1800
+/** How long a move's verdict is spelled out before it settles to its badge. */
+const VERDICT_INTRO_MS = 1600
 
 const PROMOTION_PIECES = ['q', 'n', 'r', 'b'] as const
 const ROLE: Record<string, string> = { q: 'queen', n: 'knight', r: 'rook', b: 'bishop' }
@@ -166,7 +170,7 @@ function squarePosition(square: Square, orientation: Color) {
   return orientation === 'white' ? { left: file * 12.5, top: (7 - rank) * 12.5 } : { left: (7 - file) * 12.5, top: rank * 12.5 }
 }
 
-export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, premove, autoQueen = false, mark, markNote, ends, legendary = false }: Props) {
+export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, onMove, annotation, viewOnly = false, locked = false, premove, autoQueen = false, mark, markNote, ends, verdict, legendary = false }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
@@ -523,6 +527,25 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
           </div>
         )
       })}
+      {verdict &&
+        lastMove &&
+        (() => {
+          const at = squarePosition(lastMove[1], orientation)
+          return (
+            <div className={`board-end ${at.left === 87.5 ? 'edge-right' : ''}`} style={{ left: `${at.left}%`, top: `${at.top}%` }}>
+              {/* Keyed by the move and verdict, so each showing starts again from the word. */}
+              <MorphChip
+                key={`${fen}|${verdict}`}
+                label={CLASS_INFO[verdict].label}
+                tone={CLASS_INFO[verdict].color}
+                glyph={<ClassMark cls={verdict} />}
+                topRow={at.top === 0}
+                rightEdge={at.left === 87.5}
+                settleAfter={slideMs + VERDICT_INTRO_MS}
+              />
+            </div>
+          )
+        })()}
       {badge && badgeShown?.key === badgeKey && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
         <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''} ${badge.left === 87.5 ? 'edge-right' : ''} ${badge.top === 0 ? 'top-row' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>

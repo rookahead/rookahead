@@ -28,8 +28,8 @@ function Query({ cx, s = 1 }: { cx: number; s?: number }) {
   )
 }
 
-/** Rookahead's own drawings of the familiar marks. `small`: too small for fine detail. */
-function Mark({ cls, small }: { cls: MoveClass; small: boolean }) {
+/** Rookahead's own drawings of the familiar marks, white on a 100×100 square. `small`: too small for fine detail. */
+export function ClassMark({ cls, small = false }: { cls: MoveClass; small?: boolean }) {
   switch (cls) {
     case 'brilliant': // !!, with a spark when there's room for it
       return small ? (
@@ -90,7 +90,7 @@ export function ClassIcon({ cls, size = 18, title }: { cls: MoveClass; size?: nu
   return (
     <svg className="class-icon" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? info.label}>
       <rect x="4" y="4" width="92" height="92" rx="28" fill={info.color} />
-      <Mark cls={cls} small={size < 24} />
+      <ClassMark cls={cls} small={size < 24} />
     </svg>
   )
 }
