@@ -18,6 +18,8 @@ This page lists every change to the verdict rules, so you can see why a move's v
 - Games against the computer now start like online ones: you and the computer face to face over the board, with the start sound. The clocks start when the board clears.
 - On phones, after an online game: switch on the engine to see its best move and the eval bar, and open the opening explorer from the book button.
 - Fixed: Accept draw and Decline were different sizes.
+- Puzzle Sprint and Fix your mistakes now have the rook too: it says what to find and reacts to each move. Sprint shows your lives and the clock beside the score, with a bar that runs down.
+- When you solve a puzzle, the rook now names the pieces: "Your knight forked the king and the queen." or "The pin won the rook."
 
 ## 16 November 2026
 
