@@ -7801,8 +7801,13 @@ button.user-avatar.guest:hover {
   gap: 8px;
 }
 
+/* Both answers the same slim size, side by side, like the buttons after a game. */
 .online-offer .btn {
   flex: 1;
+  height: 42px;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 15px;
 }
 
 /* Motion: going to another page, the one you're on fades out and the next rises in, all of it as one piece
