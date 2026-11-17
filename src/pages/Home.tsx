@@ -210,6 +210,8 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
 
   const latestReview = latest && reviews[latest.key]
   const openLatest = () => latest && void open(latest, reviews[latest.key])
+  // No games yet: the goal to review one points at the box that brings them in.
+  const addGames = () => document.querySelector<HTMLInputElement>('.hero-card input')?.focus()
   // With one game left to review, the card goes to that one, whether or not it's your latest.
   const next = toReview.length === 1 ? toReview[0] : latest
   const nextReview = next && reviews[next.key]
@@ -255,18 +257,6 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
               }`
             : 'Paste a PGN or a game link'}
         </small>
-      </span>
-      <span className="quick-go" aria-hidden>
-        ›
-      </span>
-    </button>
-  )
-  const analysisAction = (
-    <button className="home-card quick-card" onClick={() => navigate('/board')}>
-      <IconTile tone="analyze" size="big" />
-      <span className="quick-lines">
-        <strong>Analysis board</strong>
-        <small>Any position, PGN or FEN</small>
       </span>
       <span className="quick-go" aria-hidden>
         ›
@@ -353,18 +343,6 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         </>
       )}
     </section>
-  )
-  const playAction = (
-    <button className="home-card quick-card" onClick={() => navigate('/play')}>
-      <IconTile tone="play" size="big" />
-      <span className="quick-lines">
-        <strong>Play the computer</strong>
-        <small>8 levels, 400 to 2600, any time control</small>
-      </span>
-      <span className="quick-go" aria-hidden>
-        ›
-      </span>
-    </button>
   )
 
   // Phones: beside the daily puzzle, your own mistakes while any are waiting, else more puzzles.
@@ -469,34 +447,32 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
 
           {guestNudge}
 
+          {/* A first visit: the way to bring your games in heads the page; the rest is the page you'll have after. */}
           {firstVisit && hero}
-
-          {!firstVisit && (
-            <>
-              {batchActive && <BatchCard />}
-              {/* Today's plan heads the middle column: what to do, across it, under the greeting. */}
-              {waiting ? (
-                <PlanCardSkeleton steps={3 + (hasReviews ? 1 : 0)} />
-              ) : (
-                <PlanCard expectMistakes={hasReviews} latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
-              )}
-              {legendaryRow}
-            </>
+          {batchActive && <BatchCard />}
+          {/* Today's goals: what to do, across the middle column, under the greeting. */}
+          {waiting ? (
+            <PlanCardSkeleton steps={3 + (hasReviews ? 1 : 0)} />
+          ) : (
+            <PlanCard
+              expectMistakes={hasReviews}
+              latest={latest}
+              review={latestReview}
+              games={games}
+              mistakes={mistakes ? mistakes.length : null}
+              progress={progress}
+              onOpenLatest={openLatest}
+              onAddGames={addGames}
+            />
           )}
-
+          {legendaryRow}
           {gamesCard}
         </div>
 
         <aside className="home-side" aria-label="Today">
           {/* Your numbers first, a strip of small cards that scrolls sideways, then the ways to play. */}
-          {!firstVisit && (
-            <StatStrip pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} rating={rating} progress={progress} weakest={known?.weakest} />
-          )}
-          {firstVisit ? playAction : <HomePlay active={active} games={games} theme={settings.boardTheme} />}
-
-          {/* A first visit has the puzzle's board to show; after that it's one of the tiles under Play. */}
-          {firstVisit && <DailyCard theme={settings.boardTheme} />}
-          {firstVisit && analysisAction}
+          <StatStrip pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} rating={rating} progress={progress} weakest={known?.weakest} />
+          <HomePlay active={active} games={games} theme={settings.boardTheme} />
         </aside>
         <HomeFooter />
       </main>

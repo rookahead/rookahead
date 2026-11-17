@@ -47,6 +47,7 @@ export function PlanCard({
   mistakes,
   progress,
   onOpenLatest,
+  onAddGames,
 }: {
   /** Phones: one row of ticks, each a word and a tap away from what it asks for. */
   compact?: boolean
@@ -59,6 +60,8 @@ export function PlanCard({
   mistakes: number | null
   progress: PuzzleProgress
   onOpenLatest: () => void
+  /** No games yet: where the review goal points instead (the box that brings them in). */
+  onAddGames?: () => void
 }) {
   const today = localDayNumber(new Date())
   const midnight = new Date().setHours(0, 0, 0, 0)
@@ -83,6 +86,21 @@ export function PlanCard({
       action: 'Review it',
       go: onOpenLatest,
     },
+    !latest &&
+      onAddGames && {
+        id: 'review',
+        goal: 'Game reviewed',
+        count: 0,
+        of: 1,
+        note: 'Add your games',
+        short: 'Review',
+        title: 'Bring in your games to review one',
+        sub: '',
+        done: false,
+        on: true,
+        action: 'Add them',
+        go: onAddGames,
+      },
     {
       id: 'daily',
       goal: 'Daily puzzle',

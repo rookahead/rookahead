@@ -10031,17 +10031,6 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* Play the computer: its second line wraps while the right column is narrow. */
-.boot-quick {
-  --h: 83.3px;
-}
-
-@container page (min-width: 920px) and (max-width: 1048px) {
-  .boot-quick {
-    --h: 102.2px;
-  }
-}
-
 /* Home's Play card: its head, the time, the button and whose game it is, in your colour; the four tiles under it
    are Home's own. */
 .boot-play {
@@ -10086,21 +10075,6 @@ button.user-avatar.guest:hover {
 /* Your numbers, at the top of the right column: its strip of small cards. */
 .boot-stat-row {
   overflow: hidden;
-}
-
-.boot-daily-head {
-  width: 50%;
-  height: 28.3px;
-}
-
-.boot-board {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 10px;
-}
-
-.boot-daily-foot {
-  height: 41.1px;
 }
 
 @media (max-width: 1000px) {
@@ -10754,6 +10728,26 @@ button.home-game:hover .home-game-go.review {
   height: 48px;
   margin: 0;
   padding: 0 22px;
+}
+
+/* On the welcome card's colour: the box a shade under it (as the site switch is), not a hole to the page's black, and
+   the button light like the picked site, fainter until there's a name to look up. */
+.hero-card .username-row .input {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+}
+
+.hero-card .username-row .input:focus {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.hero-card .username-row .accent-btn {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.hero-card .username-row .accent-btn:disabled {
+  opacity: 0.5;
 }
 
 .username-error {
@@ -13873,6 +13867,19 @@ a.you-row:active {
 
   :root[data-boot-legendary] .boot-legendary {
     --h: 170px;
+  }
+}
+
+/* With none yet, its line wraps while the middle column is narrow. */
+@container page (max-width: 803px) {
+  :root:not([data-boot-legendary]) .boot-legendary {
+    --h: 99.8px;
+  }
+}
+
+@container page (min-width: 920px) and (max-width: 1225px) {
+  :root:not([data-boot-legendary]) .boot-legendary {
+    --h: 99.8px;
   }
 }
 
