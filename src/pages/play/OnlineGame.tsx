@@ -7,6 +7,7 @@ import { Sheet } from '../../components/Sheet'
 import { EngineLines } from '../../components/EngineLines'
 import { EvalBar } from '../../components/EvalBar'
 import { Explorer } from '../../components/Explorer'
+import { TILE_ICONS } from '../../components/IconTile'
 import { Link } from '../../components/Link'
 import { MoveList } from '../../components/MoveList'
 import { MoveStrip } from '../../components/MoveStrip'
@@ -135,8 +136,9 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
   // The panel's tabs: this game or the next one's setup, and in this game its moves, chat and facts.
   const [tab, setTab] = useState<PanelTab>('game')
   const [sub, setSub] = useState<GameTab>('moves')
-  // A phone has no room for the tabs: the chat and the game's facts open in a sheet from the foot of the panel.
-  const [phoneSheet, setPhoneSheet] = useState<'chat' | 'info' | null>(null)
+  // A phone has no room for the tabs: the chat, the game's facts and (after it) the openings open in a sheet from
+  // the foot of the panel.
+  const [phoneSheet, setPhoneSheet] = useState<'chat' | 'info' | 'openings' | null>(null)
   // The players' chat: what was said before the connection opened, then each line as it comes. Lines from your
   // opponent while the chat isn't showing are counted on its tab.
   const [chat, setChat] = useState<ChatLine[]>([])
@@ -416,7 +418,8 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
     ready: engineStatus?.state === 'ready',
     fen: shown.fen,
     enabled: over && engineOn,
-    multiPv: settings.lines,
+    // A phone shows as many lines as its Analyze page (one, unless you changed it), so the game still fits.
+    multiPv: phone ? settings.boardLines : settings.lines,
     depth: settings.liveDepth,
     paused: !active || tab !== 'game',
   })
@@ -617,6 +620,10 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
           {bar(other(orientation))}
           {cardFor(other(orientation))}
         </div>
+        {/* A phone's eval bar lies across the top of the board, as in its review. */}
+        {phone && over && engineOn && (
+          <EvalBar horizontal score={terminal?.score ?? analysis.result?.lines[0]?.score ?? null} orientation={orientation} active theme={settings.boardTheme} />
+        )}
         <Board
           fen={shown.fen}
           orientation={orientation}
@@ -697,7 +704,7 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
               )}
               {phone || sub === 'moves' ? (
                 <>
-                  {!phone && over && (
+                  {over && (
                     <EngineLines
                       fen={shown.fen}
                       status={engineStatus}
@@ -705,7 +712,7 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
                       onToggle={() => setEngineOn((on) => !on)}
                       result={engineOn ? analysis.result : null}
                       searching={analysis.searching}
-                      maxLines={settings.lines}
+                      maxLines={phone ? settings.boardLines : settings.lines}
                       terminal={terminal}
                       reviewing={false}
                       onPlayLine={noLine}
@@ -829,6 +836,13 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
                     <path d={INFO_ICON} />
                   </svg>
                 </button>
+                {over && (
+                  <button className="icon-btn" onClick={() => setPhoneSheet('openings')} aria-label="Openings" title="Openings">
+                    <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+                      <path d={TILE_ICONS.openings} />
+                    </svg>
+                  </button>
+                )}
               </>
             )}
             <a className="icon-btn" href={`https://lichess.org/${started.id}`} target="_blank" rel="noreferrer" aria-label="Open on Lichess" title="Open on Lichess">
@@ -846,9 +860,18 @@ export function OnlineGameView({ started, fresh, settings, phone, active, gear, 
         </div>
       </aside>
       {phone && phoneSheet && (
-        <Sheet bottom title={phoneSheet === 'chat' ? 'Chat' : 'Game info'} sub={game ? `${nameOf(game.white)} vs ${nameOf(game.black)}` : undefined} onClose={() => setPhoneSheet(null)}>
+        <Sheet
+          bottom
+          title={phoneSheet === 'chat' ? 'Chat' : phoneSheet === 'info' ? 'Game info' : 'Openings'}
+          sub={phoneSheet === 'openings' ? (opening && shownPly > 0 ? opening.name : 'Starting position') : game ? `${nameOf(game.white)} vs ${nameOf(game.black)}` : undefined}
+          onClose={() => setPhoneSheet(null)}
+        >
           {phoneSheet === 'chat' ? (
             <ChatPanel lines={chat} game={game} you={you} over={over ? endText(state!, you) : null} rated={afterRating} onSend={(text) => sendChat(started.id, text)} />
+          ) : phoneSheet === 'openings' ? (
+            <div className="online-openings">
+              <Explorer fen={shown.fen} onPlay={noMove} />
+            </div>
           ) : (
             <InfoPanel game={game} state={state} you={you} rated={afterRating} id={started.id} onReview={result ? () => void review() : undefined} reviewing={reviewing} />
           )}

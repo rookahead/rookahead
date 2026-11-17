@@ -14604,6 +14604,19 @@ a.you-row:active {
     padding: 8px 8px 4px;
   }
 
+  /* After an online game, with the engine on: the slim bar across the board's top, as in the phone's review. */
+  .play-game .eval-bar.horizontal {
+    height: 10px;
+    margin: 0 12px;
+  }
+
+  .play-game .eval-bar.horizontal .eval-bar-track {
+    border-radius: 3px;
+  }
+
+  .play-game .eval-bar.horizontal .eval-bar-chip {
+    display: none;
+  }
 }
 
 @media (min-width: 641px) and (max-width: 1000px) {
