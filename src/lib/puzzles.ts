@@ -96,21 +96,19 @@ export const localDayNumber = (date: Date) => Math.floor((Date.UTC(date.getFullY
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' }
 
+type PieceType = keyof typeof PIECE_VALUES
+
 /**
- * What to look for, said before you move: the mate and its length, or the piece the solution wins outright
- * (what it gives up on the way counted against it). It says what there is to win, never how.
+ * The piece the solution wins outright (what it gives up on the way counted against it), and whether it comes out
+ * ahead at all. The opponent's first move sets the puzzle up: it's on the board before you look, so it isn't counted.
  */
-export function puzzleGoal(p: Puzzle): string {
-  const mate = p.themes.map((t) => /^mateIn(\d)$/.exec(t)?.[1]).find(Boolean)
-  if (mate) return mate === '1' ? 'Find the checkmate.' : `Find the checkmate in ${mate}.`
-  if (p.themes.includes('mate')) return 'Find the checkmate.'
+function winnings(p: Puzzle): { piece: PieceType | null; ahead: boolean } {
   let gained = 0
-  let top: keyof typeof PIECE_VALUES | null = null
+  let top: PieceType | null = null
   try {
     const chess = new Chess(p.fen)
     p.moves.forEach((m, i) => {
       const move = chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] })
-      // The opponent's first move sets the puzzle up: it's on the board before you look.
       if (i === 0) return
       const yours = i % 2 === 1
       const worth = (move.captured ? PIECE_VALUES[move.captured] : 0) + (move.promotion ? PIECE_VALUES[move.promotion] - 1 : 0)
@@ -118,37 +116,97 @@ export function puzzleGoal(p: Puzzle): string {
       if (yours && move.captured && (!top || PIECE_VALUES[move.captured] > PIECE_VALUES[top])) top = move.captured
     })
   } catch {
-    gained = 0
+    return { piece: null, ahead: false }
   }
-  if (top && gained >= PIECE_VALUES[top]) return `Find the move that wins ${top === 'q' ? 'the queen' : `a ${PIECE_NAMES[top]}`}.`
-  if (gained > 0) return 'Find the move that wins material.'
+  return { piece: top && gained >= PIECE_VALUES[top] ? top : null, ahead: gained > 0 }
+}
+
+/**
+ * What to look for, said before you move: the mate and its length, or the piece the solution wins outright.
+ * It says what there is to win, never how.
+ */
+export function puzzleGoal(p: Puzzle): string {
+  const mate = p.themes.map((t) => /^mateIn(\d)$/.exec(t)?.[1]).find(Boolean)
+  if (mate) return mate === '1' ? 'Find the checkmate.' : `Find the checkmate in ${mate}.`
+  if (p.themes.includes('mate')) return 'Find the checkmate.'
+  const { piece, ahead } = winnings(p)
+  if (piece) return `Find the move that wins ${piece === 'q' ? 'the queen' : `a ${PIECE_NAMES[piece]}`}.`
+  if (ahead) return 'Find the move that wins material.'
   return `Find the best move for ${playerColor(p) === 'white' ? 'White' : 'Black'}.`
 }
 
-/** A puzzle's idea in a line, by theme: the first that fits. */
-const IDEAS: [theme: string, line: string][] = [
+/**
+ * Your fork: the piece that moved and two things it hits (the king, pieces worth more than it, or loose ones), one of
+ * them won later in the line. A piece that can simply be taken forks nothing, unless it gives check.
+ */
+function forkOf(p: Puzzle): { by: PieceType; hits: [PieceType, PieceType] } | null {
+  const rank = (t: PieceType) => (t === 'k' ? 100 : PIECE_VALUES[t])
+  try {
+    const chess = new Chess(p.fen)
+    const forks: { by: PieceType; hits: PieceType[] }[] = []
+    const won: PieceType[] = []
+    p.moves.forEach((m, i) => {
+      const move = chess.move({ from: m.slice(0, 2), to: m.slice(2, 4), promotion: m[4] })
+      if (i % 2 === 0) return
+      if (move.captured) won.push(move.captured)
+      const to = move.to
+      const by = chess.get(to)!.type
+      const them = move.color === 'w' ? 'b' : 'w'
+      const guarded = chess.attackers(to, move.color).length > 0
+      const takers = chess.attackers(to, them)
+      if (!chess.inCheck() && takers.some((t) => (chess.get(t)!.type === 'k' ? !guarded : PIECE_VALUES[chess.get(t)!.type] <= PIECE_VALUES[by]))) return
+      const hits: PieceType[] = []
+      for (const row of chess.board())
+        for (const sq of row) {
+          if (!sq || sq.color !== them || !chess.attackers(sq.square, move.color).includes(to)) continue
+          const loose = !chess.attackers(sq.square, them).length && sq.type !== 'p'
+          if (sq.type === 'k' || PIECE_VALUES[sq.type] > PIECE_VALUES[by] || loose) hits.push(sq.type)
+        }
+      if (hits.length >= 2) forks.push({ by, hits: hits.sort((x, y) => rank(y) - rank(x)) })
+    })
+    for (const fork of forks) {
+      // Taken later: the biggest of its targets that fell, beside the biggest of the rest.
+      const fell = fork.hits.find((h) => won.includes(h))
+      if (!fell) continue
+      const other = fork.hits.find((_, i) => i !== fork.hits.indexOf(fell))!
+      return { by: fork.by, hits: rank(other) >= rank(fell) ? [other, fell] : [fell, other] }
+    }
+  } catch {
+    // An unreadable line: no fork named.
+  }
+  return null
+}
+
+/** A puzzle's idea in a line, by theme: the first that fits; with the piece the solution won where there is one. */
+const IDEAS: [theme: string, line: string, won?: (piece: string) => string][] = [
   ['smotheredMate', 'A smothered mate.'],
   ['backRankMate', 'A back-rank mate.'],
   ['mate', 'Checkmate.'],
-  ['pin', 'The pin did the work.'],
-  ['skewer', 'A skewer: the piece behind fell.'],
-  ['discoveredAttack', 'A discovered attack.'],
-  ['doubleCheck', 'A double check.'],
-  ['deflection', 'The defender was pulled away.'],
+  ['pin', 'The pin did the work.', (x) => `The pin won the ${x}.`],
+  ['skewer', 'A skewer: the piece behind fell.', (x) => `A skewer: the ${x} behind fell.`],
+  ['discoveredAttack', 'A discovered attack.', (x) => `A discovered attack won the ${x}.`],
+  ['doubleCheck', 'A double check.', (x) => `A double check won the ${x}.`],
+  ['deflection', 'The defender was pulled away.', (x) => `The defender was pulled away, and the ${x} fell.`],
   ['attraction', 'The piece was lured onto the wrong square.'],
-  ['capturingDefender', 'The defender was removed.'],
-  ['trappedPiece', 'The piece had nowhere to go.'],
-  ['hangingPiece', 'A loose piece, picked up.'],
+  ['capturingDefender', 'The defender was removed.', (x) => `The defender went, and the ${x} fell.`],
+  ['trappedPiece', 'The piece had nowhere to go.', (x) => `The ${x} had nowhere to go.`],
+  ['hangingPiece', 'A loose piece, picked up.', (x) => `A loose ${x}, picked up.`],
   ['promotion', 'The pawn made it.'],
   ['zugzwang', 'Zugzwang: every move loses.'],
-  ['intermezzo', 'An in-between move.'],
+  ['intermezzo', 'An in-between move.', (x) => `An in-between move won the ${x}.`],
   ['quietMove', 'A quiet move, and it holds.'],
   ['sacrifice', 'The sacrifice paid off.'],
 ]
 
-/** What the idea was, said once it's solved. */
+/** What the idea was, said once it's solved, naming the pieces where it can ("Your knight forked the king and the queen."). */
 export function solvedLine(p: Puzzle): string {
-  if (p.themes.includes('fork') && !p.themes.includes('mate')) {
+  const mate = p.themes.includes('mate')
+  if (p.themes.includes('fork') && !mate) {
+    const fork = forkOf(p)
+    if (fork) {
+      const [a, b] = fork.hits.map((h) => PIECE_NAMES[h])
+      return `Your ${PIECE_NAMES[fork.by]} forked ${a === b ? `both ${a}s` : `the ${a} and the ${b}`}.`
+    }
     try {
       const piece = positionAfter(p, [p.moves[0]]).get(p.moves[1].slice(0, 2) as Square)?.type
       if (piece) return `A ${PIECE_NAMES[piece]} fork.`
@@ -156,7 +214,10 @@ export function solvedLine(p: Puzzle): string {
       // An unreadable line: the plain wording below.
     }
   }
-  return IDEAS.find(([theme]) => p.themes.includes(theme))?.[1] ?? 'Nicely found.'
+  const idea = IDEAS.find(([theme]) => p.themes.includes(theme))
+  const piece = !mate && (!idea || idea[2]) ? winnings(p).piece : null
+  if (!idea) return piece ? `Nicely found. It won the ${PIECE_NAMES[piece]}.` : 'Nicely found.'
+  return piece ? idea[2]!(PIECE_NAMES[piece]) : idea[1]
 }
 
 /** Which line of the daily list is today's. */

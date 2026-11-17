@@ -174,12 +174,25 @@ describe('puzzleGoal', () => {
 
 describe('solvedLine', () => {
   it('says what the idea was, from the themes', () => {
-    expect(solvedLine(puzzle(FORK))).toBe('A knight fork.')
     expect(solvedLine(puzzle(MATE_IN_2))).toBe('Checkmate.')
-    expect(solvedLine({ ...puzzle(FORK), themes: ['pin', 'middlegame'] })).toBe('The pin did the work.')
+    expect(solvedLine({ ...puzzle(FORK), moves: ['g8g5', 'f6e4'], themes: ['pin', 'middlegame'] })).toBe('The pin did the work.')
+  })
+
+  it('names the forking piece and what it hit', () => {
+    expect(solvedLine(puzzle(FORK))).toBe('Your knight forked the king and the queen.')
+    // Rxe2 sets it up; Ng3+ then hits the king and the rook on e2.
+    expect(solvedLine(puzzle(ROOK_UP))).toBe('Your knight forked the king and the rook.')
+  })
+
+  it('names the piece the idea won', () => {
+    expect(solvedLine({ ...puzzle(FORK), themes: ['skewer'] })).toBe('A skewer: the queen behind fell.')
+    expect(solvedLine({ ...puzzle(ROOK_UP), themes: ['hangingPiece'] })).toBe('A loose rook, picked up.')
+    // A knight for the queen isn't a whole queen won: the plain line.
+    expect(solvedLine({ ...puzzle(QUEEN_FOR_KNIGHT), themes: ['discoveredAttack'] })).toBe('A discovered attack.')
   })
 
   it('has a plain line for themes without one', () => {
-    expect(solvedLine({ ...puzzle(FORK), themes: ['middlegame', 'short'] })).toBe('Nicely found.')
+    expect(solvedLine({ ...puzzle(QUEEN_FOR_KNIGHT), themes: ['middlegame', 'short'] })).toBe('Nicely found.')
+    expect(solvedLine({ ...puzzle(FORK), themes: ['middlegame', 'short'] })).toBe('Nicely found. It won the queen.')
   })
 })
