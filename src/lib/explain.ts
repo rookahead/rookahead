@@ -299,8 +299,11 @@ function forkWords(targets: { piece: PieceSymbol; square: Square }[], yours: boo
   return `${name(a)} and ${name(b)}`
 }
 
-/** One sentence on what a line does for the side to move, starting with its first move. */
-function lineStory(fen: string, line: EngineLine, played: Played): string | null {
+/**
+ * One sentence on what a line does for the side to move, starting with its first move. `against` says whose pieces a
+ * fork hits: the explained move's mover's ("your", when the line is the other side's), or the other side's ("the").
+ */
+function lineStory(fen: string, line: EngineLine, played: Played, against: 'yours' | 'theirs' = 'yours'): string | null {
   const side = turnOf(fen)
   const first = lineText(fen, played.san.slice(0, 1))
   // Counted from the line itself when it ends in mate, so the words match the moves shown.
@@ -312,7 +315,7 @@ function lineStory(fen: string, line: EngineLine, played: Played): string | null
   const won = winning(played, side)
   if (!won) return null
   const fork = played.fens[0] ? forkTargets(played.fens[0], line.pv[0].slice(2, 4) as Square) : []
-  if (fork.length) return `${first} forks ${forkWords(fork, true)}, and ${won.text}`
+  if (fork.length) return `${first} forks ${forkWords(fork, against === 'yours')}, and ${won.text}`
   // Won later, by another piece: say which move does it.
   const { ply, from } = won.capture
   if (ply > 0 && from !== line.pv[0].slice(2, 4)) return `${first}, then ${numbered(fen, ply, played.san[ply])} ${won.text}`
@@ -779,7 +782,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
         return { rows, lines: [shownLine('The line', 'before', fenBefore, best.pv, long)], coach: facts(pull.text) }
       }
     }
-    const story = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed)
+    const story = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed, 'theirs')
     const point = story ? null : retakeWords ?? betterPoint(fenBefore, bestUci, best.pv, fenAfter, reply.pv, uci)
     const text = story
       ? `${opener}${capitalise(story)}${where}`
@@ -919,7 +922,7 @@ export function explainMove(input: ExplainInput): Explanation | null {
     const [bFrom, bTo] = squares(bestUci)
     const bestText = lineText(fenBefore, [bestSan])
     let point: string | null = null
-    const bestStory = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed)
+    const bestStory = bestRetakes ? null : lineStory(fenBefore, best, bestPlayed, 'theirs')
     if (retakeWords) point = retakeWords
     else if (bestStory && (mateFor(best.score, mover) || bestPlayed.gain >= 1)) point = bestStory.replace(/^\S+ /, '')
     else if (firstTake && bFrom === firstTake.square) point = `saves the ${NAMES[firstTake.piece]}`
@@ -1091,7 +1094,7 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
   // What the move threatens now.
   const ownNull = nullMoveFen(fenAfter)
   const oPlayed = ownThreat && ownNull ? playLine(ownNull, ownThreat.pv) : null
-  const oStory = ownThreat && ownNull && oPlayed && direct(oPlayed, ownThreat.pv) ? lineStory(ownNull, ownThreat, oPlayed) : null
+  const oStory = ownThreat && ownNull && oPlayed && direct(oPlayed, ownThreat.pv) ? lineStory(ownNull, ownThreat, oPlayed, 'theirs') : null
   // Without those searches, a mate in one either way is still plain to see.
   const ownMate = !ownThreat && ownNull ? mateInOne(ownNull) : null
   const theirMate = !threat && fenNull ? mateInOne(fenNull) : null
@@ -1184,7 +1187,7 @@ function explainGood(input: ExplainInput, fenAfter: string): Explanation | null 
     }
   } else if (!isBest && best.pv[0]) {
     const bestPlayed = playLine(fenBefore, best.pv)
-    const story = lineStory(fenBefore, best, bestPlayed)
+    const story = lineStory(fenBefore, best, bestPlayed, 'theirs')
     const bestSac = sacrifice(fenBefore, best.pv[0])
     const point = story ? story.replace(/^\S+ /, '') : bestSac ? `sacrifices the ${NAMES[bestSac.piece]}` : betterPoint(fenBefore, best.pv[0], best.pv, fenAfter, null, uci)
     rows.push({

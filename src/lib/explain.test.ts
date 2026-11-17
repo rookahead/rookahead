@@ -295,3 +295,19 @@ describe('line text', () => {
     expect(lineText(RAB8.fenBefore, ['Rab8', 'e5', 'Rd7'])).toBe('20…Rab8 21.e5 Rd7')
   })
 })
+
+describe('a missed fork', () => {
+  it('names the pieces it hits as the other side’s', () => {
+    // 9.Qxg7 hits the rook on h8 and the knight on h6; the game went 9.Qf5?? Nxf5.
+    const facts = explainMove({
+      fenBefore: 'r2qk2r/ppp2bpp/2n2p1n/2bpp3/6Q1/1PN1P1P1/PBPP1PBP/R3K1NR w KQkq - 5 9',
+      uci: 'g4f5',
+      san: 'Qf5',
+      cls: 'miss',
+      best: { pv: ['g4g7', 'c6b4', 'g7h8', 'e8e7'], score: { type: 'cp', value: 520 } },
+      reply: { pv: ['h6f5', 'g2d5'], score: { type: 'cp', value: -900 } },
+    })?.coach
+    expect(facts?.chance).toMatch(/forks the rook on h8/)
+    expect(facts?.chance).not.toMatch(/your/)
+  })
+})
