@@ -8538,57 +8538,6 @@ button.user-avatar.guest:hover {
 
 /* ---------- Puzzles ---------- */
 
-.puzzle-head {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.puzzle-head > .muted {
-  font-size: 13px;
-}
-
-.puzzle-rating {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.puzzle-rating .muted {
-  font-size: 13px;
-}
-
-.puzzle-rating strong {
-  font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.rating-delta {
-  align-self: center;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.rating-delta.up {
-  background: color-mix(in srgb, var(--win) 18%, transparent);
-  color: var(--win);
-}
-
-.rating-delta.down {
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-  color: var(--danger);
-}
-
 .puzzle-body {
   padding: 14px 16px;
   gap: 12px;
@@ -8654,11 +8603,6 @@ button.user-avatar.guest:hover {
   color: var(--text-2);
 }
 
-.puzzle-message-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .mistake-played {
   display: flex;
   align-items: flex-start;
@@ -8667,26 +8611,6 @@ button.user-avatar.guest:hover {
 
 .mistake-best {
   animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.mistake-nav {
-  grid-template-columns: 50px;
-  justify-content: end;
-}
-
-.play-actions .puzzle-next {
-  height: 40px;
-  margin-top: 0;
-  font-size: 14px;
-}
-
-.puzzle-rating strong.date {
-  font-family: var(--font-ui);
-  font-size: 22px;
-}
-
-.puzzle-message-actions .btn {
-  text-decoration: none;
 }
 
 /* Home: today's puzzle. */
@@ -8792,120 +8716,13 @@ button.user-avatar.guest:hover {
   height: calc(1em * 1.45);
 }
 
-/* Phones: what you need while solving (status, buttons, move controls) sits right under the board. */
 @media (max-width: 1000px) {
-  .puzzle-layout .feedback {
-    order: -3;
-  }
-
-  .puzzle-layout .play-actions {
-    order: -2;
-    border-top: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .puzzle-layout .play-nav {
-    order: -1;
-    border-top: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
   .puzzle-layout .panel-body {
     min-height: 0;
   }
 }
 
-/* Puzzles, round 2: feedback block, streaks, chips, Sprint. */
-.feedback {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.feedback.good {
-  background: color-mix(in srgb, var(--win) 9%, transparent);
-}
-
-.feedback.bad {
-  background: color-mix(in srgb, var(--danger) 9%, transparent);
-}
-
-.feedback-icon {
-  flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.feedback.turn .feedback-icon {
-  border-radius: 12px;
-  background: var(--surface-3);
-}
-
-.feedback.turn .feedback-icon .piece-icon {
-  width: 38px;
-  height: 38px;
-}
-
-.feedback-icon svg {
-  width: 26px;
-  height: 26px;
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.feedback.good .feedback-icon {
-  background: var(--win);
-}
-
-.feedback.bad .feedback-icon {
-  background: var(--danger);
-}
-
-.feedback.neutral .feedback-icon {
-  background: var(--surface-4);
-}
-
-.feedback.neutral .feedback-icon svg {
-  stroke: var(--text-2);
-}
-
-.feedback-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.feedback-text strong {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.feedback.good .feedback-text strong {
-  color: var(--win);
-}
-
-.feedback.bad .feedback-text strong {
-  color: var(--danger);
-}
-
-.feedback-text span {
-  color: var(--text-2);
-  font-size: 13px;
-}
-
+/* Puzzles, round 2: streaks, chips, Sprint. */
 .flame {
   flex-shrink: 0;
   fill: var(--muted);
@@ -9179,6 +8996,30 @@ button.user-avatar.guest:hover {
   transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* The word after the big number ("solved", "to go"). */
+.puzzle-unit {
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.puzzle-track.low span {
+  background: var(--danger);
+}
+
+/* The sprint's clock: the one number you watch while you solve, so louder than a puzzle's own time. */
+.puzzle-time.sprint-time {
+  align-self: center;
+  margin-left: 6px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.puzzle-time.sprint-time.low {
+  color: var(--danger);
+}
+
 .puzzle-to {
   display: flex;
   justify-content: space-between;
@@ -9222,6 +9063,11 @@ button.user-avatar.guest:hover {
   margin-top: 0;
   border-radius: 12px;
   font-size: 15px;
+}
+
+/* A link styled as a button (Play a game). */
+.puzzle-acts a.btn {
+  text-decoration: none;
 }
 
 .puzzle-acts .btn.accent-btn {
@@ -9352,11 +9198,6 @@ button.user-avatar.guest:hover {
   }
 }
 
-.sprint-title {
-  font-size: 20px;
-  font-weight: 700;
-}
-
 .sprint-modes {
   display: flex;
   flex-direction: column;
@@ -9368,14 +9209,14 @@ button.user-avatar.guest:hover {
   grid-template-columns: 1fr auto;
   gap: 2px 12px;
   padding: 14px 16px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: box-shadow 0.15s, background 0.15s;
 }
 
 .sprint-mode:hover {
@@ -9383,8 +9224,8 @@ button.user-avatar.guest:hover {
 }
 
 .sprint-mode.active {
-  border-color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface-2));
+  box-shadow: inset 0 0 0 2px var(--brand);
 }
 
 .sprint-mode strong {
@@ -9405,63 +9246,23 @@ button.user-avatar.guest:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.sprint-head {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.sprint-clock {
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: var(--text);
-  color: var(--bg);
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.sprint-clock.low {
-  background: #c7372f;
-  color: #fff;
-}
-
-.sprint-score {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.sprint-score strong {
-  font-family: var(--font-mono);
-  font-size: 30px;
-  font-weight: 700;
-  animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.sprint-score span {
-  color: var(--muted);
-  font-size: 13px;
-}
-
+/* The lives a run has left: a cross fills in red for each one used. */
 .sprint-strikes {
   margin-left: auto;
+  align-self: center;
   display: flex;
   gap: 4px;
 }
 
 .sprint-strikes span {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--surface-3);
   color: var(--muted);
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -9469,42 +9270,6 @@ button.user-avatar.guest:hover {
   background: var(--danger);
   color: #fff;
   animation: badge-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.sprint-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 18px 0 6px;
-  text-align: center;
-}
-
-.sprint-result strong {
-  font-family: var(--font-mono);
-  font-size: 64px;
-  font-weight: 800;
-  line-height: 1;
-  animation: badge-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.sprint-result > span {
-  color: var(--text-2);
-}
-
-.new-best {
-  margin-top: 8px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--streak);
-  color: #2a1200 !important;
-  font-weight: 800;
-}
-
-.sprint-note {
-  margin: 0;
-  text-align: center;
-  color: var(--text-2);
 }
 
 @media (min-width: 1001px) {
@@ -9524,12 +9289,6 @@ button.user-avatar.guest:hover {
 }
 
 @media (max-width: 1000px) {
-  /* The rating and streaks stay in view on phones too, just above the feedback. */
-  .puzzle-layout .sprint-head,
-  .puzzle-layout .puzzle-head {
-    order: -4;
-  }
-
   .puzzle-below {
     min-height: 0;
   }
@@ -11681,12 +11440,8 @@ h2 {
 }
 
 /* Big numbers in DM Sans: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
-.puzzle-rating strong,
 .puzzle-num,
-.sprint-score strong,
-.sprint-result strong,
-.player-clock,
-.sprint-clock {
+.player-clock {
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -15165,13 +14920,6 @@ a.blog-card:not(.latest) .blog-card-desc {
 @media (min-width: 641px) and (max-width: 1000px) {
   .puzzles-page .board-cg {
     border-radius: 8px;
-  }
-}
-
-@media (max-width: 1000px) {
-  /* Full screen, what to do next comes first; the rating and streaks follow. */
-  .puzzles-page .puzzle-layout .puzzle-head {
-    order: 1;
   }
 }
 

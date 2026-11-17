@@ -6,13 +6,11 @@ import { Board } from '../components/Board'
 import { FlipIcon, NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { Flame, PuzzleIcon } from '../components/PuzzleIcons'
-import { RookCoach } from '../components/RookCoach'
 import { TAB_ICONS, Tabs } from '../components/Tabs'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useMistakes } from '../hooks/useMistakes'
-import type { RookMood } from '../lib/coach'
-import type { Color } from '../lib/evaluation'
 import { formatDay } from '../lib/home'
+import type { RookMood } from '../lib/coach'
 import { useImmersive } from '../lib/immersive'
 import { dailyLine, nextRatedLine } from '../lib/puzzleData'
 import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, puzzleGoal, solvedLine, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
@@ -26,7 +24,7 @@ import { logUse } from '../lib/usage'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { PuzzleHub } from './puzzles/Hub'
 import { MistakesView } from './puzzles/Mistakes'
-import { DayStreak, lastMoveOf, Placeholder, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Update, type ViewProps } from './puzzles/shared'
+import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
@@ -326,8 +324,6 @@ interface SolverProps {
   prefs?: ReactNode
 }
 
-const clockFace = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-
 /** How long this puzzle has been on the board, in seconds, counting while `running`; and a way to start it again. */
 function useSolveSeconds(id: string, running: boolean): [number, () => void] {
   const [clock, setClock] = useState({ id, seconds: 0 })
@@ -551,31 +547,5 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
         </>
       )}
     </PuzzleLayout>
-  )
-}
-
-type Tone = 'turn' | 'good' | 'bad'
-
-/** The rook and what it says: whose move it is or how the last one went, then one line. */
-function PuzzleCoach({ tone, label, line, color, mood, moodKey }: { tone: Tone; label: string; line: string; color: Color; mood: RookMood; moodKey: string }) {
-  return (
-    <div className="puzzle-coach" role="status">
-      <span className="puzzle-coach-rook">
-        <RookCoach mood={mood} moodKey={moodKey} />
-      </span>
-      <span className="puzzle-say">
-        <span className={`puzzle-who ${tone}`}>
-          {tone === 'turn' ? (
-            <i className={`puzzle-side ${color}`} aria-hidden />
-          ) : (
-            <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
-              <path d={tone === 'good' ? 'M5 12.5l4.5 4.5L19 7.5' : 'M6.5 6.5l11 11M17.5 6.5l-11 11'} />
-            </svg>
-          )}
-          {label}
-        </span>
-        <strong className="puzzle-line">{line}</strong>
-      </span>
-    </div>
   )
 }

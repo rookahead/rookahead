@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
+import { FlipIcon } from '../../components/NavIcons'
+import { PuzzleIcon } from '../../components/PuzzleIcons'
+import type { RookMood } from '../../lib/coach'
 import { nextRatedLine } from '../../lib/puzzleData'
-import { localDayNumber, parsePuzzleLine, playerColor, sprintRating, SPRINT_MODES, SPRINT_STRIKES, type Puzzle, type SprintMode } from '../../lib/puzzles'
-import { dayStreak, recordSprint } from '../../lib/puzzleStore'
+import { parsePuzzleLine, playerColor, puzzleGoal, sprintRating, SPRINT_MODES, SPRINT_STRIKES, type Puzzle, type SprintMode } from '../../lib/puzzles'
+import { recordSprint } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 import { playSound } from '../../lib/sound'
 import { logUse } from '../../lib/usage'
-import { DayStreak, EmptyBoard, Feedback, lastMoveOf, PuzzleLayout, sideName, usePuzzleSolve, type SolveTiming, type ViewProps } from './shared'
+import { EmptyBoard, lastMoveOf, PuzzleCoach, PuzzlePanel, PuzzleScore, sideName, usePuzzleSolve, useStepKeys, type SolveTiming, type Tone, type ViewProps } from './shared'
 
 interface RunEntry {
   id: string
@@ -30,6 +33,8 @@ function formatClock(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
+const noStep = () => {}
+
 /** Puzzle Sprint: as many puzzles as you can, getting harder, until the clock or three mistakes stop you. */
 export function SprintView({ progress, update, settings, tabs }: ViewProps) {
   const [mode, setMode] = useState<SprintMode>('3min')
@@ -39,7 +44,6 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
-  const days = dayStreak(progress, localDayNumber(new Date()))
 
   const start = (m: SprintMode) => {
     setMode(m)
@@ -59,53 +63,51 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
     [update, settings.soundVolume],
   )
 
-  if (running) return <SprintRun key={running.key} mode={running.mode} settings={settings} tabs={tabs} onEnd={(h) => end(running.mode, h)} />
+  if (running) return <SprintRun key={running.key} mode={running.mode} best={progress.sprintBest[running.mode] ?? 0} settings={settings} tabs={tabs} onEnd={(h) => end(running.mode, h)} />
 
   if (finished) {
     const score = finished.history.filter((e) => e.solved).length
     const top = Math.max(0, ...finished.history.filter((e) => e.solved).map((e) => e.rating))
+    const say: { tone: Tone; label: string; line: string; mood: RookMood } = finished.newBest
+      ? { tone: 'good', label: 'New best', line: `${score} solved, your best yet.`, mood: 'proud' }
+      : score
+        ? { tone: 'plain', label: 'Run over', line: `${score} solved. Your best is ${finished.best}.`, mood: 'pleased' }
+        : { tone: 'plain', label: 'Run over', line: 'None solved this time. Go again?', mood: 'ouch' }
     return (
-      <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} />} below={<RunChips history={finished.history} />}>
-        <div className="puzzle-head">
-          <div className="puzzle-rating">
-            <span className="muted">Puzzle Sprint · {SPRINT_MODES[finished.mode].label}</span>
-            <DayStreak days={days} />
+      <PuzzlePanel
+        tabs={tabs}
+        board={<EmptyBoard settings={settings} />}
+        below={<RunChips history={finished.history} />}
+        coach={<PuzzleCoach {...say} color="white" moodKey={`sprint-end:${finished.history.length}`} />}
+        score={
+          <PuzzleScore
+            num={score}
+            unit={score === 1 ? 'puzzle solved' : 'puzzles solved'}
+            track={{ at: finished.best ? score / finished.best : 0 }}
+            left={`Puzzle Sprint · ${SPRINT_MODES[finished.mode].label}`}
+            right={top > 0 ? `Hardest solved ${top}` : undefined}
+          />
+        }
+        acts={
+          <div className="puzzle-acts">
+            <button className="btn ghost" onClick={() => setFinished(null)}>
+              Change mode
+            </button>
+            <button className="btn accent-btn" onClick={() => start(finished.mode)}>
+              Play again
+            </button>
           </div>
-        </div>
-        <div className="panel-body puzzle-body">
-          <div className="sprint-result">
-            <strong>{score}</strong>
-            <span>{score === 1 ? 'puzzle solved' : 'puzzles solved'}</span>
-            {finished.newBest ? <span className="new-best">New best!</span> : <span className="muted">Your best: {finished.best}</span>}
-          </div>
-          {top > 0 && (
-            <p className="sprint-note">
-              Hardest puzzle solved: <strong>{top}</strong>
-            </p>
-          )}
-        </div>
-        <div className="play-actions">
-          <button className="btn accent-btn puzzle-next" onClick={() => start(finished.mode)}>
-            Play again
-          </button>
-          <button className="btn ghost" onClick={() => setFinished(null)}>
-            Change mode
-          </button>
-        </div>
-      </PuzzleLayout>
+        }
+      />
     )
   }
 
   return (
-    <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} />}>
-      <div className="puzzle-head">
-        <div className="puzzle-rating">
-          <span className="sprint-title">Puzzle Sprint</span>
-          <DayStreak days={days} />
-        </div>
-        <span className="muted">Puzzles start easy and get harder. Three mistakes and the run is over.</span>
-      </div>
-      <div className="panel-body puzzle-body">
+    <PuzzlePanel
+      tabs={tabs}
+      board={<EmptyBoard settings={settings} />}
+      coach={<PuzzleCoach tone="plain" label="Puzzle Sprint" line="Puzzles start easy and get harder. Three mistakes end the run." color="white" mood="neutral" moodKey="sprint" />}
+      body={
         <div className="sprint-modes" role="radiogroup" aria-label="Sprint mode">
           {MODES.map((m) => (
             <button key={m} role="radio" aria-checked={mode === m} className={`sprint-mode ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
@@ -115,13 +117,15 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
             </button>
           ))}
         </div>
-      </div>
-      <div className="play-actions single">
-        <button className="btn accent-btn puzzle-next" onClick={() => start(mode)}>
-          Start sprint
-        </button>
-      </div>
-    </PuzzleLayout>
+      }
+      acts={
+        <div className="puzzle-acts">
+          <button className="btn accent-btn" onClick={() => start(mode)}>
+            Start sprint
+          </button>
+        </div>
+      }
+    />
   )
 }
 
@@ -140,8 +144,39 @@ function RunChips({ history }: { history: RunEntry[] }) {
   )
 }
 
+/** The run's numbers: puzzles solved, the lives left, the clock, and a bar for the time (or the lives, in Survival). */
+function RunScore({ score, strikes, left, limit, number, rating, best }: { score: number; strikes: number; left: number | null; limit: number | null; number: number; rating?: number; best: number }) {
+  const low = left !== null && left < 20_000
+  return (
+    <PuzzleScore
+      num={<span key={score}>{score}</span>}
+      unit="solved"
+      side={
+        <>
+          <span className="sprint-strikes" aria-label={`${SPRINT_STRIKES - strikes} of ${SPRINT_STRIKES} lives left`}>
+            {Array.from({ length: SPRINT_STRIKES }, (_, i) => (
+              <span key={i} className={i < strikes ? 'used' : ''}>
+                ✗
+              </span>
+            ))}
+          </span>
+          {left !== null && (
+            <span className={`puzzle-time sprint-time ${low ? 'low' : ''}`} title="Time left">
+              <PuzzleIcon name="clock" />
+              {formatClock(left)}
+            </span>
+          )}
+        </>
+      }
+      track={{ at: left !== null && limit ? left / limit : (SPRINT_STRIKES - strikes) / SPRINT_STRIKES, low }}
+      left={rating ? `Puzzle ${number} · rated ${rating}` : 'Puzzle Sprint'}
+      right={best ? `Best ${best}` : undefined}
+    />
+  )
+}
+
 /** One run: fetches puzzles up the rating ladder (the next one ahead of time) and keeps the clock. */
-function SprintRun({ mode, settings, tabs, onEnd }: { mode: SprintMode; settings: Settings; tabs: ReactNode; onEnd: (history: RunEntry[]) => void }) {
+function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; best: number; settings: Settings; tabs: ReactNode; onEnd: (history: RunEntry[]) => void }) {
   const limit = SPRINT_MODES[mode].ms
   const [history, setHistory] = useState<RunEntry[]>([])
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
@@ -212,67 +247,51 @@ function SprintRun({ mode, settings, tabs, onEnd }: { mode: SprintMode; settings
   const strikes = history.filter((e) => !e.solved).length
   const score = history.length - strikes
   const left = endsAt ? endsAt - now : limit
-  const head = (
-    <div className="sprint-head">
-      <div className={`sprint-clock ${left !== null && left < 20_000 ? 'low' : ''}`}>{left === null ? 'Survival' : formatClock(left)}</div>
-      <div className="sprint-score">
-        <strong key={score}>{score}</strong>
-        <span>solved</span>
-      </div>
-      <div className="sprint-strikes" aria-label={`${strikes} of ${SPRINT_STRIKES} mistakes`}>
-        {Array.from({ length: SPRINT_STRIKES }, (_, i) => (
-          <span key={i} className={i < strikes ? 'used' : ''}>
-            ✗
-          </span>
-        ))}
-      </div>
+  const scoreBlock = <RunScore score={score} strikes={strikes} left={left} limit={limit} number={history.length + 1} rating={puzzle?.rating} best={best} />
+  const quit = (
+    <div className="puzzle-acts">
+      <button className="btn ghost" onClick={() => finish(historyRef.current)}>
+        End run
+      </button>
     </div>
   )
 
   if (!puzzle) {
     return (
-      <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} bare />}>
-        {head}
-        <div className="panel-body puzzle-body">
-          <p className="puzzle-message muted">Getting the first puzzle…</p>
-        </div>
-      </PuzzleLayout>
+      <PuzzlePanel
+        tabs={tabs}
+        board={<EmptyBoard settings={settings} bare />}
+        coach={<PuzzleCoach tone="plain" label="Puzzle Sprint" line="Getting the first puzzle…" color="white" mood="thinking" moodKey="sprint-load" />}
+        score={scoreBlock}
+        acts={quit}
+      />
     )
   }
-  return (
-    <SprintPuzzle
-      puzzle={puzzle}
-      number={history.length + 1}
-      settings={settings}
-      tabs={tabs}
-      head={head}
-      below={<RunChips history={history} />}
-      onDone={done}
-      onQuit={() => finish(historyRef.current)}
-    />
-  )
+  return <SprintPuzzle puzzle={puzzle} settings={settings} tabs={tabs} score={scoreBlock} acts={quit} below={<RunChips history={history} />} onDone={done} />
 }
 
 interface SprintPuzzleProps {
   puzzle: Puzzle
-  number: number
   settings: Settings
   tabs: ReactNode
-  head: ReactNode
+  score: ReactNode
+  acts: ReactNode
   below: ReactNode
   onDone: (solved: boolean) => void
-  onQuit: () => void
 }
 
-function SprintPuzzle({ puzzle, number, settings, tabs, head, below, onDone, onQuit }: SprintPuzzleProps) {
+function SprintPuzzle({ puzzle, settings, tabs, score, acts, below, onDone }: SprintPuzzleProps) {
   const color = playerColor(puzzle)
   const s = usePuzzleSolve(puzzle, settings.soundVolume, QUICK)
   const [result, setResult] = useState<boolean | null>(null)
+  const [flipped, setFlipped] = useState(false)
   const [puzzleId, setPuzzleId] = useState(puzzle.id)
   if (puzzleId !== puzzle.id) {
     setPuzzleId(puzzle.id)
     setResult(null)
   }
+  const flip = useCallback(() => setFlipped((f) => !f), [])
+  useStepKeys(noStep, flip)
   // The run re-renders with every clock tick; the timer below mustn't restart each time.
   const onDoneRef = useRef(onDone)
   useEffect(() => {
@@ -299,24 +318,24 @@ function SprintPuzzle({ puzzle, number, settings, tabs, head, below, onDone, onQ
     }
   }
 
-  const feedback =
+  const say: { tone: Tone; label: string; line: string; mood: RookMood } =
     result === false
-      ? { kind: 'bad' as const, title: 'Not the move', detail: 'That costs a life.' }
+      ? { tone: 'bad', label: 'Not that one', line: 'That costs a life.', mood: 'ouch' }
       : result
-        ? { kind: 'good' as const, title: 'Solved!', detail: 'Next one…' }
+        ? { tone: 'good', label: 'Solved', line: 'Next one.', mood: 'pleased' }
         : s.lastResult === 'correct'
-          ? { kind: 'good' as const, title: 'Best move!', detail: 'Keep going…' }
-          : { kind: 'turn' as const, title: 'Your turn', detail: `Puzzle ${number} · ${sideName(color)} to play · rated ${puzzle.rating}` }
+          ? { tone: 'good', label: 'Best move', line: 'Keep going.', mood: 'pleased' }
+          : { tone: 'turn', label: `${sideName(color)} to move`, line: puzzleGoal(puzzle), mood: 'neutral' }
 
   return (
-    <PuzzleLayout
+    <PuzzlePanel
       tabs={tabs}
       below={below}
       board={
         <Board
           key={puzzle.id}
           fen={s.node.fen}
-          orientation={color}
+          orientation={flipped ? (color === 'white' ? 'black' : 'white') : color}
           lastMove={lastMoveOf(s.node)}
           shapes={[]}
           theme={settings.boardTheme}
@@ -326,15 +345,16 @@ function SprintPuzzle({ puzzle, number, settings, tabs, head, below, onDone, onQ
           mark={s.mark}
         />
       }
-    >
-      {head}
-      <Feedback {...feedback} color={color} />
-      <div className="panel-body puzzle-body" />
-      <div className="play-actions single">
-        <button className="btn ghost" onClick={onQuit}>
-          End run
-        </button>
-      </div>
-    </PuzzleLayout>
+      coach={<PuzzleCoach {...say} color={color} moodKey={`${puzzle.id}:${s.solve.played.length}:${say.label}`} />}
+      score={score}
+      acts={acts}
+      strip={
+        <div className="panel-strip puzzle-strip">
+          <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
+            <FlipIcon />
+          </button>
+        </div>
+      }
+    />
   )
 }

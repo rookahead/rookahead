@@ -1,11 +1,12 @@
-// Pieces the puzzle modes share: the layout, the solving hook, the feedback block, move navigation, streaks.
+// Pieces the puzzle modes share: the layout, the solving hook, the rook's line, move navigation, streaks.
 import { DEFAULT_POSITION } from 'chess.js'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
-import { FlipIcon, NavIcon } from '../../components/NavIcons'
-import { PieceIcon } from '../../components/PieceIcon'
 import { Flame } from '../../components/PuzzleIcons'
+import { RookCoach } from '../../components/RookCoach'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
+import type { RookMood } from '../../lib/coach'
 import { formatScore, type Color } from '../../lib/evaluation'
 import { NAV_ITEMS } from '../../lib/nav'
 import { revealSolution, startSolve, tryMove, type Puzzle } from '../../lib/puzzles'
@@ -76,6 +77,57 @@ export function PuzzleLayout({ board, tabs, above, below, children }: { board: R
   )
 }
 
+/**
+ * The rook's panel for the modes without Rated's own (Sprint, Your mistakes): the rook's line, the numbers, what
+ * the mode shows, then the buttons. Phones put the rook over the board and the buttons right under it.
+ */
+export function PuzzlePanel(props: { tabs: ReactNode; board: ReactNode; below?: ReactNode; coach: ReactNode; score?: ReactNode; body?: ReactNode; acts: ReactNode; strip?: ReactNode }) {
+  const { tabs, board, below, coach, score, body, acts, strip } = props
+  const phone = useMediaQuery('(max-width: 1000px)')
+  return (
+    <PuzzleLayout tabs={tabs} board={board} below={below} above={phone && coach}>
+      {phone ? (
+        <>
+          {score}
+          {acts}
+          {strip}
+          {body && <div className="puzzle-body">{body}</div>}
+        </>
+      ) : (
+        <>
+          {coach}
+          {score}
+          <div className="panel-body puzzle-body">{body}</div>
+          {acts}
+          {strip}
+        </>
+      )}
+    </PuzzleLayout>
+  )
+}
+
+/** A number with its word ("12 solved"), the bar under it, and a line of small print each side. */
+export function PuzzleScore({ num, unit, side, track, left, right }: { num: ReactNode; unit: string; side?: ReactNode; track?: { at: number; low?: boolean }; left: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="puzzle-score">
+      <div className="puzzle-score-top">
+        <strong className="puzzle-num">{num}</strong>
+        <span className="puzzle-unit">{unit}</span>
+        {side}
+      </div>
+      {track && (
+        <div className={`puzzle-track ${track.low ? 'low' : ''}`}>
+          <span style={{ width: `${Math.max(0, Math.min(1, track.at)) * 100}%` }} />
+        </div>
+      )}
+      <div className="puzzle-to">
+        <span>{left}</span>
+        <span>{right}</span>
+      </div>
+    </div>
+  )
+}
+
 /** No pieces, for a board waiting on a puzzle: its position then appears on a bare board instead of replacing the starting one. */
 const NO_PIECES = '8/8/8/8/8/8/8/8 w - - 0 1'
 
@@ -104,25 +156,30 @@ export function Placeholder({ tabs, settings, error, onRetry }: { tabs: ReactNod
   )
 }
 
-export type FeedbackKind = 'turn' | 'good' | 'bad' | 'neutral'
+/** turn: whose move (a dot in that side's colour); good/bad: a tick or a cross; plain: no mark. */
+export type Tone = 'turn' | 'good' | 'bad' | 'plain'
 
-/** The big status block: whose turn it is, or how the last move went. */
-export function Feedback({ kind, color, title, detail }: { kind: FeedbackKind; color: Color; title: string; detail?: ReactNode }) {
+export const clockFace = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+
+/** The rook and what it says: whose move it is or how the last one went, then one line. */
+export function PuzzleCoach({ tone, label, line, color, mood, moodKey }: { tone: Tone; label: string; line: string; color: Color; mood: RookMood; moodKey: string }) {
   return (
-    <div className={`feedback ${kind}`} role="status">
-      {/* Keyed by its message, so the icon pops on every change. */}
-      <span key={kind + title} className="feedback-icon" aria-hidden>
-        {kind === 'turn' ? (
-          <PieceIcon role="king" color={color} />
-        ) : (
-          <svg viewBox="0 0 24 24">
-            <path d={kind === 'good' ? 'M6.5 12.5l3.8 3.8 7.4-8.3' : kind === 'bad' ? 'M7.5 7.5l9 9M16.5 7.5l-9 9' : 'M7 12h10'} />
-          </svg>
-        )}
+    <div className="puzzle-coach" role="status">
+      <span className="puzzle-coach-rook">
+        <RookCoach mood={mood} moodKey={moodKey} />
       </span>
-      <span className="feedback-text">
-        <strong>{title}</strong>
-        {detail && <span>{detail}</span>}
+      <span className="puzzle-say">
+        <span className={`puzzle-who ${tone}`}>
+          {tone === 'plain' ? null : tone === 'turn' ? (
+            <i className={`puzzle-side ${color}`} aria-hidden />
+          ) : (
+            <svg className="line-icon" viewBox="0 0 24 24" aria-hidden>
+              <path d={tone === 'good' ? 'M5 12.5l4.5 4.5L19 7.5' : 'M6.5 6.5l11 11M17.5 6.5l-11 11'} />
+            </svg>
+          )}
+          {label}
+        </span>
+        <strong className="puzzle-line">{line}</strong>
       </span>
     </div>
   )
@@ -164,28 +221,6 @@ export function useStepKeys(step: (to: Step) => void, flip: () => void) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [step, flip])
-}
-
-export function StepNav({ at, last, onStep, onFlip }: { at: number; last: number; onStep: (to: Step) => void; onFlip: () => void }) {
-  return (
-    <nav className="play-nav" aria-label="Move navigation">
-      <button className="ctrl" onClick={() => onStep('first')} disabled={at === 0} aria-label="First move" title="First move (↑)">
-        <NavIcon name="first" />
-      </button>
-      <button className="ctrl" onClick={() => onStep('prev')} disabled={at === 0} aria-label="Previous move" title="Previous move (←)">
-        <NavIcon name="prev" />
-      </button>
-      <button className="ctrl" onClick={() => onStep('next')} disabled={at >= last} aria-label="Next move" title="Next move (→)">
-        <NavIcon name="next" />
-      </button>
-      <button className="ctrl" onClick={() => onStep('last')} disabled={at >= last} aria-label="Last move" title="Last move (↓)">
-        <NavIcon name="last" />
-      </button>
-      <button className="ctrl flip" onClick={onFlip} aria-label="Flip board" title="Flip board (F)">
-        <FlipIcon />
-      </button>
-    </nav>
-  )
 }
 
 export interface SolveTiming {

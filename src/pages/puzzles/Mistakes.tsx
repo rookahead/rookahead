@@ -6,10 +6,12 @@ import { Board } from '../../components/Board'
 import { ClassIcon } from '../../components/ClassIcon'
 import { Link } from '../../components/Link'
 import { OpenGameDialog } from '../../components/LoadGameDialog'
-import { FlipIcon } from '../../components/NavIcons'
+import { FlipIcon, NavIcon } from '../../components/NavIcons'
+import { PuzzleIcon } from '../../components/PuzzleIcons'
 import { useEngine } from '../../hooks/useEngine'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
 import { CLASS_INFO } from '../../lib/classify'
+import type { RookMood } from '../../lib/coach'
 import { formatDay } from '../../lib/home'
 import { acceptable, loadMistakes, type MistakePuzzle } from '../../lib/mistakes'
 import { localDayNumber } from '../../lib/puzzles'
@@ -21,7 +23,7 @@ import { playSound } from '../../lib/sound'
 import { mainline, mainlineToPgn } from '../../lib/tree'
 import { logUse } from '../../lib/usage'
 import type { Score } from '../../lib/uci'
-import { DayStreak, EmptyBoard, evalText, Feedback, lastMoveOf, Placeholder, PuzzleLayout, sideName, toMove, useStepKeys, walk, type ViewProps } from './shared'
+import { DayStreak, EmptyBoard, evalText, lastMoveOf, Placeholder, PuzzleCoach, PuzzlePanel, PuzzleScore, sideName, toMove, useStepKeys, walk, type Tone, type ViewProps } from './shared'
 
 export function MistakesView({ progress, update, settings, updateSettings, tabs, onOpenAnalysis }: ViewProps) {
   const [queue, setQueue] = useState<MistakePuzzle[] | null>(null)
@@ -37,29 +39,33 @@ export function MistakesView({ progress, update, settings, updateSettings, tabs,
   if (!queue) return <Placeholder tabs={tabs} settings={settings} />
   const mistake = queue[0]
   if (!mistake) {
+    const caughtUp = progress.mistakesSolved.length > 0
     return (
-      <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} />}>
-        <div className="panel-body puzzle-body">
-          <div className="puzzle-message">
-            <p>
-              <strong>{progress.mistakesSolved.length ? 'All caught up.' : 'No mistakes to learn from yet.'}</strong>
-              <span>Review a game and your Errors, Oversights and Blunders turn into puzzles here.</span>
-            </p>
-            <div className="puzzle-message-actions">
-              <button
-                className="btn primary small"
-                onClick={() => setLoadOpen(true)}
-              >
-                Load a game
-              </button>
-              <Link to="/play" className="btn ghost small">
-                Play the computer
-              </Link>
-            </div>
+      <PuzzlePanel
+        tabs={tabs}
+        board={<EmptyBoard settings={settings} />}
+        coach={
+          <PuzzleCoach
+            tone={caughtUp ? 'good' : 'plain'}
+            label={caughtUp ? 'All caught up' : 'No mistakes yet'}
+            line="Review a game and your mistakes turn into puzzles here."
+            color="white"
+            mood={caughtUp ? 'proud' : 'neutral'}
+            moodKey="mistakes-empty"
+          />
+        }
+        acts={
+          <div className="puzzle-acts">
+            <Link to="/play" className="btn ghost">
+              Play a game
+            </Link>
+            <button className="btn accent-btn" onClick={() => setLoadOpen(true)}>
+              Load a game
+            </button>
+            <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
           </div>
-        </div>
-        <OpenGameDialog open={loadOpen} onClose={() => setLoadOpen(false)} settings={settings} updateSettings={updateSettings} onOpenAnalysis={onOpenAnalysis} />
-      </PuzzleLayout>
+        }
+      />
     )
   }
   const day = localDayNumber(new Date())
@@ -70,6 +76,7 @@ export function MistakesView({ progress, update, settings, updateSettings, tabs,
       turn={`${mistake.id}/${round}`}
       mistake={mistake}
       left={queue.length}
+      solved={progress.mistakesSolved.length - solvedAtStart.current.length}
       engine={status?.state === 'ready' ? engine : null}
       settings={settings}
       tabs={tabs}
@@ -98,6 +105,8 @@ interface MistakeSolverProps {
   mistake: MistakePuzzle
   /** Mistakes in the queue, this one included. */
   left: number
+  /** Solved since the page opened. */
+  solved: number
   engine: ReturnType<typeof useEngine>['engine']
   settings: Settings
   tabs: ReactNode
@@ -111,7 +120,7 @@ interface MistakeSolverProps {
 const noStep = () => {}
 
 /** One of your mistakes: find a move that would have been Good or better. */
-function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, onSolved, onNext, onOpenGame }: MistakeSolverProps) {
+function MistakeSolver({ turn, mistake, left, solved: solvedNow, engine, settings, tabs, streak, onSolved, onNext, onOpenGame }: MistakeSolverProps) {
   const [phase, setPhase] = useState<'playing' | 'checking' | 'wrong' | 'solved' | 'shown'>('playing')
   // The move on the board after the start position (yours while it's checked, or the answer).
   const [move, setMove] = useState<string | null>(null)
@@ -181,23 +190,23 @@ function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, on
   const done = phase === 'solved' || phase === 'shown'
   const san = move ? new Chess(mistake.fen).move(toMove(move)).san : null
   const label = CLASS_INFO[mistake.cls].label
-  const feedback =
+  const say: { tone: Tone; label: string; line: string; mood: RookMood } =
     phase === 'checking'
-      ? { kind: 'neutral' as const, title: engine ? 'Checking…' : 'Starting the engine…', detail: 'Stockfish is looking at your move.' }
+      ? { tone: 'plain', label: engine ? 'Checking' : 'Starting the engine', line: 'Stockfish is looking at your move.', mood: 'thinking' }
       : phase === 'wrong'
-        ? { kind: 'bad' as const, title: 'Not good enough', detail: `That's ${wrongScore}. Try again.` }
+        ? { tone: 'bad', label: 'Not good enough', line: `That's ${wrongScore}. Try again.`, mood: 'ouch' }
         : phase === 'solved'
           ? move === mistake.best
-            ? { kind: 'good' as const, title: 'Best move!', detail: `${mistake.bestSan} is what the engine plays.` }
-            : { kind: 'good' as const, title: 'Good move!', detail: `${san} works too. The engine's choice: ${mistake.bestSan}.` }
+            ? { tone: 'good', label: 'Best move', line: `${mistake.bestSan} is the engine's move too.`, mood: 'proud' }
+            : { tone: 'good', label: 'Good move', line: `${san} works. The engine's pick: ${mistake.bestSan}.`, mood: 'pleased' }
           : phase === 'shown'
-            ? { kind: 'neutral' as const, title: `The move was ${mistake.bestSan}`, detail: 'It comes round again later.' }
-            : { kind: 'turn' as const, title: 'Your turn', detail: `Find a better move for ${sideName(mistake.color)}.` }
+            ? { tone: 'plain', label: `The move was ${mistake.bestSan}`, line: 'This one comes round again later.', mood: 'neutral' }
+            : { tone: 'turn', label: `${sideName(mistake.color)} to move`, line: `Find a better move than ${mistake.playedSan}.`, mood: 'neutral' }
   const shapes: DrawShape[] = phase === 'shown' ? [{ orig: mistake.best.slice(0, 2) as Key, dest: mistake.best.slice(2, 4) as Key, brush: 'best' }] : []
   const mark = phase === 'wrong' ? 'wrong' : phase === 'solved' ? 'correct' : undefined
 
   return (
-    <PuzzleLayout
+    <PuzzlePanel
       tabs={tabs}
       board={
         <Board
@@ -213,58 +222,66 @@ function MistakeSolver({ turn, mistake, left, engine, settings, tabs, streak, on
           mark={mark}
         />
       }
-    >
-      <div className="puzzle-head">
-        <div className="puzzle-rating">
-          <span className="muted">Learn from your mistakes</span>
-          <strong>{left}</strong>
-          <span className="muted">to go</span>
-          {streak}
+      coach={<PuzzleCoach {...say} color={mistake.color} moodKey={`${turn}:${phase}`} />}
+      score={
+        <PuzzleScore
+          num={left}
+          unit="to go"
+          side={streak}
+          track={{ at: solvedNow / (solvedNow + left) }}
+          left={`vs ${mistake.opponent}`}
+          right={`Reviewed ${formatDay(mistake.at / 1000)}`}
+        />
+      }
+      body={
+        <>
+          <div className="mistake-played">
+            <ClassIcon cls={mistake.cls} size={22} title={label} />
+            <p>
+              In the game you played <strong>{mistake.playedSan}</strong> here ({label}, {evalText(mistake.playedScore)}).
+            </p>
+          </div>
+          {done && (
+            <p className="mistake-best">
+              The engine's move: <strong>{mistake.bestSan}</strong> ({evalText(mistake.bestScore)})
+            </p>
+          )}
+        </>
+      }
+      acts={
+        <div className="puzzle-acts">
+          {done ? (
+            <>
+              <button className="ctrl" onClick={onOpenGame} aria-label="Open the game" title="Open the game">
+                <PuzzleIcon name="analyse" />
+              </button>
+              <button className="btn accent-btn" onClick={() => onNext(phase === 'solved')}>
+                {left > 1 ? 'Next' : phase === 'solved' ? 'Done' : 'Try again'}
+                {left > 1 && <NavIcon name="next" />}
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn ghost" onClick={show} disabled={phase !== 'playing'} title="Shows the move. This one comes round again.">
+                <PuzzleIcon name="hint" />
+                Show the move
+              </button>
+              {left > 1 && (
+                <button className="btn ghost puzzle-skip" onClick={() => onNext(false)} disabled={phase === 'checking'}>
+                  Skip
+                </button>
+              )}
+            </>
+          )}
         </div>
-        <span className="muted">
-          vs {mistake.opponent} · reviewed {formatDay(mistake.at / 1000)}
-        </span>
-      </div>
-      <Feedback {...feedback} color={mistake.color} />
-      <div className="panel-body puzzle-body">
-        <div className="mistake-played">
-          <ClassIcon cls={mistake.cls} size={22} title={label} />
-          <p>
-            In the game you played <strong>{mistake.playedSan}</strong> here ({label}, {evalText(mistake.playedScore)}).
-          </p>
+      }
+      strip={
+        <div className="panel-strip puzzle-strip">
+          <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
+            <FlipIcon />
+          </button>
         </div>
-        {done && (
-          <p className="mistake-best">
-            The engine's move: <strong>{mistake.bestSan}</strong> ({evalText(mistake.bestScore)})
-          </p>
-        )}
-      </div>
-      <nav className="play-nav mistake-nav" aria-label="Board">
-        <button className="ctrl flip" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-          <FlipIcon />
-        </button>
-      </nav>
-      <div className="play-actions">
-        {done ? (
-          <>
-            <button className="btn accent-btn puzzle-next" onClick={() => onNext(phase === 'solved')}>
-              {left > 1 ? 'Next mistake' : phase === 'solved' ? 'Done' : 'Try again'}
-            </button>
-            <button className="btn ghost" onClick={onOpenGame}>
-              Open game
-            </button>
-          </>
-        ) : (
-          <>
-            <button className="btn ghost" onClick={show} disabled={phase !== 'playing'}>
-              Show the move
-            </button>
-            <button className="btn ghost" onClick={() => onNext(false)} disabled={left <= 1}>
-              Skip
-            </button>
-          </>
-        )}
-      </div>
-    </PuzzleLayout>
+      }
+    />
   )
 }
