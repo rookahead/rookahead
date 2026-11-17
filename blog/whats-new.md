@@ -20,7 +20,7 @@ This page lists every change to the verdict rules, so you can see why a move's v
 - Fixed: Accept draw and Decline were different sizes.
 - Puzzle Sprint and Fix your mistakes now have the rook too: it says what to find and reacts to each move. Sprint shows your lives and the clock beside the score, with a bar that runs down.
 - When you solve a puzzle, the rook now names the pieces: "Your knight forked the king and the queen." or "The pin won the rook."
-- Fix your mistakes goes past the first move. If you missed a mate, you play it right to the mate, even a mate in 5 or 6, with the board answering each move. If you missed a tactic, you play it until you win the piece. Other mistakes stay one move, where any good move counts.
+- Fix your mistakes now starts with why. Your move plays on the board and its verdict is spelled out on the square. Then it's your call: press Why? and the coach sends a note on what went wrong while the board plays what it allowed, or go straight to finding a better move. You keep playing with the computer answering: a missed mate or tactic to the end, anything else for as long as your moves are the only good ones or keep forcing (checks, captures, a pawn running), up to eight. Once solved, the coach says why the better move works.
 - Play it out: after any puzzle, in Fix your mistakes, and on the analysis board, play the position on against the computer. You play the side at the bottom of the board. These practice games have no clock and aren't saved or counted; Try again starts from the same position.
 
 ## 16 November 2026
