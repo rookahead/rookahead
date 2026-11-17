@@ -83,6 +83,9 @@ const sleep = (ms: number, signal: AbortSignal) =>
     })
   })
 
+/** How long a new game's face-to-face lasts, ms (index.css times its parts to it; the online game's is the same). */
+const INTRO_MS = 1900
+
 /** Resumed games continue their clock from where it stopped: time away isn't charged. */
 function restoreGame(): LiveGame | null {
   const g = loadLiveGame()
@@ -104,6 +107,8 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
   const ready = status?.state === 'ready'
   const [setup, setSetup] = useState<PlaySetup>(loadSetup)
   const [game, setGame] = useState<LiveGame | null>(restoreGame)
+  // A game started here (not one a reload came back to) opens with the two players face to face, like an online one.
+  const [freshGame, setFreshGame] = useState<string | null>(null)
   // Online: the game you're playing on Lichess (kept, so a reload goes back to it), and the search for one.
   const [onlineSetup, setOnlineSetup] = useState<OnlineSetup>(loadOnlineSetup)
   const [online, setOnline] = useState<StartedGame | null>(loadLiveOnline)
@@ -204,13 +209,16 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
     saveSetup(s)
     const color: Color = s.color === 'random' ? (Math.random() < 0.5 ? 'white' : 'black') : s.color
     const now = Date.now()
+    const id = `${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    setFreshGame(id)
     setGame({
-      id: `${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      id,
       startFen: DEFAULT_POSITION,
       color,
       setup: s,
       moves: [],
-      clock: startClock(s.clock, now, 'white'),
+      // The clocks start once the players' face-to-face has cleared.
+      clock: startClock(s.clock, now + INTRO_MS, 'white'),
       takebacks: 0,
       hints: 0,
       outcome: null,
@@ -267,6 +275,7 @@ export function PlayPage({ active, settings, updateSettings, onOpenAnalysis }: P
       ) : game ? (
         <GameView
           key={game.id}
+          fresh={game.id === freshGame}
           phone={phone}
           active={active}
           gear={gear}
@@ -887,9 +896,11 @@ interface GameViewProps {
   onCloseShare: () => void
   /** Phones: Board settings are in the page header, and the moves are a strip. */
   phone: boolean
+  /** Just started here: the players meet over the board first. */
+  fresh: boolean
 }
 
-function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onToggleSound, onCloseShare, phone }: GameViewProps) {
+function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onReview, active, gear, sharing, onShare, onToggleSound, onCloseShare, phone, fresh }: GameViewProps) {
   const level = levelInfo(game.setup.level)
   const { tree, line } = useMemo(() => {
     const t = addLine(createTree(game.startFen), ROOT_ID, game.moves, game.clocks).tree
@@ -911,6 +922,18 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   // Which ending is waiting for its confirmation dialog.
   const [confirming, setConfirming] = useState<'abort' | 'resign' | null>(null)
   const busy = useRef<AbortController | null>(null)
+
+  // A new game opens with you and the computer face to face over the board, with the start clank, as online games do.
+  // The computer waits for it to clear before its first move (the clocks start then too, see start()).
+  const [intro, setIntro] = useState(fresh)
+  const introShown = intro && game.moves.length === 0 && !game.outcome
+  useEffect(() => {
+    if (!introShown) return
+    playSound('start', settings.soundVolume)
+    const t = setTimeout(() => setIntro(false), INTRO_MS)
+    return () => clearTimeout(t)
+    // Only the intro starting plays it, not a change of volume during it.
+  }, [introShown])
 
   // Looking back through the game: the ply on show, or null for the live position. Any new move
   // (or a takeback) returns to live, as does stepping past the last move.
@@ -1037,7 +1060,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   // The computer's move: score every legal move, choose like a player of the level's rating would
   // (botMove.ts), then wait out a human-like pause.
   useEffect(() => {
-    if (!engine || game.outcome || turn === game.color) return
+    if (!engine || game.outcome || turn === game.color || introShown) return
     const ctrl = new AbortController()
     busy.current = ctrl
     const fen = node.fen
@@ -1082,7 +1105,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       }
     })
     return () => ctrl.abort()
-  }, [engine, node.fen, turn, game.color, game.outcome, game.moves.length, level, book, play])
+  }, [engine, node.fen, turn, game.color, game.outcome, game.moves.length, level, book, play, introShown])
 
   // Clocks: tick while a timed game runs, and end it on a flag.
   useEffect(() => {
@@ -1184,6 +1207,18 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
       clock={clockOf(c)}
     />
   )
+  const face = (c: Color) => {
+    const mine = c === game.color
+    return (
+      <div className={`vs-card ${mine ? 'you' : 'them'}`}>
+        <span className={`player-avatar ${c}`}>{mine ? (yourFace ?? yourName[0]?.toUpperCase()) : computerFace}</span>
+        <span className="vs-name">
+          <strong>{mine ? yourName : computerName}</strong>
+          {!mine && <span>{level.rating}</span>}
+        </span>
+      </div>
+    )
+  }
   const lastMove = shown.from && shown.to ? ([shown.from, shown.to] as [typeof shown.from, typeof shown.to]) : undefined
   // How the game ended, on the kings, once it's over and the final position is on the board.
   const ends = game.outcome && viewPly === null ? endMarks(shown.fen, { result: game.outcome.result, termination: game.outcome.reason }) : undefined
@@ -1260,6 +1295,13 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           ends={ends}
         />
         {!focused && bar(orientation)}
+        {introShown && (
+          <div className="vs-intro" aria-hidden>
+            {face(other(orientation))}
+            <span className="vs-chip">VS</span>
+            {face(orientation)}
+          </div>
+        )}
       </section>
 
       <aside className="panel play-panel">
