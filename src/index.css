@@ -5417,6 +5417,135 @@ button.explain-row {
   pointer-events: none;
 }
 
+/* Desktop Puzzles' start page (puzzles/Start.tsx): the coach's word, rated puzzles as the big card, the other modes
+   as Home's picture tiles. */
+.puzzle-start {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 16px 16px;
+  overflow-y: auto;
+}
+
+/* The coach speaks in a bubble: its line stands on its own, not in a row with other words. */
+.start-coach {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  /* The rook's face takes the panel's colour. */
+  --surface: var(--surface);
+}
+
+.start-coach-rook {
+  flex: none;
+  width: 54px;
+  height: 63px;
+}
+
+.start-bubble {
+  flex: 1;
+  margin: 0 0 16px;
+  padding: 12px 15px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.start-solve {
+  gap: 10px;
+}
+
+.start-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.start-rating {
+  font: 800 34px/1 var(--font-display);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.start-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--play-ink) 16%, transparent);
+  overflow: hidden;
+}
+
+.start-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--play-btn);
+}
+
+.start-to {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.start-solve .home-play-go {
+  margin-top: 4px;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+.start-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.start-tiles .home-tile {
+  height: 150px;
+  padding: 14px;
+}
+
+.start-tiles .tile-board .mini-board,
+.start-tiles .tile-board-blank {
+  width: 96px;
+  height: 96px;
+}
+
+/* Sprint: a bolt, in the puzzles' own colour. */
+.tile-bolt svg {
+  width: 84px;
+  height: 84px;
+  fill: var(--tone-blue);
+  rotate: 10deg;
+  translate: 0 22px;
+}
+
+/* Your mistakes waiting: the number, big. */
+.tile-count {
+  position: absolute;
+  inset: auto 0 6px;
+  color: var(--danger);
+  font: 800 46px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Picture tiles inside a panel (Play's front, Puzzles' start): a step off the panel, which on light themes is
+   the same white as a card. */
+.panel .home-tile {
+  background: var(--surface-2);
+}
+
+.panel .home-tile:hover {
+  background: var(--surface-3);
+}
+
 /* A friend: you and whoever it'll be, face to face. */
 .tile-friend {
   align-items: center;

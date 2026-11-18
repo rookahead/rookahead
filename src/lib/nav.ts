@@ -41,7 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/puzzles',
     icon: 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z',
     menu: [
-      { label: 'Rated puzzles', text: 'Puzzles at your rating', path: '/puzzles', tone: 'accuracy' },
+      { label: 'Rated puzzles', text: 'Puzzles at your rating', path: '/puzzles/rated', tone: 'accuracy' },
       { label: 'Puzzle Sprint', text: 'Against the clock, three lives', path: '/puzzles/sprint', tone: 'clock' },
       { label: 'Daily puzzle', text: 'The same one for everyone today', path: '/puzzles/daily', tone: 'puzzles' },
       { label: 'Fix your mistakes', text: 'Puzzles from your own games', path: '/puzzles/mistakes', tone: 'mistakes' },

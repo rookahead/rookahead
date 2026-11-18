@@ -57,7 +57,7 @@ function formatClock(ms: number) {
 const noStep = () => {}
 
 /** Puzzle Sprint: as many puzzles as you can, getting harder, until the clock or three mistakes stop you. */
-export function SprintView({ progress, update, settings, tabs }: ViewProps) {
+export function SprintView({ progress, update, settings, head }: ViewProps) {
   const [mode, setMode] = useState<SprintMode>('3min')
   const [running, setRunning] = useState<{ mode: SprintMode; key: number } | null>(null)
   const [finished, setFinished] = useState<Finished | null>(null)
@@ -84,7 +84,7 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
     [update, settings.soundVolume],
   )
 
-  if (running) return <SprintRun key={running.key} mode={running.mode} best={progress.sprintBest[running.mode] ?? 0} settings={settings} tabs={tabs} onEnd={(h) => end(running.mode, h)} />
+  if (running) return <SprintRun key={running.key} mode={running.mode} best={progress.sprintBest[running.mode] ?? 0} settings={settings} head={head} onEnd={(h) => end(running.mode, h)} />
 
   if (finished) {
     const score = finished.history.filter((e) => e.solved).length
@@ -96,7 +96,7 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
         : { tone: 'plain', label: 'Run over', line: 'None solved this time. Go again?', mood: 'ouch' }
     return (
       <PuzzlePanel
-        tabs={tabs}
+        head={head}
         board={<EmptyBoard settings={settings} />}
         below={<RunChips history={finished.history} />}
         coach={<PuzzleCoach {...say} color="white" moodKey={`sprint-end:${finished.history.length}`} />}
@@ -125,7 +125,7 @@ export function SprintView({ progress, update, settings, tabs }: ViewProps) {
 
   return (
     <PuzzlePanel
-      tabs={tabs}
+      head={head}
       board={<EmptyBoard settings={settings} />}
       coach={<PuzzleCoach tone="plain" label="Puzzle Sprint" line="Puzzles start easy and get harder. Three mistakes end the run." color="white" mood="neutral" moodKey="sprint" />}
       body={
@@ -197,7 +197,7 @@ function RunScore({ score, strikes, left, limit, number, rating, best }: { score
 }
 
 /** One run: fetches puzzles up the rating ladder (the next one ahead of time) and keeps the clock. */
-function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; best: number; settings: Settings; tabs: ReactNode; onEnd: (history: RunEntry[]) => void }) {
+function SprintRun({ mode, best, settings, head, onEnd }: { mode: SprintMode; best: number; settings: Settings; head: ReactNode; onEnd: (history: RunEntry[]) => void }) {
   const limit = SPRINT_MODES[mode].ms
   const [history, setHistory] = useState<RunEntry[]>([])
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
@@ -282,7 +282,7 @@ function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; be
   if (!puzzle) {
     return (
       <PuzzlePanel
-        tabs={tabs}
+        head={head}
         board={<EmptyBoard settings={settings} bare />}
         coach={<PuzzleCoach tone="plain" label="Puzzle Sprint" line="Getting the first puzzle…" color="white" mood="thinking" moodKey="sprint-load" />}
         score={scoreBlock}
@@ -290,20 +290,20 @@ function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; be
       />
     )
   }
-  return <SprintPuzzle puzzle={puzzle} settings={settings} tabs={tabs} score={scoreBlock} acts={quit} below={<RunChips history={history} />} onDone={done} />
+  return <SprintPuzzle puzzle={puzzle} settings={settings} head={head} score={scoreBlock} acts={quit} below={<RunChips history={history} />} onDone={done} />
 }
 
 interface SprintPuzzleProps {
   puzzle: Puzzle
   settings: Settings
-  tabs: ReactNode
+  head: ReactNode
   score: ReactNode
   acts: ReactNode
   below: ReactNode
   onDone: (solved: boolean) => void
 }
 
-function SprintPuzzle({ puzzle, settings, tabs, score, acts, below, onDone }: SprintPuzzleProps) {
+function SprintPuzzle({ puzzle, settings, head, score, acts, below, onDone }: SprintPuzzleProps) {
   const color = playerColor(puzzle)
   const s = usePuzzleSolve(puzzle, settings.soundVolume, QUICK)
   const [result, setResult] = useState<boolean | null>(null)
@@ -352,7 +352,7 @@ function SprintPuzzle({ puzzle, settings, tabs, score, acts, below, onDone }: Sp
 
   return (
     <PuzzlePanel
-      tabs={tabs}
+      head={head}
       below={below}
       board={
         <Board

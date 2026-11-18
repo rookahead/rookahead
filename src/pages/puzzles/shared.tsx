@@ -22,7 +22,7 @@ export interface ViewProps {
   update: Update
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
-  tabs: ReactNode
+  head: ReactNode
   onOpenAnalysis: () => void
 }
 
@@ -41,13 +41,13 @@ export function walk(fen: string, moves: string[]): { fens: string[]; tree: Game
   return { fens: mainline(tree).map((n) => n.fen), tree }
 }
 
-const PUZZLES_ICON = NAV_ITEMS.find((item) => item.id === 'puzzles')!.icon
+export const PUZZLES_ICON = NAV_ITEMS.find((item) => item.id === 'puzzles')!.icon
 
 /**
  * Board on the left, panel on the right; `below` sits under the board, `above` over it. On desktop the panel
- * opens with the page's name and the mode tabs (the page has no bar of its own there, so the board gets the height).
+ * opens with `head`, the page's name (the page has no bar of its own there, so the board gets the height).
  */
-export function PuzzleLayout({ board, tabs, above, below, children }: { board: ReactNode; tabs: ReactNode; above?: ReactNode; below?: ReactNode; children: ReactNode }) {
+export function PuzzleLayout({ board, head, above, below, children }: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; children: ReactNode }) {
   return (
     <main className="play-layout puzzle-layout">
       <section className="play-board">
@@ -57,19 +57,7 @@ export function PuzzleLayout({ board, tabs, above, below, children }: { board: R
       </section>
       <aside className="panel play-panel">
         <div className="panel-card">
-          {tabs && (
-            <div className="panel-top">
-              <div className="panel-top-side" />
-              <h1 className="panel-title">
-                <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
-                  <path d={PUZZLES_ICON} />
-                </svg>
-                Puzzles
-              </h1>
-              <div className="panel-top-side end" />
-            </div>
-          )}
-          {tabs}
+          {head}
           {children}
         </div>
       </aside>
@@ -81,11 +69,11 @@ export function PuzzleLayout({ board, tabs, above, below, children }: { board: R
  * The rook's panel for the modes without Rated's own (Sprint, Your mistakes): the rook's line, the numbers, what
  * the mode shows, then the buttons. Phones put the rook over the board and the buttons right under it.
  */
-export function PuzzlePanel(props: { tabs: ReactNode; board: ReactNode; below?: ReactNode; coach: ReactNode; score?: ReactNode; body?: ReactNode; acts: ReactNode; strip?: ReactNode }) {
-  const { tabs, board, below, coach, score, body, acts, strip } = props
+export function PuzzlePanel(props: { head: ReactNode; board: ReactNode; below?: ReactNode; coach: ReactNode; score?: ReactNode; body?: ReactNode; acts: ReactNode; strip?: ReactNode }) {
+  const { head, board, below, coach, score, body, acts, strip } = props
   const phone = useMediaQuery('(max-width: 1000px)')
   return (
-    <PuzzleLayout tabs={tabs} board={board} below={below} above={phone && coach}>
+    <PuzzleLayout head={head} board={board} below={below} above={phone && coach}>
       {phone ? (
         <>
           {score}
@@ -137,9 +125,9 @@ export function EmptyBoard({ settings, bare = false }: { settings: Settings; bar
 }
 
 /** While a puzzle loads, or when it can't: an empty, locked board and a message. */
-export function Placeholder({ tabs, settings, error, onRetry }: { tabs: ReactNode; settings: Settings; error?: boolean; onRetry?: () => void }) {
+export function Placeholder({ head, settings, error, onRetry }: { head: ReactNode; settings: Settings; error?: boolean; onRetry?: () => void }) {
   return (
-    <PuzzleLayout tabs={tabs} board={<EmptyBoard settings={settings} bare />}>
+    <PuzzleLayout head={head} board={<EmptyBoard settings={settings} bare />}>
       <div className="panel-body puzzle-body">
         {error ? (
           <div className="puzzle-message">

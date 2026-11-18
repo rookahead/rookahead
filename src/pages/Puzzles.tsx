@@ -6,9 +6,9 @@ import { Board } from '../components/Board'
 import { FlipIcon, NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
 import { Flame, PuzzleIcon } from '../components/PuzzleIcons'
-import { TAB_ICONS, Tabs } from '../components/Tabs'
+import { Link } from '../components/Link'
+import { TAB_ICONS } from '../components/Tabs'
 import { useMediaQuery } from '../hooks/useMediaQuery'
-import { useMistakes } from '../hooks/useMistakes'
 import { formatDay } from '../lib/home'
 import type { RookMood } from '../lib/coach'
 import type { Color } from '../lib/evaluation'
@@ -25,8 +25,9 @@ import { useStoreVersion } from '../lib/syncBus'
 import { logUse } from '../lib/usage'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { PuzzleHub } from './puzzles/Hub'
+import { PuzzleStart } from './puzzles/Start'
 import { MistakesView } from './puzzles/Mistakes'
-import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
+import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, PUZZLES_ICON, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
@@ -44,9 +45,10 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
   const live = usePathname()
   const pathname = leaving ? '/puzzles' : live
   const tab = puzzleTab(pathname)
-  // Phones: plain /puzzles lists the modes; a mode opens full screen, with Back to that list.
+  // Plain /puzzles is where the modes start: a phone's path of chapters, the start page on desktop. A mode opens
+  // on its own, with Back to it.
   const phone = useMediaQuery('(max-width: 1000px)')
-  const hub = phone && isPuzzleHub(pathname)
+  const hub = isPuzzleHub(pathname)
   useImmersive(phone && !hub)
   const [progress, setProgress] = useState(loadProgress)
   // A sync pass brought progress from the account: carry on from it.
@@ -64,14 +66,17 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
     })
   }, [])
 
-  const tabs = phone ? null : <PuzzleTabs tab={tab} solved={progress.mistakesSolved} />
-  const props: ViewProps = { progress, update, settings, updateSettings, tabs, onOpenAnalysis }
+  // Desktop: the panel's top says which mode this is, with Back to the start page (a phone has its page bar).
+  const head = phone ? null : <PanelHead tab={hub ? null : tab} />
+  const props: ViewProps = { progress, update, settings, updateSettings, head, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
       {/* Desktop has the page's name at the top of the panel, so the board gets the height. */}
       <PageHeader phoneOnly title="Puzzles" back={hub ? undefined : '/puzzles'} phoneTitle={MODE_NAMES[tab]} />
-      {hub ? (
+      {hub && phone ? (
         <PuzzleHub progress={progress} settings={settings} />
+      ) : hub ? (
+        <PuzzleStart progress={progress} settings={settings} head={head} />
       ) : (
         <>
           {tab === 'rated' && <RatedView {...props} />}
@@ -86,21 +91,25 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
 
 const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Fix your mistakes' }
 
-function PuzzleTabs({ tab, solved }: { tab: PuzzleTab; solved: string[] }) {
-  const mistakes = useMistakes()
-  // Mistakes solved on this page don't reach the shared list until it re-reads: leave them out here.
-  const waiting = mistakes?.filter((m) => !solved.includes(m.id)).length
+/** The top of the panel: the mode's name with Back to the start page, or (`tab` null) the start page's own. */
+function PanelHead({ tab }: { tab: PuzzleTab | null }) {
   return (
-    <Tabs
-      label="Puzzle modes"
-      value={tab}
-      items={[
-        { id: 'rated', to: '/puzzles', label: 'Rated', icon: TAB_ICONS.rated },
-        { id: 'sprint', to: '/puzzles/sprint', label: 'Sprint', icon: TAB_ICONS.sprint },
-        { id: 'daily', to: '/puzzles/daily', label: 'Daily', icon: TAB_ICONS.daily },
-        { id: 'mistakes', to: '/puzzles/mistakes', label: 'Mistakes', icon: TAB_ICONS.mistakes, badge: waiting },
-      ]}
-    />
+    <div className="panel-top">
+      <div className="panel-top-side">
+        {tab && (
+          <Link to="/puzzles" className="icon-btn" aria-label="Back to Puzzles" title="Back to Puzzles">
+            <NavIcon name="back" />
+          </Link>
+        )}
+      </div>
+      <h1 className="panel-title">
+        <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
+          {tab ? TAB_ICONS[tab] : <path d={PUZZLES_ICON} />}
+        </svg>
+        {tab ? MODE_NAMES[tab] : 'Puzzles'}
+      </h1>
+      <div className="panel-top-side end" />
+    </div>
   )
 }
 
@@ -121,7 +130,7 @@ function analysePuzzle(puzzle: Puzzle, played: string[], onOpenAnalysis: () => v
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : `−${-n}`)
 
-function RatedView({ progress, update, settings, tabs, onOpenAnalysis }: ViewProps) {
+function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewProps) {
   // Resume the puzzle on the board if it hasn't counted yet; otherwise fetch the next one.
   const [line, setLine] = useState<string | null>(() => (progress.current && !progress.current.result ? progress.current.line : null))
   const [error, setError] = useState(false)
@@ -168,7 +177,7 @@ function RatedView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
   }, [line, next, fetchNext])
 
   const puzzle = line ? parsePuzzleLine(line) : null
-  if (!puzzle) return <Placeholder tabs={tabs} settings={settings} error={error} onRetry={next} />
+  if (!puzzle) return <Placeholder head={head} settings={settings} error={error} onRetry={next} />
   const current = progress.current?.line === line ? progress.current : undefined
   const delta = current?.delta
   const days = dayStreak(progress, localDayNumber(new Date()))
@@ -178,7 +187,7 @@ function RatedView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
       kind="rated"
       puzzle={puzzle}
       settings={settings}
-      tabs={tabs}
+      head={head}
       counted={Boolean(current?.result)}
       onResult={(won) => update(() => recordRated(progressRef.current, won))}
       onNext={next}
@@ -255,7 +264,7 @@ function RatedPrefs({ prefs, onChange, children }: { prefs: PuzzleProgress['pref
   )
 }
 
-function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewProps) {
+function DailyView({ progress, update, settings, head, onOpenAnalysis }: ViewProps) {
   const [today] = useState(() => new Date())
   const day = dayNumber(today)
   const [line, setLine] = useState<string | null>(null)
@@ -268,7 +277,7 @@ function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
   }
 
   const puzzle = line ? parsePuzzleLine(line) : null
-  if (!puzzle) return <Placeholder tabs={tabs} settings={settings} error={error} onRetry={retry} />
+  if (!puzzle) return <Placeholder head={head} settings={settings} error={error} onRetry={retry} />
   const done = progress.daily?.day === day ? progress.daily.result : undefined
   return (
     <Solver
@@ -276,7 +285,7 @@ function DailyView({ progress, update, settings, tabs, onOpenAnalysis }: ViewPro
       key={puzzle.id}
       puzzle={puzzle}
       settings={settings}
-      tabs={tabs}
+      head={head}
       counted={Boolean(done)}
       onResult={(won) => update((p) => (p.daily?.day === day ? p : { ...p, daily: { day, result: won ? 'solved' : 'failed' } }))}
       onSolved={() => update((p) => recordDay(p, localDayNumber(new Date())))}
@@ -304,7 +313,7 @@ interface SolverProps {
   kind: 'rated' | 'daily'
   puzzle: Puzzle
   settings: Settings
-  tabs: ReactNode
+  head: ReactNode
   /** The mode's numbers (the rating, or the day), with the clock beside them where it's handed one (phones). */
   score: (clock: ReactNode) => ReactNode
   /** The result has already counted (a refresh after a wrong move, or today's daily done). */
@@ -346,7 +355,7 @@ const PIECES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 
  * move went; the numbers, the clock and one clear next step follow. On a phone the rook's line sits over the
  * board and the rest under it, in the same order.
  */
-function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolved, onNext, autoNext, onAnalyse, points, missNote, prefs }: SolverProps) {
+function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolved, onNext, autoNext, onAnalyse, points, missNote, prefs }: SolverProps) {
   const phone = useMediaQuery('(max-width: 1000px)')
   const color = playerColor(puzzle)
   const s = usePuzzleSolve(puzzle, settings.soundVolume)
@@ -520,7 +529,7 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
 
   return (
     <PuzzleLayout
-      tabs={tabs}
+      head={head}
       above={phone && coach}
       board={
         <Board

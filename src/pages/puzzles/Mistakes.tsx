@@ -31,7 +31,7 @@ import { mainline, mainlineToPgn } from '../../lib/tree'
 import { logUse } from '../../lib/usage'
 import { EmptyBoard, evalText, lastMoveOf, Placeholder, PuzzleCoach, PuzzlePanel, sideName, toMove, useStepKeys, walk, type Tone, type ViewProps } from './shared'
 
-export function MistakesView({ progress, update, settings, updateSettings, tabs, onOpenAnalysis }: ViewProps) {
+export function MistakesView({ progress, update, settings, updateSettings, head, onOpenAnalysis }: ViewProps) {
   const [queue, setQueue] = useState<MistakePuzzle[] | null>(null)
   // Counts moves through the queue, so a mistake that comes round again starts afresh.
   const [round, setRound] = useState(0)
@@ -42,13 +42,13 @@ export function MistakesView({ progress, update, settings, updateSettings, tabs,
   const { engine, status } = useEngine('lite', { threads: 1, hashMb: 16 })
   const [loadOpen, setLoadOpen] = useState(false)
 
-  if (!queue) return <Placeholder tabs={tabs} settings={settings} />
+  if (!queue) return <Placeholder head={head} settings={settings} />
   const mistake = queue[0]
   if (!mistake) {
     const caughtUp = progress.mistakesSolved.length > 0
     return (
       <PuzzlePanel
-        tabs={tabs}
+        head={head}
         board={<EmptyBoard settings={settings} />}
         coach={
           <PuzzleCoach
@@ -86,7 +86,7 @@ export function MistakesView({ progress, update, settings, updateSettings, tabs,
       solved={progress.mistakesSolved.length - solvedAtStart.current.length}
       engine={status?.state === 'ready' ? engine : null}
       settings={settings}
-      tabs={tabs}
+      head={head}
       onSolved={() => update((p) => recordMistakeSolved(p, mistake.id, day))}
       onNext={(solved) => {
         setRound((r) => r + 1)
@@ -128,7 +128,7 @@ interface MistakeSolverProps {
   solved: number
   engine: Engine
   settings: Settings
-  tabs: ReactNode
+  head: ReactNode
   onSolved: () => void
   /** On to the next one; an unsolved one goes to the back of the queue. */
   onNext: (solved: boolean) => void
@@ -184,7 +184,7 @@ type Found = 'best' | 'good'
  * One of your mistakes as a puzzle. A missed mate is played out to the mate and a missed tactic to the piece it wins,
  * the board answering each of your moves; anything else is one move that has to be Good or better.
  */
-function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engine, settings, tabs, onSolved, onNext, onOpenGame }: MistakeSolverProps) {
+function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engine, settings, head, onSolved, onNext, onOpenGame }: MistakeSolverProps) {
   const [plan, setPlan] = useState<LinePlan | null>(() => cachedPlan(mistake.id) ?? null)
   const [phase, setPhase] = useState<Phase>(() => (plan ? 'story' : 'planning'))
   // The story first: how many of its moves (yours, then what it allowed) are on the board.
@@ -541,7 +541,7 @@ function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engin
 
   return (
     <PuzzlePanel
-      tabs={tabs}
+      head={head}
       board={
         <Board
           key={turn}
