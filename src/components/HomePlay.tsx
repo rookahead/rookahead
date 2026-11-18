@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useAccount } from '../lib/account'
 import { clockLabel } from '../lib/clock'
 import { useFriends } from '../lib/friends'
@@ -21,6 +21,10 @@ import { ROOK_PATH } from './RookCoach'
 import { Sheet } from './Sheet'
 import { AvatarFace } from './UserCard'
 
+/** The picture tiles under the Play card: Home has all four, Play's front the two ways to play. */
+export type TileId = 'friend' | 'coach' | 'daily' | 'puzzles'
+const HOME_TILES: TileId[] = ['friend', 'coach', 'daily', 'puzzles']
+
 const CLOCKS = ONLINE_CLOCKS.flatMap((g) => g.clocks.map((clock) => ({ clock, group: g.group })))
 
 /** What Play has kept: the last setups, and a game still on its board. */
@@ -28,11 +32,11 @@ const kept = () => ({ online: loadOnlineSetup(), computer: loadSetup(), liveOnli
 
 /**
  * Home's Play card, filled with your colour: an online game at the time you last picked, one press away. It says
- * instead when a game of yours is still on Play's board, or that Lichess isn't connected yet. Under it, four
- * picture tiles: a friend, the computer, today's puzzle and rated puzzles. Each part keeps its height whatever
+ * instead when a game of yours is still on Play's board, or that Lichess isn't connected yet. Under it, picture
+ * tiles: on Home a friend, the coach, today's puzzle and rated puzzles; on Play's front the coach and a friend. Each part keeps its height whatever
  * it has to say.
  */
-export function HomePlay({ active, games, theme }: { active: boolean; games: MyGame[]; theme: BoardTheme }) {
+export function HomePlay({ active, games, theme, tiles = HOME_TILES }: { active: boolean; games: MyGame[]; theme: BoardTheme; tiles?: TileId[] }) {
   const { link, busy, error } = useLichess()
   const { friends } = useFriends()
   // Read again on coming back to Home: Play may have changed any of it meanwhile.
@@ -162,7 +166,7 @@ export function HomePlay({ active, games, theme }: { active: boolean; games: MyG
         )}
 
   </section>
-      <HomeTiles theme={theme} level={`Level ${level.level} · ${level.rating}`} friend={!linked ? 'Needs Lichess' : onLichess ? `${onLichess} on Lichess` : 'By Lichess username'} playing={!!playing} />
+      <HomeTiles tiles={tiles} theme={theme} level={`Level ${level.level} · ${level.rating}`} friend={!linked ? 'Needs Lichess' : onLichess ? `${onLichess} on Lichess` : 'By Lichess username'} playing={!!playing} />
     </>
   )
 }
@@ -172,13 +176,13 @@ export function HomePlay({ active, games, theme }: { active: boolean; games: MyG
  * faintly: "vs" between you and a friend, a board's squares under the rook and the puzzle piece. A game on the board
  * is the one Play shows, whichever way you go in, so the two ways to play wait for it.
  */
-function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level: string; friend: string; playing: boolean }) {
+function HomeTiles({ tiles, theme, level, friend, playing }: { tiles: TileId[]; theme: BoardTheme; level: string; friend: string; playing: boolean }) {
   const { account, username } = useAccount()
   const { puzzle, done, days, rating } = useDailyPuzzle()
   const first = puzzle?.moves[0]
-  return (
-    <nav className="home-tiles" aria-label="More to play">
-      <Link to="/play/friend" className="home-card home-tile" inert={playing}>
+  const all: Record<TileId, ReactNode> = {
+    friend: (
+      <Link key="friend" to="/play/friend" className="home-card home-tile" inert={playing}>
         <strong>Play a friend</strong>
         <small>{friend}</small>
         <b className="home-tile-mark" aria-hidden>
@@ -190,8 +194,10 @@ function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level
           <span className="player-avatar black">?</span>
         </span>
       </Link>
-      <Link to="/play/computer" className="home-card home-tile on-board" inert={playing}>
-        <strong>Coach</strong>
+    ),
+    coach: (
+      <Link key="coach" to="/play/computer" className="home-card home-tile on-board" inert={playing}>
+        <strong>Play the coach</strong>
         <small>{level}</small>
         <span className="home-tile-art tile-rook" aria-hidden>
           <svg viewBox="10 2 100 100">
@@ -201,7 +207,9 @@ function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level
           </svg>
         </span>
       </Link>
-      <Link to="/puzzles/daily" className="home-card home-tile">
+    ),
+    daily: (
+      <Link key="daily" to="/puzzles/daily" className="home-card home-tile">
         <strong>Daily puzzle</strong>
         <small>{done === 'solved' ? 'Solved · next one tomorrow' : done === 'failed' ? 'Missed · next one tomorrow' : days ? `Keeps your ${days}-day streak` : formatDay(Date.now() / 1000)}</small>
         <span className="home-tile-art tile-board" aria-hidden>
@@ -212,7 +220,9 @@ function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level
           )}
         </span>
       </Link>
-      <Link to="/puzzles/rated" className="home-card home-tile on-board">
+    ),
+    puzzles: (
+      <Link key="puzzles" to="/puzzles/rated" className="home-card home-tile on-board">
         <strong>Puzzles</strong>
         <small>Rating {rating}</small>
         <span className="home-tile-art tile-piece" aria-hidden>
@@ -221,6 +231,11 @@ function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level
           </svg>
         </span>
       </Link>
+    ),
+  }
+  return (
+    <nav className="home-tiles" aria-label="More to play">
+      {tiles.map((t) => all[t])}
     </nav>
   )
 }

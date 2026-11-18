@@ -16,7 +16,8 @@ import { ROOK } from '../components/RookLogo'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { Sheet } from '../components/Sheet'
 import { ShareDialog } from '../components/ShareDialog'
-import { IconTile, TILE_ICONS } from '../components/IconTile'
+import { HomePlay } from '../components/HomePlay'
+import { TILE_ICONS } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { AvatarFace, Gear } from '../components/UserCard'
 import type { AnalysisResult } from '../engine/Engine'
@@ -29,6 +30,7 @@ import { bookMove, candidates, decide, isComplete, pickLapse, soundMove } from '
 import { CLOCK_GROUPS, clockLabel, flagged, lowTimeMs, pause, press, remaining, resume, startClock, type ClockSetting } from '../lib/clock'
 import { winPercent, type Color } from '../lib/evaluation'
 import { saveGame } from '../lib/games'
+import { useMyGames } from '../hooks/useMyGames'
 import { useImmersive } from '../lib/immersive'
 import { ALL_MOVES, LEVELS, levelInfo, searchLimits } from '../lib/levels'
 import { materialState } from '../lib/material'
@@ -347,12 +349,6 @@ interface ClockGroup {
 const COMPUTER_CLOCKS: ClockGroup[] = CLOCK_GROUPS.map((g) => ({ name: g.name, clocks: g.settings.map((value) => ({ value, label: clockLabel(value) })) }))
 const ONLINE_CLOCK_GROUPS: ClockGroup[] = ONLINE_CLOCKS.map((g) => ({ name: g.group, clocks: g.clocks.map((value) => ({ value, label: value })) }))
 
-/** Play's front: the ways to play, each opening its own setup. */
-const WAYS: { view: Exclude<PlayView, 'hub'>; title: string; text: string }[] = [
-  { view: 'online', title: 'Play online', text: 'A real player near your rating, on Lichess' },
-  { view: 'computer', title: 'Play the coach', text: '8 levels, 400 to 2600, with takebacks and hints' },
-  { view: 'friend', title: 'Play a friend', text: 'Challenge someone by their Lichess username' },
-]
 // A setup's title: a new game, online or against the computer (the icon beside it says which); a friend's is its own.
 const WAY_TITLES: Record<Exclude<PlayView, 'hub'>, string> = { online: 'New game', computer: 'New game', friend: 'Play a friend' }
 
@@ -400,6 +396,8 @@ function SetupView({
   active: boolean
 }) {
   const { link, busy, error } = useLichess()
+  // Your games, for your Lichess rating on the front's Play card (kept from Home, not fetched again).
+  const { games } = useMyGames({ chesscom: settings.chesscomUser, lichess: settings.lichessUser }, active && view === 'hub')
   const { account, username } = useAccount()
   const { friends } = useFriends()
   // A tall desktop lists every time. A phone shows the one picked and opens the rest as a page of their own; a
@@ -445,9 +443,7 @@ function SetupView({
   }
 
   const isComputer = view === 'computer'
-  // A phone's front is New game: an online game at the time you last picked, a tap away, with the other ways under it.
-  const quick = phone && view === 'hub'
-  const onlineSetupShown = !isComputer && (view !== 'hub' || quick)
+  const onlineSetupShown = !isComputer && view !== 'hub'
   const isFriend = view === 'friend'
   const level = levelInfo(setup.level)
   const side = isComputer ? setup.color : isFriend ? online.color : 'random'
@@ -456,7 +452,7 @@ function SetupView({
   const clock: string = isComputer ? setup.clock : online.clock
   const chosen = groups.flatMap((g) => g.clocks.map((c) => ({ ...c, group: g.name }))).find((c) => c.value === clock)
   // Both clocks start on the time picked: online times are minutes, the computer's are seconds.
-  const seconds = (view === 'hub' && !quick) || clock === 'none' ? null : Number(clock.split('+')[0]) * (isComputer ? 1 : 60)
+  const seconds = view === 'hub' || clock === 'none' ? null : Number(clock.split('+')[0]) * (isComputer ? 1 : 60)
   const face = seconds == null ? undefined : <span className="player-clock">{formatClockFace(seconds)}</span>
   const pick = (value: string) => {
     if (isComputer) onChange({ ...setup, clock: value as ClockSetting })
@@ -584,22 +580,9 @@ function SetupView({
   )
 
   const needsLichess = onlineSetupShown && !linked
-  const ways = (
-    <nav className="play-ways" aria-label={quick ? 'Other ways to play' : 'Ways to play'}>
-      {WAYS.filter((w) => !quick || w.view !== 'online').map((w) => (
-        <Link key={w.view} to={`/play/${w.view}`} className="home-card quick-card play-way">
-          <IconTile tone={w.view} size="big" />
-          <span className="quick-lines">
-            <strong>{w.title}</strong>
-            <small>{w.text}</small>
-          </span>
-          <span className="quick-go" aria-hidden>
-            ›
-          </span>
-        </Link>
-      ))}
-    </nav>
-  )
+  // Play's front, on a phone as on a computer: an online game at the time you last picked, one press away (Home's own
+  // card), then the coach and a friend.
+  const front = <HomePlay active={active} games={games} theme={settings.boardTheme} tiles={['coach', 'friend']} />
   // While it looks (or waits on a friend) the choices are gone: the panel is the search, what it's for and how long
   // it has run. They come back when it ends.
   const searchFor = [chosen?.group, online.rated ? 'Rated' : 'Casual', isFriend && online.color !== 'random' ? `You play ${online.color === 'white' ? 'White' : 'Black'}` : null].filter(Boolean).join(' · ')
@@ -623,13 +606,8 @@ function SetupView({
   const body =
     busyNow ? (
       search
-    ) : quick ? (
-      <>
-        <p className="muted">{linked ? `A real player near your rating, on Lichess as ${link?.username}.` : 'Play real people through your Lichess account.'}</p>
-        {linked && timeField}
-      </>
     ) : view === 'hub' ? (
-      ways
+      front
     ) : needsLichess ? (
       <p className="muted">
         {link
@@ -712,7 +690,7 @@ function SetupView({
     )
 
   const foot =
-    view === 'hub' && !quick ? null : isComputer ? (
+    view === 'hub' ? null : isComputer ? (
       <>
         <p className="muted">Takebacks and hints allowed. Saved to My recent games.</p>
         <button className="btn accent-btn" onClick={onStart}>
@@ -735,7 +713,7 @@ function SetupView({
           </button>
         ) : (
           <button className="btn accent-btn" disabled={isFriend && !friendName} onClick={onFind}>
-            {isFriend ? 'Send challenge' : quick ? 'Start game' : 'Find an opponent'}
+            {isFriend ? 'Send challenge' : 'Find an opponent'}
           </button>
         )}
         {note && <p className="form-error">{note}</p>}
@@ -790,18 +768,10 @@ function SetupView({
                 </div>
               )}
               <div className="setup-body">
-                {/* A phone has a setup's title (and Back) in the page's bar; its front keeps the heading. */}
-                {phone && view === 'hub' && (
-                  <div className="setup-head">
-                    <h2 id="setup-title">New game</h2>
-                  </div>
-                )}
                 {challengeCard}
                 {body}
               </div>
               {foot && <div className="setup-foot">{foot}</div>}
-              {/* A phone's search has the screen to itself: another way to play would end it. */}
-              {quick && !busyNow && ways}
             </div>
           )}
         </div>
