@@ -73,7 +73,8 @@ export function PuzzlePanel(props: { head: ReactNode; board: ReactNode; below?: 
   const { head, board, below, coach, score, body, acts, strip } = props
   const phone = useMediaQuery('(max-width: 1000px)')
   return (
-    <PuzzleLayout head={head} board={board} below={below} above={phone && coach}>
+    // A run's chips (Sprint) sit under a phone's board, and in the panel on desktop, which is as tall as the board.
+    <PuzzleLayout head={head} board={board} below={phone ? below : undefined} above={phone && coach}>
       {phone ? (
         <>
           {score}
@@ -85,7 +86,10 @@ export function PuzzlePanel(props: { head: ReactNode; board: ReactNode; below?: 
         <>
           {coach}
           {score}
-          <div className="panel-body puzzle-body">{body}</div>
+          <div className="panel-body puzzle-body">
+            {below}
+            {body}
+          </div>
           {acts}
           {strip}
         </>

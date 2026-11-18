@@ -34,9 +34,9 @@ export function MiniBoard({ fen, orientation, theme, lastMove, grade, label = 'P
     const ordered = orientation === 'white' ? rows : [...rows].reverse().map((r) => [...r].reverse())
     return ordered.flat()
   }, [fen, orientation])
-  const { palette, lastMoveColor, lastMoveCustom } = useBoardPrefs()
+  const { palette, lastMoveColor, lastMoveCustom, lastMoveStrength } = useBoardPrefs()
   const colors = boardColors(theme, palette)
-  const style = { '--board-image': boardImage(colors.light, colors.dark), '--last-move': lastMoveTint(lastMoveColor, colors, lastMoveCustom) } as CSSProperties
+  const style = { '--board-image': boardImage(colors.light, colors.dark), '--last-move': lastMoveTint(lastMoveColor, colors, lastMoveCustom, lastMoveStrength) } as CSSProperties
   // Square names in display order, for the last-move highlight.
   const names = useMemo(() => {
     const files = 'abcdefgh'

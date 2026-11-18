@@ -46,6 +46,9 @@ export function tintOf(hex: string, opacity: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.round(opacity * 100) / 100})`
 }
 
+/** A tint at another strength (0–1): its colour, with that opacity. */
+export const withStrength = (tint: string, strength: number) => tintOf(tintParts(tint).hex, strength)
+
 /** The picker's colour and opacity back out of a tint. */
 export function tintParts(tint: string): { hex: string; opacity: number } {
   const [r = 100, g = 69, b = 252, a = 0.5] = (tint.match(/[\d.]+/g) ?? []).map(Number)
@@ -87,8 +90,10 @@ export interface Settings {
   highlightLastMove: boolean
   /** The last move's squares: the board's own tint, or a colour of your choosing (LAST_MOVE_COLORS). */
   lastMoveColor: LastMoveColor
-  /** Your own last-move tint (rgba), when lastMoveColor is 'custom'. */
+  /** Your own last-move colour (rgba), when lastMoveColor is 'custom'. */
   lastMoveCustom: string
+  /** How strongly the last-move colour covers its squares (0–1); null: each colour's own. */
+  lastMoveStrength: number | null
   /** Dots on the squares a picked-up piece can go to. */
   showLegalMoves: boolean
   /** Playing the computer: queue your next move on its turn (Board's premove). */
@@ -123,6 +128,7 @@ export const DEFAULT_SETTINGS: Settings = {
   highlightLastMove: true,
   lastMoveColor: 'board',
   lastMoveCustom: 'rgba(100, 69, 252, 0.49)',
+  lastMoveStrength: null,
   showLegalMoves: true,
   premoves: true,
   autoQueen: false,
@@ -153,6 +159,7 @@ function load(): Settings {
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
       if (!(s.lastMoveColor in LAST_MOVE_COLORS)) s.lastMoveColor = DEFAULT_SETTINGS.lastMoveColor
+      if (s.lastMoveStrength != null && !(s.lastMoveStrength >= 0.1 && s.lastMoveStrength <= 1)) s.lastMoveStrength = null
       const was = s.themes ?? 0
       // 1, the tonal themes: Dim folded into Dark.
       if (was < 1 && (s.appearance as string) === 'dim') s.appearance = 'dark'

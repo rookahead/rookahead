@@ -7,7 +7,7 @@ import { Chess, SQUARES, type Square } from 'chess.js'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { Color } from '../lib/evaluation'
 import { useBoardPrefs } from '../lib/boardPrefs'
-import { ANIMATION_MS, LAST_MOVE_COLORS, type BoardTheme, type LastMoveColor, type Palette } from '../lib/settings'
+import { ANIMATION_MS, LAST_MOVE_COLORS, withStrength, type BoardTheme, type LastMoveColor, type Palette } from '../lib/settings'
 import { CLASS_INFO, type MoveClass } from '../lib/classify'
 import type { EndKind, EndMark } from '../lib/gameEnd'
 import { BOARD_SETTLE, boardResizing } from '../lib/pixelGrid'
@@ -62,8 +62,10 @@ const THEME_BOARDS: Record<Palette, BoardColors> = {
 
 /** A board's colours; the Theme board's follow your colour theme. */
 /** The last move's tint: your choice of colour, else the board's own, else yellow. */
-export const lastMoveTint = (choice: LastMoveColor | undefined, colors: BoardColors, custom?: string) =>
-  (choice === 'custom' ? custom : choice && LAST_MOVE_COLORS[choice]?.color) ?? colors.lastMove ?? 'rgba(255, 255, 51, 0.42)'
+export function lastMoveTint(choice: LastMoveColor | undefined, colors: BoardColors, custom?: string, strength?: number | null): string {
+  const tint = (choice === 'custom' ? custom : choice && LAST_MOVE_COLORS[choice]?.color) ?? colors.lastMove ?? 'rgba(255, 255, 51, 0.42)'
+  return strength == null ? tint : withStrength(tint, strength)
+}
 
 export function boardColors(theme: BoardTheme, palette: Palette): BoardColors {
   return theme === 'theme' ? THEME_BOARDS[palette] : BOARD_THEMES[theme]
@@ -195,7 +197,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       window.removeEventListener('blur', release)
     }
   }, [])
-  const { highlightLastMove, lastMoveColor, lastMoveCustom, showLegalMoves, animation, moveEffects, soundVolume, palette } = useBoardPrefs()
+  const { highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, moveEffects, soundVolume, palette } = useBoardPrefs()
   // How long a piece takes to slide to its square. The classification badge waits for it to land.
   const slideMs = reducedMotion() ? 0 : ANIMATION_MS[animation]
 
@@ -412,7 +414,7 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
     '--board-image': boardImage(colors.light, colors.dark),
     '--sq-light': colors.light,
     '--sq-dark': colors.dark,
-    '--last-move': lastMoveTint(lastMoveColor, colors, lastMoveCustom),
+    '--last-move': lastMoveTint(lastMoveColor, colors, lastMoveCustom, lastMoveStrength),
     // The badge and end marks wait for the piece to land, which a Legendary move takes its time over.
     '--slide-ms': `${quaking && slideMs > 0 ? landing : slideMs}ms`,
     '--slow-ms': `${landing}ms`,

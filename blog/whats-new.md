@@ -13,8 +13,8 @@ This page lists every change to the verdict rules, so you can see why a move's v
 - Point at Play or Puzzles in the sidebar for shortcuts straight to each way to play and each puzzle mode.
 - The computer you play is now called the coach, everywhere: Play the coach.
 - Play has a new front, like Home's: Play online with your time a press away, then the coach and a friend.
-- Puzzles on a computer opens on its own start page: what the coach suggests today, rated puzzles as the big card, then Daily, Sprint and your mistakes. Each mode now has a page of its own instead of tabs.
-- Pick the colour of the last-move highlight in Board settings, so it stands out on your board.
+- Puzzles on a computer opens on its own start page: what the coach suggests today, rated puzzles as the big card, then Daily, Sprint and your mistakes. Each mode now has a page of its own instead of tabs, with the same tall panel as Play and Analysis, and the coach talks to you in a speech bubble.
+- Under Highlight last move in Board settings: pick its colour, or any colour of your own, and how strong it is, so it stands out on your board.
 - Fixed: Puzzle Sprint kept giving the same puzzles, run after run.
 
 ## 17 November 2026

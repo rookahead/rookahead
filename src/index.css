@@ -5510,10 +5510,24 @@ button.explain-row {
   padding: 14px;
 }
 
+/* A mode's full name in two weights: the plain word small, the one that names it big. */
+.tile-name {
+  display: flex;
+  flex-direction: column;
+}
+
+.tile-name span {
+  font: 600 12.5px/16px var(--font-ui);
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
 .start-tiles .tile-board .mini-board,
 .start-tiles .tile-board-blank {
-  width: 96px;
-  height: 96px;
+  width: 84px;
+  height: 84px;
+  /* Lower than Home's, clear of the tile's two-line name and its date. */
+  translate: 0 30px;
 }
 
 /* Sprint: a bolt, in the puzzles' own colour. */
@@ -5525,7 +5539,7 @@ button.explain-row {
   translate: 0 22px;
 }
 
-/* Your mistakes waiting: the number, big. */
+/* Your mistakes waiting: the number, big, a step smaller for each digit past two so it always fits the tile. */
 .tile-count {
   position: absolute;
   inset: auto 0 6px;
@@ -5534,6 +5548,19 @@ button.explain-row {
   letter-spacing: -0.04em;
   text-align: center;
   pointer-events: none;
+}
+
+.start-tiles .home-tile {
+  /* The count's size follows the tile's width (cqw), which changes with the window. */
+  container-type: inline-size;
+}
+
+.tile-count.digits-3 {
+  font-size: min(36px, 25cqw);
+}
+
+.tile-count.digits-4 {
+  font-size: min(30px, 24cqw);
 }
 
 /* Picture tiles inside a panel (Play's front, Puzzles' start): a step off the panel, which on light themes is
@@ -9035,8 +9062,9 @@ button.user-avatar.guest:hover {
 .puzzle-coach {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  /* The rook at the foot of its speech bubble, as in a chat. */
+  align-items: flex-end;
+  gap: 10px;
   /* Room for the label and two lines, so a longer line moves nothing. */
   min-height: 92px;
   padding: 16px 18px 4px;
@@ -9048,11 +9076,31 @@ button.user-avatar.guest:hover {
   height: 63px;
 }
 
+/* What the coach says, in a chat bubble: on its own, not in a row with the numbers, so it's the first thing read. */
 .puzzle-say {
   min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
+  margin-bottom: 14px;
+  padding: 11px 15px 12px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Its label in the bubble's ink; its good and bad colours pulled towards the page so they read on the bubble. */
+.puzzle-say .puzzle-who {
+  color: color-mix(in srgb, var(--bg) 72%, var(--text));
+}
+
+.puzzle-say .puzzle-who.good {
+  color: color-mix(in srgb, var(--win) 62%, var(--bg));
+}
+
+.puzzle-say .puzzle-who.bad {
+  color: color-mix(in srgb, var(--danger) 70%, var(--bg));
 }
 
 .puzzle-who {
@@ -9582,18 +9630,28 @@ button.user-avatar.guest:hover {
 }
 
 @media (min-width: 1001px) {
-  /* No bar above the page (its name is in the panel) and no player bars: the board takes the height,
-     less a row for the chips under it. */
+  /* No bar above the page (its name is in the panel) and no player bars. The panel is as tall as Play's and
+     Analysis's (the board and a player bar's room above and below it), reaching past the board at both ends, which
+     sits in the middle of it: more room in the panel, and the same panel on every page. */
   .play-layout.puzzle-layout {
     --nav-h: 0px;
     /* Centred in the window's height, like Analysis: the padding above wins over the shared rule that does it. */
     padding-top: calc(var(--pad-y) + max(0px, (100vh - var(--nav-h) - 2 * var(--pad-y) - var(--column-h)) / 2));
     --board-size: round(
       down,
-      max(280px, min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 40px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)),
+      max(280px, min(calc(100vh - var(--nav-h) - 2 * var(--pad-y) - 2 * var(--player-h) - 2 * 10px), calc(100cqw - var(--panel-w) - var(--gap) - 2 * var(--pad-x)), 880px)),
       var(--board-step)
     );
-    --column-h: calc(var(--board-size) + 40px);
+    --column-h: calc(var(--board-size) + 2 * var(--player-h) + 2 * 10px);
+  }
+
+  .puzzle-layout .play-board {
+    height: var(--column-h);
+    justify-content: center;
+  }
+
+  .puzzle-layout .puzzle-below {
+    display: none;
   }
 }
 

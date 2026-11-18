@@ -12,6 +12,8 @@ import type { Settings } from '../../lib/settings'
 import { EmptyBoard, PuzzleLayout } from './shared'
 
 const num = (n: number) => n.toLocaleString('en-US')
+/** A count short enough for a tile: 420, or 1.2k from a thousand on. */
+const countWords = (n: number) => (n < 1000 ? String(n) : `${Math.floor(n / 100) / 10}k`)
 const noMove = () => {}
 
 /**
@@ -81,25 +83,31 @@ export function PuzzleStart({ progress, settings, head }: { progress: PuzzleProg
 
         <nav className="home-tiles start-tiles" aria-label="Other puzzle modes">
           <Link to="/puzzles/daily" className="home-card home-tile">
-            <strong>Daily</strong>
+            <strong className="tile-name">
+              <span>Daily</span>Puzzle
+            </strong>
             <small>{done === 'solved' ? 'Solved' : done === 'failed' ? 'Missed' : formatDay(Date.now() / 1000)}</small>
             <span className="home-tile-art tile-board" aria-hidden>
               {daily ? <MiniBoard fen={daily.fen} orientation={daily.color} theme={settings.boardTheme} lastMove={daily.last} /> : <span className="skel tile-board-blank" />}
             </span>
           </Link>
           <Link to="/puzzles/sprint" className="home-card home-tile">
-            <strong>Sprint</strong>
+            <strong className="tile-name">
+              <span>Puzzle</span>Sprint
+            </strong>
             <small>{best ? `Best ${best}` : 'Against the clock'}</small>
             <span className="home-tile-art tile-bolt" aria-hidden>
               <svg viewBox="0 0 24 24">{TAB_ICONS.sprint}</svg>
             </span>
           </Link>
           <Link to="/puzzles/mistakes" className="home-card home-tile">
-            <strong>Mistakes</strong>
+            <strong className="tile-name">
+              <span>Fix your</span>Mistakes
+            </strong>
             <small>{mistakes && !waiting ? 'None waiting' : 'From your games'}</small>
             {waiting > 0 && (
-              <b className="tile-count" aria-label={`${waiting} waiting`}>
-                {num(waiting)}
+              <b className={`tile-count digits-${Math.min(4, countWords(waiting).length)}`} aria-label={`${waiting} waiting`}>
+                {countWords(waiting)}
               </b>
             )}
           </Link>

@@ -20,6 +20,8 @@ const STRIP_MOVE: [Square, Square] = ['b8', 'c6']
 
 /** The board's look, feel and sound: one set of controls for Settings → Board and the analysis dialog's Board tab. */
 export function BoardOptions({ settings, onChange, preview, play }: Props) {
+  // Your board's squares, under the last-move swatches.
+  const squares = boardColors(settings.boardTheme, settings.palette)
   return (
     <div className="board-options">
       {preview && (
@@ -46,23 +48,26 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
       </div>
 
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
-      <SwitchRow label="Highlight last move" checked={settings.highlightLastMove} onChange={(highlightLastMove) => onChange({ highlightLastMove })} />
+      <SwitchRow
+        label="Highlight last move"
+        hint="Shows the move just played, on the square it left and the square it landed on."
+        checked={settings.highlightLastMove}
+        onChange={(highlightLastMove) => onChange({ highlightLastMove })}
+      />
       {settings.highlightLastMove && (
-        <OptionRow label="Last-move colour" hint="Pick one that stands out on your board.">
+        <OptionRow label="Colour">
           <div className="tint-swatches" role="radiogroup" aria-label="Last-move colour">
             {(Object.keys(LAST_MOVE_COLORS) as LastMoveColor[]).map((k) => {
-              const squares = boardColors(settings.boardTheme, settings.palette)
               // Your own: the browser's colour picker, behind a swatch of its own.
               if (k === 'custom') {
-                const own = tintParts(settings.lastMoveCustom)
                 return (
                   <label key={k} className={`tint-swatch tint-own ${settings.lastMoveColor === k ? 'active' : ''}`} title="Your own colour">
                     <input
                       type="color"
                       aria-label="Your own colour"
-                      value={own.hex}
+                      value={tintParts(settings.lastMoveCustom).hex}
                       onClick={() => onChange({ lastMoveColor: 'custom' })}
-                      onChange={(e) => onChange({ lastMoveColor: 'custom', lastMoveCustom: tintOf(e.target.value, own.opacity) })}
+                      onChange={(e) => onChange({ lastMoveColor: 'custom', lastMoveCustom: tintOf(e.target.value, 0.5) })}
                     />
                   </label>
                 )
@@ -75,8 +80,8 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
                   aria-label={LAST_MOVE_COLORS[k].label}
                   title={LAST_MOVE_COLORS[k].label}
                   className={`tint-swatch ${settings.lastMoveColor === k ? 'active' : ''}`}
-                  // The tint over the board's own squares, as it will look.
-                  style={{ '--tint': lastMoveTint(k, squares), '--sq-light': squares.light, '--sq-dark': squares.dark } as CSSProperties}
+                  // The colour over the board's own squares, as it will look.
+                  style={{ '--tint': lastMoveTint(k, squares, undefined, settings.lastMoveStrength), '--sq-light': squares.light, '--sq-dark': squares.dark } as CSSProperties}
                   onClick={() => onChange({ lastMoveColor: k })}
                 />
               )
@@ -84,8 +89,8 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
           </div>
         </OptionRow>
       )}
-      {settings.highlightLastMove && settings.lastMoveColor === 'custom' && (
-        <OptionRow label="Its strength" hint="How strongly it covers the squares.">
+      {settings.highlightLastMove && (
+        <OptionRow label="Strength">
           <input
             className="tint-strength"
             type="range"
@@ -93,8 +98,8 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
             max={90}
             step={5}
             aria-label="Last-move colour strength"
-            value={Math.round(tintParts(settings.lastMoveCustom).opacity * 100)}
-            onChange={(e) => onChange({ lastMoveCustom: tintOf(tintParts(settings.lastMoveCustom).hex, Number(e.target.value) / 100) })}
+            value={Math.round(tintParts(lastMoveTint(settings.lastMoveColor, squares, settings.lastMoveCustom, settings.lastMoveStrength)).opacity * 100)}
+            onChange={(e) => onChange({ lastMoveStrength: Number(e.target.value) / 100 })}
           />
         </OptionRow>
       )}
