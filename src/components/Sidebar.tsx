@@ -129,7 +129,6 @@ export function Sidebar({ route, rail, onToggleRail, footer, onGameReview }: Pro
       {menu?.item.menu && (
         // Fixed, so the sidebar's own clipping doesn't cut it off.
         <div className="side-menu" role="menu" aria-label={menu.item.label} style={{ top: menu.top, left: menu.left }} onMouseEnter={keep} onMouseLeave={closeSoon}>
-          <span className="side-menu-title">{menu.item.label}</span>
           {menu.item.menu.map((m) => (
             <Link key={m.path} to={m.path} role="menuitem" className="side-menu-item" onClick={() => setMenu(null)} onBlur={(e) => !e.currentTarget.parentElement?.contains(e.relatedTarget) && setMenu(null)}>
               <IconTile tone={m.tone} />

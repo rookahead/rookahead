@@ -4,7 +4,7 @@ import { useBoardPrefs } from '../lib/boardPrefs'
 import { CLASS_INFO, type MoveClass } from '../lib/classify'
 import type { Color } from '../lib/evaluation'
 import type { BoardTheme } from '../lib/settings'
-import { boardColors, boardImage } from './Board'
+import { boardColors, boardImage, lastMoveTint } from './Board'
 import { ClassIcon } from './ClassIcon'
 import { PieceIcon } from './PieceIcon'
 
@@ -34,9 +34,9 @@ export function MiniBoard({ fen, orientation, theme, lastMove, grade, label = 'P
     const ordered = orientation === 'white' ? rows : [...rows].reverse().map((r) => [...r].reverse())
     return ordered.flat()
   }, [fen, orientation])
-  const { palette } = useBoardPrefs()
+  const { palette, lastMoveColor, lastMoveCustom } = useBoardPrefs()
   const colors = boardColors(theme, palette)
-  const style = { '--board-image': boardImage(colors.light, colors.dark), '--last-move': colors.lastMove ?? 'rgba(255, 255, 51, 0.42)' } as CSSProperties
+  const style = { '--board-image': boardImage(colors.light, colors.dark), '--last-move': lastMoveTint(lastMoveColor, colors, lastMoveCustom) } as CSSProperties
   // Square names in display order, for the last-move highlight.
   const names = useMemo(() => {
     const files = 'abcdefgh'

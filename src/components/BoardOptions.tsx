@@ -1,7 +1,8 @@
 import type { Square } from 'chess.js'
-import type { BoardTheme, Settings } from '../lib/settings'
+import type { CSSProperties } from 'react'
+import { LAST_MOVE_COLORS, tintOf, tintParts, type BoardTheme, type LastMoveColor, type Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
-import { Board, boardColors, BOARD_THEMES } from './Board'
+import { Board, boardColors, BOARD_THEMES, lastMoveTint } from './Board'
 import { OptionRow, Segmented, SwitchRow } from './controls'
 
 interface Props {
@@ -46,6 +47,57 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
 
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
       <SwitchRow label="Highlight last move" checked={settings.highlightLastMove} onChange={(highlightLastMove) => onChange({ highlightLastMove })} />
+      {settings.highlightLastMove && (
+        <OptionRow label="Last-move colour" hint="Pick one that stands out on your board.">
+          <div className="tint-swatches" role="radiogroup" aria-label="Last-move colour">
+            {(Object.keys(LAST_MOVE_COLORS) as LastMoveColor[]).map((k) => {
+              const squares = boardColors(settings.boardTheme, settings.palette)
+              // Your own: the browser's colour picker, behind a swatch of its own.
+              if (k === 'custom') {
+                const own = tintParts(settings.lastMoveCustom)
+                return (
+                  <label key={k} className={`tint-swatch tint-own ${settings.lastMoveColor === k ? 'active' : ''}`} title="Your own colour">
+                    <input
+                      type="color"
+                      aria-label="Your own colour"
+                      value={own.hex}
+                      onClick={() => onChange({ lastMoveColor: 'custom' })}
+                      onChange={(e) => onChange({ lastMoveColor: 'custom', lastMoveCustom: tintOf(e.target.value, own.opacity) })}
+                    />
+                  </label>
+                )
+              }
+              return (
+                <button
+                  key={k}
+                  role="radio"
+                  aria-checked={settings.lastMoveColor === k}
+                  aria-label={LAST_MOVE_COLORS[k].label}
+                  title={LAST_MOVE_COLORS[k].label}
+                  className={`tint-swatch ${settings.lastMoveColor === k ? 'active' : ''}`}
+                  // The tint over the board's own squares, as it will look.
+                  style={{ '--tint': lastMoveTint(k, squares), '--sq-light': squares.light, '--sq-dark': squares.dark } as CSSProperties}
+                  onClick={() => onChange({ lastMoveColor: k })}
+                />
+              )
+            })}
+          </div>
+        </OptionRow>
+      )}
+      {settings.highlightLastMove && settings.lastMoveColor === 'custom' && (
+        <OptionRow label="Its strength" hint="How strongly it covers the squares.">
+          <input
+            className="tint-strength"
+            type="range"
+            min={20}
+            max={90}
+            step={5}
+            aria-label="Last-move colour strength"
+            value={Math.round(tintParts(settings.lastMoveCustom).opacity * 100)}
+            onChange={(e) => onChange({ lastMoveCustom: tintOf(tintParts(settings.lastMoveCustom).hex, Number(e.target.value) / 100) })}
+          />
+        </OptionRow>
+      )}
       <SwitchRow label="Show legal moves" hint="Dots on the squares a piece you pick up can go to." checked={settings.showLegalMoves} onChange={(showLegalMoves) => onChange({ showLegalMoves })} />
       {play && (
         <SwitchRow

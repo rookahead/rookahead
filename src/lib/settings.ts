@@ -26,6 +26,32 @@ export type Animation = 'none' | 'fast' | 'normal' | 'slow'
 /** How long a piece takes to slide to its square, per animation setting. */
 export const ANIMATION_MS: Record<Animation, number> = { none: 0, fast: 120, normal: 240, slow: 400 }
 
+export type LastMoveColor = 'board' | 'yellow' | 'purple' | 'blue' | 'green' | 'pink' | 'custom'
+
+/** The last move's tint on its two squares; null: the board's own. See-through, so the squares show under it. */
+export const LAST_MOVE_COLORS: Record<LastMoveColor, { label: string; color: string | null }> = {
+  board: { label: 'The board’s', color: null },
+  yellow: { label: 'Yellow', color: 'rgba(255, 255, 51, 0.42)' },
+  purple: { label: 'Purple', color: 'rgba(100, 69, 252, 0.49)' },
+  blue: { label: 'Blue', color: 'rgba(40, 140, 255, 0.45)' },
+  green: { label: 'Green', color: 'rgba(60, 190, 80, 0.45)' },
+  pink: { label: 'Pink', color: 'rgba(236, 72, 153, 0.45)' },
+  // Your own, from the colour picker: `lastMoveCustom`.
+  custom: { label: 'Your own', color: null },
+}
+
+/** A colour from the picker (#rrggbb) at an opacity (0–1), as the tint the board draws. */
+export function tintOf(hex: string, opacity: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.round(opacity * 100) / 100})`
+}
+
+/** The picker's colour and opacity back out of a tint. */
+export function tintParts(tint: string): { hex: string; opacity: number } {
+  const [r = 100, g = 69, b = 252, a = 0.5] = (tint.match(/[\d.]+/g) ?? []).map(Number)
+  return { hex: `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`, opacity: a }
+}
+
 export interface Settings {
   /** Interface colour scheme; 'system' follows the OS. */
   appearance: Appearance
@@ -59,6 +85,10 @@ export interface Settings {
   /** Moves written with piece figurines (♞f3) or letters (Nf3). */
   notation: 'figurine' | 'letter'
   highlightLastMove: boolean
+  /** The last move's squares: the board's own tint, or a colour of your choosing (LAST_MOVE_COLORS). */
+  lastMoveColor: LastMoveColor
+  /** Your own last-move tint (rgba), when lastMoveColor is 'custom'. */
+  lastMoveCustom: string
   /** Dots on the squares a picked-up piece can go to. */
   showLegalMoves: boolean
   /** Playing the computer: queue your next move on its turn (Board's premove). */
@@ -91,6 +121,8 @@ export const DEFAULT_SETTINGS: Settings = {
   moveEffects: true,
   notation: 'figurine',
   highlightLastMove: true,
+  lastMoveColor: 'board',
+  lastMoveCustom: 'rgba(100, 69, 252, 0.49)',
   showLegalMoves: true,
   premoves: true,
   autoQueen: false,
@@ -120,6 +152,7 @@ function load(): Settings {
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
+      if (!(s.lastMoveColor in LAST_MOVE_COLORS)) s.lastMoveColor = DEFAULT_SETTINGS.lastMoveColor
       const was = s.themes ?? 0
       // 1, the tonal themes: Dim folded into Dark.
       if (was < 1 && (s.appearance as string) === 'dim') s.appearance = 'dark'
