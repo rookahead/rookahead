@@ -1,3 +1,4 @@
+import type { TileTone } from '../components/IconTile'
 import type { Route } from './router'
 
 // The app's sections, for the sidebar. `path: null` = not built yet ("Soon"). Your profile opens from the user card at its foot.
@@ -11,15 +12,40 @@ export interface NavItem {
   fill?: string
   /** The one item set apart and tinted in the brand colour. */
   featured?: boolean
+  /** Its own pages, shown beside it when it's pointed at (desktop): straight to one way to play, or one puzzle mode. */
+  menu?: NavShortcut[]
+}
+
+export interface NavShortcut {
+  label: string
+  text: string
+  path: string
+  tone: TileTone
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { id: 'play', label: 'Play', path: '/play', icon: 'M6 4l14 8-14 8z' },
+  {
+    id: 'play',
+    label: 'Play',
+    path: '/play',
+    icon: 'M6 4l14 8-14 8z',
+    menu: [
+      { label: 'Play online', text: 'A real player near your rating', path: '/play/online', tone: 'online' },
+      { label: 'Play the computer', text: '8 levels, with takebacks and hints', path: '/play/computer', tone: 'computer' },
+      { label: 'Play a friend', text: 'Challenge them on Lichess', path: '/play/friend', tone: 'friend' },
+    ],
+  },
   {
     id: 'puzzles',
     label: 'Puzzles',
     path: '/puzzles',
     icon: 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z',
+    menu: [
+      { label: 'Rated puzzles', text: 'Puzzles at your rating', path: '/puzzles', tone: 'accuracy' },
+      { label: 'Puzzle Sprint', text: 'Against the clock, three lives', path: '/puzzles/sprint', tone: 'clock' },
+      { label: 'Daily puzzle', text: 'The same one for everyone today', path: '/puzzles/daily', tone: 'puzzles' },
+      { label: 'Fix your mistakes', text: 'Puzzles from your own games', path: '/puzzles/mistakes', tone: 'mistakes' },
+    ],
   },
   // A clean board for exploring any position (Game review is the same page with a game in it).
   // A lens over two board squares.

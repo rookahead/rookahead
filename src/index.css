@@ -923,6 +923,78 @@ svg {
   transition: background 0.12s, color 0.12s;
 }
 
+/* An item's own pages, beside the sidebar while it's pointed at. */
+.side-menu {
+  position: fixed;
+  z-index: 60;
+  width: 288px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), var(--card-edge);
+  /* A fade only, as the board menu: a zoom would end with the icons snapping a pixel as it's redrawn sharp. */
+  animation: fade-in 0.12s ease-out;
+}
+
+.side-menu-title {
+  padding: 4px 10px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.side-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.side-menu-item:hover,
+.side-menu-item:focus-visible {
+  background: var(--surface-3);
+  outline: none;
+}
+
+.side-menu-item .icon-tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.side-menu-item .icon-tile svg {
+  width: 17px;
+  height: 17px;
+}
+
+.side-menu-words {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.side-menu-words strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.side-menu-words small {
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sidebar-item svg {
   flex-shrink: 0;
   width: 20px;
