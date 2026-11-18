@@ -212,6 +212,46 @@
         </div>
       </div>
     </div>
+    <!-- If the app doesn't start (a bundle that won't load, a connection that gave up), say so instead of loading
+         forever, with a Reload that fetches the bundles fresh and drops the service worker's copies first. -->
+    <script>
+      ;(function () {
+        var shown = false
+        function fail() {
+          if (shown || !document.querySelector('#root > .boot')) return
+          shown = true
+          var box = document.createElement('div')
+          box.className = 'boot-fail'
+          box.setAttribute('role', 'alert')
+          box.setAttribute('style', 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);z-index:99;display:flex;align-items:center;gap:16px;padding:14px 16px 14px 20px;border-radius:14px;background:#222b31;color:#dae4ec;font:500 15px/1.4 system-ui,sans-serif;box-shadow:0 12px 32px rgba(0,0,0,.4)')
+          box.innerHTML = '<span><strong style="display:block">Rookahead didn\u2019t load.</strong><span style="opacity:.75;font-size:13px">Check your connection, then try again.</span></span><button type="button" style="border:0;border-radius:10px;padding:10px 16px;background:#22a2ff;color:#00182b;font:700 14px system-ui,sans-serif;cursor:pointer">Reload</button>'
+          box.querySelector('button').onclick = function () {
+            var bundles = [].slice.call(document.querySelectorAll('script[type="module"][src], link[rel="modulepreload"], link[rel="stylesheet"][href^="/assets/"]')).map(function (el) {
+              return el.src || el.href
+            })
+            var fresh = bundles.map(function (src) {
+              return fetch(src, { cache: 'reload' }).catch(function () {})
+            })
+            var sw = navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister() })) }) : null
+            var cached = window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k) })) }) : null
+            Promise.all(fresh.concat([sw, cached])).then(
+              function () { location.reload() },
+              function () { location.reload() },
+            )
+          }
+          document.body.appendChild(box)
+        }
+        addEventListener(
+          'error',
+          function (e) {
+            var t = e.target
+            if (t && (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel)))) fail()
+          },
+          true,
+        )
+        setTimeout(fail, 20000)
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

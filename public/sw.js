@@ -3,7 +3,12 @@
 // the hashed bundles in /assets never change, so they're served from the cache once fetched.
 // Everything else (the engine, puzzles, accounts) goes straight to the network.
 // v2: a blog page reached through v1 could be stored as the app's own page.
-const CACHE = 'rookahead-v2'
+// v3: an HTML page could be stored as a bundle (Cloudflare served the app's page for a bundle mid-deploy, 18 Nov
+// 2026), and a page that can't load its bundle never starts. Only real scripts, styles and the like are kept now.
+const CACHE = 'rookahead-v3'
+
+/** A bundle as it should be: anything but a web page standing in for it. */
+const isBundle = (response) => response.ok && !(response.headers.get('content-type') || '').startsWith('text/html')
 
 self.addEventListener('install', () => self.skipWaiting())
 
@@ -43,16 +48,16 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ??
-          fetch(request).then((response) => {
-            if (response.ok) {
-              const copy = response.clone()
-              caches.open(CACHE).then((cache) => cache.put(request, copy))
-            }
-            return response
-          }),
+      caches.match(request).then((cached) =>
+        cached && isBundle(cached)
+          ? cached
+          : fetch(request).then((response) => {
+              if (isBundle(response)) {
+                const copy = response.clone()
+                caches.open(CACHE).then((cache) => cache.put(request, copy))
+              }
+              return response
+            }),
       ),
     )
   }

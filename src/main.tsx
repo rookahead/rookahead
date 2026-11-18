@@ -37,6 +37,8 @@ if (!forwardToApp()) {
   startPixelGrid()
 
   const container = document.getElementById('root')!
+  // Up after all: the "didn't load" note (index.html) goes, if a slow start had brought it.
+  document.querySelector('.boot-fail')?.remove()
   const root = createRoot(container)
   const app = (
     <StrictMode>
