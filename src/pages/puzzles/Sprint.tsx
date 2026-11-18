@@ -28,6 +28,27 @@ interface Finished {
 const QUICK: SolveTiming = { first: 250, reply: 150, wrong: 450 }
 const MODES = Object.keys(SPRINT_MODES) as SprintMode[]
 
+const RECENT_KEY = 'rookahead.sprintRecent.v1'
+/** How many of the last Sprint puzzles are kept out of the next runs. */
+const RECENT_MAX = 400
+
+function recentSprint(): string[] {
+  try {
+    const list: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]')
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveRecentSprint(ids: string[]) {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(ids.slice(-RECENT_MAX)))
+  } catch {
+    // Storage blocked: only this run's puzzles are kept out.
+  }
+}
+
 function formatClock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -182,7 +203,8 @@ function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; be
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [endsAt, setEndsAt] = useState<number | null>(null)
   const [now, setNow] = useState(Date.now)
-  const ids = useRef<string[]>([])
+  // Puzzles shown lately, this run and the ones before: none comes back for a while.
+  const ids = useRef<string[]>(recentSprint())
   const upcoming = useRef<Promise<string> | null>(null)
   const historyRef = useRef(history)
   const ended = useRef(false)
@@ -191,6 +213,7 @@ function SprintRun({ mode, best, settings, tabs, onEnd }: { mode: SprintMode; be
     (h: RunEntry[]) => {
       if (ended.current) return
       ended.current = true
+      saveRecentSprint(ids.current)
       onEnd(h)
     },
     [onEnd],

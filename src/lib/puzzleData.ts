@@ -45,8 +45,9 @@ export async function nextRatedLine(rating: number, seen: string[], rand: () => 
   for (let attempt = 0; attempt < 6; attempt++) {
     const band = pickBand(rating, Object.keys(bands).map(Number), rand, spread)
     const lines = await fetchLines(`${band}-${Math.floor(rand() * bands[band])}.txt`)
-    const fresh = lines.find((l) => !recent.has(l.split(' ')[0]))
-    if (fresh) return fresh
+    // Any of the shard's unseen puzzles, not its first: the first would be the same one every time you start here.
+    const fresh = lines.filter((l) => !recent.has(l.split(' ')[0]))
+    if (fresh.length) return fresh[Math.floor(rand() * fresh.length)]
     fallback ??= lines[Math.floor(rand() * lines.length)]
   }
   if (!fallback) throw new Error('No puzzles')
