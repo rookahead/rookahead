@@ -507,7 +507,7 @@ function RatingsCard({
 /** A rating's line through your games, with where it is now and how far it moved. */
 function RatingCard({ perf, pending = false }: { perf: Perf; pending?: boolean }) {
   const moved = recentChange(perf.points)
-  const site = perf.source === 'lichess' ? 'Online, on Lichess' : perf.source === 'chesscom' ? 'On Chess.com' : 'Against the computer'
+  const site = perf.source === 'lichess' ? 'Online, on Lichess' : perf.source === 'chesscom' ? 'On Chess.com' : 'Against the coach'
   if (perf.rating == null) return null
   const high = Math.max(...perf.points.map((p) => p.rating))
   const low = Math.min(...perf.points.map((p) => p.rating))
@@ -979,7 +979,7 @@ function GamesCard({
                   reset()
                 }}
               >
-                {s === 'all' ? 'Everywhere' : s === 'lichess' ? 'Online' : s === 'rookahead' ? 'Computer' : SOURCE_LABEL[s]}
+                {s === 'all' ? 'Everywhere' : s === 'lichess' ? 'Online' : s === 'rookahead' ? 'Coach' : SOURCE_LABEL[s]}
               </button>
             ))}
           </div>

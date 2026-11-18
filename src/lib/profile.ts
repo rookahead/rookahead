@@ -60,7 +60,7 @@ export interface Perf {
 /** The ratings you have on `source`, most played first; for Rookahead, your games against the computer. */
 export function perfsFor(games: MyGame[], source: GameSource): Perf[] {
   const mine = games.filter((g) => g.source === source)
-  if (source === 'rookahead') return mine.length ? [{ id: 'computer', source, label: 'Computer', games: mine, rating: null, points: [] }] : []
+  if (source === 'rookahead') return mine.length ? [{ id: 'computer', source, label: 'Coach', games: mine, rating: null, points: [] }] : []
   const groups = new Map<Speed, MyGame[]>()
   for (const g of mine) {
     const speed = speedOf(g)

@@ -137,7 +137,7 @@ export function PlanCard({
       note: 'Today',
       short: 'Play',
       title: 'Play a game',
-      sub: played ? `${played} played today` : 'Against the computer, any level',
+      sub: played ? `${played} played today` : 'Against the coach, any level',
       done: played > 0,
       on: true,
       action: 'Play',

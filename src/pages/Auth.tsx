@@ -374,7 +374,7 @@ export function AuthPage() {
 }
 
 /** What Rookahead is, a line at a time. */
-const TAGLINE = ['Reviews your chess games for free.', 'Puzzles from your own mistakes.', 'Play online or the computer.', 'No limits, no pop-ups.']
+const TAGLINE = ['Reviews your chess games for free.', 'Puzzles from your own mistakes.', 'Play online or the coach.', 'No limits, no pop-ups.']
 /**
  * The left half, in your colour. It builds itself as the page opens, one sequence (index.css, .auth-brand): the rank's
  * squares ripple in, "rook" flies in from the left and "ahead" from the right to meet, the mark is put together

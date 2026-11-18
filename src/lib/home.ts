@@ -30,7 +30,7 @@ export function playedRow(game: PlayedGame, now = new Date()) {
   const moves = movesInPgn(game.pgn)
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
   return {
-    opponent: `Rookahead · Level ${game.level}`,
+    opponent: `Coach · Level ${game.level}`,
     rating: String(levelInfo(game.level).rating),
     detail: `${game.color === 'white' ? 'White' : 'Black'} · ${clockLabel(game.clock)} · ${plural(moves, 'move')} · ${formatDay(game.endedAt / 1000, now)}`,
     assists: [game.takebacks && plural(game.takebacks, 'takeback'), game.hints && plural(game.hints, 'hint')].filter(Boolean).join(' · '),

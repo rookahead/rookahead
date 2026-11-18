@@ -30,7 +30,7 @@ describe('playedRow', () => {
   const now = new Date('2026-10-18T12:00:00Z')
 
   it('describes the opponent, your side, clock, moves and date', () => {
-    expect(playedRow(base, now)).toEqual({ opponent: 'Rookahead · Level 4', rating: '1300', detail: 'White · 10+5 · 2 moves · Oct 18', assists: '', result: 'Won' })
+    expect(playedRow(base, now)).toEqual({ opponent: 'Coach · Level 4', rating: '1300', detail: 'White · 10+5 · 2 moves · Oct 18', assists: '', result: 'Won' })
   })
 
   it('mentions takebacks and hints, and untimed games', () => {

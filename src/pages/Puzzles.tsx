@@ -509,7 +509,7 @@ function Solver({ kind, puzzle, settings, tabs, score, counted, onResult, onSolv
         <FlipIcon />
       </button>
       {s.over && canPlayOut(s.node.fen) && (
-        <button className="icon-btn strip-label" onClick={() => playItOut(s.node.fen, orientation)} title="Play this position on against the computer">
+        <button className="icon-btn strip-label" onClick={() => playItOut(s.node.fen, orientation)} title="Play this position on against the coach">
           <PuzzleIcon name="playout" />
           Play it out
         </button>

@@ -31,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'M6 4l14 8-14 8z',
     menu: [
       { label: 'Play online', text: 'A real player near your rating', path: '/play/online', tone: 'online' },
-      { label: 'Play the computer', text: '8 levels, with takebacks and hints', path: '/play/computer', tone: 'computer' },
+      { label: 'Play the coach', text: '8 levels, with takebacks and hints', path: '/play/computer', tone: 'computer' },
       { label: 'Play a friend', text: 'Challenge them on Lichess', path: '/play/friend', tone: 'friend' },
     ],
   },

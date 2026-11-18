@@ -678,7 +678,7 @@ function MistakeSolver({ turn, mistake, upcoming, left, solved: solvedNow, engin
             {left} to go
           </span>
           {done && canPlayOut(fens[ply]) && (
-            <button className="icon-btn strip-label" onClick={() => playItOut(fens[ply], orientation)} title="Play this position on against the computer">
+            <button className="icon-btn strip-label" onClick={() => playItOut(fens[ply], orientation)} title="Play this position on against the coach">
               <PuzzleIcon name="playout" />
               Play it out
             </button>

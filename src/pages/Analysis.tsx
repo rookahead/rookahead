@@ -718,7 +718,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       name={headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')}
       rating={headers[c === 'white' ? 'WhiteElo' : 'BlackElo']}
       // A game against Rookahead's computer keeps the rook it had on Play.
-      avatar={/^Rookahead Level \d/.test(headers[c === 'white' ? 'White' : 'Black'] ?? '') ? <RookMark /> : undefined}
+      avatar={/^(Rookahead|Coach) Level \d/.test(headers[c === 'white' ? 'White' : 'Black'] ?? '') ? <RookMark /> : undefined}
       result={resultFor(c)?.replace('1/2', '½')}
       captured={material.captured[c]}
       advantage={material.advantage[c]}
@@ -1319,7 +1319,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <button className="icon-btn" onClick={() => setLoadOpen(true)} aria-label="Load game" title="Load game">
                     <LoadIcon />
                   </button>
-                  <button className="icon-btn strip-label" onClick={() => playItOut(node.fen, orientation)} disabled={!canPlayOut(node.fen)} title="Play this position on against the computer, from the side at the bottom">
+                  <button className="icon-btn strip-label" onClick={() => playItOut(node.fen, orientation)} disabled={!canPlayOut(node.fen)} title="Play this position on against the coach, from the side at the bottom">
                     <PuzzleIcon name="playout" />
                     Play it out
                   </button>

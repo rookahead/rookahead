@@ -350,7 +350,7 @@ const ONLINE_CLOCK_GROUPS: ClockGroup[] = ONLINE_CLOCKS.map((g) => ({ name: g.gr
 /** Play's front: the ways to play, each opening its own setup. */
 const WAYS: { view: Exclude<PlayView, 'hub'>; title: string; text: string }[] = [
   { view: 'online', title: 'Play online', text: 'A real player near your rating, on Lichess' },
-  { view: 'computer', title: 'Play the computer', text: '8 levels, 400 to 2600, with takebacks and hints' },
+  { view: 'computer', title: 'Play the coach', text: '8 levels, 400 to 2600, with takebacks and hints' },
   { view: 'friend', title: 'Play a friend', text: 'Challenge someone by their Lichess username' },
 ]
 // A setup's title: a new game, online or against the computer (the icon beside it says which); a friend's is its own.
@@ -472,7 +472,7 @@ function SetupView({
   const lichessFriends = friends.filter((f) => f.status === 'accepted' && f.lichess)
 
   const opponentName = isComputer
-    ? `Rookahead · Level ${level.level}`
+    ? `Coach · Level ${level.level}`
     : isFriend
       ? friendName || 'Your friend'
       : view === 'online'
@@ -1170,7 +1170,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     // The search scores for White; the computer plays the other colour from you.
     const botWin = game.color === 'white' ? 100 - winPercent(score) : winPercent(score)
     if (acceptsDraw(botWin, game.moves.length, game.setup.level)) end({ result: '1/2-1/2', reason: 'agreement' })
-    else decline('Rookahead declines the draw.')
+    else decline('The coach declines the draw.')
   }
 
   const onMove = (move: { from: string; to: string; promotion?: string }) => {
@@ -1192,7 +1192,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   }, [game.outcome])
 
   const material = materialState(shown.fen)
-  const computerName = `Rookahead · Level ${level.level}`
+  const computerName = `Coach · Level ${level.level}`
   // You: your username and photo once signed in (else "You" and its initial); the computer: the Rookahead rook.
   const { account, username } = useAccount()
   const yourName = username ?? 'You'
@@ -1326,7 +1326,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           <header className="play-panel-head">
             <div className="play-panel-title">
               <strong className={`play-status ${game.outcome ? 'over' : ''}`} role="status">
-                {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Rookahead is thinking…' : 'Rookahead to move')}
+                {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'The coach is thinking…' : 'The coach to move')}
               </strong>
               <span className="play-opening muted" title={opening ? `${opening.eco} ${opening.name}` : undefined}>
                 {openingText}
@@ -1338,7 +1338,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
             {phone ? (
               <MoveStrip tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} />
             ) : (
-              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} times={spent} emptyText="Your moves and the computer’s appear here." />
+              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} times={spent} emptyText="Your moves and the coach’s appear here." />
             )}
           </div>
           <nav className="play-nav" aria-label="Move navigation">
@@ -1446,7 +1446,7 @@ const REASONS: Record<Outcome['reason'], string> = {
 function outcomeText(outcome: Outcome, you: Color) {
   if (outcome.result === '1/2-1/2') return `Draw ${REASONS[outcome.reason]}`
   const youWon = (outcome.result === '1-0') === (you === 'white')
-  return `${youWon ? 'You won' : 'Rookahead won'} ${REASONS[outcome.reason]}`
+  return `${youWon ? 'You won' : 'The coach won'} ${REASONS[outcome.reason]}`
 }
 
 function ResultCard({ game, onReview, onRematch, onNewGame }: { game: LiveGame; onReview: () => void; onRematch: () => void; onNewGame: () => void }) {

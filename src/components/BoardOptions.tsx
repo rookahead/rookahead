@@ -102,7 +102,7 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
       {play && (
         <SwitchRow
           label="Premoves"
-          hint="Queue your next move while the computer thinks."
+          hint="Queue your next move while the coach thinks."
           checked={settings.premoves}
           onChange={(premoves) => onChange({ premoves })}
         />

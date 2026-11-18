@@ -191,7 +191,7 @@ function HomeTiles({ theme, level, friend, playing }: { theme: BoardTheme; level
         </span>
       </Link>
       <Link to="/play/computer" className="home-card home-tile on-board" inert={playing}>
-        <strong>Computer</strong>
+        <strong>Coach</strong>
         <small>{level}</small>
         <span className="home-tile-art tile-rook" aria-hidden>
           <svg viewBox="10 2 100 100">

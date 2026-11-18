@@ -30,9 +30,9 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'A new chess puzzle every day, the same for everyone. Solve it to keep your puzzle streak going. Free, no sign-up.',
   },
   '/play': {
-    title: 'Play chess against the computer · Rookahead',
+    title: 'Play chess against the coach · Rookahead',
     description:
-      'Play the computer at 8 levels, from 400 to 2600, at any time control. The lower levels make the mistakes people make at that rating. Review the game free afterwards.',
+      'Play the coach, a chess computer at 8 levels from 400 to 2600, at any time control. The lower levels make the mistakes people make at that rating. Review the game free afterwards.',
   },
   '/legendary': {
     title: 'Legendary moves · Rookahead',
