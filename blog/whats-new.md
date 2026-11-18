@@ -1,12 +1,21 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-17
+date: 2026-11-18
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 18 November 2026
+
+- Point at Play or Puzzles in the sidebar for shortcuts straight to each way to play and each puzzle mode.
+- The computer you play is now called the coach, everywhere: Play the coach.
+- Play has a new front, like Home's: Play online with your time a press away, then the coach and a friend.
+- Puzzles on a computer opens on its own start page: what the coach suggests today, rated puzzles as the big card, then Daily, Sprint and your mistakes. Each mode now has a page of its own instead of tabs.
+- Pick the colour of the last-move highlight in Board settings, so it stands out on your board.
+- Fixed: Puzzle Sprint kept giving the same puzzles, run after run.
 
 ## 17 November 2026
 
