@@ -426,6 +426,44 @@
   --t-osc: #2a3320;
 }
 
+:root[data-palette='mint'] {
+  --t-surface: #131211;
+  --t-lowest: #0e0d0c;
+  --t-low: #1a1917;
+  --t-cont: #1f1d1a;
+  --t-high: #292724;
+  --t-highest: #33302c;
+  --t-on: #efe9df;
+  --t-on-var: #c4bcae;
+  --t-primary: #8fd6af;
+  --t-on-primary: #0f2b1e;
+  --t-pc: #1f4433;
+  --t-opc: #b8ecd0;
+  --t-sc: #3a3731;
+  --t-osc: #e8e1d4;
+  --t-vivid: #8fd6af;
+  --t-on-vivid: #0f2b1e;
+  --t-deep: #1d3a2b;
+  --t-on-deep: #d3f1e0;
+}
+
+:root[data-palette='mint'][data-theme='light'] {
+  --t-surface: #faf7f1;
+  --t-lowest: #ffffff;
+  --t-low: #f4f0e8;
+  --t-cont: #eee9df;
+  --t-high: #e8e2d7;
+  --t-highest: #e1dbcf;
+  --t-on: #1b1916;
+  --t-on-var: #4d4840;
+  --t-primary: #2e7a54;
+  --t-on-primary: #ffffff;
+  --t-pc: #c7ecd7;
+  --t-opc: #154a31;
+  --t-sc: #e9e2d5;
+  --t-osc: #4d4840;
+}
+
 /* ═══════════════ Black: true black for AMOLED screens, cards just lifted off it ═══════════════ */
 :root[data-black] {
   /* No tint here: the greys are plain greys, whatever the colour theme, so the theme's colour is only where it
