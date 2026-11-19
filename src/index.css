@@ -9806,6 +9806,12 @@ button.user-avatar.guest:hover {
   display: flex;
   align-items: flex-start;
   min-height: 100vh;
+  /* The sidebar is fixed (as the app's is), so the page keeps the same room beside it as .shell does. */
+  padding-left: 260px;
+}
+
+:root[data-boot-rail] .boot-desk {
+  padding-left: 84px;
 }
 
 .boot-sidebar {
@@ -9814,7 +9820,7 @@ button.user-avatar.guest:hover {
 }
 
 :root[data-boot-rail] .boot-sidebar {
-  flex-basis: 72px;
+  width: 72px;
 }
 
 :root[data-boot-rail] .boot-sidebar .skel {
