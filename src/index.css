@@ -756,8 +756,9 @@ svg {
   height: calc(100vh - 24px);
   padding: 16px 12px 12px;
   border-radius: 22px;
-  background: var(--side);
-  box-shadow: var(--card-edge);
+  /* No panel of its own: the menu sits on the page, so the page reads as the app's frame and the cards on it as
+     the content. */
+  background: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
