@@ -1,12 +1,21 @@
 ---
 title: What's new in Rookahead
 description: Every change to how Rookahead grades moves, and the bigger new features, newest first.
-date: 2026-11-18
+date: 2026-11-19
 cover: moves 1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 | badge b5 brilliant
 order: 1
 ---
 
 This page lists every change to the verdict rules, so you can see why a move's verdict might differ from the last time you looked, along with the bigger new features. Newest first. When a rule changes, the reviews you've already saved are graded again with the new rules.
+
+## 19 November 2026
+
+- A calmer Home on computers. The coach greets you at the top: its eyes follow your pointer and look around, it blinks, and it smiles at good news. Your puzzle streak sits at the end of the greeting.
+- Widgets you choose: the row under the greeting holds the goals and numbers you pick, up to ten. Press + at the end of the row to add, move or remove them. Point at a goal and use its pencil to set how many you want today: games reviewed, mistakes fixed, games played, puzzles solved. Your accuracy, rating, Legendary moves, weakest phase and puzzle rating are widgets too.
+- Game review is the first card on the right, with Import beside the review button.
+- My games is a plain list: how each game went, who you played, when, a badge for a Legendary move and your accuracy. Games still to review say so.
+- A new font for text, a little taller and easier to read. The sidebar no longer sits on a panel of its own.
+- Fixed: while Rookahead was loading, the page could slide under the sidebar.
 
 ## 18 November 2026
 
