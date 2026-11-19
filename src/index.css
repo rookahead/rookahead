@@ -70,7 +70,7 @@
   /* Keeps black captured pieces visible against the page. */
   --dark-piece-glow: drop-shadow(0 0 1px rgba(255, 255, 255, 0.55));
 
-  --font-ui: 'DM Sans Variable', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui: 'Cabin Variable', Cabin, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   /* Headings, big numbers and the wordmark. Syne's default figures are old-style (7 and 9 dip
      below the line, 0 is a round O): anything in it uses lining figures. */
@@ -11797,7 +11797,7 @@ button.profile-rating:hover {
   }
 }
 
-/* ═══════════════ Brand type: Syne headings and wordmark, DM Sans text, DM Mono numbers ═══════════════ */
+/* ═══════════════ Brand type: Syne headings and wordmark, Cabin text, DM Mono numbers ═══════════════ */
 :root {
   /* DM Mono comes in 400 and 500 only: never fake a bolder weight. */
   font-synthesis-weight: none;
@@ -11814,7 +11814,7 @@ h2 {
   letter-spacing: -0.02em;
 }
 
-/* Big numbers in DM Sans: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
+/* Big numbers in Cabin: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
 .puzzle-num,
 .player-clock {
   font-family: var(--font-ui);

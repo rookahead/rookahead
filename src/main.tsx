@@ -1,4 +1,5 @@
 import '@fontsource-variable/dm-sans'
+import '@fontsource-variable/cabin'
 import '@fontsource-variable/syne'
 import '@fontsource/dm-mono/400.css'
 import '@fontsource/dm-mono/500.css'
