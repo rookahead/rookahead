@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { MoveClass } from './classify'
-import { gameDays, howItEnded, moveQuality } from './homeGames'
+import { gameDays, howItEnded } from './homeGames'
 import type { MyGame } from './myGames'
-import type { SharedGame } from './share'
 
-const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const NOW = new Date(2026, 9, 24, 21, 0)
 const at = (daysAgo: number, hour: number) => new Date(2026, 9, 24 - daysAgo, hour).getTime()
 
@@ -84,34 +81,5 @@ describe('gameDays', () => {
   it('leaves the rating out when a day mixes time controls', () => {
     const games = [game({ endedAt: at(0, 20) }), game({ endedAt: at(0, 19), time: '10 min' }), game({ endedAt: at(1, 9) })]
     expect(gameDays(games, games, NOW)[0].rating).toBeNull()
-  })
-})
-
-describe('moveQuality', () => {
-  const shared = (classes: MoveClass[], startFen = START): SharedGame => ({
-    startFen,
-    moves: classes.map(() => 'e2e4'),
-    headers: {},
-    orientation: 'white',
-    review: { depth: 16, scores: [], bestMoves: [], classes },
-  })
-
-  it("keeps only your moves and names the first blunder's move", () => {
-    const q = moveQuality(shared(['book', 'book', 'best', 'blunder', 'blunder', 'good', 'inaccuracy', 'best']), 'white')
-    expect(q?.moves).toEqual(['book', 'good', 'blunder', 'slip'])
-    expect(q?.note).toBe('1 blunder, move 3')
-    expect(moveQuality(shared(['book', 'book', 'best', 'blunder']), 'black')?.note).toBe('1 blunder, move 2')
-  })
-
-  it('counts from a position where Black moves first', () => {
-    const fen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
-    expect(moveQuality(shared(['blunder', 'best'], fen), 'black')?.note).toBe('1 blunder, move 1')
-    expect(moveQuality(shared(['best', 'blunder'], fen), 'white')?.note).toBe('1 blunder, move 2')
-  })
-
-  it('says Legendary, else mistakes, else none', () => {
-    expect(moveQuality(shared(['brilliant', 'best']), 'white')?.note).toBe('1 Legendary')
-    expect(moveQuality(shared(['mistake', 'best', 'miss', 'best']), 'white')?.note).toBe('2 mistakes')
-    expect(moveQuality(shared(['best', 'mistake']), 'white')?.note).toBe('No mistakes')
   })
 })

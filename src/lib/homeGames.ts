@@ -1,9 +1,6 @@
-// Home's game list: your games grouped by day, how each ended, and each reviewed game's moves as a strip of
-// colours, one per move you played.
+// Home's game list: your games grouped by day, and how each ended.
 import { Chess } from 'chess.js'
-import type { MoveClass } from './classify'
 import { dayLabel, finalPosition, type MyGame } from './myGames'
-import type { SharedGame } from './share'
 
 /** A PGN tag's value, or undefined when the game doesn't have it. */
 function tag(pgn: string, name: string): string | undefined {
@@ -96,63 +93,4 @@ export function gameDays(games: MyGame[], all: MyGame[] = games, now = new Date(
     if (from != null && to != null) day.rating = { time: rated[0].time, from, to }
   }
   return days
-}
-
-/** What a move's colour in the strip stands for. The engine's top moves and the good ones read as one. */
-export type Quality = 'book' | 'good' | 'clutch' | 'legendary' | 'slip' | 'mistake' | 'blunder'
-
-const QUALITY: Record<MoveClass, Quality> = {
-  book: 'book',
-  best: 'good',
-  excellent: 'good',
-  good: 'good',
-  forced: 'good',
-  great: 'clutch',
-  brilliant: 'legendary',
-  inaccuracy: 'slip',
-  mistake: 'mistake',
-  miss: 'mistake',
-  blunder: 'blunder',
-}
-
-export interface MoveQuality {
-  /** One per move you played, in order. */
-  moves: Quality[]
-  /** A few words on the game's headline: its blunders and where the first was, else its Legendary moves. */
-  note: string
-}
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-
-/** Your moves' verdicts in a reviewed game, as the strip's colours and a short note. */
-export function moveQuality(shared: SharedGame, color: 'white' | 'black'): MoveQuality | null {
-  const classes = shared.review?.classes
-  if (!classes?.length) return null
-  const [, turn, , , , full] = shared.startFen.split(' ')
-  const firstMover = turn === 'b' ? 'black' : 'white'
-  const startMove = Number(full) || 1
-  const moves: Quality[] = []
-  let blunders = 0
-  let firstBlunder = 0
-  let legendary = 0
-  let mistakes = 0
-  classes.forEach((cls, i) => {
-    const mover = (i % 2 === 0) === (firstMover === 'white') ? 'white' : 'black'
-    if (mover !== color) return
-    const q = QUALITY[cls]
-    moves.push(q)
-    if (q === 'blunder') {
-      if (!blunders) firstBlunder = startMove + Math.floor((i + (firstMover === 'black' ? 1 : 0)) / 2)
-      blunders++
-    } else if (q === 'legendary') legendary++
-    else if (q === 'mistake') mistakes++
-  })
-  const note = blunders
-    ? `${plural(blunders, 'blunder')}, move ${firstBlunder}`
-    : legendary
-      ? `${legendary} Legendary`
-      : mistakes
-        ? plural(mistakes, 'mistake')
-        : 'No mistakes'
-  return { moves, note }
 }

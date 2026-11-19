@@ -1,39 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ClassIcon } from '../components/ClassIcon'
 import { DailyCard } from '../components/DailyCard'
 import { HomeFooter } from '../components/HomeFooter'
 import { HomePlay } from '../components/HomePlay'
-import { FormStrip, PlanCard, PlanCardSkeleton, StatStrip, type AccuracyPoint } from '../components/HomeCards'
+import { FormStrip, PlanCard, PlanCardSkeleton, type AccuracyPoint } from '../components/HomeCards'
+import { HomeWidgets, HomeWidgetsSkeleton, type WidgetData } from '../components/HomeWidgets'
 import { GameLines, GameLinesSkeleton, HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
 import { IconTile, TILE_FILLS, TILE_ICONS } from '../components/IconTile'
 import { OpenGameDialog } from '../components/LoadGameDialog'
 import { Link } from '../components/Link'
-import { MiniBoard } from '../components/MiniBoard'
 import { PageHeader } from '../components/PageHeader'
+import { Flame } from '../components/PuzzleIcons'
+import { CoachFace } from '../components/CoachFace'
 import { BatchCard, ReviewGamesDialog } from '../components/ReviewGamesDialog'
-import { LegendaryRowSkeleton, Skel } from '../components/Skeleton'
+import { Skel } from '../components/Skeleton'
 import { UsernameForm } from '../components/UsernameForm'
-import { useLegendaryMoves } from '../hooks/useLegendaryMoves'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { transitionsDone, useSettled } from '../hooks/useSettled'
 import { useMistakes } from '../hooks/useMistakes'
 import { openMyGame, useMyGames } from '../hooks/useMyGames'
 import { ACCOUNTS_ENABLED, openAccountPage, useAccount } from '../lib/account'
 import { MAX_BATCH, unreviewed, useBatchActive } from '../lib/batchReview'
+import { tallyToday } from '../lib/dailyTally'
 import type { Color } from '../lib/evaluation'
 import { dismissedNudges, dismissNudge, pickGuestNudge } from '../lib/guestNudge'
 import { greeting, nudge } from '../lib/home'
 import { ratingLine } from '../lib/gameRecord'
-import { sinceFor } from '../lib/legendary'
-import { dayLabel, gameStats, type MyGame } from '../lib/myGames'
-import { phaseMoves, weakestPhase, type Phase } from '../lib/phases'
+import { gameStats, type MyGame } from '../lib/myGames'
+import { phaseMoves, WEAKEST_MIN_REVIEWED, weakestPhase, type Phase } from '../lib/phases'
 import { localDayNumber } from '../lib/puzzles'
 import { dayStreak, loadProgress } from '../lib/puzzleStore'
 import type { CachedReview } from '../lib/reviewCache'
 import { navigate } from '../lib/router'
 import { decodeSaved, type SharedGame } from '../lib/share'
-import type { BoardTheme, Settings } from '../lib/settings'
+import type { Settings } from '../lib/settings'
 import { useStoreVersion } from '../lib/syncBus'
+import { cleanWidgets } from '../lib/widgets'
 import { DayStreak } from './puzzles/shared'
 
 /** Reviewed games the accuracy bars show and your weakest phase is read from. */
@@ -43,8 +44,6 @@ let phasesRead: { key: string; weakest: { phase: Phase; accuracy: number } | nul
 
 /** Your latest games, for the line under the greeting. */
 const FORM_GAMES = 10
-/** Legendary moves in Home's strip; the rest are a tap away. */
-const STRIP = 8
 
 interface Props {
   /** It stays mounted: whether it's the page on screen. */
@@ -161,6 +160,9 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
           hasGames: games.length > 0,
         })
 
+  // Good news gets a smile; the rest is said plainly.
+  const cheerful = !waiting && /^(You won|Up \d|Your accuracy is up|\d+ Legendary)/.test(line)
+
   const guestNudge = saveNudge && (
     <section className="save-nudge" aria-label="Save your progress">
       <span className="save-nudge-icon" aria-hidden>
@@ -264,31 +266,44 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
     </button>
   )
 
-  // Desktop: the ways into a review sit by the greeting. While many games are being reviewed, that run's card
-  // (in the page, under the greeting) says how it's going instead.
-  const reviewButton = batchActive ? null : waiting ? (
-    <Skel w="186px" h="42px" className="skel-button" />
-  ) : several ? (
-    <button className="btn home-review" onClick={() => setBatchOpen(true)} title={`${toReview.length > MAX_BATCH ? `${MAX_BATCH}+` : toReview.length} games not reviewed`}>
-      {reviewIcon}
-      Review latest games
-    </button>
-  ) : next ? (
-    <button className="btn home-review" onClick={openNext} title={`vs ${opponentOf(next)}`}>
-      {reviewIcon}
-      Review latest game
-    </button>
-  ) : null
-  const topActions = (
-    <div className="home-top-actions">
-      <button className="btn ghost" onClick={loadGame} title="Paste a PGN or a game link">
-        <svg viewBox="0 0 24 24" aria-hidden>
-          <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
-        </svg>
-        Import
-      </button>
-      {reviewButton}
-    </div>
+  // Desktop: the ways into a review, as the right column's first card. While many games are being reviewed, that
+  // run's card (in the middle column) says how it's going instead, and this one only offers to bring a game in.
+  const unreviewedCount = toReview.length > MAX_BATCH ? `${MAX_BATCH}+` : `${toReview.length}`
+  const reviewNote = batchActive
+    ? 'Reviewing your games now'
+    : several
+      ? `${unreviewedCount} games not reviewed`
+      : next && !nextReview
+        ? `vs ${opponentOf(next)}, not reviewed yet`
+        : next
+          ? `All reviewed. Latest: ${nextReview?.accuracy[next.color]?.toFixed(1) ?? '–'} accuracy`
+          : 'Paste a PGN or a game link'
+  const reviewCardDesk = (
+    <section className="home-card review-card" aria-labelledby="review-card">
+      <header className="quick-lines">
+        <h2 id="review-card">Game review</h2>
+        {waiting ? <Skel w="70%" h="12px" /> : <small>{reviewNote}</small>}
+      </header>
+      <div className="review-card-actions">
+        {waiting ? (
+          <Skel w="100%" h="42px" className="skel-button" />
+        ) : (
+          !batchActive &&
+          next && (
+            <button className="btn home-review" onClick={several ? () => setBatchOpen(true) : openNext} title={several ? undefined : `vs ${opponentOf(next)}`}>
+              {reviewIcon}
+              {several ? 'Review latest games' : nextReview ? 'Open latest review' : 'Review latest game'}
+            </button>
+          )
+        )}
+        <button className="btn ghost" onClick={loadGame} title="Paste a PGN or a game link">
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+          </svg>
+          Import
+        </button>
+      </div>
+    </section>
   )
 
   const formStrip = (
@@ -297,37 +312,24 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
       accuracy={stats.accuracy}
       trend={stats.trend}
       recent={points.map((p) => p.accuracy)}
-      progress={progress}
       weakest={known?.weakest}
       reviewed={known?.reviewed ?? 0}
-      legendary={phone ? { all: stats.legendaryAll, week: stats.legendary } : undefined}
+      legendary={{ all: stats.legendaryAll, week: stats.legendary }}
     />
-  )
-  // Whether Legendary moves are coming: from your games' reviews once the games are here, from any saved review
-  // before that, and assumed while neither has come.
-  const reviewList = Object.values(reviews)
-  const legendaryExpected = games.length
-    ? stats.legendaryAll > 0
-    : reviewList.length
-      ? reviewList.some((r) => r.brilliant.white + r.brilliant.black > 0)
-      : arriving
-  const legendaryRow = (
-    <LegendaryStrip pending={arriving} expected={legendaryExpected} games={games} reviews={reviews} theme={settings.boardTheme} onOpenAnalysis={onOpenAnalysis} />
   )
   const gamesCard = (
     <section className="home-card games-card" aria-labelledby="my-games">
       {waiting || (loading && !games.length) ? (
-        phone ? <GameLinesSkeleton /> : <HomeGamesSkeleton reviewed={hasReviews} />
+        phone ? <GameLinesSkeleton /> : <HomeGamesSkeleton />
       ) : games.length ? (
         phone ? (
           <GameLines games={games} reviews={reviews} error={hasUsers ? importError : undefined} onOpen={(g, r) => void open(g, r)} />
         ) : (
-          <HomeGames games={games} reviews={reviews} theme={settings.boardTheme} error={hasUsers ? importError : undefined} onOpen={(g, r) => void open(g, r)} />
+          <HomeGames games={games} reviews={reviews} error={hasUsers ? importError : undefined} onOpen={(g, r) => void open(g, r)} />
         )
       ) : (
         <>
           <header className="home-card-head">
-            <IconTile tone="games" />
             <h2 id="my-games">My games</h2>
           </header>
           {importError && hasUsers && !firstVisit && <p className="games-error">{importError}</p>}
@@ -365,6 +367,27 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         </span>
       </button>
     )
+
+  // What the widgets show (HomeWidgets): today's counts and your numbers.
+  const widgets = cleanWidgets(settings.homeWidgets)
+  const midnight = new Date().setHours(0, 0, 0, 0)
+  const widgetData: WidgetData = {
+    reviews: tallyToday('review'),
+    played: games.filter((g) => g.source === 'rookahead' && g.endedAt >= midnight).length,
+    puzzles: tallyToday('puzzle'),
+    mistakesFixed: progress.today?.day === today ? progress.today.mistakes : 0,
+    mistakesWaiting: mistakes ? mistakes.length : null,
+    daily: progress.daily?.day === today ? progress.daily.result : undefined,
+    accuracy: stats.accuracy,
+    trend: stats.trend,
+    recent: points.map((p) => p.accuracy),
+    rating,
+    legendary: { all: stats.legendaryAll, week: stats.legendary },
+    weakest: known?.weakest,
+    reviewed: known?.reviewed ?? 0,
+    phaseNeeds: WEAKEST_MIN_REVIEWED - (known?.reviewed ?? 0),
+    puzzleRating: progress.rating,
+  }
 
   if (phone) {
     // Phones: the desktop page's parts, kept to about a screen: your numbers, and the puzzle and the computer, are
@@ -407,9 +430,9 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
               {reviewAction}
               {formStrip}
               {waiting ? (
-                <PlanCardSkeleton compact />
+                <PlanCardSkeleton />
               ) : (
-                <PlanCard compact latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
+                <PlanCard latest={latest} review={latestReview} games={games} mistakes={mistakes ? mistakes.length : null} progress={progress} onOpenLatest={openLatest} />
               )}
               <div className="phone-swipe" aria-label="Puzzles">
                 <DailyCard compact theme={settings.boardTheme} />
@@ -431,18 +454,35 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
         <div className="home-main">
           {/* The greeting heads the middle column only: the right column runs the screen's height beside it. */}
           <header className="home-top">
-            <div className="home-welcome">
-              {/* One line: a long username is cut with an ellipsis (the whole greeting is in its tooltip). */}
-              <h1 title={name ? greeting(hour, name) : undefined}>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
-              {waiting ? (
-                <span className="skel-line">
-                  <Skel w="320px" h="12px" />
-                </span>
-              ) : (
-                !firstVisit && <span>{line}</span>
-              )}
+            {/* The coach greets you, and says the one thing worth knowing today. */}
+            <div className="home-coach">
+              <span className="home-coach-face">
+                <CoachFace happy={cheerful} moodKey={line} />
+              </span>
+              <div className="home-welcome">
+                {/* One line: a long username is cut with an ellipsis (the whole greeting is in its tooltip). */}
+                <h1 title={name ? greeting(hour, name) : undefined}>{firstVisit && !name ? 'Welcome to Rookahead' : greeting(hour, name)}</h1>
+                {waiting ? (
+                  <span className="skel-line">
+                    <Skel w="320px" h="12px" />
+                  </span>
+                ) : (
+                  <span>{firstVisit ? 'Bring in your games and I’ll go through every move.' : line}</span>
+                )}
+              </div>
             </div>
-            {!firstVisit && topActions}
+            {/* Your puzzle streak, as a counter at the greeting's end. */}
+            {!firstVisit && (
+              <Link
+                to={progress.days?.last === today ? '/puzzles' : '/puzzles/daily'}
+                className={`home-streak-count ${streak ? 'lit' : ''}`}
+                title={streak ? `${streak}-day puzzle streak` : 'Solve a puzzle today to start a streak'}
+                aria-label={streak ? `Puzzle streak: ${streak} ${streak === 1 ? 'day' : 'days'}` : 'No puzzle streak yet'}
+              >
+                <Flame size={20} lit={streak > 0} />
+                <b>{streak}</b>
+              </Link>
+            )}
           </header>
 
           {guestNudge}
@@ -451,103 +491,19 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
           {firstVisit && hero}
           {batchActive && <BatchCard />}
           {/* Today's goals: what to do, across the middle column, under the greeting. */}
-          {waiting ? (
-            <PlanCardSkeleton steps={3 + (hasReviews ? 1 : 0)} />
-          ) : (
-            <PlanCard
-              expectMistakes={hasReviews}
-              latest={latest}
-              review={latestReview}
-              games={games}
-              mistakes={mistakes ? mistakes.length : null}
-              progress={progress}
-              onOpenLatest={openLatest}
-              onAddGames={addGames}
-            />
-          )}
-          {legendaryRow}
+          {/* Your widgets: the goals and numbers you picked, in your order. */}
+          {waiting ? <HomeWidgetsSkeleton count={widgets.length} /> : <HomeWidgets widgets={widgets} onChange={(homeWidgets) => updateSettings({ homeWidgets })} data={widgetData} theme={settings.boardTheme} onReview={next ? openNext : firstVisit ? addGames : loadGame} />}
           {gamesCard}
         </div>
 
         <aside className="home-side" aria-label="Today">
-          {/* Your numbers first, a strip of small cards that scrolls sideways, then the ways to play. */}
-          <StatStrip pending={waiting} accuracy={stats.accuracy} trend={stats.trend} recent={points.map((p) => p.accuracy)} rating={rating} progress={progress} weakest={known?.weakest} />
-          <HomePlay active={active} games={games} theme={settings.boardTheme} />
+          {/* The ways into a review, then the ways to play. */}
+          {!firstVisit && reviewCardDesk}
+          <HomePlay active={active} games={games} />
         </aside>
         <HomeFooter />
       </main>
       {loadDialog}
     </div>
-  )
-}
-
-/** Your Legendary moves as a row of small boards, or what they are when there are none yet. */
-function LegendaryStrip({
-  pending,
-  expected,
-  games,
-  reviews,
-  theme,
-  onOpenAnalysis,
-}: {
-  /** Your games are still on their way (not waiting for Home's placeholders to settle, so both settle together). */
-  pending: boolean
-  /** Your saved reviews count some Legendary moves (known at once, before the games are read for them). */
-  expected: boolean
-  games: MyGame[]
-  reviews: Record<string, CachedReview>
-  theme: BoardTheme
-  onOpenAnalysis: () => void
-}) {
-  const { moves, loading } = useLegendaryMoves(games, reviews)
-  // Only a row of moves on its way gets the row's placeholder: with none to find, the teaser shows at once.
-  const busy = useSettled(expected && (pending || loading) && !moves.length)
-  if (busy) return <LegendaryRowSkeleton />
-  if (!moves.length)
-    return (
-      <section className="home-card legendary-teaser" aria-labelledby="legendary-strip">
-        <ClassIcon cls="brilliant" size={36} />
-        <div>
-          <h2 id="legendary-strip">Find your Legendary moves</h2>
-          <p>The rare sacrifice that only works because you saw further. Review a game and any you played collect here.</p>
-        </div>
-      </section>
-    )
-  const week = moves.filter((m) => m.game.endedAt >= sinceFor('7d')).length
-  return (
-    <section className="home-card legendary-strip" aria-labelledby="legendary-strip">
-      <header className="home-card-head">
-        <h2 id="legendary-strip">
-          <ClassIcon cls="brilliant" size={20} /> Legendary moves
-        </h2>
-        <Link to="/legendary" className="link-btn see-all">
-          {week ? `${week} this week` : `${moves.length} in all`} ›
-        </Link>
-      </header>
-      <ul className="legendary-row">
-        {moves.slice(0, STRIP).map((m) => {
-          const them = m.game.color === 'white' ? m.game.black : m.game.white
-          return (
-            <li key={m.id}>
-              <button
-                className="legendary-card"
-                onClick={async () => {
-                  await openMyGame(m.game, m.review, { ply: m.ply })
-                  onOpenAnalysis()
-                }}
-              >
-                <MiniBoard fen={m.fen} orientation={m.game.color} theme={theme} lastMove={[m.from, m.to]} grade="brilliant" label={`${m.label} against ${them.name}`} />
-                <span className="legendary-meta">
-                  <strong>{m.label}</strong>
-                </span>
-                <span className="legendary-vs">
-                  vs {them.name} · {dayLabel(m.game.endedAt)}
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </section>
   )
 }

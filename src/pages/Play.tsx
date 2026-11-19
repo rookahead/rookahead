@@ -582,7 +582,7 @@ function SetupView({
   const needsLichess = onlineSetupShown && !linked
   // Play's front, on a phone as on a computer: an online game at the time you last picked, one press away (Home's own
   // card), then the coach and a friend.
-  const front = <HomePlay active={active} games={games} theme={settings.boardTheme} tiles={['coach', 'friend']} />
+  const front = <HomePlay active={active} games={games} tiles={['coach', 'friend']} />
   // While it looks (or waits on a friend) the choices are gone: the panel is the search, what it's for and how long
   // it has run. They come back when it ends.
   const searchFor = [chosen?.group, online.rated ? 'Rated' : 'Casual', isFriend && online.color !== 'random' ? `You play ${online.color === 'white' ? 'White' : 'Black'}` : null].filter(Boolean).join(' · ')

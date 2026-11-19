@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { GameDays, GameDaysSkeleton, GameLines, GameLinesSkeleton, HomeGames, HomeGamesSkeleton, QualityKey } from '../components/HomeGames'
+import { GameDays, GameDaysSkeleton, GameLines, GameLinesSkeleton, HomeGames, HomeGamesSkeleton } from '../components/HomeGames'
 import { IconTile } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { OpenGameDialog } from '../components/LoadGameDialog'
@@ -164,7 +164,7 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
             ) : phone ? (
               <GameLines games={games} reviews={reviews} error={importError} onOpen={(g, r) => void open(g, r)} />
             ) : (
-              <HomeGames games={games} reviews={reviews} theme={settings.boardTheme} error={importError} onOpen={(g, r) => void open(g, r)} />
+              <HomeGames games={games} reviews={reviews} error={importError} onOpen={(g, r) => void open(g, r)} />
             )}
           </section>
         )}
@@ -173,7 +173,7 @@ export function ProfilePage({ active, settings, updateSettings, onOpenAnalysis, 
   } else if (tab === 'friends') {
     body = <FriendsPanel onOpenAnalysis={onOpenAnalysis} />
   } else if (tab === 'games') {
-    body = none ? bringIn : <GamesCard games={games} reviews={reviews} busy={busy} phone={phone} error={importError} theme={settings.boardTheme} onOpen={(g, r) => void open(g, r)} />
+    body = none ? bringIn : <GamesCard games={games} reviews={reviews} busy={busy} phone={phone} error={importError} onOpen={(g, r) => void open(g, r)} />
   } else {
     const source: StatsSource = selected.startsWith('chesscom:') ? 'chesscom' : 'rookahead'
     const chips: { id: string; label: string }[] =
@@ -894,14 +894,13 @@ function StatsSkeleton() {
   )
 }
 
-/** Every game in one list, newest first and grouped by day, the way Home lists them; chips to narrow it. */
+/** Every game in one list, newest first and grouped by day, in Home's rows; chips to narrow it. */
 function GamesCard({
   games,
   reviews,
   busy,
   phone,
   error,
-  theme,
   onOpen,
 }: {
   games: MyGame[]
@@ -909,7 +908,6 @@ function GamesCard({
   busy: boolean
   phone: boolean
   error?: string
-  theme: Settings['boardTheme']
   onOpen: (game: MyGame, review?: CachedReview) => void
 }) {
   const [show, setShow] = useState<Show>('all')
@@ -996,7 +994,7 @@ function GamesCard({
       </div>
       {error && <p className="games-error">{error}</p>}
       {days.length ? (
-        <GameDays days={days} reviews={reviews} theme={theme} onOpen={onOpen} />
+        <GameDays days={days} reviews={reviews} onOpen={onOpen} />
       ) : (
         <div className="games-empty">
           <svg viewBox="0 0 24 24" aria-hidden>
@@ -1013,7 +1011,6 @@ function GamesCard({
           Show older games
         </button>
       )}
-      {filtered.slice(0, shown).some((g) => reviews[g.key]) && <QualityKey />}
     </section>
   )
 }

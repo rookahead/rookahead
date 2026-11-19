@@ -16,28 +16,6 @@ export function SkelBoard({ className = '' }: { className?: string }) {
   return <span className={`skel skel-board ${className}`} aria-hidden />
 }
 
-/** Home's row of Legendary moves, on its way. */
-export function LegendaryRowSkeleton() {
-  return (
-    <section className="home-card legendary-strip skel-group" aria-busy aria-label="Loading your Legendary moves">
-      <header className="home-card-head">
-        <Skel w="46%" h="18px" />
-      </header>
-      <ul className="legendary-row">
-        {[0, 1, 2].map((i) => (
-          <li key={i}>
-            <span className="legendary-card">
-              <SkelBoard />
-              <Skel w="60%" h="12px" className="skel-gap" />
-              <Skel w="80%" h="10px" />
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
 /** The Legendary page's cards, on their way. */
 export function LegendaryGridSkeleton({ cards = 6 }: { cards?: number }) {
   return (

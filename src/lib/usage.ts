@@ -1,4 +1,5 @@
 import { ACCOUNTS_ENABLED, accountNow, client, subscribeAccount } from './account'
+import { tally } from './dailyTally'
 import { inApp } from './install'
 
 // The usage log: what signed-in accounts do, so we can see who comes back and what they use. Each
@@ -29,6 +30,9 @@ export function platform(): UsageRow['platform'] {
 
 /** Notes an event. `detail` is a short lowercase tag such as "daily" or "batch". */
 export function logUse(event: UsageEvent, detail = ''): void {
+  // Today's counts for Home's goals, on this device, signed in or not.
+  if (event === 'review_done') tally('review')
+  if (event === 'puzzle_solved') tally('puzzle')
   if (!ACCOUNTS_ENABLED) return
   // A guest's events are dropped, except the open: they may sign in a moment later, and that's a visit too.
   if (accountNow().status === 'guest' && event !== 'open') return

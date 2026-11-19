@@ -2,7 +2,6 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useAccount } from '../lib/account'
 import { clockLabel } from '../lib/clock'
 import { useFriends } from '../lib/friends'
-import { formatDay } from '../lib/home'
 import { levelInfo } from '../lib/levels'
 import { canPlay, connectLichess, useLichess } from '../lib/lichessAuth'
 import { loadLiveOnline, ONLINE_CLOCKS, type OnlineClock } from '../lib/lichessPlay'
@@ -10,20 +9,17 @@ import type { MyGame } from '../lib/myGames'
 import { askForSeek, loadOnlineSetup, saveOnlineSetup } from '../lib/onlineSetup'
 import { loadLiveGame, loadSetup } from '../lib/playStore'
 import { perfsFor } from '../lib/profile'
-import { positionAfter, playerColor } from '../lib/puzzles'
 import { navigate } from '../lib/router'
-import type { BoardTheme } from '../lib/settings'
 import { useDailyPuzzle } from './DailyCard'
 import { TILE_ICONS } from './IconTile'
 import { Link } from './Link'
-import { MiniBoard } from './MiniBoard'
 import { ROOK_PATH } from './RookCoach'
 import { Sheet } from './Sheet'
 import { AvatarFace } from './UserCard'
 
-/** The picture tiles under the Play card: Home has all four, Play's front the two ways to play. */
-export type TileId = 'friend' | 'coach' | 'daily' | 'puzzles'
-const HOME_TILES: TileId[] = ['friend', 'coach', 'daily', 'puzzles']
+/** The picture tiles under the Play card: Home has all three, Play's front the two ways to play. */
+export type TileId = 'friend' | 'coach' | 'puzzles'
+const HOME_TILES: TileId[] = ['friend', 'coach', 'puzzles']
 
 const CLOCKS = ONLINE_CLOCKS.flatMap((g) => g.clocks.map((clock) => ({ clock, group: g.group })))
 
@@ -36,7 +32,7 @@ const kept = () => ({ online: loadOnlineSetup(), computer: loadSetup(), liveOnli
  * tiles: on Home a friend, the coach, today's puzzle and rated puzzles; on Play's front the coach and a friend. Each part keeps its height whatever
  * it has to say.
  */
-export function HomePlay({ active, games, theme, tiles = HOME_TILES }: { active: boolean; games: MyGame[]; theme: BoardTheme; tiles?: TileId[] }) {
+export function HomePlay({ active, games, tiles = HOME_TILES }: { active: boolean; games: MyGame[]; tiles?: TileId[] }) {
   const { link, busy, error } = useLichess()
   const { friends } = useFriends()
   // Read again on coming back to Home: Play may have changed any of it meanwhile.
@@ -166,7 +162,7 @@ export function HomePlay({ active, games, theme, tiles = HOME_TILES }: { active:
         )}
 
   </section>
-      <HomeTiles tiles={tiles} theme={theme} level={`Level ${level.level} · ${level.rating}`} friend={!linked ? 'Needs Lichess' : onLichess ? `${onLichess} on Lichess` : 'By Lichess username'} playing={!!playing} />
+      <HomeTiles tiles={tiles} level={`Level ${level.level} · ${level.rating}`} friend={!linked ? 'Needs Lichess' : onLichess ? `${onLichess} on Lichess` : 'By Lichess username'} playing={!!playing} />
     </>
   )
 }
@@ -176,10 +172,9 @@ export function HomePlay({ active, games, theme, tiles = HOME_TILES }: { active:
  * faintly: "vs" between you and a friend, a board's squares under the rook and the puzzle piece. A game on the board
  * is the one Play shows, whichever way you go in, so the two ways to play wait for it.
  */
-function HomeTiles({ tiles, theme, level, friend, playing }: { tiles: TileId[]; theme: BoardTheme; level: string; friend: string; playing: boolean }) {
+function HomeTiles({ tiles, level, friend, playing }: { tiles: TileId[]; level: string; friend: string; playing: boolean }) {
   const { account, username } = useAccount()
-  const { puzzle, done, days, rating } = useDailyPuzzle()
-  const first = puzzle?.moves[0]
+  const { rating } = useDailyPuzzle()
   const all: Record<TileId, ReactNode> = {
     friend: (
       <Link key="friend" to="/play/friend" className="home-card home-tile" inert={playing}>
@@ -205,19 +200,6 @@ function HomeTiles({ tiles, theme, level, friend, playing }: { tiles: TileId[]; 
             <ellipse cx="47" cy="60" rx="7" ry="9" />
             <ellipse cx="73" cy="60" rx="7" ry="9" />
           </svg>
-        </span>
-      </Link>
-    ),
-    daily: (
-      <Link key="daily" to="/puzzles/daily" className="home-card home-tile">
-        <strong>Daily puzzle</strong>
-        <small>{done === 'solved' ? 'Solved · next one tomorrow' : done === 'failed' ? 'Missed · next one tomorrow' : days ? `Keeps your ${days}-day streak` : formatDay(Date.now() / 1000)}</small>
-        <span className="home-tile-art tile-board" aria-hidden>
-          {puzzle && first ? (
-            <MiniBoard fen={positionAfter(puzzle, [first]).fen()} orientation={playerColor(puzzle)} theme={theme} lastMove={[first.slice(0, 2), first.slice(2, 4)]} />
-          ) : (
-            <span className="skel tile-board-blank" />
-          )}
         </span>
       </Link>
     ),

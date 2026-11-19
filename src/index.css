@@ -38,6 +38,8 @@
   --card-edge: none;
   --card-row: rgba(255, 255, 255, 0.025);
   --win: #7fc35f;
+  /* A met goal's ring: a fresh, bright green (the win green is softer, for text). */
+  --goal-done: #2ee87a;
   --danger: #ef6b5f;
   --white-piece: #f2f2f3;
   --black-piece: #111113;
@@ -129,6 +131,7 @@
   --card-edge: none;
   --card-row: rgba(0, 0, 0, 0.025);
   --win: #4c9a2a;
+  --goal-done: #12a84f;
   --danger: #d4433a;
   --warn: #a2700f;
   --streak: #e2620b;
@@ -4700,7 +4703,9 @@ button.explain-row {
 
 /* ═══════════════ Home ═══════════════ */
 .home {
-  max-width: 1240px;
+  /* Narrower than the screen on purpose: the page's background shows around Home's two columns, the middle one
+     twice as wide as the right (720 and 360 at most) with a wide gap between. */
+  max-width: 1168px;
   /* Centred in the space beside the sidebar, not hugging it, on wide screens. */
   margin-inline: auto;
   box-sizing: border-box;
@@ -4720,7 +4725,7 @@ button.explain-row {
 }
 
 .home-side {
-  flex: 1 1 300px;
+  flex: 1 1 280px;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -4750,10 +4755,14 @@ button.explain-row {
     overscroll-behavior: contain;
   }
 
+  .home {
+    column-gap: 48px;
+  }
+
   /* The footer ends where the middle column does (the same sum as the columns' own), clear of the pinned one. */
   .home > .home-footer {
     box-sizing: border-box;
-    flex: 0 0 calc(560px + (100% - 880px) * 2 / 3);
+    flex: 0 0 calc(560px + (100% - 888px) * 2 / 3);
   }
 }
 
@@ -4791,6 +4800,106 @@ button.explain-row {
   min-width: 0;
 }
 
+/* Home's greeting: a calm size beside the coach, not a headline. */
+.home-top .home-welcome h1 {
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.home-top .home-welcome > span {
+  font-size: 14px;
+}
+
+/* The puzzle streak at the greeting's end: a flame and the days, in the streak's orange once it's going. */
+.home-streak-count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 14px 0 11px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.home-streak-count:hover {
+  background: var(--card-hover);
+}
+
+.home-streak-count b {
+  font: 700 16px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-streak-count.lit {
+  background: color-mix(in srgb, var(--streak) 14%, var(--card));
+  color: var(--streak);
+}
+
+/* The coach at the top of Home: its face, and the greeting beside it. */
+.home-coach {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-coach-face {
+  flex: none;
+  width: 60px;
+  height: 60px;
+}
+
+.coach-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 90%;
+  transition: rotate 0.4s ease-out;
+}
+
+/* A slow bob while it waits. */
+.coach-face.moving {
+  animation: coach-bob 3.2s ease-in-out infinite;
+}
+
+@keyframes coach-bob {
+  50% {
+    translate: 0 -2.5px;
+  }
+}
+
+.coach-face-head {
+  fill: color-mix(in srgb, var(--brand) 22%, #fff);
+}
+
+:root[data-theme='light'] .coach-face-head {
+  fill: color-mix(in srgb, var(--brand) 38%, #fff);
+}
+
+.coach-face-eyes {
+  transition: translate 0.28s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.coach-face-eye {
+  fill: #17171c;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: scale 0.08s ease-out;
+}
+
+.coach-face-happy {
+  fill: none;
+  stroke: #17171c;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+}
+
 /* One line each beside the buttons: a long username ends in an ellipsis rather than pushing them off. */
 .home-top .home-welcome h1,
 .home-top .home-welcome > span:not(.skel-line) {
@@ -4799,19 +4908,26 @@ button.explain-row {
   text-overflow: ellipsis;
 }
 
-.home-top-actions {
-  flex-shrink: 0;
+.review-card-actions {
   display: flex;
   gap: 10px;
 }
 
-.home-top-actions .btn {
+.review-card-actions .btn {
   height: 42px;
   border-radius: 12px;
   gap: 8px;
 }
 
-.home-top-actions .btn svg {
+.review-card-actions .home-review {
+  flex: 1;
+}
+
+.review-card-actions .skel-button {
+  flex: 1;
+}
+
+.review-card-actions .btn svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -4819,9 +4935,57 @@ button.explain-row {
   stroke-linejoin: round;
 }
 
-.home-top-actions .btn svg .filled {
+.review-card-actions .btn svg .filled {
   fill: currentColor;
   stroke: none;
+}
+
+/* Desktop Home's first card on the right: the ways into a review, with how many games wait for one. It stands out
+   in the brand's tint, with the review mark large and faint behind its words. */
+.home-card.review-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--brand) 28%, var(--card));
+}
+
+.review-card::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  right: -14px;
+  top: -18px;
+  width: 120px;
+  height: 120px;
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+  rotate: -10deg;
+  pointer-events: none;
+}
+
+.review-card .btn.ghost {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+}
+
+.review-card h2 {
+  font: 750 19px/24px var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.review-card small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.review-card .quick-lines {
+  display: block;
 }
 
 .home-review {
@@ -5351,10 +5515,15 @@ button.explain-row {
   gap: 12px;
 }
 
+/* An odd tile out takes the whole row. */
+.home-tiles > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 .home-tile {
   position: relative;
-  height: 140px;
-  padding: 16px;
+  height: 172px;
+  padding: 16px 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -5372,8 +5541,11 @@ button.explain-row {
 }
 
 .home-tile strong {
-  font: 750 16px/20px var(--font-display);
+  overflow: hidden;
+  font: 750 15px/20px var(--font-display);
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* Between you and a friend: "vs", huge and faint, behind the two faces. */
@@ -5414,7 +5586,7 @@ button.explain-row {
 .home-tile-art {
   position: absolute;
   inset: auto 0 0;
-  height: 100px;
+  height: 108px;
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -5634,7 +5806,7 @@ button.explain-row {
 /* The streak takes the room its week needs; accuracy and the weakest phase share the rest. */
 .form-strip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
   padding: 18px 0;
 }
 
@@ -5650,20 +5822,6 @@ button.explain-row {
 
 .form-part + .form-part {
   border-left: 1px solid var(--border);
-}
-
-/* The streak: its number and best on the left, this week's days on the right. */
-.form-streak {
-  flex-direction: row;
-  align-items: center;
-  gap: 18px;
-}
-
-.form-col {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .form-label,
@@ -5740,7 +5898,7 @@ button.explain-row {
   flex: 0 1 110px;
   min-width: 0;
   height: 30px;
-  margin-left: auto;
+  margin-left: 12px;
   align-self: flex-end;
   display: flex;
   align-items: flex-end;
@@ -5755,52 +5913,6 @@ button.explain-row {
 
 .form-bars i.last {
   background: var(--brand);
-}
-
-.form-week {
-  flex: none;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  gap: 6px;
-}
-
-.form-week li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 12px;
-}
-
-.form-week i {
-  width: 16px;
-  height: 16px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--text) 10%, transparent);
-}
-
-.form-week .solved i {
-  background: var(--streak);
-}
-
-.form-week .today i {
-  background: none;
-  border: 2px solid var(--streak);
-}
-
-.form-week .today span {
-  color: var(--text);
-  font-weight: 650;
-}
-
-.form-week .later i {
-  background: none;
-  border: 1px solid var(--border-strong);
 }
 
 /* The one coloured card. */
@@ -5868,17 +5980,362 @@ button.explain-row {
   }
 }
 
-/* Desktop Home's goals for today (HomeCards.tsx, PlanCard): a row of small tiles under the greeting, each a count
-   in a ring that fills as you go, green once the goal is met. */
-.plan-row {
-  display: grid;
-  gap: 12px;
+/* Desktop Home's widgets (HomeWidgets.tsx): your goals and numbers, five to a row, then a slim strip that edits
+   the row. Every tile is the same shape: a picture, a name, a line. */
+.widgets {
+  --widget-w: 126px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
+.widget-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.widget-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.plan-tile.widget {
+  position: relative;
+  cursor: default;
+}
+
+.plan-tile.widget:has(.widget-hit):hover {
+  background: var(--card-hover);
+}
+
+/* The whole tile is the way in; the pencil and the stepper sit above it. */
+.widget-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+.widget-hit:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.widget-pencil,
+.widget-tools button,
+.widget-step button {
+  position: relative;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text-2);
+  font: 700 15px/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.widget-pencil:hover,
+.widget-tools button:hover:not(:disabled),
+.widget-step button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  color: var(--text);
+}
+
+.widget-tools button:disabled,
+.widget-step button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.widget-pencil svg,
+.widget-tools svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A goal's pencil shows while you point at its tile (or reach it with the keyboard). */
+.widget-pencil {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.widget:hover .widget-pencil,
+.widget-pencil:focus-visible,
+.widget-pencil.on {
+  opacity: 1;
+}
+
+.widget-pencil.on {
+  background: var(--goal-done);
+  color: #0b2a16;
+}
+
+/* Setting a target: the tile's line becomes − n +. */
+.widget-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.widget-step b {
+  min-width: 18px;
+  font: 700 15px/17px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Editing the row: each tile can move or go, and the row shows it's open to change. */
+.widgets.editing .plan-tile.widget {
+  padding-top: 36px;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
+/* The tools take the tile's top, so its picture steps down and a little smaller while you edit. */
+.widgets.editing .widget > :is(.goal-board, .goal-icon, .step-ring, .stat-pic, .rating-move) {
+  zoom: 0.72;
+}
+
+.widget-tools {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  right: 7px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+
+.widget-tools .remove {
+  margin-left: auto;
+}
+
+/* The row's own control: a slim dashed strip at its end that opens the row for editing, solid while it's open. */
+.widget-edit {
+  flex: none;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 14px;
+  background: none;
+  color: var(--muted);
+  font: 600 13.5px var(--font-ui);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.widget-edit:hover {
+  border-color: var(--brand);
+  color: var(--text);
+}
+
+.widget-edit:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.widget-edit.on {
+  border: 0;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.widget-edit.wide {
+  width: var(--widget-w);
+  height: 136px;
+}
+
+.widget-edit svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* What you can add, under the row while it's open. */
+.widget-tray {
+  padding: 14px 16px 16px;
+}
+
+.widget-tray-head {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.widget-picks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.widget-picks button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.widget-picks button:hover:not(:disabled) {
+  background: var(--surface-4);
+}
+
+.widget-picks button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.widget-picks button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.widget-kind {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--brand);
+}
+
+.widget-kind.goal {
+  background: color-mix(in srgb, var(--goal-done) 18%, transparent);
+  color: var(--goal-done);
+}
+
+.widget-kind svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+
+.widget-pick-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.widget-pick-text b {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.widget-pick-text small {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* A number's picture: the number large, and what's under it (accuracy's bars, Legendary's mark, the puzzle piece). */
+.stat-pic {
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.stat-pic b {
+  font: 800 28px/1 var(--font-display);
+  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat-pic b.empty {
+  color: var(--muted);
+}
+
+.stat-pic b.phase {
+  color: var(--warn);
+}
+
+.stat-pic.legendary {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.stat-pic.puzzle-rating {
+  gap: 4px;
+}
+
+.stat-pic.puzzle-rating svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--tone-amber);
+}
+
+.stat-bars {
+  width: 64px;
+  height: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.stat-bars i {
+  flex: 1;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.stat-bars i.last {
+  background: var(--brand);
+}
+
+/* A widget's tile (HomeWidgets.tsx): its picture on top, its name and line at the foot. */
 .plan-tile {
   min-width: 0;
-  height: 140px;
-  padding: 16px 12px 14px;
+  height: 136px;
+  padding: 14px 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5910,8 +6367,8 @@ button.explain-row {
 }
 
 .plan-tile strong {
-  margin-top: 10px;
-  font-size: 14.5px;
+  margin-top: auto;
+  font-size: 13.5px;
   font-weight: 650;
   line-height: 19px;
 }
@@ -5932,194 +6389,153 @@ button.explain-row {
   height: 60px;
 }
 
-.step-ring circle {
-  fill: none;
-  stroke-width: 4.5;
+/* A one-off goal's icon: large and filled, in the brand colour, then green with a tick once it's done. */
+.goal-icon {
+  position: relative;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
 }
 
+.goal-icon svg {
+  width: 46px;
+  height: 46px;
+  fill: currentColor;
+}
+
+.goal-icon.play svg {
+  width: 40px;
+  height: 40px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.goal-icon.done {
+  color: var(--goal-done);
+}
+
+.goal-icon .goal-check {
+  right: 2px;
+  bottom: 4px;
+}
+
+/* The daily puzzle's goal: today's position, small, with a tick on its corner once solved or tried. */
+.goal-board {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  margin-top: 2px;
+}
+
+.goal-board > .mini-board,
+.goal-board > .skel {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  rotate: -6deg;
+}
+
+.goal-check {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--goal-done);
+  box-shadow: 0 0 0 2px var(--card);
+}
+
+.goal-check svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: #0b2a16;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* How your rating moved: the change, large, behind its arrow (green up, red down), and where it stands now. */
+.rating-move {
+  height: 44px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-move svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rating-move b {
+  color: var(--text);
+  font: 800 34px/1 var(--font-display);
+  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.rating-move.up {
+  color: var(--goal-done);
+}
+
+.rating-move.down {
+  color: var(--danger);
+}
+
+.rating-move.flat {
+  color: var(--muted);
+}
+
+
+.step-ring circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+/* The ring is the goal's green throughout: a dark track, the arc in full colour with a dot at its head. */
 .step-ring .track {
-  stroke: color-mix(in srgb, var(--text) 10%, transparent);
+  stroke: color-mix(in srgb, var(--goal-done) 18%, transparent);
 }
 
 .step-ring .arc {
-  stroke: var(--brand);
+  stroke: var(--goal-done);
   stroke-linecap: round;
   transition: stroke-dasharray 0.4s ease;
 }
 
-.step-ring .arc.done {
-  stroke: var(--win);
+.step-ring .head {
+  fill: var(--goal-done);
+  stroke: none;
 }
 
 .step-ring text {
   fill: var(--text);
-  font: 700 15px var(--font-display);
-  font-variant-numeric: lining-nums;
+  font: 700 16px var(--font-ui);
+  font-variant-numeric: lining-nums tabular-nums;
   text-anchor: middle;
 }
 
-.plan-tile.done .step-ring text {
-  fill: var(--win);
-}
-
-/* Desktop Home's numbers (HomeCards.tsx, StatStrip): small cards in a row that scrolls sideways at the top of the
-   right column, with a button at each end while there's more that way. */
-.stat-strip {
-  position: relative;
-}
-
-.stat-row {
-  --fade-back: 0px;
-  --fade-on: 0px;
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  border-radius: 18px;
-  /* The cards fade out under the end that has more, where its button sits, instead of being cut by it. */
-  mask-image: linear-gradient(to right, transparent, #000 var(--fade-back), #000 calc(100% - var(--fade-on)), transparent);
-}
-
-.stat-strip.has-back .stat-row {
-  --fade-back: 56px;
-}
-
-.stat-strip.has-more .stat-row {
-  --fade-on: 56px;
-}
-
-.stat-row::-webkit-scrollbar {
-  display: none;
-}
-
-.stat-card {
-  flex: 0 0 152px;
-  height: 104px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  scroll-snap-align: start;
-  text-decoration: none;
-  transition: background 0.12s;
-}
-
-.stat-card:hover {
-  background: var(--card-hover);
-}
-
-.stat-label,
-.stat-sub {
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.stat-value {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  font: 700 24px/32px var(--font-display);
-  font-variant-numeric: lining-nums;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.stat-value i {
-  font: 650 12.5px var(--font-ui);
-  font-style: normal;
-  letter-spacing: 0;
-}
-
-.stat-value .up,
-.stat-sub.up {
-  color: var(--win);
-}
-
-.stat-value .down,
-.stat-sub.down {
-  color: var(--danger);
-}
-
-.stat-value.streak {
-  color: var(--streak);
-}
-
-.stat-value.empty,
-.stat-value.phase {
-  font-size: 17px;
-}
-
-.stat-value.empty {
-  color: var(--text-2);
-}
-
-.stat-bars {
-  height: 18px;
-  margin-top: auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.stat-bars i {
-  flex: 1;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--brand) 32%, transparent);
-}
-
-.stat-bars i.last {
-  background: var(--brand);
-}
-
-.stat-sub {
-  margin-top: auto;
-}
-
-.stat-card .skel {
-  flex: none;
-}
-
-.stat-more {
-  position: absolute;
-  top: 50%;
-  translate: 0 -50%;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-4);
-  color: var(--text);
-  box-shadow: var(--shadow-chip);
-  opacity: 0;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.stat-strip:hover .stat-more,
-.stat-more:focus-visible {
-  opacity: 1;
-}
-
-.stat-more.back {
-  left: 2px;
-}
-
-.stat-more.on {
-  right: 2px;
-}
-
-.stat-more svg {
-  width: 16px;
-  height: 16px;
+.step-ring.done text {
+  fill: var(--goal-done);
 }
 
 /* Home's plan for today on phones (HomeCards.tsx). */
@@ -9839,7 +10255,7 @@ button.user-avatar.guest:hover {
 }
 
 .boot-welcome {
-  height: 53.4px;
+  height: 54px;
   gap: 12px;
 }
 
@@ -9855,7 +10271,7 @@ button.user-avatar.guest:hover {
 
 /* The empty My games card's line wraps while the main column is narrow, like Play the computer's. */
 .boot-games-empty {
-  --h: 132px;
+  --h: 130.1px;
 }
 
 @container page (min-width: 920px) and (max-width: 1048px) {
@@ -9876,38 +10292,30 @@ button.user-avatar.guest:hover {
 
 /* My games: six rows under a day's heading, and the colours' key when some have been reviewed. */
 .boot-games {
-  --h: 528px;
+  --h: 376.1px;
 }
 
-:root[data-boot-reviews] .boot-games {
-  --h: 560px;
+/* Game review, the right column's first card: its title, line and buttons. */
+.boot-review {
+  --h: 138.1px;
 }
 
-/* Today's plan, under the greeting: its row of small tiles, four when there are reviews (mistakes to fix). */
-.boot-plan-row {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* Your widgets, under the greeting: one row of tiles, or two when you have more than five. */
+.boot-widgets .widget-grid {
+  grid-template-columns: repeat(5, var(--widget-w));
 }
 
-.boot-plan-row .boot-fourth {
+.boot-widgets .boot-row2 {
   display: none;
 }
 
-:root[data-boot-reviews] .boot-plan-row {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-:root[data-boot-reviews] .boot-plan-row .boot-fourth {
+:root[data-boot-widget-rows='2'] .boot-widgets .boot-row2 {
   display: flex;
 }
 
 .boot-ring {
   width: 60px;
   height: 60px;
-}
-
-/* Your numbers, at the top of the right column: its strip of small cards. */
-.boot-stat-row {
-  overflow: hidden;
 }
 
 @media (max-width: 1000px) {
@@ -10032,10 +10440,6 @@ button.user-avatar.guest:hover {
 /* When what was loading arrives (useSettled), each placeholder morphs into the card that takes its place,
    sharing its name, and the cards around slide to where they now sit, while the contents crossfade.
    The names only exist while that runs (:root.settling), so a change of page moves the page as one. */
-:root.settling :is(.legendary-strip, .legendary-teaser) {
-  view-transition-name: legendary-strip;
-}
-
 :root.settling .daily-card {
   view-transition-name: daily-card;
 }
@@ -10052,7 +10456,7 @@ button.user-avatar.guest:hover {
   view-transition-name: home-games;
 }
 
-:root.settling :is(.legendary-strip, .legendary-teaser, .daily-card, .plan-card, .form-strip, .home-main > .games-card) {
+:root.settling :is(.daily-card, .plan-card, .form-strip, .home-main > .games-card) {
   view-transition-class: card;
 }
 
@@ -10089,18 +10493,8 @@ button.user-avatar.guest:hover {
   color: var(--danger);
 }
 
-/* Home's games (HomeGames.tsx): a heading per day, then rows of the final position with the result on its
-   corner, who and what, your moves as a strip of verdict colours, and the way in. */
-.home-games-chips {
-  margin-left: 8px;
-}
-
-.home-games-chips .filter-chip {
-  height: 30px;
-  padding: 0 12px;
-  font-size: 12.5px;
-}
-
+/* Your games (HomeGames.tsx): rows of how it went, who, when, your accuracy, and Review on a game still to review.
+   Profile's list puts a heading over each day. */
 .home-day + .home-day {
   margin-top: 6px;
 }
@@ -10130,20 +10524,24 @@ button.user-avatar.guest:hover {
   padding: 0 4px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+}
+
+/* A plain list: hairlines between the games, no card for each; a row lights up under the pointer. */
+.home-games > li + li {
+  border-top: 1px solid var(--border);
 }
 
 .home-game {
   width: 100%;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 52px minmax(0, 1.2fr) minmax(120px, 1fr) 76px;
+  grid-template-columns: 28px minmax(0, 1fr) 76px 64px;
   align-items: center;
-  gap: 16px;
-  padding: 8px 12px 8px 8px;
+  gap: 14px;
+  padding: 10px 12px 10px 10px;
   border: 0;
   border-radius: 12px;
-  background: var(--surface-3);
+  background: none;
   color: var(--text);
   font: inherit;
   text-align: left;
@@ -10152,30 +10550,36 @@ button.user-avatar.guest:hover {
 }
 
 button.home-game:hover {
-  background: var(--surface-4);
-}
-
-:root[data-theme='light'] .home-game {
-  background: var(--side);
-}
-
-:root[data-theme='light'] button.home-game:hover {
   background: var(--surface-3);
 }
 
-.home-game-board {
-  position: relative;
-  width: 52px;
-  height: 52px;
+/* How it went: a trophy in the brand colour, a cross in red, a half in grey. */
+.game-mark {
+  display: flex;
+  width: 26px;
+  height: 26px;
 }
 
-.home-game-board > .mini-board,
-.home-game-board > .skel {
-  display: grid;
+.game-mark svg {
   width: 100%;
   height: 100%;
-  border-radius: 6px;
-  overflow: hidden;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.game-mark.win {
+  color: var(--brand);
+}
+
+.game-mark.loss {
+  color: var(--danger);
+}
+
+.game-mark.draw {
+  color: var(--muted);
 }
 
 .home-game-result {
@@ -10215,7 +10619,7 @@ button.home-game:hover {
 }
 
 .home-game-title {
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 20px;
 }
 
@@ -10229,55 +10633,64 @@ button.home-game:hover {
 }
 
 .home-game-detail {
+  display: flex;
+  align-items: center;
   color: var(--muted);
-  font-size: 12.5px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
 }
 
-.home-game-moves {
-  min-width: 0;
+/* The rating apart from the name: quieter, in brackets. */
+.home-game-title .home-game-rating {
+  margin-left: 6px;
+}
+
+/* A Legendary move in the game, on the second line: its badge, and how many when more than one. */
+.home-game-legendary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  color: var(--muted);
+}
+
+.home-game-legendary .class-icon {
+  flex: none;
+}
+
+.home-game-legendary b {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* The clock before the time control. */
+.home-game-clock {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Your accuracy, once reviewed: the number, and what it is under it. */
+.home-game-acc {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-end;
+  line-height: 1.2;
 }
 
-.quality-strip {
-  height: 14px;
-  box-sizing: border-box;
-  display: flex;
-  gap: 1px;
-  border-radius: 4px;
-  overflow: hidden;
+.home-game-acc b {
+  font: 700 16px/20px var(--font-display);
+  font-variant-numeric: tabular-nums;
 }
 
-.quality-strip i {
-  flex: 1;
-}
-
-.quality-strip.empty {
-  border: 1px dashed var(--border-strong);
-}
-
-.home-game-under {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  overflow: hidden;
+.home-game-acc small {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-}
-
-.home-game-under b {
-  color: var(--text);
-  font-weight: 650;
-}
-
-.home-game-under > :last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 11.5px;
 }
 
 /* The way in, as text: Open a review in grey, Review a game in sky; each brighter while its row is hovered. */
@@ -10302,7 +10715,7 @@ button.home-game:hover .home-game-go.review {
   color: color-mix(in srgb, var(--brand) 75%, var(--text));
 }
 
-/* Phones (the Review tab): the strip and its line go under who and what, the way in stays on the right. */
+/* Phones: the day's line wraps under its name, and the row's columns close up. */
 @media (max-width: 640px) {
   .home-day-head {
     height: auto;
@@ -10312,63 +10725,13 @@ button.home-game:hover .home-game-go.review {
   }
 
   .home-game {
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-    column-gap: 12px;
-    row-gap: 8px;
-  }
-
-  .home-game-board {
-    width: 48px;
-    height: 48px;
-    grid-row: span 2;
-    align-self: start;
-  }
-
-  .home-game-moves {
-    grid-column: 2 / -1;
-    grid-row: 2;
-  }
-
-  .home-game-go,
-  .home-game-go-space {
-    grid-column: 3;
-    grid-row: 1;
+    grid-template-columns: 26px minmax(0, 1fr) auto auto;
+    column-gap: 10px;
   }
 
   .home-game-go {
     font-size: 13px;
   }
-}
-
-.home-games-none {
-  margin: 0;
-  padding: 14px 12px 8px;
-  color: var(--muted);
-  font-size: 13.5px;
-}
-
-.quality-key {
-  list-style: none;
-  margin: 0;
-  padding: 14px 12px 2px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.quality-key li {
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.quality-key i {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
 }
 
 /* One line each, cut short rather than wrapped (a long opening name), so the board sets the card's height
@@ -13656,126 +14019,12 @@ a.you-row:active {
   border-radius: 10px;
 }
 
-/* Home's Legendary moves on desktop: a slim strip of small boards. */
-.legendary-strip {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  padding: 12px 0 6px;
-}
-
-.legendary-strip .home-card-head {
-  padding: 0 16px 8px;
-}
-
-.legendary-strip h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 17px;
-  line-height: 1.45;
-}
-
-/* The row's room keeps the ring from being cut off. */
-.legendary-row {
-  list-style: none;
-  margin: 0;
-  padding: 7px 16px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: calc((100% - 7 * 12px) / 8);
-  gap: 12px;
-}
-
-.legendary-row > li {
-  min-width: 0;
-}
-
-.legendary-row .legendary-card {
-  gap: 4px;
-}
-
-.legendary-row .legendary-meta {
-  margin-top: 2px;
-  font-size: 12px;
-}
-
-.legendary-row .legendary-vs {
-  display: none;
-}
-
 .legendary-vs {
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* No Legendary moves yet: what they are, in the same violet. */
-.legendary-teaser {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
-  background: color-mix(in srgb, #8b5cf6 12%, var(--card));
-}
-
-.legendary-teaser::after,
-.legendary-strip::after {
-  content: '!!';
-  position: absolute;
-  z-index: -1;
-  right: 22px;
-  top: 50%;
-  translate: 0 -50%;
-  rotate: 8deg;
-  color: color-mix(in srgb, #8b5cf6 9%, transparent);
-  font: 800 128px/1 var(--font-display);
-  letter-spacing: -0.08em;
-  pointer-events: none;
-}
-
-.legendary-teaser h2 {
-  font-size: 17px;
-  line-height: 1.45;
-}
-
-.legendary-teaser p {
-  margin: 4px 0 0;
-  color: var(--text-2);
-  font-size: 13.5px;
-  line-height: 1.45;
-}
-
-.legendary-teaser .class-icon {
-  flex: none;
-}
-
-@media (min-width: 1001px) {
-  .boot-legendary {
-    --h: 80px;
-  }
-
-  :root[data-boot-legendary] .boot-legendary {
-    --h: 170px;
-  }
-}
-
-/* With none yet, its line wraps while the middle column is narrow. */
-@container page (max-width: 803px) {
-  :root:not([data-boot-legendary]) .boot-legendary {
-    --h: 99.8px;
-  }
-}
-
-@container page (min-width: 920px) and (max-width: 1225px) {
-  :root:not([data-boot-legendary]) .boot-legendary {
-    --h: 99.8px;
-  }
 }
 
 /* Home on a phone: every part as short as it can be, so the page has an end. Game review is the big way in. */
@@ -13961,30 +14210,6 @@ a.you-row:active {
 
 .phone-home .form-part:last-child {
   width: 172px;
-}
-
-.phone-home .form-part.form-streak {
-  width: 196px;
-  gap: 8px;
-  justify-content: space-between;
-}
-
-.phone-home .form-week {
-  gap: 2px;
-}
-
-.phone-home .form-week i {
-  width: 8px;
-  height: 8px;
-}
-
-.phone-home .form-week .today i {
-  border-width: 1.5px;
-}
-
-.phone-home .form-week li {
-  gap: 4px;
-  font-size: 9px;
 }
 
 .phone-home .form-row {

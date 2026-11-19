@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { FULL_ENGINE_AVAILABLE, type EngineStrength } from '../engine/Engine'
 import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
+import type { HomeWidget } from './widgets'
 
 /** 'black' is dark on a true black page, for AMOLED screens. */
 export type Appearance = 'dark' | 'black' | 'light' | 'system'
@@ -103,6 +104,8 @@ export interface Settings {
   animation: Animation
   /** How far the settings have come with the theme changes (see load); missing on settings from before them. */
   themes?: number
+  /** Home's widget row, in your order (widgets.ts); missing until you change it, which means the default row. */
+  homeWidgets?: HomeWidget[]
 }
 
 export const DEFAULT_SETTINGS: Settings = {
