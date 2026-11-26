@@ -1,4 +1,3 @@
-import type { TileTone } from '../components/IconTile'
 import type { Route } from './router'
 
 // The app's sections, for the sidebar. `path: null` = no page: its menu (Tools), or not built yet ("Soon"). Your profile opens from the user card at its foot.
@@ -20,13 +19,28 @@ export interface NavItem {
 
 export interface NavShortcut {
   label: string
-  text: string
   /** Where it goes; or, without one, the event it sends (a dialog that opens over the page). */
   path?: string
   event?: string
-  tone: TileTone
-  /** A solid icon on the tile instead of the tone's line one. */
-  solid?: Pick<NavItem, 'icon' | 'grid' | 'cuts'>
+  /** Its solid icon, as the sidebar's own. */
+  solid: Pick<NavItem, 'icon' | 'grid' | 'cuts'>
+}
+
+// The menus' solid icons: Phosphor's fill set (MIT), on its 256 grid, unless drawn here.
+const ph = (icon: string): Pick<NavItem, 'icon' | 'grid'> => ({ icon, grid: 256 })
+const GLOBE = ph('M128,24h0A104,104,0,1,0,232,128,104.12,104.12,0,0,0,128,24Zm78.36,64H170.71a135.28,135.28,0,0,0-22.3-45.6A88.29,88.29,0,0,1,206.37,88ZM216,128a87.61,87.61,0,0,1-3.33,24H174.16a157.44,157.44,0,0,0,0-48h38.51A87.61,87.61,0,0,1,216,128ZM128,43a115.27,115.27,0,0,1,26,45H102A115.11,115.11,0,0,1,128,43ZM102,168H154a115.11,115.11,0,0,1-26,45A115.27,115.27,0,0,1,102,168Zm-3.9-16a140.84,140.84,0,0,1,0-48h59.88a140.84,140.84,0,0,1,0,48Zm50.35,61.6a135.28,135.28,0,0,0,22.3-45.6h35.66A88.29,88.29,0,0,1,148.41,213.6Z')
+const PEOPLE = ph('M64.12,147.8a4,4,0,0,1-4,4.2H16a8,8,0,0,1-7.8-6.17,8.35,8.35,0,0,1,1.62-6.93A67.79,67.79,0,0,1,37,117.51a40,40,0,1,1,66.46-35.8,3.94,3.94,0,0,1-2.27,4.18A64.08,64.08,0,0,0,64,144C64,145.28,64,146.54,64.12,147.8Zm182-8.91A67.76,67.76,0,0,0,219,117.51a40,40,0,1,0-66.46-35.8,3.94,3.94,0,0,0,2.27,4.18A64.08,64.08,0,0,1,192,144c0,1.28,0,2.54-.12,3.8a4,4,0,0,0,4,4.2H240a8,8,0,0,0,7.8-6.17A8.33,8.33,0,0,0,246.17,138.89Zm-89,43.18a48,48,0,1,0-58.37,0A72.13,72.13,0,0,0,65.07,212,8,8,0,0,0,72,224H184a8,8,0,0,0,6.93-12A72.15,72.15,0,0,0,157.19,182.07Z')
+const CHART_UP = ph('M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM200,192H56a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v76.69l34.34-34.35a8,8,0,0,1,11.32,0L128,132.69,172.69,88H144a8,8,0,0,1,0-16h48a8,8,0,0,1,8,8v48a8,8,0,0,1-16,0V99.31l-50.34,50.35a8,8,0,0,1-11.32,0L104,131.31l-40,40V176H200a8,8,0,0,1,0,16Z')
+const CALENDAR = ph('M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM128,168a16,16,0,1,1,16-16A16,16,0,0,1,128,168Zm80-88H48V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24Z')
+const BOLT = ph('M213.85,125.46l-112,120a8,8,0,0,1-13.69-7l14.66-73.33L45.19,143.49a8,8,0,0,1-3-13l112-120a8,8,0,0,1,13.69,7L153.18,90.9l57.63,21.61a8,8,0,0,1,3,12.95Z')
+const WARNING = ph('M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z')
+const SQUARES = ph('M120,56v48a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V56A16,16,0,0,1,56,40h48A16,16,0,0,1,120,56Zm80-16H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm-96,96H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm96,0H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Z')
+const PENCIL = ph('M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM192,108.68,147.31,64l24-24L216,84.68Z')
+const TRAY_IN = ph('M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM90.34,114.34a8,8,0,0,1,11.32,0L120,132.69V72a8,8,0,0,1,16,0v60.69l18.34-18.35a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32A8,8,0,0,1,90.34,114.34ZM208,208H48V168H76.69L96,187.32A15.89,15.89,0,0,0,107.31,192h41.38A15.86,15.86,0,0,0,160,187.31L179.31,168H208v40Z')
+const TEACHER = ph('M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H53.39a8,8,0,0,0,7.23-4.57,48,48,0,0,1,86.76,0,8,8,0,0,0,7.23,4.57H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM104,168a32,32,0,1,1,32-32A32,32,0,0,1,104,168Zm112,32H159.43a63.93,63.93,0,0,0-13.16-16H192a8,8,0,0,0,8-8V80a8,8,0,0,0-8-8H64a8,8,0,0,0-8,8v96a8,8,0,0,0,6,7.75A63.72,63.72,0,0,0,48.57,200H40V56H216Z')
+/** Cassie: a rook with two eyes, as she looks on Play. */
+const CASSIE: Pick<NavItem, 'icon'> = {
+  icon: 'M5 3H8V5.2H10.5V3H13.5V5.2H16V3H19V21H5ZM7.7 13.4A2 1.5 0 0 0 11.7 13.4A2 1.5 0 0 0 7.7 13.4ZM12.3 13.4A2 1.5 0 0 0 16.3 13.4A2 1.5 0 0 0 12.3 13.4Z',
 }
 
 /** Tools → Import a game: the Load a game dialog, over the page you're on (App.tsx). */
@@ -58,9 +72,11 @@ export const NAV_ITEMS: NavItem[] = [
     icon:
       'M4.5 8.1H19.5A2.4 2.4 0 0 1 21.9 10.5V17.5A2.4 2.4 0 0 1 19.5 19.9H4.5A2.4 2.4 0 0 1 2.1 17.5V10.5A2.4 2.4 0 0 1 4.5 8.1ZM8.2 10.6A3.4 3.4 0 0 0 8.2 17.4A3.4 3.4 0 0 0 8.2 10.6ZM8.2 12.2A1.8 1.8 0 0 1 8.2 15.8A1.8 1.8 0 0 1 8.2 12.2ZM15.8 10.6A3.4 3.4 0 0 0 15.8 17.4A3.4 3.4 0 0 0 15.8 10.6ZM15.8 12.2A1.8 1.8 0 0 1 15.8 15.8A1.8 1.8 0 0 1 15.8 12.2ZM5.5 6.1H8.5A0.9 0.9 0 0 1 8.5 7.9H5.5A0.9 0.9 0 0 1 5.5 6.1ZM6.1 7.9H7.9V8.1H6.1ZM15.5 5.1H18.5A0.9 0.9 0 0 1 18.5 6.9H15.5A0.9 0.9 0 0 1 15.5 5.1ZM16.1 6.9H17.9V8.1H16.1Z',
     menu: [
-      { label: 'Play online', text: 'A real player near your rating', path: '/play/online', tone: 'online' },
-      { label: 'Play Cassie', text: '8 levels, with takebacks and hints', path: '/play/computer', tone: 'computer' },
-      { label: 'Play a friend', text: 'Challenge them on Lichess', path: '/play/friend', tone: 'friend' },
+      { label: 'Play online', path: '/play/online', solid: GLOBE },
+      // Until the coach has a page of its own, it opens the computer (as Play's Coach card does).
+      { label: 'Coach', path: '/play/computer', solid: TEACHER },
+      { label: 'Play Cassie', path: '/play/computer', solid: CASSIE },
+      { label: 'Play a friend', path: '/play/friend', solid: PEOPLE },
     ],
   },
   {
@@ -71,10 +87,11 @@ export const NAV_ITEMS: NavItem[] = [
     icon: 'M165.78,224H208a16,16,0,0,0,16-16V170.35A8,8,0,0,0,212.94,163a23.37,23.37,0,0,1-8.94,1.77c-13.23,0-24-11.1-24-24.73s10.77-24.73,24-24.73a23.37,23.37,0,0,1,8.94,1.77A8,8,0,0,0,224,109.65V72a16,16,0,0,0-16-16H171.78a35.36,35.36,0,0,0,.22-4,36,36,0,0,0-72,0,35.36,35.36,0,0,0,.22,4H64A16,16,0,0,0,48,72v32.22a35.36,35.36,0,0,0-4-.22,36,36,0,0,0,0,72,35.36,35.36,0,0,0,4-.22V208a16,16,0,0,0,16,16h42.22Z',
     grid: 256,
     menu: [
-      { label: 'Rated puzzles', text: 'Puzzles at your rating', path: '/puzzles/rated', tone: 'accuracy' },
-      { label: 'Puzzle Sprint', text: 'Against the clock, three lives', path: '/puzzles/sprint', tone: 'clock' },
-      { label: 'Daily puzzle', text: 'The same one for everyone today', path: '/puzzles/daily', tone: 'puzzles' },
-      { label: 'Fix your mistakes', text: 'Puzzles from your own games', path: '/puzzles/mistakes', tone: 'mistakes' },
+      { label: 'Rated puzzles', path: '/puzzles/rated', solid: CHART_UP },
+      { label: 'Puzzle Sprint', path: '/puzzles/sprint', solid: BOLT },
+      { label: 'Daily puzzle', path: '/puzzles/daily', solid: CALENDAR },
+      { label: 'Fix your mistakes', path: '/puzzles/mistakes', solid: WARNING },
+      { label: 'Puzzle themes', path: '/puzzles/themes', solid: SQUARES },
     ],
   },
   // Tools: a menu of its own, no page (clicking it opens the menu). Lit up on the pages it holds. A wrench whose
@@ -87,9 +104,9 @@ export const NAV_ITEMS: NavItem[] = [
     cuts: [{ d: 'M18.65 1.68L19.92 2.95L16.95 5.92L15.68 4.65Z' }, { d: 'M21.05 4.08L22.32 5.35L19.35 8.32L18.08 7.05Z' }],
     also: ['editor'],
     menu: [
-      { label: 'Analysis board', text: 'Any position, with the engine', path: '/board', tone: 'analyze', solid: KNIGHT },
-      { label: 'Board editor', text: 'Set up a position piece by piece', path: '/editor', tone: 'editor' },
-      { label: 'Import a game', text: 'Chess.com, Lichess, PGN or FEN', event: IMPORT_GAME_EVENT, tone: 'import' },
+      { label: 'Analysis board', path: '/board', solid: KNIGHT },
+      { label: 'Board editor', path: '/editor', solid: PENCIL },
+      { label: 'Import a game', event: IMPORT_GAME_EVENT, solid: TRAY_IN },
     ],
   },
   // Rookahead's main thing, one click from any page. The coach's speech bubble, a verdict's star cut out of it.

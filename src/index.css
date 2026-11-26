@@ -1223,16 +1223,16 @@ svg {
   cursor: pointer;
 }
 
-/* An item's own pages, beside the sidebar while it's pointed at. */
+/* An item's own pages, beside the sidebar while it's pointed at: rows as the sidebar's own, solid icon and word. */
 .side-menu {
   position: fixed;
   z-index: 60;
-  width: 288px;
+  width: 236px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--surface-2);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), var(--card-edge);
   /* A fade only, as the board menu: a zoom would end with the icons snapping a pixel as it's redrawn sharp. */
@@ -1243,11 +1243,15 @@ svg {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 10px;
-  border-radius: 11px;
+  height: 34px;
+  padding: 0 12px 0 14px;
+  border-radius: 8px;
   color: var(--text);
   text-decoration: none;
-  transition: background 0.12s;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
 }
 
 /* Import a game opens a dialog, so it's a button: dressed like the links. */
@@ -1255,7 +1259,9 @@ button.side-menu-item {
   width: 100%;
   border: 0;
   background: none;
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
 }
@@ -1266,35 +1272,15 @@ button.side-menu-item {
   outline: none;
 }
 
-.side-menu-item .icon-tile {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+.side-menu-item svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
 }
 
-.side-menu-item .icon-tile svg {
-  width: 17px;
-  height: 17px;
-}
-
-.side-menu-words {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.side-menu-words strong {
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.side-menu-words small {
-  color: var(--muted);
-  font-size: 12.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.side-menu-item svg .icon-solid {
+  fill: currentColor;
+  stroke: none;
 }
 
 .sidebar-item svg {
@@ -1307,6 +1293,11 @@ button.side-menu-item {
 .sidebar-item.active {
   background: var(--surface-3);
   color: var(--text);
+}
+
+/* Game review stands a little apart from the pages above it. */
+.sidebar-item.review-item {
+  margin-top: 10px;
 }
 
 /* Game review, Rookahead's main thing: a soft lilac wash, its word and icon in lilac (like Support's pink), and a

@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState, type FocusEvent, type ReactNode } from 'react'
 import { NAV_ITEMS, type NavItem } from '../lib/nav'
 import type { Route } from '../lib/router'
-import { IconTile } from './IconTile'
 import { Link } from './Link'
 import { useReviewBadge } from '../lib/reviewBadge'
 import { RookLogo } from './RookLogo'
@@ -199,17 +198,8 @@ export function Sidebar({ route, rail, footer, onGameReview }: Props) {
           {menu.item.menu.map((m) => {
             const words = (
               <>
-                {m.solid ? (
-                  <span className={`icon-tile ${m.tone}`} aria-hidden>
-                    <NavItemIcon item={m.solid} />
-                  </span>
-                ) : (
-                  <IconTile tone={m.tone} />
-                )}
-                <span className="side-menu-words">
-                  <strong>{m.label}</strong>
-                  <small>{m.text}</small>
-                </span>
+                <NavItemIcon item={m.solid} />
+                <span className="side-menu-label">{m.label}</span>
               </>
             )
             const leave = (e: FocusEvent<HTMLElement>) => !e.currentTarget.parentElement?.contains(e.relatedTarget) && setMenu(null)
