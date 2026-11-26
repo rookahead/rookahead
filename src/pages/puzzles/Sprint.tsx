@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Board } from '../../components/Board'
 import { FlipIcon } from '../../components/NavIcons'
 import { PuzzleIcon } from '../../components/PuzzleIcons'
@@ -49,6 +49,37 @@ function saveRecentSprint(ids: string[]) {
   }
 }
 
+/** The run going on, saved as it goes: leaving the page (or opening Settings) and coming back carries on with it. */
+const RUN_KEY = 'rookahead.sprintRun.v1'
+
+interface SavedRun {
+  mode: SprintMode
+  history: RunEntry[]
+  /** The puzzle on the board (it starts again from its first move), or null while the next one was on its way. */
+  line: string | null
+  /** When a timed run's clock runs out: it keeps running while you're away. */
+  endsAt: number | null
+}
+
+function loadRun(): SavedRun | null {
+  try {
+    const run = JSON.parse(localStorage.getItem(RUN_KEY) ?? 'null') as SavedRun | null
+    if (!run || !(run.mode in SPRINT_MODES) || !Array.isArray(run.history)) return null
+    return run
+  } catch {
+    return null
+  }
+}
+
+function saveRun(run: SavedRun | null) {
+  try {
+    if (run) localStorage.setItem(RUN_KEY, JSON.stringify(run))
+    else localStorage.removeItem(RUN_KEY)
+  } catch {
+    // Storage blocked: the run lasts as long as the page.
+  }
+}
+
 function formatClock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -58,8 +89,10 @@ const noStep = () => {}
 
 /** Puzzle Sprint: as many puzzles as you can, getting harder, until the clock or three mistakes stop you. */
 export function SprintView({ progress, update, settings, head }: ViewProps) {
-  const [mode, setMode] = useState<SprintMode>('3min')
-  const [running, setRunning] = useState<{ mode: SprintMode; key: number } | null>(null)
+  // A run left going carries on where it was.
+  const [saved] = useState(loadRun)
+  const [mode, setMode] = useState<SprintMode>(saved?.mode ?? '3min')
+  const [running, setRunning] = useState<{ mode: SprintMode; key: number; resume?: SavedRun } | null>(saved && { mode: saved.mode, key: 0, resume: saved })
   const [finished, setFinished] = useState<Finished | null>(null)
   const progressRef = useRef(progress)
   useEffect(() => {
@@ -67,6 +100,7 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
   }, [progress])
 
   const start = (m: SprintMode) => {
+    saveRun(null)
     setMode(m)
     setFinished(null)
     setRunning({ mode: m, key: Date.now() })
@@ -84,7 +118,7 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
     [update, settings.soundVolume],
   )
 
-  if (running) return <SprintRun key={running.key} mode={running.mode} best={progress.sprintBest[running.mode] ?? 0} settings={settings} head={head} onEnd={(h) => end(running.mode, h)} />
+  if (running) return <SprintRun key={running.key} mode={running.mode} resume={running.resume} best={progress.sprintBest[running.mode] ?? 0} settings={settings} head={head} onEnd={(h) => end(running.mode, h)} />
 
   if (finished) {
     const score = finished.history.filter((e) => e.solved).length
@@ -196,15 +230,19 @@ function RunScore({ score, strikes, left, limit, number, rating, best }: { score
   )
 }
 
-/** One run: fetches puzzles up the rating ladder (the next one ahead of time) and keeps the clock. */
-function SprintRun({ mode, best, settings, head, onEnd }: { mode: SprintMode; best: number; settings: Settings; head: ReactNode; onEnd: (history: RunEntry[]) => void }) {
+/**
+ * One run: fetches puzzles up the rating ladder (the next one ahead of time) and keeps the clock. It's saved as it
+ * goes, and `resume` carries on from a saved one.
+ */
+function SprintRun({ mode, resume, best, settings, head, onEnd }: { mode: SprintMode; resume?: SavedRun; best: number; settings: Settings; head: ReactNode; onEnd: (history: RunEntry[]) => void }) {
   const limit = SPRINT_MODES[mode].ms
-  const [history, setHistory] = useState<RunEntry[]>([])
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
-  const [endsAt, setEndsAt] = useState<number | null>(null)
+  const [history, setHistory] = useState<RunEntry[]>(resume?.history ?? [])
+  const [line, setLine] = useState<string | null>(resume?.line ?? null)
+  const puzzle = useMemo(() => (line ? parsePuzzleLine(line) : null), [line])
+  const [endsAt, setEndsAt] = useState<number | null>(resume?.endsAt ?? null)
   const [now, setNow] = useState(Date.now)
   // Puzzles shown lately, this run and the ones before: none comes back for a while.
-  const ids = useRef<string[]>(recentSprint())
+  const ids = useRef<string[]>([...recentSprint(), ...(resume?.history.map((e) => e.id) ?? []), ...(puzzle ? [puzzle.id] : [])])
   const upcoming = useRef<Promise<string> | null>(null)
   const historyRef = useRef(history)
   const ended = useRef(false)
@@ -213,6 +251,7 @@ function SprintRun({ mode, best, settings, head, onEnd }: { mode: SprintMode; be
     (h: RunEntry[]) => {
       if (ended.current) return
       ended.current = true
+      saveRun(null)
       saveRecentSprint(ids.current)
       onEnd(h)
     },
@@ -231,8 +270,8 @@ function SprintRun({ mode, best, settings, head, onEnd }: { mode: SprintMode; be
         const p = parsePuzzleLine(l)
         if (!p) return finish(historyRef.current)
         ids.current.push(p.id)
-        setPuzzle(p)
-        if (limit && n === 0) setEndsAt(Date.now() + limit)
+        setLine(l)
+        if (limit && n === 0) setEndsAt((e) => e ?? Date.now() + limit)
         upcoming.current = fetchFor(n + 1)
         upcoming.current.catch(() => {})
       },
@@ -244,8 +283,18 @@ function SprintRun({ mode, best, settings, head, onEnd }: { mode: SprintMode; be
   useEffect(() => {
     if (started.current) return
     started.current = true
-    show(0)
+    const n = historyRef.current.length
+    // Back to a saved run: its puzzle is on the board already, so only the one after it is fetched.
+    if (puzzle) {
+      upcoming.current = fetchFor(n + 1)
+      upcoming.current.catch(() => {})
+    } else show(n)
   })
+
+  // Saved at every step, so leaving the page loses nothing.
+  useEffect(() => {
+    if (!ended.current) saveRun({ mode, history, line, endsAt })
+  }, [mode, history, line, endsAt])
 
   // The clock: the run ends when it reaches zero.
   useEffect(() => {
