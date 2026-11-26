@@ -14,6 +14,8 @@ export interface CachedReview {
   black: string
   accuracy: Record<Color, number | null>
   brilliant: Record<Color, number>
+  /** Whether each side played two Legendary moves in a row (a medal); missing on reviews saved before medals. */
+  backToBack?: Record<Color, boolean>
   /** When it was saved (ms). */
   at: number
   /** The RULES_VERSION that graded it; missing on reviews saved before the rules had versions. */

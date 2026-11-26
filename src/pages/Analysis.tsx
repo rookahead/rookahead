@@ -47,6 +47,7 @@ import { coachMood, gameQuip, type RookMood } from '../lib/coach'
 import { moveDetail, moveHeadline } from '../lib/commentary'
 import { formatScore, type Color } from '../lib/evaluation'
 import { materialState } from '../lib/material'
+import { reviewMedals } from '../lib/medals'
 import { loadOpeningBook, newOpeningAt, openingOf, type OpeningBook } from '../lib/openings'
 import { finishedReview } from '../lib/regrade'
 import { gameKey, saveReview } from '../lib/reviewCache'
@@ -973,7 +974,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
       <>
         <CoachCard avatar={<RookCoach mood={quip.mood} moodKey="summary" />} detail={quip.line} />
         <EvalGraph line={line} evals={review.evals} currentIndex={currentIndex} onSelect={setCurrentId} report={report} height={96} />
-        <ReviewSummary report={report!} headers={headers} />
+        <ReviewSummary report={report!} headers={headers} medals={reviewMedals(line, report!, headers.Result === '1/2-1/2')} />
         {turningPoint && tree.nodes[turningPoint.nodeId] && (
           <button
             className="turning-point"
@@ -1319,7 +1320,7 @@ export function AnalysisPage({ settings, updateSettings, engine, status, active,
                   <button className="icon-btn" onClick={() => setLoadOpen(true)} aria-label="Load game" title="Load game">
                     <LoadIcon />
                   </button>
-                  <button className="icon-btn strip-label" onClick={() => playItOut(node.fen, orientation)} disabled={!canPlayOut(node.fen)} title="Play this position on against the coach, from the side at the bottom">
+                  <button className="icon-btn strip-label" onClick={() => playItOut(node.fen, orientation)} disabled={!canPlayOut(node.fen)} title="Play this position on against Cassie, from the side at the bottom">
                     <PuzzleIcon name="playout" />
                     Play it out
                   </button>

@@ -1,16 +1,17 @@
 import '@fontsource-variable/dm-sans'
 import '@fontsource-variable/cabin'
-import '@fontsource-variable/syne'
+import '@fontsource-variable/elms-sans'
 import '@fontsource/dm-mono/400.css'
 import '@fontsource/dm-mono/500.css'
 import '@lichess-org/chessground/assets/chessground.base.css'
-import '@lichess-org/chessground/assets/chessground.cburnett.css'
+import './pieces.css'
 import { StrictMode } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { startViewTransition } from './hooks/useSettled'
 import { forwardToApp } from './lib/nativeApp'
+import { noteVisit } from './lib/puzzleStore'
 import { startPixelGrid } from './lib/pixelGrid'
 import './index.css'
 
@@ -36,6 +37,11 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 if (!forwardToApp()) {
   // Boards line up with the screen's pixels (src/lib/pixelGrid.ts).
   startPixelGrid()
+
+  // Today counts toward the visit streak (Home's counter): on opening, and on coming back to a tab left open
+  // overnight.
+  noteVisit()
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && noteVisit())
 
   const container = document.getElementById('root')!
   // Up after all: the "didn't load" note (index.html) goes, if a slow start had brought it.

@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom'
 import { startViewTransition } from '../hooks/useSettled'
 import { slidesByHand, tabSlide } from './nav'
 
-export type Route = 'home' | 'analysis' | 'board' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth' | 'player'
+export type Route = 'home' | 'analysis' | 'board' | 'editor' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth' | 'player'
 export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
 export type SettingsSection = 'profile' | 'linked' | 'board' | 'appearance' | 'account'
 
@@ -19,6 +19,7 @@ export function routeFor(pathname: string): Route {
   // Someone's public profile: rookahead.com/@name.
   if (playerName(pathname)) return 'player'
   if (/^\/board\/?$/.test(pathname)) return 'board'
+  if (/^\/editor\/?$/.test(pathname)) return 'editor'
   if (/^\/puzzles(\/(rated|sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
   if (/^\/you\/?$/.test(pathname)) return 'you'
   // Phones' Blog tab; on desktop these addresses are the blog itself (App.tsx).

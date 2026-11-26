@@ -1,7 +1,12 @@
 // Your Legendary moves, gathered from your reviewed games for the Legendary moves page.
 import { Chess } from 'chess.js'
 import type { Color } from './evaluation'
+import type { MyGame } from './myGames'
+import type { CachedReview } from './reviewCache'
 import type { SharedGame } from './share'
+
+/** Whether you've any Legendary move to show: known from the reviews at once, before the games are opened up. */
+export const hasLegendary = (games: MyGame[], reviews: Record<string, CachedReview>) => games.some((g) => (reviews[g.key]?.brilliant[g.color] ?? 0) > 0)
 
 /** What a Legendary move gave up, going by the piece that moved: a promotion to anything but a queen is its own kind. */
 export type LegendaryKind = 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn' | 'king' | 'underpromotion'
@@ -28,6 +33,8 @@ export interface LegendaryMove {
   from: string
   to: string
   kind: LegendaryKind
+  /** The piece it took off its square ("n", "q"...), for replaying it; none for en passant. */
+  captured?: string
 }
 
 /** The Legendary moves `color` played in a reviewed game, in order. */
@@ -49,6 +56,7 @@ export function legendaryMoves(game: SharedGame, color: Color): LegendaryMove[] 
       from: move.from,
       to: move.to,
       kind: move.promotion && move.promotion !== 'q' ? 'underpromotion' : PIECE_KIND[move.piece],
+      captured: move.isEnPassant() ? undefined : move.captured,
     })
   }
   return found

@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { OpenGameDialog } from './components/LoadGameDialog'
-import { faviconUrl } from './components/RookLogo'
-import { Sidebar } from './components/Sidebar'
+import { Sidebar, SidebarTools } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { UserCard } from './components/UserCard'
 import { useEngine } from './hooks/useEngine'
@@ -19,7 +18,7 @@ import { listenForReturns, setBarIcons } from './lib/nativeApp'
 import { BoardPrefsContext } from './lib/boardPrefs'
 import { regradeStale } from './lib/regrade'
 import { titleFor } from './lib/pageMeta'
-import { slidesByHand, tabSlide } from './lib/nav'
+import { IMPORT_GAME_EVENT, slidesByHand, tabSlide } from './lib/nav'
 import { navigate, playerName, routeFor, scrollLeftAt, settingsSection, usePathname, useRoute, type Route } from './lib/router'
 import { recentGame } from './lib/session'
 import { useSettings } from './lib/settings'
@@ -27,6 +26,7 @@ import { useStoreVersion } from './lib/syncBus'
 import { AnalysisPage } from './pages/Analysis'
 import { AuthPage } from './pages/Auth'
 import { BlogPage } from './pages/Blog'
+import { EditorPage } from './pages/Editor'
 import { HomePage } from './pages/Home'
 import { LegendaryPage } from './pages/Legendary'
 import { PlayPage } from './pages/Play'
@@ -87,10 +87,10 @@ export default function App() {
   // A thread count synced from a bigger computer is capped at this device's cores.
   const threads = settings.threads ? Math.min(settings.threads, navigator.hardwareConcurrency || 4) : undefined
   const { engine, status } = useEngine(settings.engine, { threads })
-  const { highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette } = settings
+  const { highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette, boardTheme } = settings
   const boardPrefs = useMemo(
-    () => ({ highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette }),
-    [highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette],
+    () => ({ highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette, boardTheme }),
+    [highlightLastMove, lastMoveColor, lastMoveCustom, lastMoveStrength, showLegalMoves, animation, notation, moveEffects, soundVolume, palette, boardTheme],
   )
   const route = useRoute()
   const pathname = usePathname()
@@ -207,22 +207,18 @@ export default function App() {
     }
   }
   const online = useOnline()
-  const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance === 'black' ? 'dark' : settings.appearance
+  const theme = settings.appearance === 'system' ? (systemLight ? 'light' : 'dark') : settings.appearance
   // Layout effect, so the first paint already has the right colours and widths.
   useLayoutEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
     root.dataset.palette = settings.palette
-    // Black is the dark theme on a true black page (index.css, :root[data-black]).
-    root.toggleAttribute('data-black', settings.appearance === 'black')
     // Opened from the home screen rather than in a browser tab (index.css, the tabs' top bar).
     root.toggleAttribute('data-installed', runningInstalled())
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
-    // The browser's (and an installed app's) bars take the page's own background, and the tab's icon your colour.
-    const css = getComputedStyle(root)
+    // The browser's (and an installed app's) bars take the page's own background.
     paintStatusBar()
     setBarIcons(theme === 'dark')
-    document.querySelector('link[rel="icon"]')?.setAttribute('href', faviconUrl(css.getPropertyValue('--brand').trim(), css.getPropertyValue('--brand-ink').trim()))
   }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
 
   useEffect(() => {
@@ -281,10 +277,15 @@ export default function App() {
     navigate('/analysis')
   }
 
-  // Game review from the menu: the game you were just on (its review running, or worked on in the last
-  // half hour) opens as you left it. Otherwise Load a game opens here, over this page, and only a game
-  // loaded there goes to the review; dismissed, you stay where you were.
+  // Game review from the sidebar: the game you were just on (its review running, or worked on in the last half
+  // hour) opens as you left it. Otherwise Load a game opens here, over this page, and only a game loaded there goes
+  // to the review; dismissed, you stay where you were. Tools → Import a game opens the same dialog.
   const [gameReviewLoad, setGameReviewLoad] = useState(false)
+  useEffect(() => {
+    const open = () => setGameReviewLoad(true)
+    window.addEventListener(IMPORT_GAME_EVENT, open)
+    return () => window.removeEventListener(IMPORT_GAME_EVENT, open)
+  }, [])
   const onGameReview = () => {
     if (heldBy('review') || recentGame()) return false
     setGameReviewLoad(true)
@@ -292,7 +293,9 @@ export default function App() {
   }
 
   const openSettings = () => navigate('/settings')
-  const userCard = <UserCard rail={rail} settingsOpen={route === 'settings'} onSettings={openSettings} settings={settings} onChange={updateSettings} />
+  const userCard = (
+    <UserCard rail={rail} settingsOpen={route === 'settings'} onSettings={openSettings} settings={settings} onChange={updateSettings} tools={<SidebarTools rail={rail} onToggleRail={toggleRail} />} />
+  )
 
   // Phones' You tab is your profile, its settings behind a gear (plain /settings is the phones' list of them);
   // /you, its old address, goes to the profile there and to Settings on desktop.
@@ -308,7 +311,6 @@ export default function App() {
         {!phone && appRoute && <Sidebar
             route={appRoute}
             rail={rail}
-            onToggleRail={toggleRail}
             footer={userCard}
             onGameReview={onGameReview}
           />}
@@ -332,6 +334,7 @@ export default function App() {
                 <ProfilePage active={appRoute === 'games'} settings={settings} updateSettings={updateSettings} onOpenAnalysis={openAnalysis} onOpenSettings={() => navigate('/settings/linked')} />
               </div>
             )}
+            {appRoute === 'editor' && <EditorPage settings={settings} onOpenAnalysis={openAnalysis} />}
             {appRoute === 'legendary' && <LegendaryPage settings={settings} onOpenAnalysis={openAnalysis} />}
             {appRoute === 'player' && <PublicProfilePage name={playerName(pathname) ?? ''} />}
             {(appRoute === 'puzzles' || sliding?.route === 'puzzles') && (

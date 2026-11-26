@@ -97,28 +97,18 @@
           // A first visit (no username, no games, not signed in) opens on the welcome card instead.
           var played = JSON.parse(localStorage.getItem('rookahead.games.v1') || '[]')
           if (!s.chesscomUser && !s.lichessUser && !(sync && sync.user) && !(played && played.length)) r.dataset.bootFirst = ''
-          // More than five widgets: Home's widget row takes two rows.
-          if (Array.isArray(s.homeWidgets) && s.homeWidgets.length > 5) r.dataset.bootWidgetRows = '2'
         } catch (e) {}
         r.dataset.theme = a === 'light' ? 'light' : a === 'system' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-        // Gold was everyone's colour for a day, as the default: those settings read as Sky (settings.ts).
-        if (s.palette && !(s.palette === 'gold' && (s.themes || 0) < 3)) r.dataset.palette = s.palette
-        if (a === 'black') r.setAttribute('data-black', '')
-        // The tab's icon in your colour from the start, as App.tsx draws it after (RookLogo.tsx, faviconUrl).
-        var css = getComputedStyle(r)
-        var tile = css.getPropertyValue('--brand').trim()
-        var rook = css.getPropertyValue('--brand-ink').trim()
-        if (tile && rook)
-          document.querySelector('link[rel="icon"]').href =
-            'data:image/svg+xml,' +
-            encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="' + tile + '"/><path transform="translate(4 4)" fill="' + rook + '" d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z"/></svg>')
+        // One colour for now, whatever an older version saved (settings.ts, PALETTES).
+        r.dataset.palette = 'cobalt'
       } catch (e) {}
     </script>
     <!-- Until the app is up: the page's shape in placeholders (index.css, .boot). React replaces it. -->
     <div id="root">
       <div class="boot" aria-busy="true" aria-label="Loading Rookahead">
-        <div class="boot-side">
-          <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z" /></svg></span>
+        <div class="sidebar boot-side">
+          <!-- The sidebar's head as the app draws it (Sidebar.tsx), so the logo and name don't move when it takes over. -->
+          <div class="sidebar-head"><span class="sidebar-brand"><span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z"></path></svg></span><span class="wordmark-stack sidebar-wordmark" aria-hidden="true"><svg class="wm-rook" viewBox="60 0 2826 700" aria-hidden="true"><path class="wm-dim" d="M60 0H480Q585 0 632.5 47.5Q680 95 680 200V290Q680 373 652.5 419Q625 465 565 480L690 700H495L380 490H240V700H60ZM500 200Q500 140 440 140H240V350H440Q500 350 500 290Z"></path><g><path class="wm-eye" d="M1420 565Q1420 700 1285 700H905Q770 700 770 565V135Q770 0 905 0H1285Q1420 0 1420 135Z"></path><ellipse class="wm-pupil" cx="1155" cy="350" rx="156" ry="200.6"></ellipse></g><g><path class="wm-eye" d="M2160 565Q2160 700 2025 700H1645Q1510 700 1510 565V135Q1510 0 1645 0H2025Q2160 0 2160 135Z"></path><ellipse class="wm-pupil" cx="1895" cy="350" rx="156" ry="200.6"></ellipse></g><path class="wm-dim" d="M2450 700H2270V0H2450V275H2540L2696 0H2886L2690 345L2885 700H2695L2540 415H2450Z"></path></svg><svg class="wm-ahead" viewBox="2776 0 3664 700" aria-hidden="true"><path d="M2971 700H2776L3241.7 0H3441.7L3506 700H3311L3301.8 575H3051.8ZM3134.1 445H3294.1L3281.5 210ZM4176 700H3996L4077.7 415H3827.7L3746 700H3566L3766.7 0H3946.7L3867.9 275H4117.9L4196.7 0H4376.7ZM4861 700H4306L4506.7 0H5061.7L5021.6 140H4646.6L4607.9 275H4902.9L4862.7 415H4567.7L4526.1 560H4901.1ZM5076 700H4881L5346.7 0H5546.7L5611 700H5416L5406.8 575H5156.8ZM5239.1 445H5399.1L5386.5 210ZM6261.7 0Q6374.7 0 6416.4 58.5Q6458.2 117 6425.8 230L6357 470Q6324.5 583 6249.3 641.5Q6174 700 6061 700H5671L5871.7 0ZM6245.8 230Q6271.6 140 6181.6 140H6011.6L5891.1 560H6061.1Q6151.1 560 6177 470Z"></path></svg></span></span></div>
           <span class="skel" style="width: 70%; height: 14px"></span>
           <span class="skel" style="width: 55%; height: 14px"></span>
           <span class="skel" style="width: 62%; height: 14px"></span>
@@ -140,7 +130,8 @@
       <div class="boot boot-home" aria-busy="true" aria-label="Loading Rookahead">
         <div class="boot-desk">
           <div class="sidebar boot-sidebar">
-            <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z" /></svg></span>
+            <!-- The sidebar's head as the app draws it (Sidebar.tsx), so the logo and name don't move when it takes over. -->
+            <div class="sidebar-head"><span class="sidebar-brand"><span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z"></path></svg></span><span class="wordmark-stack sidebar-wordmark" aria-hidden="true"><svg class="wm-rook" viewBox="60 0 2826 700" aria-hidden="true"><path class="wm-dim" d="M60 0H480Q585 0 632.5 47.5Q680 95 680 200V290Q680 373 652.5 419Q625 465 565 480L690 700H495L380 490H240V700H60ZM500 200Q500 140 440 140H240V350H440Q500 350 500 290Z"></path><g><path class="wm-eye" d="M1420 565Q1420 700 1285 700H905Q770 700 770 565V135Q770 0 905 0H1285Q1420 0 1420 135Z"></path><ellipse class="wm-pupil" cx="1155" cy="350" rx="156" ry="200.6"></ellipse></g><g><path class="wm-eye" d="M2160 565Q2160 700 2025 700H1645Q1510 700 1510 565V135Q1510 0 1645 0H2025Q2160 0 2160 135Z"></path><ellipse class="wm-pupil" cx="1895" cy="350" rx="156" ry="200.6"></ellipse></g><path class="wm-dim" d="M2450 700H2270V0H2450V275H2540L2696 0H2886L2690 345L2885 700H2695L2540 415H2450Z"></path></svg><svg class="wm-ahead" viewBox="2776 0 3664 700" aria-hidden="true"><path d="M2971 700H2776L3241.7 0H3441.7L3506 700H3311L3301.8 575H3051.8ZM3134.1 445H3294.1L3281.5 210ZM4176 700H3996L4077.7 415H3827.7L3746 700H3566L3766.7 0H3946.7L3867.9 275H4117.9L4196.7 0H4376.7ZM4861 700H4306L4506.7 0H5061.7L5021.6 140H4646.6L4607.9 275H4902.9L4862.7 415H4567.7L4526.1 560H4901.1ZM5076 700H4881L5346.7 0H5546.7L5611 700H5416L5406.8 575H5156.8ZM5239.1 445H5399.1L5386.5 210ZM6261.7 0Q6374.7 0 6416.4 58.5Q6458.2 117 6425.8 230L6357 470Q6324.5 583 6249.3 641.5Q6174 700 6061 700H5671L5871.7 0ZM6245.8 230Q6271.6 140 6181.6 140H6011.6L5891.1 560H6061.1Q6151.1 560 6177 470Z"></path></svg></span></span></div>
             <span class="skel" style="width: 70%; height: 14px"></span>
             <span class="skel" style="width: 55%; height: 14px"></span>
             <span class="skel" style="width: 62%; height: 14px"></span>
@@ -151,33 +142,30 @@
               <div class="home-main">
                 <div class="home-top">
                   <div class="home-welcome boot-welcome boot-returning">
-                    <span class="skel" style="width: 300px; height: 22px"></span>
-                    <span class="skel" style="width: 340px; height: 12px"></span>
+                    <span class="skel" style="width: 320px; height: 14px"></span>
                   </div>
                   <div class="home-welcome boot-fill boot-first" style="--h: 54px"><span class="skel" style="width: 280px; height: 26px"></span></div>
                 </div>
                 <div class="home-card accent-card boot-fill boot-first" style="--h: 289.3px"><span class="skel boot-title"></span></div>
                 <div class="widgets boot-widgets">
-                  <div class="widget-row">
-                    <div class="widget-grid">
-                      <div class="home-card plan-tile"><span class="skel skel-round boot-ring"></span></div>
-                      <div class="home-card plan-tile"><span class="skel skel-round boot-ring"></span></div>
-                      <div class="home-card plan-tile"><span class="skel skel-round boot-ring"></span></div>
-                      <div class="home-card plan-tile"><span class="skel skel-round boot-ring"></span></div>
-                      <div class="home-card plan-tile"><span class="skel skel-round boot-ring"></span></div>
-                      <div class="home-card plan-tile boot-row2"><span class="skel skel-round boot-ring"></span></div>
-                    </div>
-                    <span class="widget-edit"></span>
+                  <div class="widget-grid">
+                    <div class="home-card plan-tile widget"><span class="skel skel-round boot-ring"></span></div>
+                    <div class="home-card plan-tile widget"><span class="skel skel-round boot-ring"></span></div>
+                    <div class="home-card plan-tile widget"><span class="skel skel-round boot-ring"></span></div>
+                    <div class="home-card plan-tile widget"><span class="skel skel-round boot-ring"></span></div>
+                    <div class="home-card plan-tile widget"><span class="skel skel-round boot-ring"></span></div>
                   </div>
                 </div>
-                <div class="home-card boot-fill boot-returning boot-games"><span class="skel boot-title"></span></div>
+                <div class="home-card games-card boot-fill boot-returning boot-games"><span class="skel boot-title"></span></div>
                 <div class="home-card boot-fill boot-first boot-games-empty"><span class="skel boot-title"></span></div>
               </div>
               <div class="home-side">
-                <div class="home-card boot-fill boot-returning boot-review"><span class="skel boot-title"></span></div>
-                <div class="home-card home-play boot-fill boot-play"><span class="skel boot-title"></span></div>
-                <div class="home-tiles boot-tiles">
+                <div class="home-grid top">
                   <div class="home-card home-tile"><span class="skel boot-title"></span></div>
+                  <div class="home-card home-tile"><span class="skel boot-title"></span></div>
+                </div>
+                <div class="home-card play-card boot-fill boot-play"><span class="skel boot-title"></span></div>
+                <div class="home-grid">
                   <div class="home-card home-tile"><span class="skel boot-title"></span></div>
                   <div class="home-card home-tile"><span class="skel boot-title"></span></div>
                 </div>

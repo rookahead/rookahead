@@ -56,6 +56,10 @@ const THEME_BOARDS: Record<Palette, BoardColors> = {
   indigo: { light: '#d3cff3', dark: '#7d70dc', label: 'Theme', lastMove: 'rgba(238, 150, 232, 0.62)' },
   coral: { light: '#ffdad2', dark: '#c97d6a', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)', arrow: '#3b82f6' },
   forest: { light: '#cfe9d9', dark: '#5d9d7f', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  // The app's own board: soft mid-tone squares (no near-white, easy on the eyes), in the palette's blue.
+  cobalt: { light: '#a5b9e8', dark: '#3c6bd7', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  klein: { light: '#c4d1f5', dark: '#4863d2', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
+  mint: { light: '#dff0e5', dark: '#6fae8c', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
   lime: { light: '#e3efc9', dark: '#86a356', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.62)' },
   ivory: { light: '#e2e2e2', dark: '#919191', label: 'Theme', lastMove: 'rgba(255, 214, 102, 0.55)' },
 }
@@ -555,6 +559,8 @@ export function Board({ fen, orientation, lastMove, shapes, theme, coordinates, 
       {badge && badgeShown?.key === badgeKey && (
         // Keyed by the move, so the badge pops in afresh on every move rather than jumping squares.
         <div key={badgeKey} className={`board-badge ${badgeShown.timing} ${quaking ? 'legendary' : ''} ${badge.left === 87.5 ? 'edge-right' : ''} ${badge.top === 0 ? 'top-row' : ''}`} style={{ left: `${badge.left}%`, top: `${badge.top}%` }} aria-hidden>
+          {/* A move played out at normal speed: a ring in the verdict's colour pulses on the square as the badge lands. */}
+          {!mark && badgeShown.timing !== 'quick' && <span className="badge-ring" style={{ '--ring': CLASS_INFO[annotation!].color } as CSSProperties} />}
           {mark ? <PuzzleMark kind={mark} size={28} /> : <ClassIcon cls={annotation!} size={28} />}
           {mark && markNote && <span className="badge-note">{markNote}</span>}
         </div>

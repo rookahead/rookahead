@@ -25,7 +25,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 const svgUrl = (markup: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
 
-/** The board's own piece set: read from the cburnett stylesheet the app already loads. */
+/** The board's own piece set: read from the pieces stylesheet the app already loads. */
 let pieces: Promise<Record<string, HTMLImageElement>> | null = null
 function loadPieces() {
   pieces ??= (async () => {

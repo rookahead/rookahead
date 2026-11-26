@@ -1,11 +1,11 @@
-/* The blog (rookahead.com/blog): the app's look, tonal cards, Syne and DM Sans. Pages are built by
+/* The blog (rookahead.com/blog): the app's look, tonal cards, Elms Sans and DM Sans. Pages are built by
    scripts/build-blog.mjs, along with blog/theme.css: the app's colour themes (the --t-* tones) and boards
-   (--sq-*), which the colours below take, as src/index.css does. Light, dark or black, your colour and
+   (--sq-*), which the colours below take, as src/index.css does. Light or dark, your colour and
    your board follow your app settings, else the device's light or dark. */
 @font-face {
-  font-family: 'Syne';
-  src: url('/blog/fonts/syne.woff2') format('woff2');
-  font-weight: 400 800;
+  font-family: 'Elms Sans';
+  src: url('/blog/fonts/elms.woff2') format('woff2');
+  font-weight: 100 900;
   font-display: swap;
 }
 
@@ -34,7 +34,7 @@
   --btn-hover: rgba(255, 255, 255, 0.14);
   /* Donate's heart: GitHub Sponsors' pink, apart from every colour theme (as in the app). */
   --heart: #db61a2;
-  --font-display: 'Syne', 'DM Sans', sans-serif;
+  --font-display: 'Elms Sans', 'DM Sans', sans-serif;
   --font-ui: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
   /* The sticky header's height, and the new-post bar's over it while it's open: what the post's rails and
      section links stay clear of. */
@@ -64,14 +64,6 @@
   --btn: rgba(0, 0, 0, 0.06);
   --btn-hover: rgba(0, 0, 0, 0.1);
   --heart: #bf3989;
-}
-
-/* Black: a true black page, the cards just lifted off it. */
-:root[data-black] {
-  --bg: #000000;
-  --card: var(--t-low);
-  --card-hover: var(--t-cont);
-  --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
 }
 
 /* A board's squares, its last move and its coordinates (each in the other square's colour). */
@@ -216,26 +208,28 @@ h3 {
   text-decoration: none;
 }
 
-/* The mark in your colour, as in the app. */
-.brand svg {
+/* The mark, as in the app's sidebar: black and white, a square tile in the text's colour with the rook in the page's. */
+.brand svg:not(.wordmark) {
   width: 34px;
   height: 34px;
   padding: 6px;
-  border-radius: 10px;
-  background: var(--brand);
-  fill: var(--brand-ink);
+  background: var(--text);
+  fill: var(--bg);
 }
 
+/* The wordmark, drawn: its box is the capitals, so it centres on the mark. --cap is how tall they are. */
 .wordmark {
-  font-family: var(--font-display);
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.045em;
+  --cap: 16px;
+  display: block;
+  flex: none;
+  height: calc(var(--cap) * 720 / 700);
+  width: auto;
+  overflow: visible;
+  fill: currentColor;
 }
 
-.wordmark span {
-  font-weight: 500;
-  color: var(--brand);
+.wordmark-tail {
+  fill: var(--brand);
 }
 
 .top-nav {
@@ -1714,14 +1708,14 @@ kbd {
     display: none;
   }
 
-  .brand svg {
+  .brand svg:not(.wordmark) {
     width: 30px;
     height: 30px;
     padding: 5px;
   }
 
   .wordmark {
-    font-size: 18px;
+    --cap: 14.5px;
   }
 
   .app-btn {

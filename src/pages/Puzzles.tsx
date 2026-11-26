@@ -27,7 +27,7 @@ import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { PuzzleHub } from './puzzles/Hub'
 import { PuzzleStart } from './puzzles/Start'
 import { MistakesView } from './puzzles/Mistakes'
-import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, PUZZLES_ICON, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
+import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
@@ -66,8 +66,9 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
     })
   }, [])
 
-  // Desktop: the panel's top says which mode this is, with Back to the start page (a phone has its page bar).
-  const head = phone ? null : <PanelHead tab={hub ? null : tab} />
+  // Desktop: the panel's top says which mode this is, with Back to the start page (a phone has its page bar). The
+  // start page has no panel, so no top.
+  const head = phone || hub ? null : <PanelHead tab={tab} />
   const props: ViewProps = { progress, update, settings, updateSettings, head, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
@@ -76,7 +77,7 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
       {hub && phone ? (
         <PuzzleHub progress={progress} settings={settings} />
       ) : hub ? (
-        <PuzzleStart progress={progress} settings={settings} head={head} />
+        <PuzzleStart progress={progress} settings={settings} />
       ) : (
         <>
           {tab === 'rated' && <RatedView {...props} />}
@@ -91,22 +92,20 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
 
 const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Fix your mistakes' }
 
-/** The top of the panel: the mode's name with Back to the start page, or (`tab` null) the start page's own. */
-function PanelHead({ tab }: { tab: PuzzleTab | null }) {
+/** The top of the panel: the mode's name with Back to the start page. */
+function PanelHead({ tab }: { tab: PuzzleTab }) {
   return (
     <div className="panel-top">
       <div className="panel-top-side">
-        {tab && (
-          <Link to="/puzzles" className="icon-btn" aria-label="Back to Puzzles" title="Back to Puzzles">
-            <NavIcon name="back" />
-          </Link>
-        )}
+        <Link to="/puzzles" className="icon-btn" aria-label="Back to Puzzles" title="Back to Puzzles">
+          <NavIcon name="back" />
+        </Link>
       </div>
       <h1 className="panel-title">
         <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
-          {tab ? TAB_ICONS[tab] : <path d={PUZZLES_ICON} />}
+          {TAB_ICONS[tab]}
         </svg>
-        {tab ? MODE_NAMES[tab] : 'Puzzles'}
+        {MODE_NAMES[tab]}
       </h1>
       <div className="panel-top-side end" />
     </div>

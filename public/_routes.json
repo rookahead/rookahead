@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/engine/stockfish-19.wasm", "/engine/stockfish-19-single.wasm"],
+  "include": ["/engine/stockfish-19.wasm", "/engine/stockfish-19-single.wasm", "/api/lichess-online"],
   "exclude": []
 }

@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { COACH_BLINK_MS, blinkGap, COACH_EYE_Y, COACH_EYES, COACH_HEAD } from './RookCoach'
 
 // The coach's face on its own: the rook's head (its battlements and its face, no body), with eyes that do the
-// talking. They look toward the pointer, glance about when it's still, blink (now and then twice), squint for a
-// moment, and turn happy (^^) for good news or while you point at it. The head bobs gently and leans the way
+// talking. They look toward the pointer, glance about when it's still, blink as the Coach tile's do (oval, dot, dash,
+// at the same pace), squint for a moment now and then, and turn happy (^^) for good news. Pointing at it changes nothing. The head bobs gently and leans the way
 // it looks. With reduced motion it keeps still and only shows its mood.
 
-const HEAD =
-  'M20 16Q20 12 24 12H36Q40 12 40 16V22H50V16Q50 12 54 12H66Q70 12 70 16V22H80V16Q80 12 84 12H96Q100 12 100 16V34Q100 38 96 38H92V82Q92 94 80 94H40Q28 94 28 82V38H24Q20 38 20 34Z'
 /** Where the eyes sit, and how far they travel toward what they look at (the drawing's units). */
-const EYES = [48, 72]
-const EYE_Y = 62
+const EYES = COACH_EYES
+const EYE_Y = COACH_EYE_Y
 const TRAVEL_X = 7
 const TRAVEL_Y = 5
 const LEAN_DEG = 6
@@ -32,7 +31,6 @@ export function CoachFace({ happy, moodKey }: Props) {
   const [look, setLook] = useState<Look>({ x: 0, y: 0 })
   const [lids, setLids] = useState<Lids>('open')
   const [cheer, setCheer] = useState(false)
-  const [hover, setHover] = useState(false)
   // When the pointer last moved: idle glances only start once it has been still for a while.
   const moved = useRef(0)
   const still = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -87,7 +85,7 @@ export function CoachFace({ happy, moodKey }: Props) {
     return () => clearTimeout(timer)
   }, [still])
 
-  // Blinks every few seconds (sometimes twice), and once in a while a short squint.
+  // Blinks every few seconds, like the Coach tile's coach, and once in a while a short squint.
   useEffect(() => {
     if (still) return
     let timer = 0
@@ -95,30 +93,22 @@ export function CoachFace({ happy, moodKey }: Props) {
       timer = window.setTimeout(then, ms)
     }
     const next = () =>
-      after(rand(2200, 4800), () => {
-        const squint = Math.random() < 0.15
+      after(blinkGap(), () => {
+        const squint = Math.random() < 0.1
         setLids(squint ? 'squint' : 'blink')
-        after(squint ? 700 : 120, () => {
+        after(squint ? 700 : COACH_BLINK_MS, () => {
           setLids('open')
-          if (!squint && Math.random() < 0.25)
-            after(140, () => {
-              setLids('blink')
-              after(110, () => {
-                setLids('open')
-                next()
-              })
-            })
-          else next()
+          next()
         })
       })
     next()
     return () => clearTimeout(timer)
   }, [still])
 
-  const glad = cheer || hover
+  const glad = cheer
   const at = still ? { x: 0, y: 0 } : look
   const shift = { translate: `${(at.x * TRAVEL_X).toFixed(2)}px ${(at.y * TRAVEL_Y).toFixed(2)}px` }
-  const lid = lids === 'blink' ? 0.1 : lids === 'squint' ? 0.45 : 1
+  const lid = lids === 'squint' ? 0.45 : 1
   return (
     <svg
       ref={svg}
@@ -127,14 +117,17 @@ export function CoachFace({ happy, moodKey }: Props) {
       role="img"
       aria-label={glad ? 'The coach, smiling' : 'The coach'}
       style={{ rotate: `${(at.x * LEAN_DEG).toFixed(2)}deg` }}
-      onPointerEnter={() => setHover(true)}
-      onPointerLeave={() => setHover(false)}
     >
-      <path className="coach-face-head" d={HEAD} />
-      <g className="coach-face-eyes" style={shift}>
+      <path className="coach-face-head" d={COACH_HEAD} />
+      <g className={`coach-face-eyes coach-eyes ${lids === 'blink' ? 'blink' : ''}`} style={shift}>
         {glad
           ? EYES.map((x) => <path key={x} className="coach-face-happy" d={`M${x - 7} ${EYE_Y + 3}Q${x} ${EYE_Y - 8} ${x + 7} ${EYE_Y + 3}`} />)
-          : EYES.map((x) => <ellipse key={x} className="coach-face-eye" cx={x} cy={EYE_Y} rx={6} ry={8.5} style={{ scale: `1 ${lid}` }} />)}
+          : EYES.map((x) => (
+              <g key={x}>
+                <ellipse className="coach-face-eye open" cx={x} cy={EYE_Y} rx={6} ry={8.5} style={lid < 1 ? { scale: `1 ${lid}` } : undefined} />
+                <path className="shut" d={`M${x - 7} ${EYE_Y + 2}H${x + 7}`} />
+              </g>
+            ))}
       </g>
     </svg>
   )

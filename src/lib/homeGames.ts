@@ -1,6 +1,7 @@
 // Home's game list: your games grouped by day, and how each ended.
 import { Chess } from 'chess.js'
 import { dayLabel, finalPosition, type MyGame } from './myGames'
+import { speedOf } from './speed'
 
 /** A PGN tag's value, or undefined when the game doesn't have it. */
 function tag(pgn: string, name: string): string | undefined {
@@ -51,8 +52,9 @@ export function ratingBefore(game: MyGame, all: MyGame[]): number | null {
   return earlier ? ratingAfter(earlier) : null
 }
 
-/** Rated the same way: one site and one time control (bullet, blitz and rapid each have their own rating). */
-export const samePool = (a: MyGame, b: MyGame) => a.source === b.source && a.time === b.time
+/** Rated the same way: one site and one speed (bullet, blitz and rapid each have their own rating; 3 min and 3 | 2
+ * share blitz's). */
+export const samePool = (a: MyGame, b: MyGame) => a.source === b.source && speedOf(a.time, a.source) === speedOf(b.time, b.source)
 
 export interface GameDay {
   label: string

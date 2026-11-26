@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayStreak, loadProgress, parseProgress, recordDay, recordMistakeSolved, recordRated, recordSprint, saveProgress, solvedOn, startRated, SEEN_LIMIT } from './puzzleStore'
+import { dayStreak, loadProgress, noteVisit, parseProgress, recordDay, recordMistakeSolved, recordRated, recordSprint, recordVisit, saveProgress, solvedOn, startRated, SEEN_LIMIT, visitStreak } from './puzzleStore'
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>()
@@ -59,6 +59,23 @@ describe('puzzle progress', () => {
 
 describe('streaks', () => {
   const fresh = () => loadProgress(memoryStorage())
+
+  it('counts days in a row you opened Rookahead, apart from the puzzle streak', () => {
+    let p = recordVisit(recordVisit(recordVisit(fresh(), 10), 10), 11)
+    expect(p.visits).toMatchObject({ last: 11, count: 2, best: 2, recent: [10, 11] })
+    expect(p.days).toBeUndefined()
+    expect([visitStreak(p, 11), visitStreak(p, 12), visitStreak(p, 13)]).toEqual([2, 2, 0])
+    p = recordVisit(p, 14)
+    expect(p.visits).toMatchObject({ last: 14, count: 1, best: 2 })
+  })
+
+  it('notes a visit once a day, and keeps it through a save and load', () => {
+    const storage = memoryStorage()
+    noteVisit(20, storage)
+    noteVisit(20, storage)
+    noteVisit(21, storage)
+    expect(loadProgress(storage).visits).toMatchObject({ last: 21, count: 2 })
+  })
 
   it('counts days in a row with a solve', () => {
     let p = recordDay(fresh(), 10)

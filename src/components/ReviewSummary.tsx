@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { CLASS_INFO, CLASS_ORDER, type GameReport } from '../lib/classify'
 import type { Color } from '../lib/evaluation'
+import { MEDALS, type Medal } from '../lib/medals'
 import type { PgnHeaders } from '../lib/tree'
 import { ClassIcon } from './ClassIcon'
+import { MedalStack } from './MedalIcon'
 
 const playerName = (headers: PgnHeaders, c: Color) => headers[c === 'white' ? 'White' : 'Black'] || (c === 'white' ? 'White' : 'Black')
 
@@ -26,13 +28,24 @@ function useCountUp(target: number | null, ms = 700) {
 interface Props {
   report: GameReport
   headers: PgnHeaders
+  /** What each side earned in the game, besides its grades. */
+  medals?: Record<Color, Medal[]>
+}
+
+/** One side's medals under its accuracy, stacked: their names on hover. */
+function SideMedals({ medals }: { medals: Medal[] }) {
+  return (
+    <span role="cell" className="faceoff-medals" aria-label={medals.map((m) => MEDALS[m].label).join(', ') || 'None'}>
+      {medals.length > 0 && <MedalStack medals={medals} size={28} />}
+    </span>
+  )
 }
 
 /**
  * The scores as a face-off: White's column on the left, Black's on the right, and the
  * row names down the middle, so every number sits under the player it belongs to.
  */
-export function ReviewSummary({ report, headers }: Props) {
+export function ReviewSummary({ report, headers, medals }: Props) {
   const shown = { white: useCountUp(report.accuracy.white), black: useCountUp(report.accuracy.black) }
   const accuracy = (c: Color) => (shown[c] === null ? '–' : shown[c].toFixed(1))
   return (
@@ -57,6 +70,15 @@ export function ReviewSummary({ report, headers }: Props) {
           {accuracy('black')}
         </span>
       </div>
+      {medals && (medals.white.length > 0 || medals.black.length > 0) && (
+        <div className="faceoff-row medals" role="row">
+          <SideMedals medals={medals.white} />
+          <span role="rowheader" className="faceoff-caption">
+            Medals
+          </span>
+          <SideMedals medals={medals.black} />
+        </div>
+      )}
 
       <div className="grades">
         {CLASS_ORDER.map((cls) => {

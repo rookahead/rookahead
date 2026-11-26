@@ -30,7 +30,7 @@ It's built on the work of others, with thanks:
 - [chess.js](https://github.com/jhlywa/chess.js) (BSD-2-Clause)
 - The board ideas in Explain follow the rules of [what’sthisposition](https://github.com/acunli/whatsthisposition) (GPL-3.0)
 - Opening names from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0)
-- [gifenc](https://github.com/mattdesl/gifenc) (MIT) for GIFs, and the Syne, DM Sans and DM Mono fonts (SIL Open Font License)
+- [gifenc](https://github.com/mattdesl/gifenc) (MIT) for GIFs, and the Elms Sans, Cabin, DM Sans and DM Mono fonts (SIL Open Font License)
 
 ## Ads
 

@@ -276,6 +276,27 @@ $$;
 revoke execute on function public.public_profile(text) from public;
 grant execute on function public.public_profile(text) to anon, authenticated;
 
+-- Searching players from the sidebar: public profiles whose username starts with the words typed (any case),
+-- shortest names first, eight at most. Only usernames and photos, which their public pages show anyway.
+create or replace function public.search_public_profiles(q text)
+returns table (username text, avatar_url text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.username, p.avatar_url
+  from public.profiles p
+  join public.public_profiles pp on pp.id = p.id
+  where length(trim(q)) between 1 and 20
+    and lower(p.username) like replace(replace(replace(lower(trim(q)), '\', '\\'), '%', '\%'), '_', '\_') || '%'
+  order by length(p.username), lower(p.username)
+  limit 8;
+$$;
+
+revoke execute on function public.search_public_profiles(text) from public;
+grant execute on function public.search_public_profiles(text) to anon, authenticated;
+
 -- "Report this profile": anyone may send one, about a public profile's name or photo. Nobody can read them
 -- back through the API; read them in the dashboard (Table Editor → profile_reports).
 create table if not exists public.profile_reports (

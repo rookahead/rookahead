@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDay, greeting, movesInPgn, nudge, playedRow } from './home'
+import { formatDay, greeting, movesInPgn, nudge, nudges, playedRow } from './home'
 
 describe('movesInPgn', () => {
   it('counts full moves, ignoring headers, clocks and black move numbers', () => {
@@ -30,7 +30,7 @@ describe('playedRow', () => {
   const now = new Date('2026-10-18T12:00:00Z')
 
   it('describes the opponent, your side, clock, moves and date', () => {
-    expect(playedRow(base, now)).toEqual({ opponent: 'Coach · Level 4', rating: '1300', detail: 'White · 10+5 · 2 moves · Oct 18', assists: '', result: 'Won' })
+    expect(playedRow(base, now)).toEqual({ opponent: 'Cassie · Level 4', rating: '1300', detail: 'White · 10+5 · 2 moves · Oct 18', assists: '', result: 'Won' })
   })
 
   it('mentions takebacks and hints, and untimed games', () => {
@@ -55,7 +55,7 @@ describe('nudge', () => {
   const base = { mistakes: 0, streak: 0, solvedToday: false, legendary: 0, ratingUp: null, trend: null, won: 0, played: 0, hasGames: true }
 
   it('keeps a streak that is about to end above everything else', () => {
-    expect(nudge({ ...base, streak: 4, legendary: 2 })).toBe("Solve today's puzzle to keep your 4-day streak.")
+    expect(nudge({ ...base, streak: 4, legendary: 2 })).toBe("Solve today's puzzle to keep your 4-day puzzle streak.")
   })
 
   it('then says how you are playing, the best news first', () => {
@@ -71,6 +71,16 @@ describe('nudge', () => {
   it('leaves out a losing run and a handful of games', () => {
     expect(nudge({ ...base, won: 3, played: 10 })).toBe('Pick a game and see where it turned.')
     expect(nudge({ ...base, won: 3, played: 4 })).toBe('Pick a game and see where it turned.')
+  })
+
+  it('lists every line that is true, the plain one last, for Home to take turns through', () => {
+    expect(nudges({ ...base, streak: 2, mistakes: 3, won: 6, played: 10 })).toEqual([
+      "Solve today's puzzle to keep your 2-day puzzle streak.",
+      'You won 6 of your last 10 games.',
+      '3 mistakes from your games are waiting as puzzles.',
+      'Pick a game and see where it turned.',
+    ])
+    expect(nudges({ ...base, streak: 2, solvedToday: true })).toEqual(['Pick a game and see where it turned.'])
   })
 
   it('offers your mistakes when there is nothing to report', () => {

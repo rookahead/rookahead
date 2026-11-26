@@ -8,7 +8,6 @@ import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { useMoveSounds } from '../../hooks/useMoveSounds'
 import type { RookMood } from '../../lib/coach'
 import { formatScore, type Color } from '../../lib/evaluation'
-import { NAV_ITEMS } from '../../lib/nav'
 import { revealSolution, startSolve, tryMove, type Puzzle } from '../../lib/puzzles'
 import type { PuzzleProgress } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
@@ -41,15 +40,17 @@ export function walk(fen: string, moves: string[]): { fens: string[]; tree: Game
   return { fens: mainline(tree).map((n) => n.fen), tree }
 }
 
-export const PUZZLES_ICON = NAV_ITEMS.find((item) => item.id === 'puzzles')!.icon
+/** The puzzle piece as a line, for the page's heading. */
+export const PUZZLES_ICON = 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z'
 
 /**
  * Board on the left, panel on the right; `below` sits under the board, `above` over it. On desktop the panel
  * opens with `head`, the page's name (the page has no bar of its own there, so the board gets the height).
  */
-export function PuzzleLayout({ board, head, above, below, children }: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; children: ReactNode }) {
+export function PuzzleLayout({ board, head, above, below, hub, children }: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; hub?: boolean; children: ReactNode }) {
   return (
-    <main className="play-layout puzzle-layout">
+    // The start page (`hub`) has no panel: its cards sit straight on the page, like Play's front.
+    <main className={`play-layout puzzle-layout ${hub ? 'puzzle-front' : ''}`}>
       <section className="play-board">
         {above && <div className="puzzle-above">{above}</div>}
         {board}

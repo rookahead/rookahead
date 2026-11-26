@@ -43,6 +43,9 @@ function writeLoaded(req: LoadRequest, autoReview: boolean): string | null {
   }
 }
 
+/** A position from the board editor, in the session for Analysis to open on the engine. */
+export const writePosition = (fen: string) => writeLoaded({ kind: 'fen', fen }, false)
+
 interface OpenProps {
   open: boolean
   onClose: () => void

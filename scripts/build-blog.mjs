@@ -43,11 +43,11 @@ const VERDICTS = {
 
 const escape = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-// ── Pieces: Chessground's cburnett set, as one <symbol> per piece ───────────────────────────────
+// ── Pieces: the app's own set (src/pieces.css), as one <symbol> per piece ───────────────────────
 
 const PIECE_NAMES = { pawn: 'p', knight: 'n', bishop: 'b', rook: 'r', queen: 'q', king: 'k' }
 const PIECES = (() => {
-  const css = fs.readFileSync(path.join(root, 'node_modules/@lichess-org/chessground/assets/chessground.cburnett.css'), 'utf8')
+  const css = fs.readFileSync(path.join(root, 'src/pieces.css'), 'utf8')
   const out = {}
   for (const [, role, color, b64] of css.matchAll(/piece\.(\w+)\.(white|black)\s*{\s*background-image:\s*url\('data:image\/svg\+xml;base64,([^']+)'\)/g)) {
     const svg = Buffer.from(b64, 'base64').toString('utf8')
@@ -279,6 +279,10 @@ const DEFAULT_COVER = 'moves 1.e4'
 // The app's rook (src/components/RookLogo.tsx) and the Simple Icons logos the sidebar uses (CC0).
 const ROOK_PATH = 'M5 3H8V5H10.5V3H13.5V5H16V3H19V7.72L15 6.3V7.3H10.5A0.7 0.7 0 0 0 10.5 8.7H15V9.7L19 8.28V11H15.5C15.5 15 16.5 17 19.5 18V21H4.5V18C7.5 17 8.5 15 8.5 11H5Z'
 const ROOK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ROOK_PATH}"/></svg>`
+// The wordmark, drawn as the app draws it (src/wordmark.json): ROOK upright, AHEAD leaning out of it in the colour,
+// the K cut along the A.
+const WM = JSON.parse(fs.readFileSync(path.join(root, 'src/wordmark.json'), 'utf8'))
+const WORDMARK = `<svg class="wordmark" viewBox="${WM.viewBox}" aria-hidden="true"><clipPath id="wm-k"><path d="${WM.clip}"/></clipPath><path d="${WM.rook}" clip-path="url(#wm-k)"/><path class="wordmark-tail" d="${WM.ahead}"/></svg>`
 const DISCORD =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>'
 const GITHUB =
@@ -294,23 +298,13 @@ const SEARCH_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11"
 // The look you picked in the app (Settings → Appearance and Board), before the first paint: light, dark or
 // black (else the device's), your colour and your board. Settings read as the app reads them (src/lib/settings.ts):
 // a Graphite board from before the Theme board and a Gold that was only the default for a day are the defaults.
-const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';if(a==='black')r.setAttribute('data-black','');if(s.palette&&!(s.palette==='gold'&&v<3))r.dataset.palette=s.palette;if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
+const THEME = `<script>try{var s=JSON.parse(localStorage.getItem('rookahead.settings.v2')||'{}'),a=s.appearance,r=document.documentElement,v=s.themes||0;r.dataset.theme=a==='light'?'light':a==='dark'||a==='black'||a==='dim'?'dark':matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';r.dataset.palette='cobalt';if(s.boardTheme&&!(s.boardTheme==='graphite'&&v<2))r.dataset.board=s.boardTheme}catch(e){}</script>`
 
 // After the stylesheets, so these are the page's resolved colours, including the light/dark palette.
-// Match the app's favicon (src/components/RookLogo.tsx) instead of leaving the static Sky fallback.
-const FAVICON = `<script>
-(function () {
-  var css = getComputedStyle(document.documentElement)
-  var tile = css.getPropertyValue('--brand').trim()
-  var rook = css.getPropertyValue('--brand-ink').trim()
-  var icon = document.querySelector('link[rel="icon"]')
-  if (icon && tile && rook) icon.href = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="' + tile + '"/><path transform="translate(4 4)" fill="' + rook + '" d="${ROOK_PATH}"/></svg>')
-})()
-</script>`
 
 // Inside the app's Blog tab (a frame on a phone, src/pages/Blog.tsx): just the post, in the app's look, and a link asks
 // the app to open it.
-const FRAMED = `if(window!==top){r.setAttribute('data-framed','');var p=parent.document.documentElement;r.dataset.theme=p.dataset.theme;r.toggleAttribute('data-black',p.hasAttribute('data-black'));if(p.dataset.palette)r.dataset.palette=p.dataset.palette;document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||(a.hash&&a.pathname===location.pathname))return;e.preventDefault();parent.postMessage({rookaheadOpen:a.href},location.origin)})}`
+const FRAMED = `if(window!==top){r.setAttribute('data-framed','');var p=parent.document.documentElement;r.dataset.theme=p.dataset.theme;if(p.dataset.palette)r.dataset.palette=p.dataset.palette;document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||(a.hash&&a.pathname===location.pathname))return;e.preventDefault();parent.postMessage({rookaheadOpen:a.href},location.origin)})}`
 
 // Before the first paint too: ⌘ for the search shortcut on a Mac, and the announcement gone if you closed it.
 const headScript = (announce) =>
@@ -388,11 +382,10 @@ function page({ title, description, canonical, type = 'website', head = '', body
     ${THEME}
     ${headScript(announce)}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" href="/blog/fonts/syne.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/blog/fonts/elms.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/blog/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="${ASSETS.theme}" />
     <link rel="stylesheet" href="${ASSETS.css}" />
-    ${FAVICON}
     <link rel="canonical" href="${canonical}" />
     <link rel="alternate" type="application/atom+xml" title="Rookahead blog" href="/blog/feed.xml" />
     <title>${escape(title)}</title>
@@ -411,7 +404,7 @@ function page({ title, description, canonical, type = 'website', head = '', body
     ${announceBar(announce)}
     <header class="top">
       <div class="top-in">
-        <a class="brand" href="/blog" aria-label="Rookahead blog">${ROOK}<span class="wordmark">rook<span>ahead</span></span></a>
+        <a class="brand" href="/blog" aria-label="Rookahead blog">${ROOK}${WORDMARK}</a>
         <nav class="top-nav" aria-label="Site">${nav.map(([tab, href, label]) => `<a href="${href}"${tab === 'donate' ? ' class="nav-donate"' : ''}${tab === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}</nav>
         <div class="top-end">
           <button class="search-btn" type="button" data-search-open aria-label="Search the blog">${SEARCH_ICON}<span class="search-label">Search</span><span class="keys" aria-hidden="true"><kbd class="mod"></kbd><kbd>K</kbd></span></button>
@@ -781,7 +774,7 @@ function searchIndex(entries) {
 function themeCss() {
   const css = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8')
   const start = css.indexOf('/* ═══════════════ Colour themes')
-  const end = css.indexOf('/* ═══════════════ Black')
+  const end = css.indexOf('/* ═══════════════ Base', start)
   if (start < 0 || end < start) throw new Error('theme: the colour themes are missing from src/index.css')
   const tsx = fs.readFileSync(path.join(root, 'src/components/Board.tsx'), 'utf8')
   const boards = (name) => {
@@ -792,10 +785,10 @@ function themeCss() {
   }
   const squares = (b) => `--sq-light: ${b.light};\n  --sq-dark: ${b.dark};\n  --sq-last: ${b.last};`
   const fixed = boards('BOARD_THEMES').map((b) => `:root[data-board='${b.id}'] {\n  ${squares(b)}\n}`)
-  // The Theme board, the default: Sky's unless your colour theme says otherwise.
+  // The Theme board, the default: Cobalt's, the one colour theme for now.
   const themed = boards('THEME_BOARDS').map((b) => {
     const sel = `:root[data-palette='${b.id}']:is(:not([data-board]), [data-board='theme'])`
-    return `${b.id === 'sky' ? ":root:is(:not([data-board]), [data-board='theme']),\n" : ''}${sel} {\n  ${squares(b)}\n}`
+    return `${b.id === 'cobalt' ? ":root:is(:not([data-board]), [data-board='theme']),\n" : ''}${sel} {\n  ${squares(b)}\n}`
   })
   return `/* Made by scripts/build-blog.mjs from the app's own colours: don't edit, it's rebuilt. */\n${css.slice(start, end).trim()}\n\n${[...themed, ...fixed].join('\n\n')}\n`
 }
@@ -838,8 +831,8 @@ const ASSETS = {
 const out = path.join(PUBLIC, 'blog')
 fs.rmSync(out, { recursive: true, force: true })
 fs.mkdirSync(path.join(out, 'fonts'), { recursive: true })
-// The app's Syne and DM Sans, so the blog reads like Rookahead.
-fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/syne/files/syne-latin-wght-normal.woff2'), path.join(out, 'fonts/syne.woff2'))
+// The app's Elms Sans and DM Sans, so the blog reads like Rookahead.
+fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/elms-sans/files/elms-sans-latin-wght-normal.woff2'), path.join(out, 'fonts/elms.woff2'))
 fs.copyFileSync(path.join(root, 'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2'), path.join(out, 'fonts/dm-sans.woff2'))
 for (const post of posts) fs.writeFileSync(path.join(out, `${post.slug}.html`), postPage(post, posts))
 fs.writeFileSync(path.join(PUBLIC, 'blog.html'), indexPage(posts))

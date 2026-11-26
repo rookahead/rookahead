@@ -3,21 +3,14 @@ import { FULL_ENGINE_AVAILABLE, type EngineStrength } from '../engine/Engine'
 import { markChanged, STORE_KEYS, useStoreVersion } from './syncBus'
 import type { HomeWidget } from './widgets'
 
-/** 'black' is dark on a true black page, for AMOLED screens. */
-export type Appearance = 'dark' | 'black' | 'light' | 'system'
+export type Appearance = 'dark' | 'light' | 'system'
 
 /** The app's colour: its accent, and a tint to match in the backgrounds (index.css, :root[data-palette]). */
-export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'lime' | 'ivory'
+export type Palette = 'sky' | 'gold' | 'indigo' | 'coral' | 'forest' | 'mint' | 'klein' | 'cobalt' | 'lime' | 'ivory'
 
-export const PALETTES: { id: Palette; label: string; swatch: string }[] = [
-  { id: 'sky', label: 'Sky', swatch: '#38bdf8' },
-  { id: 'gold', label: 'Gold', swatch: '#e9b95c' },
-  { id: 'indigo', label: 'Indigo', swatch: '#818cf8' },
-  { id: 'coral', label: 'Coral', swatch: '#f28f76' },
-  { id: 'forest', label: 'Forest', swatch: '#34d399' },
-  { id: 'lime', label: 'Lime', swatch: '#b0d77a' },
-  { id: 'ivory', label: 'Ivory', swatch: '#ededed' },
-]
+/** The colours offered: Cobalt alone for now (DESIGN.md). The others' tones stay in index.css, to come back once
+ * each is tested again; a colour saved before then reads as Cobalt. */
+export const PALETTES: { id: Palette; label: string; swatch: string }[] = [{ id: 'cobalt', label: 'Cobalt', swatch: '#2f4bd1' }]
 
 /** 'theme' takes its squares from your colour theme. */
 export type BoardTheme = 'theme' | 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
@@ -110,7 +103,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: 'dark',
-  palette: 'sky',
+  palette: 'cobalt',
   engine: 'lite',
   lines: 3,
   boardLines: 1,
@@ -160,16 +153,19 @@ function load(): Settings {
       // Snap values saved by older versions to the options offered now.
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
-      if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
       if (!(s.lastMoveColor in LAST_MOVE_COLORS)) s.lastMoveColor = DEFAULT_SETTINGS.lastMoveColor
       if (s.lastMoveStrength != null && !(s.lastMoveStrength >= 0.1 && s.lastMoveStrength <= 1)) s.lastMoveStrength = null
       const was = s.themes ?? 0
       // 1, the tonal themes: Dim folded into Dark.
       if (was < 1 && (s.appearance as string) === 'dim') s.appearance = 'dark'
+      // AMOLED is gone: one dark theme, on the near-black page.
+      if ((s.appearance as string) === 'black') s.appearance = 'dark'
       // 2, the Theme board: Graphite was everyone's board unless they changed it.
       if (was < 2 && s.boardTheme === 'graphite') s.boardTheme = 'theme'
       // 3, Sky the default again: Gold was everyone's colour for a day, as the default, not a choice.
       if (was < 3 && s.palette === 'gold') s.palette = 'sky'
+      // A colour no longer offered: the one that is.
+      if (!PALETTES.some((p) => p.id === s.palette)) s.palette = DEFAULT_SETTINGS.palette
       s.themes = THEMES_VERSION
       return s
     }

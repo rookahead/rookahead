@@ -6,6 +6,7 @@ import { useAccount } from '../lib/account'
 import { acceptFriend, requestFriend, useFriends } from '../lib/friends'
 import { fetchPublicProfile, reportProfile, type PublicProfile, type ReportReason } from '../lib/publicProfile'
 import { NOTE_MAX } from '../lib/reports'
+import { Face } from '../components/DefaultFace'
 
 const JOINED = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' })
 
@@ -170,14 +171,6 @@ function Count({ n, label }: { n: number; label: string }) {
       <small>{label}</small>
     </span>
   )
-}
-
-/** Their photo, or their initial when there's none (or it won't load). */
-function Face({ url, name }: { url: string | null; name: string }) {
-  const [broken, setBroken] = useState(false)
-  // crossOrigin: the page is cross-origin isolated, so images from other sites need CORS.
-  if (url && !broken) return <img src={url} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
-  return <>{name.slice(0, 1).toUpperCase()}</>
 }
 
 function PlayerSkeleton() {

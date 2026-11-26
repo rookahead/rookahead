@@ -30,7 +30,7 @@ export function playedRow(game: PlayedGame, now = new Date()) {
   const moves = movesInPgn(game.pgn)
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
   return {
-    opponent: `Coach · Level ${game.level}`,
+    opponent: `Cassie · Level ${game.level}`,
     rating: String(levelInfo(game.level).rating),
     detail: `${game.color === 'white' ? 'White' : 'Black'} · ${clockLabel(game.clock)} · ${plural(moves, 'move')} · ${formatDay(game.endedAt / 1000, now)}`,
     assists: [game.takebacks && plural(game.takebacks, 'takeback'), game.hints && plural(game.hints, 'hint')].filter(Boolean).join(' · '),
@@ -69,13 +69,22 @@ export interface NudgeInput {
   hasGames: boolean
 }
 
-/** The one line under the greeting: how you're doing. What to do next is the buttons' job; only a streak about to end comes first. */
-export function nudge({ mistakes, streak, solvedToday, legendary, ratingUp, trend, won, played, hasGames }: NudgeInput): string {
-  if (streak > 0 && !solvedToday) return `Solve today's puzzle to keep your ${streak}-day streak.`
-  if (legendary > 0) return `${legendary} Legendary ${legendary === 1 ? 'move' : 'moves'} this week.`
-  if (ratingUp && ratingUp.points >= NUDGE_MIN_POINTS) return `Up ${ratingUp.points} points in ${ratingUp.time} ${ratingUp.over}.`
-  if (trend != null && trend >= 0.5) return `Your accuracy is up ${trend.toFixed(1)} over your last 10 games.`
-  if (played >= NUDGE_MIN_GAMES && won * 2 >= played) return `You won ${won} of your last ${played} games.`
-  if (mistakes > 0) return mistakes === 1 ? 'A mistake from your games is waiting as a puzzle.' : `${mistakes} mistakes from your games are waiting as puzzles.`
-  return hasGames ? 'Pick a game and see where it turned.' : 'Load a game and see where it turned.'
+/**
+ * Every line the coach could say under the greeting, all true right now, the most pressing first (a streak about to
+ * end). Home takes turns through them; a line drops out once it stops being true. What to do next is the buttons'
+ * job, so the last line is always the plain one about your games.
+ */
+export function nudges({ mistakes, streak, solvedToday, legendary, ratingUp, trend, won, played, hasGames }: NudgeInput): string[] {
+  const lines: string[] = []
+  if (streak > 0 && !solvedToday) lines.push(`Solve today's puzzle to keep your ${streak}-day puzzle streak.`)
+  if (legendary > 0) lines.push(`${legendary} Legendary ${legendary === 1 ? 'move' : 'moves'} this week.`)
+  if (ratingUp && ratingUp.points >= NUDGE_MIN_POINTS) lines.push(`Up ${ratingUp.points} points in ${ratingUp.time} ${ratingUp.over}.`)
+  if (trend != null && trend >= 0.5) lines.push(`Your accuracy is up ${trend.toFixed(1)} over your last 10 games.`)
+  if (played >= NUDGE_MIN_GAMES && won * 2 >= played) lines.push(`You won ${won} of your last ${played} games.`)
+  if (mistakes > 0) lines.push(mistakes === 1 ? 'A mistake from your games is waiting as a puzzle.' : `${mistakes} mistakes from your games are waiting as puzzles.`)
+  lines.push(hasGames ? 'Pick a game and see where it turned.' : 'Load a game and see where it turned.')
+  return lines
 }
+
+/** The most pressing of them. */
+export const nudge = (input: NudgeInput): string => nudges(input)[0]

@@ -2,6 +2,14 @@
 import { DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, SPRINT_MODES, type Difficulty, type SprintMode } from './puzzles'
 import { markChanged, STORE_KEYS } from './syncBus'
 
+/** A run of days in a row: the last day, how long, the longest, and the last fortnight's days. */
+export interface DayRun {
+  last: number
+  count: number
+  best: number
+  recent?: number[]
+}
+
 export interface PuzzleProgress {
   rating: number
   played: number
@@ -12,7 +20,10 @@ export interface PuzzleProgress {
   bestStreak: number
   /** Days (UTC day numbers) in a row with at least one puzzle solved, in any mode; `recent` lists the last
    * fortnight's days with a solve, oldest first, for Home's week of dots. */
-  days?: { last: number; count: number; best: number; recent?: number[] }
+  days?: DayRun
+  /** Days in a row you opened Rookahead (local day numbers, like `days`): Home's streak counter. Kept here so it
+   * syncs with the rest of your progress. */
+  visits?: DayRun
   /** Mistake puzzles solved today, for Home's plan. */
   today?: { day: number; mistakes: number }
   /** Best Puzzle Sprint score per mode. */
@@ -44,12 +55,18 @@ export function loadProgress(storage = defaultStorage()): PuzzleProgress {
   return parseProgress(parsed)
 }
 
+const parseRun = (v: unknown): DayRun | undefined => {
+  const run = v as Partial<DayRun> | null | undefined
+  return run && typeof run.last === 'number' && typeof run.count === 'number'
+    ? { last: run.last, count: run.count, best: count(run.best, run.count), recent: Array.isArray(run.recent) ? run.recent.filter((d) => typeof d === 'number') : undefined }
+    : undefined
+}
+
 /** Progress from stored JSON, with anything missing or malformed set to its default. */
 export function parseProgress(parsed: unknown): PuzzleProgress {
   const raw = (parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}) as Record<string, unknown>
   const current = raw.current as PuzzleProgress['current']
   const daily = raw.daily as PuzzleProgress['daily']
-  const days = raw.days as PuzzleProgress['days']
   const today = raw.today as PuzzleProgress['today']
   const prefs = (raw.prefs ?? {}) as Partial<PuzzleProgress['prefs']>
   const sprintBest = (raw.sprintBest ?? {}) as Record<string, unknown>
@@ -59,10 +76,8 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
     solved: count(raw.solved),
     streak: count(raw.streak),
     bestStreak: count(raw.bestStreak),
-    days:
-      days && typeof days.last === 'number' && typeof days.count === 'number'
-        ? { last: days.last, count: days.count, best: count(days.best, days.count), recent: Array.isArray(days.recent) ? days.recent.filter((d) => typeof d === 'number') : undefined }
-        : undefined,
+    days: parseRun(raw.days),
+    visits: parseRun(raw.visits),
     sprintBest: Object.fromEntries(Object.keys(SPRINT_MODES).flatMap((m) => (typeof sprintBest[m] === 'number' ? [[m, sprintBest[m]]] : []))),
     prefs: { autoNext: prefs.autoNext === true, difficulty: prefs.difficulty && prefs.difficulty in DIFFICULTY ? prefs.difficulty : 'normal' },
     seen: strings(raw.seen),
@@ -90,13 +105,35 @@ export function startRated(progress: PuzzleProgress, line: string): PuzzleProgre
 
 const RECENT_DAYS = 14
 
-/** A puzzle was solved on `day` (a local day): the puzzle streak goes on (or starts again). */
-export function recordDay(progress: PuzzleProgress, day: number): PuzzleProgress {
-  const d = progress.days
-  if (d?.last === day) return progress
+/** A run with `day` in it: one more if it follows the last day, a new run of one after a gap. */
+function stepRun(d: DayRun | undefined, day: number): DayRun {
+  if (d?.last === day) return d
   const count = d && d.last === day - 1 ? d.count + 1 : 1
   const recent = [...(d?.recent ?? []), day].filter((x) => x > day - RECENT_DAYS)
-  return { ...progress, days: { last: day, count, best: Math.max(count, d?.best ?? 0), recent } }
+  return { last: day, count, best: Math.max(count, d?.best ?? 0), recent }
+}
+
+/** A puzzle was solved on `day` (a local day): the puzzle streak goes on (or starts again). */
+export function recordDay(progress: PuzzleProgress, day: number): PuzzleProgress {
+  return progress.days?.last === day ? progress : { ...progress, days: stepRun(progress.days, day) }
+}
+
+/** Rookahead was opened on `day` (a local day): the visit streak goes on (or starts again). */
+export function recordVisit(progress: PuzzleProgress, day: number): PuzzleProgress {
+  return progress.visits?.last === day ? progress : { ...progress, visits: stepRun(progress.visits, day) }
+}
+
+/** Notes today's visit in the stored progress, once a day (on opening, and on coming back to the tab). */
+export function noteVisit(day = localDayNumber(new Date()), storage = defaultStorage()): void {
+  const progress = loadProgress(storage)
+  const next = recordVisit(progress, day)
+  if (next !== progress) saveProgress(next, storage)
+}
+
+/** Days in a row you've opened Rookahead, up to today (0 once a day has been missed). */
+export function visitStreak(progress: PuzzleProgress, today: number): number {
+  const d = progress.visits
+  return d && d.last >= today - 1 ? d.count : 0
 }
 
 /** A mistake puzzle solved on `day`: it leaves the queue, counts for today's plan and keeps the streak. */

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { AvatarFace } from '../../components/UserCard'
-import { changeUsername, openAccountPage, removeAvatar, uploadAvatar, useAccount } from '../../lib/account'
+import { DefaultFace, PIECE_NAMES, chosenPiece, isPhoto, namePiece } from '../../components/DefaultFace'
+import { changeUsername, chooseAvatarPiece, openAccountPage, removeAvatar, uploadAvatar, useAccount } from '../../lib/account'
 import { UsernameField } from '../auth/fields'
 import { Row, Section } from './shared'
 
@@ -101,9 +102,9 @@ export function ProfileSection() {
 
   return (
     <Section title="Profile" lead="How you appear on Rookahead.">
-      <Row label="Photo" hint="A square photo works best. It’s shrunk to a small image before it’s saved.">
+      <Row label="Photo" hint="A square photo works best. It’s shrunk to a small image before it’s saved. Or choose a piece below.">
         <div className="settings-photo">
-          <button className="user-avatar account-photo" onClick={() => picker.current?.click()} disabled={photoBusy} aria-label={avatarUrl ? 'Change photo' : 'Add a photo'}>
+          <button className="user-avatar account-photo" onClick={() => picker.current?.click()} disabled={photoBusy} aria-label={isPhoto(avatarUrl) ? 'Change photo' : 'Add a photo'}>
             <AvatarFace account={account} />
             <span className="account-photo-edit" aria-hidden>
               <svg viewBox="0 0 24 24">
@@ -112,9 +113,9 @@ export function ProfileSection() {
             </span>
           </button>
           <button className="btn ghost small" disabled={photoBusy} onClick={() => picker.current?.click()}>
-            {photoBusy ? 'Saving…' : avatarUrl ? 'Change' : 'Upload'}
+            {photoBusy ? 'Saving…' : isPhoto(avatarUrl) ? 'Change' : 'Upload'}
           </button>
-          {avatarUrl && !photoBusy && (
+          {isPhoto(avatarUrl) && !photoBusy && (
             <button className="btn ghost small" onClick={() => void photo(removeAvatar)}>
               Remove
             </button>
@@ -131,6 +132,28 @@ export function ProfileSection() {
             if (file) void photo(() => uploadAvatar(file))
           }}
         />
+      </Row>
+      {/* No photo: a piece instead. Yours until you choose is the one your username picks. */}
+      <Row label="Piece" hint="Shown wherever a photo would be, when you don’t have one.">
+        <div className="settings-pieces" role="radiogroup" aria-label="Your piece">
+          {PIECE_NAMES.map((piece) => {
+            const on = !isPhoto(avatarUrl) && (chosenPiece(avatarUrl) ?? namePiece(username ?? '')) === piece
+            return (
+              <button
+                key={piece}
+                role="radio"
+                aria-checked={on}
+                aria-label={piece}
+                title={piece[0].toUpperCase() + piece.slice(1)}
+                className={`user-avatar settings-piece ${on ? 'active' : ''}`}
+                disabled={photoBusy}
+                onClick={() => void photo(() => chooseAvatarPiece(piece))}
+              >
+                <DefaultFace name="" piece={piece} />
+              </button>
+            )
+          })}
+        </div>
       </Row>
       {error && <p className="form-error">{error}</p>}
 

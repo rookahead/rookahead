@@ -29,6 +29,9 @@
   --brand-ink: var(--t-on-vivid);
   --brand-card: var(--t-deep);
   --brand-card-text: var(--t-on-deep);
+  /* The coach (Home's pictures, its face at the greeting): white, with dark eyes. */
+  --mascot: #ffffff;
+  --mascot-ink: #17171c;
   --link: var(--t-primary);
   /* Home cards and the sidebar: a clear step up from the page, with a hairline edge to lift them. */
   --card: var(--t-cont);
@@ -74,9 +77,8 @@
 
   --font-ui: 'Cabin Variable', Cabin, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  /* Headings, big numbers and the wordmark. Syne's default figures are old-style (7 and 9 dip
-     below the line, 0 is a round O): anything in it uses lining figures. */
-  --font-display: 'Syne Variable', Syne, var(--font-ui);
+  /* Headings, big numbers and the wordmark. */
+  --font-display: 'Elms Sans Variable', 'Elms Sans', var(--font-ui);
 
   --nav-h: 56px;
   --player-h: 48px;
@@ -106,6 +108,8 @@
 /* Light: the same idea, inverted. The page is a tint of your colour, cards are white on it. */
 :root[data-theme='light'] {
   color-scheme: light;
+  /* White would vanish on the light cards and grey page: the coach is a lilac here, deep enough to show on both. */
+  --mascot: #e9b6fb;
   --bg: var(--t-cont);
   --surface: var(--t-lowest);
   --surface-2: var(--t-low);
@@ -153,7 +157,7 @@
   --dark-piece-glow: none;
 }
 
-/* ═══════════════ Colour themes (Settings → Appearance; Sky is the default) ═══════════════
+/* ═══════════════ Colour themes (Cobalt, the one offered for now; the others wait to be tested again) ═══════════════
    Each theme is one seed colour worked out into tones the way Android's Material You does it
    (material-color-utilities: backgrounds from its Vibrant scheme, so the tint shows; the containers
    from Tonal Spot, as Vibrant turns some neon). Ivory is its Monochrome scheme: no colour at all.
@@ -196,7 +200,6 @@
   --t-osc: #55442a;
 }
 
-:root,
 :root[data-palette='sky'] {
   --t-surface: #0b151a;
   --t-lowest: #060f15;
@@ -218,7 +221,6 @@
   --t-on-deep: #d6ecff;
 }
 
-:root[data-theme='light'],
 :root[data-palette='sky'][data-theme='light'] {
   --t-surface: #f5faff;
   --t-lowest: #ffffff;
@@ -426,24 +428,127 @@
   --t-osc: #2a3320;
 }
 
-/* ═══════════════ Black: true black for AMOLED screens, cards just lifted off it ═══════════════ */
-:root[data-black] {
-  /* No tint here: the greys are plain greys, whatever the colour theme, so the theme's colour is only where it
-     means something and reads stronger for it. They step up as the dark theme's do (sidebar and panels, then
-     cards, then what sits on those), each clear of the black page. */
-  --t-surface: #000000;
-  --t-lowest: #0e0e0e;
-  --t-low: #181818;
-  --t-cont: #1f1f1f;
-  --t-high: #2a2a2a;
-  --t-highest: #363636;
-  --t-on: #e4e4e4;
-  --t-on-var: #c6c6c6;
-  --bg: #000000;
-  --muted: color-mix(in srgb, var(--t-on-var) 72%, #000000);
-  --float-bg: rgba(0, 0, 0, 0.95);
+:root[data-palette='mint'] {
+  --t-surface: #131211;
+  --t-lowest: #0e0d0c;
+  --t-low: #1a1917;
+  --t-cont: #1f1d1a;
+  --t-high: #292724;
+  --t-highest: #33302c;
+  --t-on: #efe9df;
+  --t-on-var: #c4bcae;
+  --t-primary: #8fd6af;
+  --t-on-primary: #0f2b1e;
+  --t-pc: #1f4433;
+  --t-opc: #b8ecd0;
+  --t-sc: #3a3731;
+  --t-osc: #e8e1d4;
+  --t-vivid: #8fd6af;
+  --t-on-vivid: #0f2b1e;
+  --t-deep: #1d3a2b;
+  --t-on-deep: #d3f1e0;
 }
 
+:root[data-palette='mint'][data-theme='light'] {
+  --t-surface: #faf7f1;
+  --t-lowest: #ffffff;
+  --t-low: #f4f0e8;
+  --t-cont: #eee9df;
+  --t-high: #e8e2d7;
+  --t-highest: #e1dbcf;
+  --t-on: #1b1916;
+  --t-on-var: #4d4840;
+  --t-primary: #2e7a54;
+  --t-on-primary: #ffffff;
+  --t-pc: #c7ecd7;
+  --t-opc: #154a31;
+  --t-sc: #e9e2d5;
+  --t-osc: #4d4840;
+}
+
+/* Cobalt (DESIGN.md): neutral blacks, lilac buttons, a blue card with lilac words, a light blue for words in the
+   colour (Color Hunt 1b4ef5 3874ff 5996ff f4ceff, on trial). The one colour for now. */
+:root,
+:root[data-palette='cobalt'] {
+  --t-surface: #111111;
+  --t-lowest: #0b0b0b;
+  --t-low: #111111;
+  --t-cont: #222222;
+  --t-high: #2a2a2a;
+  --t-highest: #333333;
+  --t-on: #ededee;
+  --t-on-var: #bdbdc0;
+  --t-primary: #5996ff;
+  --t-on-primary: #06164d;
+  --t-pc: #0d2a85;
+  --t-opc: #f4ceff;
+  --t-sc: #333333;
+  --t-osc: #e3e3e6;
+  --t-vivid: #f4ceff;
+  --t-on-vivid: #0a1240;
+  --t-deep: #1b4ef5;
+  --t-on-deep: #f4ceff;
+}
+
+/* Light: a neutral grey page (#e4e4e4) and off-white cards (#f7f7f7), no tint in either. */
+:root[data-theme='light'],
+:root[data-palette='cobalt'][data-theme='light'] {
+  --t-surface: #f2f2f2;
+  --t-lowest: #f7f7f7;
+  --t-low: #eeeeee;
+  --t-cont: #e4e4e4;
+  --t-high: #dcdcdc;
+  --t-highest: #d3d3d3;
+  --t-on: #111113;
+  --t-on-var: #44444a;
+  --t-primary: #1b4ef5;
+  --t-on-primary: #ffffff;
+  --t-pc: #dde3ff;
+  --t-opc: #14227a;
+  --t-sc: #e4e6ea;
+  --t-osc: #3f4458;
+}
+
+/* Klein: a deep, saturated blue, on charcoal with the faintest blue in it. */
+:root[data-palette='klein'] {
+  --t-surface: #191a1c;
+  --t-lowest: #131416;
+  --t-low: #202124;
+  --t-cont: #252529;
+  --t-high: #2d2e31;
+  --t-highest: #37373b;
+  --t-on: #e8e9eb;
+  --t-on-var: #bdbdbe;
+  --t-primary: #8ea0ff;
+  --t-on-primary: #0a1240;
+  --t-pc: #222d50;
+  --t-opc: #dfe4ff;
+  --t-sc: #393b41;
+  --t-osc: #e1e4f2;
+  --t-vivid: #4d6bff;
+  --t-on-vivid: #ffffff;
+  --t-deep: #1f2743;
+  --t-on-deep: #e2e6ff;
+}
+
+:root[data-palette='klein'][data-theme='light'] {
+  --t-surface: #efeff0;
+  --t-lowest: #ffffff;
+  --t-low: #e6e7e8;
+  --t-cont: #dfe0e1;
+  --t-high: #d8d8db;
+  --t-highest: #d0d1d4;
+  --t-on: #232428;
+  --t-on-var: #515153;
+  --t-primary: #2440d8;
+  --t-on-primary: #ffffff;
+  --t-pc: #dde3ff;
+  --t-opc: #14227a;
+  --t-sc: #d9dadd;
+  --t-osc: #3f4458;
+}
+
+/* ═══════════════ Base ═══════════════ */
 *,
 *::before,
 *::after {
@@ -671,7 +776,7 @@ svg {
 
 /* ═══════════════ App shell: sidebar + page ═══════════════ */
 :root[data-side='sidebar'] {
-  --side-w: 260px;
+  --side-w: 208px;
 }
 
 :root[data-side='rail'] {
@@ -729,14 +834,16 @@ svg {
   }
 }
 
-/* The mark in your colour: the rook on a tile of it (and "ahead" in it, .wordmark-tail). */
+/* The mark on the site: black and white, a black rook on a square white tile (white on black in the light theme), so
+   it never clashes with the page's colours. (The logo everywhere else, the tab icon and app icons, is the board's two
+   blues.) "ahead" is grey beside it (.wordmark-tail). */
 .brand-logo {
   flex-shrink: 0;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  background: var(--brand);
-  color: var(--brand-ink);
+  border-radius: 0;
+  background: #ffffff;
+  color: #111111;
   display: grid;
   place-items: center;
 }
@@ -746,17 +853,22 @@ svg {
   height: 22px;
 }
 
+:root[data-theme='light'] .brand-logo {
+  background: #111111;
+  color: #ffffff;
+}
+
 /* A floating panel, always the window's height, so the user card at its foot never scrolls away. Fixed, not
    sticky: Chrome repaints a sticky panel at a slightly different sub-pixel spot on each scroll step when the
    page is zoomed, so its thin icons wobbled up and down. The shell keeps its room (--side-w). */
 .sidebar {
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: 0;
+  left: 0;
   z-index: 30;
-  width: 248px;
+  width: 216px;
   box-sizing: border-box;
-  height: calc(100vh - 24px);
+  height: calc(100vh - 12px);
   padding: 16px 12px 12px;
   border-radius: 22px;
   /* No panel of its own: the menu sits on the page, so the page reads as the app's frame and the cards on it as
@@ -793,13 +905,14 @@ svg {
 /* Fade in once there's room (expanding); fade out at once (collapsing). */
 .sidebar-wordmark,
 .sidebar-label,
+.side-badge,
 .soon-tag,
 .user-card-text,
 .user-card-gear {
   transition: opacity 0.2s ease 0.12s, visibility 0s;
 }
 
-.sidebar.rail :is(.sidebar-wordmark, .sidebar-label, .soon-tag, .user-card-text, .user-card-gear) {
+.sidebar.rail :is(.sidebar-wordmark, .sidebar-label, .side-badge, .soon-tag, .user-card-text, .user-card-gear) {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.1s ease, visibility 0s linear var(--side-t);
@@ -810,7 +923,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 0 16px;
+  padding: 0 0 24px;
   white-space: nowrap;
 }
 
@@ -828,66 +941,229 @@ svg {
   letter-spacing: -0.02em;
 }
 
-/* The toggle: a quiet row like the links, above the user card, the arrows at its right end (following the
-   sidebar's edge as it folds) and turning to point the other way on the rail, on the icons' line. */
-.sidebar .sidebar-toggle {
+/* The sidebar's head: the logo, a little taller than the name beside it in two lines (Wordmark.tsx,
+   StackedWordmark), near the bars' left edge; on the rail, on its centre line (36px). */
+.sidebar .sidebar-brand {
+  margin-left: -4px;
+  gap: 6px;
+}
+
+.sidebar.rail .sidebar-brand {
+  margin-left: 1px;
+}
+
+.sidebar .brand-logo {
+  width: 34px;
+  height: 34px;
+}
+
+.sidebar .brand-logo svg {
+  width: 25px;
+  height: 25px;
+}
+
+.wordmark-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.wordmark-stack svg {
+  display: block;
+  height: 12px;
+  width: auto;
+  overflow: visible;
+}
+
+.wordmark-stack .wm-ahead {
+  margin-left: 9px;
+}
+
+/* Black and white, as the tile: ROOK's R and K dimmed, its O's in the text's colour with the coach's eyes in the
+   page's, looking right; AHEAD in the text's colour. */
+.wm-dim {
+  fill: #8c8c90;
+}
+
+:root[data-theme='light'] .wm-dim {
+  fill: #8a8a90;
+}
+
+.wm-eye,
+.wm-ahead {
+  fill: var(--text);
+}
+
+.wm-pupil {
+  fill: var(--bg);
+}
+
+/* Support: one big button over the search, in the heart's pink rather than your colour, its heart and word on
+   the menu's lines (icons at 26px, words at 58px). The sidebar's foot is buttons, not rows: Support, Search, Sign up
+   and Log in are all 40px tall. On the rail, the heart. */
+.sidebar-support {
   flex: none;
-  width: 100%;
-  height: 38px;
-  padding: 0 14px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 14px;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--heart) 14%, transparent);
+  color: var(--heart);
+  font-family: var(--font-ui);
+  font-size: 15.5px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.sidebar .sidebar-toggle:hover {
-  background: var(--surface-3);
-  color: var(--text);
+.sidebar-support:hover {
+  background: color-mix(in srgb, var(--heart) 22%, transparent);
 }
 
-.sidebar-toggle svg {
-  margin-left: auto;
-  transition: transform var(--side-t) var(--side-ease);
-}
-
-.sidebar-toggle .sidebar-label {
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar.rail .sidebar-toggle {
-  gap: 0;
-}
-
-/* Donate: a row like the toggle, over it, in the heart's pink rather than your colour. */
-.sidebar .sidebar-donate {
+.sidebar-support svg {
   flex: none;
-  /* With the foot's 10px gap: 2px, as between the links. */
-  margin-bottom: -8px;
-  height: 38px;
-  color: var(--heart);
-  font-size: 14px;
-}
-
-.sidebar .sidebar-donate:hover {
-  background: color-mix(in srgb, var(--heart) 12%, transparent);
-  color: var(--heart);
-}
-
-.sidebar .sidebar-donate svg {
+  width: 20px;
+  height: 20px;
   fill: currentColor;
 }
 
-/* Collapse's word on Donate's line (past the heart and its gap). */
-.sidebar:not(.rail) .sidebar-toggle .sidebar-label {
-  padding-left: 32px;
-  text-align: left;
+.sidebar.rail .sidebar-support {
+  width: 48px;
+  gap: 0;
 }
 
-.sidebar.rail .sidebar-toggle svg {
-  transform: rotate(180deg);
+.sidebar.rail .sidebar-support .sidebar-label {
+  display: none;
+}
+
+/* Search players: a box over your card; what it finds opens above it. Not on the rail. */
+.player-search {
+  position: relative;
+  flex: none;
+}
+
+.sidebar.rail .player-search {
+  display: none;
+}
+
+.player-search-box {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  height: 40px;
+  padding: 0 12px 0 15.5px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: text;
+}
+
+.player-search-box:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+}
+
+.player-search-box svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.player-search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+
+.player-search-box input::placeholder {
+  color: var(--muted);
+}
+
+.player-search-box input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.player-search-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), var(--card-edge);
+}
+
+.player-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.player-search-item.active {
+  background: var(--surface-3);
+}
+
+.player-search-avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.player-search-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-search-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-search-note {
+  margin: 0;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.4;
 }
 
 /* The solid part of an icon that also has strokes. */
@@ -896,7 +1172,13 @@ svg {
   stroke: none;
 }
 
-.sidebar-toggle svg,
+/* The sidebar's section icons are solid (and the Analysis board's, on its tile in the Tools menu). */
+.sidebar-item svg .icon-solid,
+.icon-tile svg .icon-solid {
+  fill: currentColor;
+  stroke: none;
+}
+
 .sidebar-item svg,
 .tab-item svg,
 .page-header-action svg {
@@ -910,23 +1192,35 @@ svg {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 42px;
+  height: 34px;
   padding: 0 12px 0 14px;
   overflow: hidden;
   white-space: nowrap;
-  border-radius: 11px;
-  color: var(--text-2);
+  border-radius: 8px;
+  /* Every item white off its page. */
+  color: var(--text);
   text-decoration: none;
   font-size: 14.5px;
   font-weight: 550;
-  transition: background 0.12s, color 0.12s;
+  /* No fades: going to a page moves the bar at once. A fade left the icon a frame in the text's colour (the
+     icon's own colour doesn't fade), a dark flash in the light theme. */
+}
+
+/* Tools is a button (it has a menu, no page): dressed as the links, every rule above still winning. */
+:where(button.sidebar-item) {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* An item's own pages, beside the sidebar while it's pointed at. */
@@ -954,6 +1248,16 @@ svg {
   color: var(--text);
   text-decoration: none;
   transition: background 0.12s;
+}
+
+/* Import a game opens a dialog, so it's a button: dressed like the links. */
+button.side-menu-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .side-menu-item:hover,
@@ -1005,6 +1309,78 @@ svg {
   color: var(--text);
 }
 
+/* Game review, Rookahead's main thing: a soft lilac wash, its word and icon in lilac (like Support's pink), and a
+   lilac count of this week's games not reviewed yet. On its own page it's filled like any page you're on. */
+.sidebar-item.review-item:not(.active) {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
+}
+
+.sidebar-item.review-item:not(.active):hover {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.sidebar-item.review-item:not(.active) svg {
+  color: var(--brand);
+}
+
+/* Light: the Play online card's pale blue under its navy words, and the count in the same navy. */
+:root[data-theme='light'] .sidebar-item.review-item:not(.active) {
+  background: #d9e1ff;
+  color: #0d1b5e;
+}
+
+:root[data-theme='light'] .sidebar-item.review-item:not(.active):hover {
+  background: #c3cfff;
+}
+
+:root[data-theme='light'] .sidebar-item.review-item:not(.active) svg {
+  color: #0d1b5e;
+}
+
+:root[data-theme='light'] .side-badge {
+  background: #0d1b5e;
+  color: #ffffff;
+}
+
+/* The count: a lilac pill at the row's end, room for "99+". */
+.side-badge {
+  flex: none;
+  margin-left: auto;
+  min-width: 22px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font: 700 12px/20px var(--font-ui);
+  text-align: center;
+}
+
+/* The page you're on: a deeper lilac (#7f509b, the buttons' hue darkened) under the same white word and icon, so only
+   the background changes. */
+.sidebar-item.active,
+.sidebar-item.active:hover {
+  background: #7f509b;
+  color: #ffffff;
+}
+
+.sidebar-item.active svg {
+  color: #ffffff;
+}
+
+/* Light: the page you're on is a card-coloured pill under the same dark word, nothing louder. */
+:root[data-theme='light'] .sidebar-item.active,
+:root[data-theme='light'] .sidebar-item.active:hover {
+  background: var(--card);
+  color: var(--text);
+}
+
+:root[data-theme='light'] .sidebar-item.active svg {
+  color: var(--text);
+}
+
 .sidebar-item.soon {
   color: var(--muted);
   opacity: 0.6;
@@ -1032,7 +1408,7 @@ svg {
 .sidebar .user-card {
   flex: none;
   box-sizing: border-box;
-  width: 224px;
+  width: 192px;
 }
 
 /* The bar at the top of a page: title and actions (on phones also the logo and the avatar). */
@@ -1453,7 +1829,6 @@ svg {
 .player-avatar.white {
   background: var(--white-piece);
   color: var(--black-piece);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
 .player-avatar.black {
@@ -1809,6 +2184,45 @@ svg {
   from {
     transform: translate(var(--badge-x), var(--badge-y)) scale(0.4);
     opacity: 0;
+  }
+}
+
+/* A ring in the verdict's colour pulses out over the square as its badge lands. */
+.board-badge .badge-ring {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, #fff 70%, var(--ring));
+  background: radial-gradient(circle, color-mix(in srgb, var(--ring) 55%, transparent) 0 52%, transparent 70%);
+  opacity: 0;
+  animation: badge-ring 0.6s ease-out calc(var(--slide-ms) * 0.6) both;
+}
+
+.board-badge.late .badge-ring {
+  animation-delay: 0s;
+}
+
+.board-badge.legendary .badge-ring {
+  animation-delay: var(--slide-ms);
+}
+
+@keyframes badge-ring {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-badge .badge-ring {
+    display: none;
   }
 }
 
@@ -3331,6 +3745,45 @@ button.explain-row {
   color: var(--muted);
 }
 
+/* What each side earned, under its accuracy: its medals, stacked. */
+.faceoff-row.medals {
+  align-items: center;
+  margin-top: 10px;
+  --medal-edge: var(--surface);
+}
+
+.faceoff-medals {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Medals overlapping, the rarest in front; each edged in the background behind it so they stay apart. */
+.medal-stack {
+  --medal-edge: var(--card);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.faceoff-row.medals .medal-stack {
+  --medal-edge: inherit;
+}
+
+.medal-stack-item {
+  position: relative;
+  display: block;
+}
+
+.medal-icon {
+  display: block;
+}
+
+.medal-stack-more {
+  margin-left: 4px;
+  font-weight: 600;
+}
+
 .grades {
   display: flex;
   flex-direction: column;
@@ -4709,7 +5162,8 @@ button.explain-row {
   /* Centred in the space beside the sidebar, not hugging it, on wide screens. */
   margin-inline: auto;
   box-sizing: border-box;
-  padding: 26px var(--pad-x) 48px 12px;
+  /* The same room either side, so the columns sit in the middle of the space beside the sidebar. */
+  padding: 26px 20px 48px;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -4836,8 +5290,40 @@ button.explain-row {
 }
 
 .home-streak-count.lit {
-  background: color-mix(in srgb, var(--streak) 14%, var(--card));
-  color: var(--streak);
+  background: var(--card);
+  color: var(--text);
+}
+
+.home-streak-count.lit:hover {
+  background: var(--card-hover);
+}
+
+/* The visit streak in the widgets' look: a card, the flame in their green, the number in white. */
+.home-streak-count .flame.lit {
+  fill: var(--goal-done);
+}
+
+.home-streak-count .streak-week i.lit {
+  background: var(--goal-done);
+}
+
+/* Everything on the pill's middle line: Cabin's digits sit a pixel high at line-height 1, so the number comes down
+   one; the flame's own drawing leaves room on its left, so the right side gets the same. */
+.home-streak-count b {
+  translate: 0 1px;
+}
+
+.home-streak-count.lit {
+  padding-right: 14px;
+}
+
+.home-streak-count .flame {
+  translate: 0 -0.5px;
+}
+
+/* One solid green, no lighter core. */
+.home-streak-count .flame.lit .flame-core {
+  fill: var(--goal-done);
 }
 
 /* The coach at the top of Home: its face, and the greeting beside it. */
@@ -4875,11 +5361,7 @@ button.explain-row {
 }
 
 .coach-face-head {
-  fill: color-mix(in srgb, var(--brand) 22%, #fff);
-}
-
-:root[data-theme='light'] .coach-face-head {
-  fill: color-mix(in srgb, var(--brand) 38%, #fff);
+  fill: var(--mascot);
 }
 
 .coach-face-eyes {
@@ -4887,10 +5369,7 @@ button.explain-row {
 }
 
 .coach-face-eye {
-  fill: #17171c;
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: scale 0.08s ease-out;
+  transition: scale 0.2s ease-out;
 }
 
 .coach-face-happy {
@@ -4906,96 +5385,6 @@ button.explain-row {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.review-card-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.review-card-actions .btn {
-  height: 42px;
-  border-radius: 12px;
-  gap: 8px;
-}
-
-.review-card-actions .home-review {
-  flex: 1;
-}
-
-.review-card-actions .skel-button {
-  flex: 1;
-}
-
-.review-card-actions .btn svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.review-card-actions .btn svg .filled {
-  fill: currentColor;
-  stroke: none;
-}
-
-/* Desktop Home's first card on the right: the ways into a review, with how many games wait for one. It stands out
-   in the brand's tint, with the review mark large and faint behind its words. */
-.home-card.review-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  background: color-mix(in srgb, var(--brand) 28%, var(--card));
-}
-
-.review-card::after {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  right: -14px;
-  top: -18px;
-  width: 120px;
-  height: 120px;
-  background: color-mix(in srgb, var(--brand) 22%, transparent);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z'/%3E%3C/svg%3E") center / contain no-repeat;
-  rotate: -10deg;
-  pointer-events: none;
-}
-
-.review-card .btn.ghost {
-  background: color-mix(in srgb, var(--text) 9%, transparent);
-}
-
-.review-card h2 {
-  font: 750 19px/24px var(--font-display);
-  letter-spacing: -0.02em;
-}
-
-.review-card small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.review-card .quick-lines {
-  display: block;
-}
-
-.home-review {
-  background: var(--brand);
-  color: var(--brand-ink);
-  font-weight: 650;
-}
-
-.home-review:hover {
-  filter: brightness(1.08);
 }
 
 .home-card {
@@ -5183,6 +5572,14 @@ button.explain-row {
   --tile: var(--tone-violet);
 }
 
+.icon-tile.editor {
+  --tile: var(--tone-amber);
+}
+
+.icon-tile.import {
+  --tile: var(--tone-blue);
+}
+
 .quick-card strong {
   display: block;
   font-size: 15.5px;
@@ -5338,188 +5735,6 @@ button.explain-row {
   stroke-linejoin: round;
 }
 
-/* Home's Play card (HomePlay.tsx): an online game at the time you last picked, a press away, with the computer
-   and a friend under it. Its parts keep their height whatever the card has to say. */
-.home-play {
-  /* The card, its ink, and the button on it. Dark themes: the deep tone under a bright button. */
-  --play-card: var(--brand-card);
-  --play-ink: var(--brand-card-text);
-  --play-btn: var(--brand);
-  --play-btn-ink: var(--brand-ink);
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: var(--play-card);
-  color: var(--play-ink);
-}
-
-/* Behind it all: a board's corner in the card's own, fading out before it reaches the words. */
-.home-play::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  right: 0;
-  width: 264px;
-  height: 176px;
-  background: color-mix(in srgb, var(--play-ink) 9%, transparent);
-  /* The squares are a mask (a drawn checker, as gradients of squares came out as triangles in Firefox), cut again
-     by the fade. */
-  mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'%3E%3Cpath d='M0 0h1v1H0zM1 1h1v1H1z'/%3E%3C/svg%3E") 100% 0 / 88px 88px,
-    radial-gradient(farthest-side at 100% 0, #000 30%, transparent 100%);
-  mask-composite: intersect;
-  pointer-events: none;
-}
-
-/* Light themes: the strong colour itself, with a pale button, or the card would be the palest thing on the page. */
-:root[data-theme='light'] .home-play {
-  --play-card: var(--brand);
-  --play-ink: var(--brand-ink);
-  --play-btn: var(--brand-card);
-  --play-btn-ink: var(--brand-card-text);
-}
-
-.home-play-head {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.home-play-head .quick-lines {
-  flex: 1;
-}
-
-.home-play-head h2 {
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 30.45px;
-  letter-spacing: -0.025em;
-}
-
-.home-play-head small {
-  overflow: hidden;
-  font-size: 13px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0.76;
-}
-
-.home-play-rated {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
-}
-
-/* On the filled card everything is the card's ink, or a wash of it. */
-.home-play .switch-track {
-  background: color-mix(in srgb, var(--play-ink) 22%, transparent);
-}
-
-.home-play .switch-track::after {
-  background: var(--play-ink);
-}
-
-.home-play .switch input:checked + .switch-track {
-  background: var(--play-btn);
-}
-
-.home-play .switch input:checked + .switch-track::after {
-  background: var(--play-btn-ink);
-}
-
-/* The time picked (it opens the others), or a line or two in its place. */
-.home-play-mid {
-  height: 52px;
-}
-
-.home-play-mid.says {
-  display: flex;
-  align-items: center;
-}
-
-.home-play-mid p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 18px;
-  opacity: 0.8;
-}
-
-.home-play-time {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px 0 16px;
-  border: 0;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--play-ink) 11%, transparent);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.home-play-time:hover {
-  background: color-mix(in srgb, var(--play-ink) 18%, transparent);
-}
-
-.home-play-time strong {
-  font: 700 19px var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.home-play-time span {
-  flex: 1;
-  font-size: 14px;
-  opacity: 0.76;
-}
-
-.home-play-time svg {
-  width: 20px;
-  height: 20px;
-}
-
-.home-play-by {
-  margin: -2px 0 -4px;
-  font-size: 12.5px;
-  line-height: 18px;
-  text-align: center;
-  opacity: 0.7;
-}
-
-.home-play .home-play-go {
-  width: 100%;
-  height: 54px;
-  margin-top: 0;
-  border-radius: 14px;
-  background: var(--play-btn);
-  color: var(--play-btn-ink);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-/* The tiles under it (HomePlay.tsx, HomeTiles): a title, a line, and a picture rising from the foot. */
-.home-tiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-/* An odd tile out takes the whole row. */
-.home-tiles > :last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
 .home-tile {
   position: relative;
   height: 172px;
@@ -5548,32 +5763,6 @@ button.explain-row {
   text-overflow: ellipsis;
 }
 
-/* Between you and a friend: "vs", huge and faint, behind the two faces. */
-.home-tile-mark {
-  position: absolute;
-  inset: auto 0 2px;
-  color: color-mix(in srgb, var(--text) 6%, transparent);
-  font: 800 104px/1 var(--font-display);
-  letter-spacing: -0.06em;
-  text-align: center;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Under the rook and the puzzle piece: a board's squares, fading up into the tile. */
-.home-tile.on-board::before {
-  content: '';
-  position: absolute;
-  inset: auto 0 0;
-  height: 96px;
-  background: color-mix(in srgb, var(--text) 5%, transparent);
-  mask:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 2'%3E%3Cpath d='M0 0h1v1H0zM1 1h1v1H1z'/%3E%3C/svg%3E") 50% 100% / 64px 64px,
-    linear-gradient(to top, #000 10%, transparent 100%);
-  mask-composite: intersect;
-  pointer-events: none;
-}
-
 .home-tile small {
   overflow: hidden;
   color: var(--muted);
@@ -5592,178 +5781,111 @@ button.explain-row {
   pointer-events: none;
 }
 
-/* Desktop Puzzles' start page (puzzles/Start.tsx): the coach's word, rated puzzles as the big card, the other modes
-   as Home's picture tiles. */
+/* Desktop Puzzles' start page (puzzles/Start.tsx): rated puzzles as the big card, the other modes as Home's picture
+   tiles, straight on the page like Play's front: no panel round them, starting level with the board and ending
+   with it. */
 .puzzle-start {
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  height: var(--board-size);
+  margin-top: calc(var(--player-h) + 10px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 4px 16px 16px;
+  gap: 13px;
   overflow-y: auto;
+  scrollbar-width: none;
 }
 
-/* The coach speaks in a bubble: its line stands on its own, not in a row with other words. */
+/* The cards keep their height on a short window; the column scrolls instead. */
+.puzzle-start > * {
+  flex-shrink: 0;
+}
+
+.puzzle-front .panel-card {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+/* The coach over the board, in the room a player's bar has on Play: Home's greeting (its face, one plain line). The
+   board stays where it was. */
+.puzzle-layout.puzzle-front .play-board {
+  justify-content: flex-start;
+}
+
+.puzzle-front .puzzle-above {
+  height: var(--player-h);
+}
+
 .start-coach {
+  height: 100%;
+}
+
+/* Puzzles' four modes: Home's tiles, square, two by two. */
+.start-grid.home-grid .home-tile {
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* Rated puzzles in Play online's blues: your rating big at the foot, the bar to the next hundred in the button's blue. */
+.puzzle-front .start-grid .rated-tile {
+  background: var(--pc-card);
+  color: var(--pc-ink);
+}
+
+.puzzle-front .start-grid .rated-tile:hover {
+  background: color-mix(in srgb, var(--pc-card) 92%, #fff);
+}
+
+.start-grid.home-grid .rated-tile small {
+  color: var(--pc-soft);
+}
+
+.rated-score {
+  position: absolute;
+  inset: auto 16px 16px;
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  /* The rook's face takes the panel's colour. */
-  --surface: var(--surface);
-}
-
-.start-coach-rook {
-  flex: none;
-  width: 54px;
-  height: 63px;
-}
-
-.start-bubble {
-  flex: 1;
-  margin: 0 0 16px;
-  padding: 12px 15px;
-  border-radius: 16px 16px 16px 4px;
-  background: var(--text);
-  color: var(--bg);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
-.start-solve {
+  flex-direction: column;
   gap: 10px;
 }
 
-.start-score {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.start-rating {
+.start-grid.home-grid .rated-num {
+  overflow: visible;
   font: 800 34px/1 var(--font-display);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.start-track {
+.rated-track {
   height: 6px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--play-ink) 16%, transparent);
+  border-radius: 3px;
+  background: var(--pc-control);
   overflow: hidden;
 }
 
-.start-track span {
+.rated-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--play-btn);
-}
-
-.start-to {
-  font-size: 13px;
-  opacity: 0.75;
-}
-
-.start-solve .home-play-go {
-  margin-top: 4px;
-  display: grid;
-  place-items: center;
-  text-decoration: none;
-}
-
-.start-tiles {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.start-tiles .home-tile {
-  height: 150px;
-  padding: 14px;
-}
-
-/* A mode's full name in two weights: the plain word small, the one that names it big. */
-.tile-name {
-  display: flex;
-  flex-direction: column;
-}
-
-.tile-name span {
-  font: 600 12.5px/16px var(--font-ui);
-  letter-spacing: 0;
-  color: var(--muted);
-}
-
-.start-tiles .tile-board .mini-board,
-.start-tiles .tile-board-blank {
-  width: 84px;
-  height: 84px;
-  /* Lower than Home's, clear of the tile's two-line name and its date. */
-  translate: 0 30px;
+  background: var(--pc-go);
 }
 
 /* Sprint: a bolt, in the puzzles' own colour. */
 .tile-bolt svg {
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   fill: var(--tone-blue);
   rotate: 10deg;
-  translate: 0 22px;
+  translate: 0 -6px;
 }
 
-/* Your mistakes waiting: the number, big, a step smaller for each digit past two so it always fits the tile. */
-.tile-count {
-  position: absolute;
-  inset: auto 0 6px;
-  color: var(--danger);
-  font: 800 46px/1 var(--font-display);
-  letter-spacing: -0.04em;
-  text-align: center;
-  pointer-events: none;
+/* Play's and Puzzles' fronts are panels with no card round them: their tiles are Home's, in the cards' own colour. */
+:is(.play-hub, .puzzle-front) .home-tile {
+  background: var(--card);
 }
 
-.start-tiles .home-tile {
-  /* The count's size follows the tile's width (cqw), which changes with the window. */
-  container-type: inline-size;
-}
-
-.tile-count.digits-3 {
-  font-size: min(36px, 25cqw);
-}
-
-.tile-count.digits-4 {
-  font-size: min(30px, 24cqw);
-}
-
-/* Picture tiles inside a panel (Play's front, Puzzles' start): a step off the panel, which on light themes is
-   the same white as a card. */
-.panel .home-tile {
-  background: var(--surface-2);
-}
-
-.panel .home-tile:hover {
-  background: var(--surface-3);
-}
-
-/* A friend: you and whoever it'll be, face to face. */
-.tile-friend {
-  align-items: center;
-  gap: 14px;
-}
-
-.tile-friend .player-avatar {
-  width: 48px;
-  height: 48px;
-  font-size: 19px;
-}
-
-.tile-friend .player-avatar:first-child {
-  background: var(--brand);
-  color: var(--brand-ink);
-  box-shadow: none;
+:is(.play-hub, .puzzle-front) .home-tile:hover {
+  background: var(--card-hover);
 }
 
 /* The computer: Rookahead's rook, looking up over the tile's foot. */
@@ -5774,11 +5896,11 @@ button.explain-row {
 }
 
 .tile-rook path {
-  fill: var(--brand);
+  fill: var(--mascot);
 }
 
 .tile-rook ellipse {
-  fill: var(--brand-ink);
+  fill: var(--mascot-ink);
 }
 
 /* Today's puzzle: its board, tipped, the far half below the tile's foot. */
@@ -5980,27 +6102,15 @@ button.explain-row {
   }
 }
 
-/* Desktop Home's widgets (HomeWidgets.tsx): your goals and numbers, five to a row, then a slim strip that edits
-   the row. Every tile is the same shape: a picture, a name, a line. */
-.widgets {
-  --widget-w: 126px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.widget-row {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-}
-
+/* Desktop Home's widgets (HomeWidgets.tsx): five goals and numbers across the column. Every tile is the same
+   shape: a picture, a name, a line. Pointed at, a tile shows its swap button; nothing moves. */
 .widget-grid {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .plan-tile.widget {
@@ -6012,7 +6122,25 @@ button.explain-row {
   background: var(--card-hover);
 }
 
-/* The whole tile is the way in; the pencil and the stepper sit above it. */
+/* Arranging the row: the tile you hold rides on top of the others, a little raised, under a closed hand. */
+.widget-grid.arranging,
+.widget-grid.arranging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.plan-tile.widget.dragging {
+  z-index: 3;
+  scale: 1.04;
+  background: var(--card-hover);
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+.plan-tile.widget.dragging .widget-pencil {
+  opacity: 0;
+}
+
+/* The whole tile is the way in; the pencil sits above it. */
 .widget-hit {
   position: absolute;
   inset: 0;
@@ -6028,253 +6156,222 @@ button.explain-row {
   outline-offset: 2px;
 }
 
-.widget-pencil,
-.widget-tools button,
-.widget-step button {
-  position: relative;
+/* The pencil: round, in the tile's corner while you point at it (or reach it by keyboard).
+   It opens the widget's dialog. */
+.widget-pencil-wrap {
+  position: absolute;
+  top: 7px;
+  right: 7px;
   z-index: 2;
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+}
+
+.widget-pencil {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text-2);
-  font: 700 15px/1 var(--font-ui);
   cursor: pointer;
-}
-
-.widget-pencil:hover,
-.widget-tools button:hover:not(:disabled),
-.widget-step button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--text) 18%, transparent);
-  color: var(--text);
-}
-
-.widget-tools button:disabled,
-.widget-step button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.widget-pencil svg,
-.widget-tools svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* A goal's pencil shows while you point at its tile (or reach it with the keyboard). */
-.widget-pencil {
-  position: absolute;
-  top: 7px;
-  right: 7px;
   opacity: 0;
   transition: opacity 0.12s;
 }
 
 .widget:hover .widget-pencil,
-.widget-pencil:focus-visible,
-.widget-pencil.on {
+.widget-pencil:focus-visible {
   opacity: 1;
 }
 
-.widget-pencil.on {
-  background: var(--goal-done);
-  color: #0b2a16;
-}
-
-/* Setting a target: the tile's line becomes − n +. */
-.widget-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.widget-step b {
-  min-width: 18px;
-  font: 700 15px/17px var(--font-ui);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-/* Editing the row: each tile can move or go, and the row shows it's open to change. */
-.widgets.editing .plan-tile.widget {
-  padding-top: 36px;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 55%, transparent);
-}
-
-/* The tools take the tile's top, so its picture steps down and a little smaller while you edit. */
-.widgets.editing .widget > :is(.goal-board, .goal-icon, .step-ring, .stat-pic, .rating-move) {
-  zoom: 0.72;
-}
-
-.widget-tools {
-  position: absolute;
-  top: 7px;
-  left: 7px;
-  right: 7px;
-  z-index: 2;
-  display: flex;
-  gap: 4px;
-}
-
-.widget-tools .remove {
-  margin-left: auto;
-}
-
-/* The row's own control: a slim dashed strip at its end that opens the row for editing, solid while it's open. */
-.widget-edit {
-  flex: none;
-  width: 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
-  border: 1.5px dashed color-mix(in srgb, var(--text) 20%, transparent);
-  border-radius: 14px;
-  background: none;
-  color: var(--muted);
-  font: 600 13.5px var(--font-ui);
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
-}
-
-.widget-edit:hover {
-  border-color: var(--brand);
+.widget-pencil:hover {
+  background: color-mix(in srgb, var(--text) 18%, transparent);
   color: var(--text);
 }
 
-.widget-edit:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.widget-edit.on {
-  border: 0;
-  background: var(--brand);
-  color: var(--brand-ink);
-}
-
-.widget-edit.wide {
-  width: var(--widget-w);
-  height: 136px;
-}
-
-.widget-edit svg {
-  width: 18px;
-  height: 18px;
+.widget-pencil svg {
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.2;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-/* What you can add, under the row while it's open. */
-.widget-tray {
-  padding: 14px 16px 16px;
+/* The pencil's dialog: a centred title, the widget's choices as rows (the one it has now
+   outlined in the buttons' lilac), then the widgets to swap it for, as tiles. */
+.widget-dialog {
+  width: min(452px, calc(100vw - 32px));
+  border-radius: 20px;
 }
 
-.widget-tray-head {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: 13.5px;
+.widget-dialog-head {
+  position: relative;
+  padding: 22px 56px 18px;
+  text-align: center;
 }
 
-.widget-picks {
-  list-style: none;
+.widget-dialog-head h2 {
   margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
+  font: 700 18px/24px var(--font-display);
 }
 
-.widget-picks button {
-  width: 100%;
-  height: 100%;
+.widget-dialog-head .icon-btn {
+  position: absolute;
+  top: 16px;
+  right: 14px;
+}
+
+.widget-dialog-head .icon-btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.widget-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 0;
+  padding: 0 20px 22px;
+  overflow-y: auto;
+}
+
+/* A goal's own number: − n +, the number large between. */
+.widget-picker {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
+  gap: 12px;
+  height: 84px;
+  padding: 0 12px;
+  border-radius: 16px;
   background: var(--surface-3);
+}
+
+.widget-picker span {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-2);
+  font: 600 15px/1 var(--font-ui);
+}
+
+.widget-picker b {
   color: var(--text);
-  font: inherit;
-  text-align: left;
+  font: 700 40px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.widget-picker button {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--brand);
+  color: var(--brand-ink);
   cursor: pointer;
 }
 
-.widget-picks button:hover:not(:disabled) {
-  background: var(--surface-4);
+.widget-picker button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 88%, #fff);
 }
 
-.widget-picks button:disabled {
-  opacity: 0.5;
+.widget-picker button:disabled {
+  background: var(--surface-4);
+  color: var(--muted);
   cursor: default;
 }
 
-.widget-picks button:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.widget-kind {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
-  color: var(--brand);
-}
-
-.widget-kind.goal {
-  background: color-mix(in srgb, var(--goal-done) 18%, transparent);
-  color: var(--goal-done);
-}
-
-.widget-kind svg {
-  width: 14px;
-  height: 14px;
+.widget-picker svg {
+  width: 22px;
+  height: 22px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2.6;
   stroke-linecap: round;
 }
 
-.widget-pick-text {
-  min-width: 0;
+.widget-choices {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 8px;
 }
 
-.widget-pick-text b {
-  font-size: 14px;
-  font-weight: 650;
+.widget-choice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  height: 60px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1.5px transparent;
+  color: var(--text-2);
+  font: 600 15px/60px var(--font-ui);
+  text-align: left;
+  cursor: pointer;
 }
 
-.widget-pick-text small {
+.widget-choice:hover {
+  background: var(--surface-4);
+}
+
+.widget-choice b {
+  font: 700 30px/60px var(--font-display);
+  color: var(--text);
+}
+
+.widget-choice svg {
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.widget-choice small {
+  margin-left: auto;
   color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.35;
+  font-size: 14px;
 }
 
-/* A number's picture: the number large, and what's under it (accuracy's bars, Legendary's mark, the puzzle piece). */
+.widget-choice.on {
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+}
+
+.widget-choice.on,
+.widget-choice.on b,
+.widget-choice.on small {
+  color: var(--brand);
+}
+
+.widget-dialog-part h3 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font: 600 13px/1 var(--font-ui);
+}
+
+.widget-swaps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.widget-dialog .plan-tile.widget {
+  position: relative;
+  width: auto;
+}
+
+/* A number's picture: the number large. */
 .stat-pic {
   height: 60px;
   display: flex;
@@ -6296,39 +6393,6 @@ button.explain-row {
 
 .stat-pic b.phase {
   color: var(--warn);
-}
-
-.stat-pic.legendary {
-  flex-direction: row;
-  gap: 8px;
-}
-
-.stat-pic.puzzle-rating {
-  gap: 4px;
-}
-
-.stat-pic.puzzle-rating svg {
-  width: 20px;
-  height: 20px;
-  fill: var(--tone-amber);
-}
-
-.stat-bars {
-  width: 64px;
-  height: 14px;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.stat-bars i {
-  flex: 1;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--brand) 35%, transparent);
-}
-
-.stat-bars i.last {
-  background: var(--brand);
 }
 
 /* A widget's tile (HomeWidgets.tsx): its picture on top, its name and line at the foot. */
@@ -6389,7 +6453,7 @@ button.explain-row {
   height: 60px;
 }
 
-/* A one-off goal's icon: large and filled, in the brand colour, then green with a tick once it's done. */
+/* A one-off goal's icon: large and filled, in the widgets' green (the rings' colour), with a tick once it's done. */
 .goal-icon {
   position: relative;
   flex: none;
@@ -6398,13 +6462,19 @@ button.explain-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--brand);
+  color: var(--goal-done);
 }
 
 .goal-icon svg {
   width: 46px;
   height: 46px;
   fill: currentColor;
+}
+
+/* Today's date on the daily puzzle's calendar page, cut out of it. */
+.daily-date {
+  font: 800 7.6px/1 var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .goal-icon.play svg {
@@ -6422,25 +6492,6 @@ button.explain-row {
 .goal-icon .goal-check {
   right: 2px;
   bottom: 4px;
-}
-
-/* The daily puzzle's goal: today's position, small, with a tick on its corner once solved or tried. */
-.goal-board {
-  position: relative;
-  flex: none;
-  width: 56px;
-  height: 56px;
-  margin-top: 2px;
-}
-
-.goal-board > .mini-board,
-.goal-board > .skel {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  rotate: -6deg;
 }
 
 .goal-check {
@@ -6477,11 +6528,11 @@ button.explain-row {
 }
 
 .rating-move svg {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 3;
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -6536,6 +6587,924 @@ button.explain-row {
 
 .step-ring.done text {
   fill: var(--goal-done);
+}
+
+/* ═══════════════ Desktop Home (DESIGN.md) ═══════════════
+   A 720px main column, a 48px gap, a 360px right column. Flat charcoal cards, one white card (Game review) and one
+   navy card (Play online). Cards answer the pointer: each lifts a little, its picture moves (a board tips, bars rise,
+   a piece makes its move, the coach stands up). Nothing moves on its own when the page arrives. */
+@container page (min-width: 920px) {
+  .home {
+    max-width: 1168px;
+    padding-top: 36px;
+    column-gap: 48px;
+  }
+
+  .home-main {
+    flex: 1 1 0;
+    gap: 24px;
+  }
+
+  .home-main > .games-card {
+    margin-top: 4px;
+  }
+
+  .home-side {
+    flex: 0 0 360px;
+    gap: 13px;
+    top: 36px;
+    max-height: calc(100vh - 72px);
+    border-radius: 16px;
+  }
+
+  .home > .home-footer {
+    flex: 0 0 calc(100% - 360px - 48px);
+  }
+
+  .home .home-card {
+    border-radius: 16px;
+  }
+
+  .home .games-card {
+    padding: 18px 12px 6px;
+  }
+
+  .home .games-card .home-card-head {
+    padding: 0 12px 8px;
+  }
+
+  .home .games-card .home-card-head h2 {
+    font: 700 19px/24px var(--font-display);
+  }
+
+  .home .games-card .see-all {
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+/* The greeting, plain: the coach, then one line, the coach's word for today, typed out from
+   the left as the page opens (and when the word changes), as if the coach were writing it (Home.tsx, TypedLine). */
+.home-top .home-coach {
+  gap: 14px;
+}
+
+.home-top .home-coach-face {
+  width: 48px;
+  height: 48px;
+}
+
+.home-top .home-welcome {
+  margin-top: 0;
+}
+
+.home-top .home-welcome h1 {
+  font: 600 14px/20px var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* The typed letters are the heading's own words: not the grey, smaller line spans under a greeting take. */
+.home-top .home-welcome h1 span {
+  color: inherit;
+  font: inherit;
+}
+
+.typed-rest {
+  visibility: hidden;
+}
+
+/* The streak: pointed at, the flame leans in and this week's days open beside the count. */
+.home-streak-count {
+  height: 36px;
+  gap: 8px;
+  padding: 0 13px 0 11px;
+  border-radius: 12px;
+  transition: background 0.18s;
+}
+
+.home-streak-count b {
+  font-size: 15px;
+}
+
+.home-streak-count svg {
+  transition: scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), rotate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.home-streak-count:hover svg {
+  scale: 1.18;
+  rotate: -8deg;
+}
+
+.streak-week {
+  display: flex;
+  gap: 4px;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 0.35s ease-out, opacity 0.2s, margin 0.35s ease-out;
+}
+
+.home-streak-count:hover .streak-week,
+.home-streak-count:focus-visible .streak-week {
+  max-width: 90px;
+  margin-left: 2px;
+  opacity: 1;
+}
+
+.streak-week i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.streak-week i.lit {
+  background: currentColor;
+}
+
+/* The widgets: five across the column, 128px tall. */
+.plan-tile.widget {
+  height: 128px;
+  padding: 12px 8px 12px;
+  border-radius: 16px;
+  transition: background 0.18s;
+}
+
+.plan-tile.widget strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 19px;
+}
+
+.plan-tile.widget small {
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.widget .stat-pic b {
+  font: 700 32px/1 var(--font-display);
+}
+
+.widget .rating-move b {
+  font: 700 32px/1 var(--font-display);
+}
+
+.widget .rating-move svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* Rating: the change, still; under it the speed's icon before where your rating stands. */
+.widget-speed {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  fill: currentColor;
+}
+
+/* A corner of a board, for the cards' pictures (HomeArt.tsx). */
+.art-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+
+.art-board i {
+  display: block;
+  transition: background 0.25s 0.3s;
+}
+
+/* The cards' pieces (HomeArt.tsx CardPiece): the board's own (pieces.css), shrunk about the square's centre so they
+   sit in the middle of their square. */
+.card-piece {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-size: 100% 100%;
+  transform: scale(0.82);
+  transform-origin: 50% 50%;
+}
+
+.art-board.brand i.light {
+  background: color-mix(in srgb, var(--brand) 22%, #fff);
+}
+
+.art-board.brand i.dark {
+  background: var(--brand);
+}
+
+/* In your board's colours (--sq-light, --sq-dark): Home's Puzzles tile. */
+.art-board.squares i.light {
+  background: var(--sq-light);
+}
+
+.art-board.squares i.dark {
+  background: var(--sq-dark);
+}
+
+.art-board.quiet i.light {
+  background: color-mix(in srgb, var(--text) 15%, var(--card));
+}
+
+.art-board.quiet i.dark {
+  background: color-mix(in srgb, var(--text) 7%, var(--card));
+}
+
+.art-piece {
+  position: absolute;
+  aspect-ratio: 1;
+  /* Eases into its square and stops there, no overshoot. */
+  transition: translate 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:is(.home-tile, .play-card):hover .art-piece.moves {
+  translate: var(--to-x) var(--to-y);
+}
+
+.puzzle-tile:hover .art-board i.flash {
+  background: color-mix(in srgb, var(--danger) 75%, transparent);
+}
+
+/* One blue in three steps, all of it saturated: a deep card (21% light), the controls a step lighter (31%), and the
+   button in the palette's bright blue (61%), the one bright thing on it. Home's Play online and welcome cards, Play's
+   online card, and Puzzles' rated tile. */
+.home-card.play-card,
+.home-hero,
+.rated-tile {
+  --pc-card: #00206b;
+  --pc-control: #002f9e;
+  --pc-go: #3874ff;
+  --pc-ink: #ffffff;
+  --pc-go-ink: #ffffff;
+  --pc-soft: #88a2dd;
+}
+
+/* Light: the same three steps turned pale (a soft blue card, the controls a step deeper, navy words), and the button
+   the one strong blue on it, in white. */
+:root[data-theme='light'] :is(.home-card.play-card, .home-hero, .rated-tile) {
+  --pc-card: #d9e1ff;
+  --pc-control: #c3cfff;
+  --pc-go: #1b4ef5;
+  --pc-ink: #0d1b5e;
+  --pc-go-ink: #ffffff;
+  --pc-soft: #2f4fc9;
+}
+
+/* Play online, big for easy reading: how many are on Lichess, your time and rated or casual side by side, Start, and
+   whose games these are. */
+.home-card.play-card {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--pc-card);
+  color: var(--pc-ink);
+}
+
+.play-card-head {
+  margin-bottom: 24px;
+}
+
+.play-card h2 {
+  font: 700 21px/26px var(--font-display);
+}
+
+.play-card small {
+  display: block;
+  margin-top: 3px;
+  color: var(--pc-soft);
+  font-size: 13.5px;
+  line-height: 19px;
+}
+
+.tile-live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--goal-done);
+  vertical-align: 1px;
+  animation: tile-live 2.4s infinite;
+}
+
+@keyframes tile-live {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--goal-done) 60%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+
+  100% {
+    box-shadow: none;
+  }
+}
+
+/* Your time and rated or casual: two big blocks a step lighter than the card, 80px tall. */
+.play-card-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.play-card-time,
+.play-card-rated {
+  height: 80px;
+  border-radius: 16px;
+  background: var(--pc-control);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.play-card-time:hover,
+.play-card-rated:hover {
+  background: color-mix(in srgb, var(--pc-control) 88%, #fff);
+}
+
+.play-card-time {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* Centred in the room left of the chevron (16px in, 18px wide), so the gaps either side of it look even. */
+  padding: 0 34px 0 0;
+  border: 0;
+  position: relative;
+}
+
+.play-card-time strong {
+  font: 700 20px/1 var(--font-display);
+}
+
+.play-card-speed {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.play-card-chevron {
+  position: absolute;
+  right: 16px;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+
+/* Rated or casual: its icon and word, a trophy or a cup; the block flips it. */
+.play-card-rated {
+  flex: none;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  font: 600 13px/1 var(--font-ui);
+}
+
+.play-card-rated svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Start: the card's width, as tall as the controls. */
+.play-card-go {
+  height: 80px;
+  border-radius: 16px;
+  background: var(--pc-go);
+  color: var(--pc-go-ink);
+  font-size: 17px;
+  font-weight: 650;
+  transition: background 0.15s, scale 0.15s;
+}
+
+.play-card-go:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pc-go) 88%, #fff);
+}
+
+.play-card-go:active {
+  scale: 0.98;
+}
+
+/* The other times, opened from the time block: a row a speed (its icon and name, then its times as blocks, the one
+   picked outlined), sliding open between the controls and Start. */
+.play-card-times {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: -12px;
+  opacity: 0;
+  transition: grid-template-rows 0.22s cubic-bezier(0.22, 1, 0.36, 1), margin-top 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s;
+}
+
+.play-card-times.open {
+  grid-template-rows: 1fr;
+  margin-top: 0;
+  opacity: 1;
+}
+
+.play-card-times-in {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.play-card-speed-row {
+  display: grid;
+  grid-template-columns: 96px repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.play-card-speed-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pc-soft);
+  font: 650 13px/1 var(--font-ui);
+}
+
+.play-card-speed-name svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.play-card-clock {
+  height: 40px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--pc-control);
+  color: inherit;
+  font: 600 14px/1 var(--font-display);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.play-card-clock:hover {
+  background: color-mix(in srgb, var(--pc-control) 88%, #fff);
+}
+
+.play-card-clock.on {
+  border-color: var(--pc-go);
+  background: color-mix(in srgb, var(--pc-control) 70%, #fff);
+}
+
+:root:not([data-theme='light']) .play-card-clock.on {
+  background: color-mix(in srgb, var(--pc-control) 80%, var(--pc-go));
+}
+
+.play-card-time[aria-expanded='true'] .play-card-chevron {
+  rotate: 180deg;
+}
+
+.play-card-chevron {
+  transition: rotate 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-card-times,
+  .play-card-chevron {
+    transition: none;
+  }
+}
+
+/* Under it, whose games these are: Lichess's knight and its name, small. */
+.play-card-by {
+  margin: 0 0 -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--pc-soft);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.lichess-logo {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+/* Two small tiles under it: Puzzles and the coach. */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  flex-shrink: 0;
+}
+
+.home-grid .home-tile {
+  height: 176px;
+  padding: 16px;
+  gap: 2px;
+  transition: background 0.18s;
+}
+
+/* The top row, Coach and Puzzles: taller tiles (174 × 198). */
+.home-grid.top .home-tile {
+  height: 198px;
+}
+
+.home-grid .home-tile strong {
+  font: 700 16.5px/21px var(--font-display);
+}
+
+.home-grid .home-tile small {
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+.home-grid .home-tile-art {
+  height: 110px;
+  align-items: flex-end;
+}
+
+.home-grid .art-board {
+  width: 100px;
+  rotate: -8deg;
+  translate: 0 26px;
+  transition: rotate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.home-grid .home-tile:hover .art-board {
+  rotate: -3deg;
+  translate: 0 14px;
+}
+
+/* Puzzles: two boards fanned, the one to solve in front, raised a little higher than the other tiles' boards. */
+.home-grid .puzzle-tile .art-board {
+  translate: -6px 10px;
+}
+
+.home-grid .puzzle-tile .art-board.back {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 50px);
+  rotate: 4deg;
+  translate: 15px 0;
+  /* A little dimmer, so the one to solve stands out. */
+  filter: brightness(0.72);
+}
+
+.home-grid .puzzle-tile:hover .art-board {
+  translate: -8px 0;
+}
+
+.home-grid .puzzle-tile:hover .art-board.back {
+  rotate: 8deg;
+  translate: 21px -3px;
+}
+
+/* The right column's scroll handle (ScrollHandle.tsx): thin, a little outside its edge, there only while it moves. Placed
+   by script; out of the flow, so the columns don't feel it. */
+.scroll-handle {
+  position: fixed;
+  z-index: 5;
+  width: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 26%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition: opacity 0.3s, background 0.15s;
+}
+
+/* A wider reach than it looks, so it's easy to catch. */
+.scroll-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0 -5px;
+}
+
+.scroll-handle.on {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: 0.1s, 0.15s;
+}
+
+.scroll-handle:hover,
+.scroll-handle.held {
+  background: color-mix(in srgb, var(--text) 42%, transparent);
+}
+
+/* Fix your mistakes: the review's blunder mark, big; while you point at the card it spins over like a coin into the
+   Legendary mark, sparkles bursting out in its purple. */
+.home-grid .legend-flip {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 8px;
+}
+
+.legend-coin {
+  position: absolute;
+  inset: 0;
+  rotate: -6deg;
+  transition: rotate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.legend-face {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  backface-visibility: hidden;
+  transform: perspective(500px) rotateY(0deg);
+  transition: transform 0.7s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+.legend-face svg {
+  display: block;
+}
+
+.legend-face.good {
+  transform: perspective(500px) rotateY(180deg);
+}
+
+.mistakes-tile:hover .legend-coin {
+  rotate: 0deg;
+}
+
+.mistakes-tile:hover .legend-face.bad {
+  transform: perspective(500px) rotateY(-180deg);
+}
+
+.mistakes-tile:hover .legend-face.good {
+  transform: perspective(500px) rotateY(0deg);
+}
+
+.legend-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--s);
+  height: var(--s);
+  margin: calc(var(--s) / -2);
+  fill: #c4b5fd;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mistakes-tile:hover .legend-spark {
+  animation: legend-spark 0.6s ease-out var(--d) both;
+}
+
+@keyframes legend-spark {
+  0% {
+    opacity: 0;
+    scale: 0;
+    translate: 0 0;
+  }
+  40% {
+    opacity: 1;
+    scale: 1.2;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.6;
+    translate: var(--x) var(--y);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legend-coin,
+  .legend-face {
+    transition: none;
+  }
+
+  .mistakes-tile:hover .legend-spark {
+    animation: none;
+  }
+}
+
+/* Coach: a teaching board hung on the wall (your colours in a white frame, on a cord from a pin) and a lilac pointer on
+   the square that matters, a dark one so the pointer stands out. It keeps still. */
+.demo-board {
+  position: relative;
+  width: 136px;
+  translate: 0 40px;
+}
+
+.demo-hang {
+  position: absolute;
+  bottom: 100%;
+  left: calc(50% - 30px);
+  width: 60px;
+  height: 20px;
+  overflow: visible;
+}
+
+.demo-hang path {
+  fill: none;
+  stroke: #f4f4f6;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.demo-hang circle {
+  fill: #f4f4f6;
+}
+
+/* Light: the white cord would vanish on the white card, so it's grey there. */
+:root[data-theme='light'] .demo-hang path {
+  stroke: #a6a6b0;
+}
+
+:root[data-theme='light'] .demo-hang circle {
+  fill: #a6a6b0;
+}
+
+.home-grid .demo-board .art-board,
+.home-grid .home-tile:hover .demo-board .art-board {
+  width: 100%;
+  box-sizing: border-box;
+  border: 4px solid #f4f4f6;
+  border-radius: 12px;
+  rotate: none;
+  translate: none;
+}
+
+/* The move just played, as on a game's board: its two squares a soft yellow, a thin white arrow up them under the
+   pieces, and the mated king's square a soft red. Flat colours: a see-through yellow over the blue went olive. */
+.demo-board .art-board i.moved {
+  background: #ecd06a;
+}
+
+/* The same red as the Puzzles tile's square. */
+.demo-board .art-board i.mated {
+  background: color-mix(in srgb, var(--danger) 75%, transparent);
+}
+
+.demo-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35));
+}
+
+.demo-arrow path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 0.09;
+  stroke-linecap: round;
+}
+
+.demo-arrow .head {
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 0.04;
+  stroke-linejoin: round;
+}
+
+/* The pointer: lilac, coming in from the right, its tip at the ghost's corner, a dark edge so it reads on the light squares
+   it crosses. */
+.demo-stick {
+  position: absolute;
+  left: calc(78% - 4px);
+  top: calc(18% - 4px);
+  width: 104px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 4px;
+  background: #f4ceff;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+  transform-origin: 0 50%;
+  rotate: 24deg;
+}
+
+/* Cassie: she watches your pointer, blinks and floats. Big: her body fills most of the tile's width. */
+.home-grid .tile-rook .rook-watch {
+  flex-shrink: 0;
+  width: 150px;
+  height: 150px;
+  translate: -5px 42px;
+  rotate: -6deg;
+  animation: rook-float 7s ease-in-out infinite;
+}
+
+/* Cassie floats: a slow rise and fall with a little sway, on her own; pointing at her card changes nothing. */
+@keyframes rook-float {
+  0%,
+  100% {
+    translate: -5px 42px;
+    rotate: -6deg;
+  }
+  50% {
+    translate: -2px 35px;
+    rotate: -2deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-grid .tile-rook .rook-watch {
+    animation: none;
+  }
+}
+
+.rook-watch path:first-child {
+  fill: var(--mascot);
+}
+
+.rook-watch-eyes {
+  transition: translate 0.25s ease-out;
+}
+
+/* Every coach's blink (the Coach tile's, the greeting's face): each eye shrinks to a dot, shuts to a dash and opens
+   the same way, unhurried (RookCoach.tsx, COACH_BLINK_MS). */
+.coach-eyes .open {
+  fill: var(--mascot-ink);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.coach-eyes .shut {
+  fill: none;
+  stroke: var(--mascot-ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.coach-eyes.blink .open {
+  animation: coach-blink-open 0.36s ease-in-out;
+}
+
+.coach-eyes.blink .shut {
+  animation: coach-blink-shut 0.36s ease-in-out;
+}
+
+@keyframes coach-blink-open {
+  30% {
+    scale: 1 0.78;
+  }
+  39% {
+    scale: 1 0.45;
+    opacity: 1;
+  }
+  40%,
+  69% {
+    scale: 1 0.45;
+    opacity: 0;
+  }
+  70% {
+    scale: 1 0.6;
+    opacity: 1;
+  }
+  80% {
+    scale: 1 0.78;
+  }
+}
+
+@keyframes coach-blink-shut {
+  39%,
+  70% {
+    opacity: 0;
+  }
+  40%,
+  69% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home .home-card,
+  .home .home-card *,
+  .home-streak-count,
+  .home-streak-count * {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+  }
 }
 
 /* Home's plan for today on phones (HomeCards.tsx). */
@@ -6671,7 +7640,6 @@ a.see-all {
 .home-footer-brand .brand-logo {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
 }
 
 .home-footer-brand .brand-logo svg {
@@ -6709,27 +7677,14 @@ a.see-all {
   fill: currentColor;
 }
 
-/* User card: who you are and the way into settings, at the sidebar's foot. */
+/* User card: who you are and the way into settings, at the sidebar's foot, with no box of its own (the
+   sidebar's lines carry it). */
 .user-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  /* 5px in: the avatar lands on the rail's centre line. */
-  padding: 8px 6px 8px 5px;
-  border-radius: 16px;
-  background: var(--card);
-  transition: background-color var(--side-t) var(--side-ease);
-}
-
-.sidebar.rail .user-card {
-  background-color: transparent;
-}
-
-/* A guest's card folds from its buttons to an avatar on the rail: it keeps their height, the avatar at the
-   foot, so the collapse button above it stays where the pointer is. */
-.sidebar.rail .user-card.folded-guest {
-  min-height: 144px;
-  align-items: flex-end;
+  /* 5px in: the avatar lands on the menu's icon line, the rail's centre. */
+  padding: 0 0 0 5px;
 }
 
 .user-avatar {
@@ -6817,12 +7772,18 @@ button.user-avatar.guest:hover {
   text-underline-offset: 2px;
 }
 
-/* A guest's card: Sign up and Log in as real buttons, settings beside Log in. */
+/* A guest's card: the row, then Sign up and Log in side by side as real buttons. */
 .user-card.guest-card {
   flex-direction: column;
   align-items: stretch;
+  gap: 10px;
+  padding: 0;
+}
+
+.guest-card-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
-  padding: 8px;
 }
 
 .guest-card .guest-signup {
@@ -6839,29 +7800,30 @@ button.user-avatar.guest:hover {
   font-weight: 600;
 }
 
-/* Theme, sounds and settings: three equal tonal buttons under Log in. */
-.guest-card-tools {
+/* The row over you: theme, sounds, settings, then the sidebar's Community, Blog and Collapse, plain icons that
+   take a tint when pointed at. On the rail only Collapse (to unfold it), on the avatar's line. */
+.user-card-tools {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-top: 2px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
 }
 
-.guest-card-tools .icon-btn {
+.user-card-tools .icon-btn {
   width: auto;
   height: 34px;
   border-radius: 9px;
-  background: var(--btn);
-  color: var(--text-2);
+  background: none;
+  color: var(--muted);
 }
 
-.guest-card-tools .icon-btn:hover,
-.guest-card-tools .icon-btn.active {
-  background: var(--btn-hover);
+.user-card-tools .icon-btn:hover,
+.user-card-tools .icon-btn.active {
+  background: var(--btn);
   color: var(--text);
 }
 
-.guest-card-tools svg {
+.user-card-tools svg {
   width: 18px;
   height: 18px;
   fill: none;
@@ -6869,6 +7831,77 @@ button.user-avatar.guest:hover {
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.user-card-tools .icon-btn.solid svg {
+  fill: currentColor;
+  stroke: none;
+}
+
+.sidebar.rail .user-card-tools {
+  grid-auto-columns: 38px;
+  padding-left: 5px;
+}
+
+.sidebar.rail .user-card-tools > :not(.sidebar-toggle) {
+  display: none;
+}
+
+/* Signed in (or on the rail): the row on top, you under. */
+.user-card.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0;
+}
+
+/* The avatar on the menu's icon line (5px in; the account button reaches 3px past its avatar). */
+.user-card.stacked .user-card-top {
+  margin-left: 5px;
+}
+
+/* Signed in, you are a row as wide and tall as the menu's: your name from its icons' line, your photo small at
+   the row's right end, always in the same place. On the rail the photo alone, on its centre line. */
+.sidebar .user-card.stacked > .user-card-who {
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+  height: 40px;
+  margin: 0;
+  padding: 0 10px 0 14px;
+  gap: 8px;
+  border-radius: 12px;
+}
+
+.sidebar .user-card.stacked > .user-card-who:hover,
+.sidebar .user-card.stacked > .user-card-who.active {
+  background: var(--surface-3);
+}
+
+.user-card.stacked > .user-card-who strong {
+  font-size: 15px;
+}
+
+.user-card.stacked > .user-card-who .user-avatar {
+  order: 2;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sidebar.rail .user-card.stacked > .user-card-who {
+  max-width: 48px;
+  padding: 0 10px;
+  gap: 0;
+}
+
+.user-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .user-card-text .user-card-sync.offline {
@@ -6908,6 +7941,7 @@ button.user-avatar.guest:hover {
   --panel: var(--brand-card);
   --panel-ink: var(--brand-card-text);
   --panel-mark: var(--brand);
+  --panel-word: var(--link);
   --pad: clamp(32px, 4.5vw, 80px);
   /* A rank: eight squares across the half. */
   --sq: calc(50vw / 8);
@@ -6931,24 +7965,30 @@ button.user-avatar.guest:hover {
   --panel: var(--brand);
   --panel-ink: var(--brand-ink);
   --panel-mark: var(--brand-card);
+  --panel-word: var(--brand-card);
 }
 
-/* The name in one word, as the wordmark is everywhere, set as wide as the half allows. */
+/* The name in one word, as the wordmark is everywhere, as wide as the half allows: its letters drawn one to a
+   layer (Wordmark.tsx, WordmarkLetters), stacked, so each can fly in. */
 .auth-name {
+  position: relative;
+  display: block;
   align-self: flex-start;
+  width: min(100%, 1100px);
+  aspect-ratio: 6552 / 720;
   color: var(--panel-ink);
-  font-family: var(--font-display);
-  font-size: min(calc(100cqi / 6.2), 190px);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.055em;
-  white-space: nowrap;
-  text-decoration: none;
 }
 
-.auth-name span:last-child {
-  color: var(--panel-mark);
-  font-weight: 500;
+.auth-name svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.auth-name .wordmark-tail {
+  color: var(--panel-word);
 }
 
 .auth-name:focus-visible {
@@ -7021,12 +8061,12 @@ button.user-avatar.guest:hover {
 }
 
 .auth-name i {
-  display: inline-block;
-  font-style: normal;
+  position: absolute;
+  inset: 0;
   animation: auth-from-left-far 0.8s calc(0.12s + var(--i) * 55ms) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.auth-name span:last-child i {
+.auth-name i.wordmark-tail {
   animation-name: auth-from-right-far;
 }
 
@@ -7131,7 +8171,7 @@ button.user-avatar.guest:hover {
   gap: 16px;
 }
 
-/* Filled boxes and buttons, a step up from the page (AMOLED's black too); the main button in your colour, fainter
+/* Filled boxes and buttons, a step up from the page; the main button in your colour, fainter
    until it can go. */
 .auth-box .input {
   border-color: transparent;
@@ -7792,13 +8832,130 @@ button.user-avatar.guest:hover {
   font-size: 24px;
 }
 
-/* A phone's front: the rows straight on the page, no card around them. */
-@media (max-width: 1000px) {
-  .play-hub .setup-panel {
-    border: 0;
-    background: none;
+/* Play's front: Home's cards straight on the page, no panel round them, Board settings alone in the top corner. */
+.play-hub .setup-panel {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  /* Nothing to round off: the nut's circle may reach past the edge, where it lines up with the cards. */
+  overflow: visible;
+}
+
+.play-hub .setup-body {
+  gap: 13px;
+  padding: 0;
+}
+
+/* As tall as the opponent's bar, so the cards start level with the board. */
+.play-hub-top {
+  flex-shrink: 0;
+  height: var(--hub-top, 58px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+/* Desktop: the column exactly as tall as the board, level with it: Coach and Cassie, Play online at Home's size, then
+   Play a friend under the fold. The column scrolls with Home's thin handle (ScrollHandle.tsx), no scrollbar. */
+@media (min-width: 1001px) {
+  .setup-body {
+    scrollbar-width: none;
   }
 
+  .play-hub .setup-body {
+    flex: none;
+    height: var(--board-size);
+  }
+
+}
+
+/* Board settings alone in Play's corner: bigger than in a panel's head, so it holds the corner. */
+.play-hub-top .panel-gear {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.play-hub-top .panel-gear svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Play a friend: the cards' width, its words on the left and two rooks rising from its foot on the right. */
+.friend-card {
+  position: relative;
+  flex-shrink: 0;
+  height: 160px;
+  padding: 20px;
+  overflow: hidden;
+  display: flex;
+  text-decoration: none;
+  transition: background 0.18s;
+}
+
+.friend-card:hover {
+  background: var(--card-hover);
+}
+
+.friend-card[inert] {
+  opacity: 0.5;
+}
+
+.friend-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.friend-card strong {
+  font: 700 16.5px/21px var(--font-display);
+}
+
+.friend-card small {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+/* You and your friend: the board's two blues (the logo's rook and its tile), leaning in, eye to eye. */
+.friend-card-art {
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  display: flex;
+  gap: 0;
+  pointer-events: none;
+}
+
+.friend-rook {
+  width: 128px;
+  height: 128px;
+  margin-bottom: -30px;
+}
+
+.friend-rook.you {
+  rotate: 6deg;
+}
+
+.friend-rook.them {
+  rotate: -6deg;
+}
+
+.friend-rook.you path {
+  fill: #a5b9e8;
+}
+
+.friend-rook.them path {
+  fill: #3c6bd7;
+}
+
+.friend-rook ellipse {
+  fill: #0d1b5e;
+}
+
+/* A phone's front: the cards a little in from the screen's edges, no corner row (the gear is in the bar). */
+@media (max-width: 1000px) {
   .play-hub .setup-body {
     padding: 4px 0 0;
   }
@@ -8472,9 +9629,14 @@ button.user-avatar.guest:hover {
 ::view-transition-group(page),
 ::view-transition-group(sidebar),
 ::view-transition-group(tabbar),
-::view-transition-old(sidebar),
 ::view-transition-new(sidebar) {
   animation: none;
+}
+
+/* The sidebar has no background of its own, so the page you left's picture of it showed through the new one: both
+   pages' bars at once (plain in the light theme) until the page had come in. Only the new one is shown. */
+::view-transition-old(sidebar) {
+  display: none;
 }
 
 /* The tab bar stays live through a page change, so its pill keeps gliding and it can slide off for a board. */
@@ -8572,9 +9734,9 @@ button.user-avatar.guest:hover {
   animation-name: slide-from-left;
 }
 
-/* Play's front to a way's setup and back on a wide screen: the board and the panel's card stay where they are, and
-   what's in the card slides across, the way its arrows point (in from the right going in, back out to the right). */
-:root.page-change[data-swap] .setup-slide {
+/* Play's front to a way's setup and back on a wide screen: the board stays where it is, and the panel slides across
+   (the front's bare cards out, the setup's card in), the way its arrows point (in from the right going in, back out to the right). */
+:root.page-change[data-swap] .setup-panel {
   view-transition-name: play-panel;
 }
 
@@ -9314,19 +10476,30 @@ button.user-avatar.guest:hover {
   border-radius: 10px;
 }
 
+/* Rows as well as columns in exact eighths of the board, like the squares drawn under them: a square sized from its
+   own width rounds a little each row, and a highlight a few rows down slips off its square (a 330px board). */
 .mini-board {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
   aspect-ratio: 1;
   background: var(--board-image) center / cover;
 }
 
 .mini-board span {
-  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
-.mini-board span.last {
-  background: var(--last-move);
+/* The last move's squares: under the pieces (the board is its own layer, so -1 is just above its squares). */
+.mini-last {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  fill: var(--last-move);
+  pointer-events: none;
 }
 
 .daily-foot {
@@ -10130,20 +11303,16 @@ button.user-avatar.guest:hover {
   display: flex;
   gap: 24px;
   min-height: 100vh;
-  padding: 12px;
+  /* Room on the left for the sidebar, which is fixed like the app's. */
+  padding: 12px 12px 12px 252px;
   box-sizing: border-box;
 }
 
-.boot-side {
-  flex: 0 0 248px;
-  height: calc(100vh - 24px);
-  box-sizing: border-box;
-  padding: 20px 18px;
-  border-radius: 22px;
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
+/* The sidebars (.boot-side, .boot-sidebar) are the app's .sidebar: no panel, its head (logo and name) exactly where
+   the real one sits, and its rows as placeholders on the rows' lines, so nothing moves when the app takes over. */
+.boot-side .skel,
+.boot-sidebar .skel {
+  margin: 10px 0 14px 14px;
 }
 
 .boot-main {
@@ -10224,23 +11393,27 @@ button.user-avatar.guest:hover {
   align-items: flex-start;
   min-height: 100vh;
   /* The sidebar is fixed (as the app's is), so the page keeps the same room beside it as .shell does. */
-  padding-left: 260px;
+  padding-left: 208px;
 }
 
 :root[data-boot-rail] .boot-desk {
   padding-left: 84px;
 }
 
-.boot-sidebar {
-  gap: 22px;
-  padding: 20px 18px;
-}
-
-:root[data-boot-rail] .boot-sidebar {
+:root[data-boot-rail] :is(.boot-sidebar, .boot-side) {
   width: 72px;
 }
 
-:root[data-boot-rail] .boot-sidebar .skel {
+/* On the rail, the logo on its centre line and no name, as the real rail. */
+:root[data-boot-rail] :is(.boot-sidebar, .boot-side) .sidebar-brand {
+  margin-left: 1px;
+}
+
+:root[data-boot-rail] :is(.boot-sidebar, .boot-side) .sidebar-wordmark {
+  visibility: hidden;
+}
+
+:root[data-boot-rail] :is(.boot-sidebar, .boot-side) .skel {
   display: none;
 }
 
@@ -10255,8 +11428,8 @@ button.user-avatar.guest:hover {
 }
 
 .boot-welcome {
-  height: 54px;
-  gap: 12px;
+  height: 48px;
+  justify-content: center;
 }
 
 /* A first visit (index.html sets data-boot-first) has the welcome card's page instead of your cards. */
@@ -10280,39 +11453,17 @@ button.user-avatar.guest:hover {
   }
 }
 
-/* Home's Play card: its head, the time, the button and whose game it is, in your colour; the four tiles under it
-   are Home's own. */
+/* Home's Play online card: fixed at 216px, linked to Lichess or not. */
 .boot-play {
-  --h: 251.3px;
+  --h: 216px;
 }
 
-.home-play .skel {
-  --skel-ink: var(--play-ink);
-}
-
-/* My games: six rows under a day's heading, and the colours' key when some have been reviewed. */
+/* My games: its heading and three rows. */
 .boot-games {
-  --h: 376.1px;
+  --h: 272px;
 }
 
-/* Game review, the right column's first card: its title, line and buttons. */
-.boot-review {
-  --h: 138.1px;
-}
-
-/* Your widgets, under the greeting: one row of tiles, or two when you have more than five. */
-.boot-widgets .widget-grid {
-  grid-template-columns: repeat(5, var(--widget-w));
-}
-
-.boot-widgets .boot-row2 {
-  display: none;
-}
-
-:root[data-boot-widget-rows='2'] .boot-widgets .boot-row2 {
-  display: flex;
-}
-
+/* Your widgets, under the greeting: one row of five tiles (the row's own .widget-grid). */
 .boot-ring {
   width: 60px;
   height: 60px;
@@ -10482,6 +11633,11 @@ button.user-avatar.guest:hover {
   font-size: 14px;
 }
 
+/* Review several, beside All games: it takes the push to the right, All games follows it. */
+.review-many + .see-all {
+  margin-left: 16px;
+}
+
 .games-error,
 .games-loading {
   margin: 4px 12px 10px;
@@ -10526,59 +11682,61 @@ button.user-avatar.guest:hover {
   flex-direction: column;
 }
 
-/* A plain list: hairlines between the games, no card for each; a row lights up under the pointer. */
-.home-games > li + li {
+/* A plain list: a hairline between the games, from the name to the card's edge; no card for each. */
+.home-games > li {
+  position: relative;
+}
+
+.home-games > li + li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 48px;
+  right: 12px;
   border-top: 1px solid var(--border);
 }
 
+/* Pointed at, a row only dims a little. */
 .home-game {
   width: 100%;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 76px 64px;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  padding: 10px 12px 10px 10px;
+  height: 72px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 12px;
   background: none;
   color: var(--text);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: opacity 0.15s;
 }
 
 button.home-game:hover {
-  background: var(--surface-3);
+  opacity: 0.7;
 }
 
-/* How it went: a trophy in the brand colour, a cross in red, a half in grey. */
-.game-mark {
-  display: flex;
-  width: 26px;
-  height: 26px;
+/* How it went: the rook cup, the coach knocked out, or a king half dark and half light, in the result's colour. */
+.game-res {
+  width: 22px;
+  height: 22px;
+  display: block;
+  fill: currentColor;
 }
 
-.game-mark svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* The cup in the board's blue, the logo's. */
+.game-res.win {
+  color: #3c6bd7;
 }
 
-.game-mark.win {
-  color: var(--brand);
-}
-
-.game-mark.loss {
+.game-res.loss {
   color: var(--danger);
 }
 
-.game-mark.draw {
+.game-res.draw {
   color: var(--muted);
 }
 
@@ -10624,98 +11782,53 @@ button.home-game:hover {
 }
 
 .home-game-title strong {
-  font-weight: 650;
+  font-weight: 600;
 }
 
-.home-game-title span {
+/* The rating in brackets after the name, quieter. */
+.home-game-title .home-game-rating {
+  margin-left: 5px;
   color: var(--muted);
-  font-size: 13px;
 }
 
+/* How long, when, and your accuracy; a badge for Legendary moves at its end. */
 .home-game-detail {
   display: flex;
   align-items: center;
+  gap: 6px;
   color: var(--muted);
   font-size: 13px;
   line-height: 18px;
 }
 
-/* The rating apart from the name: quieter, in brackets. */
-.home-game-title .home-game-rating {
-  margin-left: 6px;
+/* "To review" on a game not reviewed yet: words, not a button (the row is the button), in the sidebar's Game review
+   lilac. */
+.game-to-review {
+  color: var(--brand);
 }
 
-/* A Legendary move in the game, on the second line: its badge, and how many when more than one. */
-.home-game-legendary {
+/* How fast the game was: a bullet, a bolt, a rabbit, a turtle, a paper plane or infinity. */
+.speed-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: -1px;
+}
+
+/* The game's medals: the rarest, and how many more. */
+.game-medals {
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 4px;
-  color: var(--muted);
+  gap: 6px;
 }
 
-.home-game-legendary .class-icon {
-  flex: none;
-}
-
-.home-game-legendary b {
-  color: var(--text-2);
+.game-medals-more {
+  margin-left: -2px;
   font-weight: 600;
 }
 
-/* The clock before the time control. */
-.home-game-clock {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  margin-right: 5px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-/* Your accuracy, once reviewed: the number, and what it is under it. */
-.home-game-acc {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
-}
-
-.home-game-acc b {
-  font: 700 16px/20px var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-
-.home-game-acc small {
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-/* The way in, as text: Open a review in grey, Review a game in sky; each brighter while its row is hovered. */
-.home-game-go {
-  justify-self: end;
-  color: var(--muted);
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  transition: color 0.15s;
-}
-
-button.home-game:hover .home-game-go {
-  color: var(--text);
-}
-
-.home-game-go.review {
-  color: var(--link);
-}
-
-button.home-game:hover .home-game-go.review {
-  color: color-mix(in srgb, var(--brand) 75%, var(--text));
-}
-
-/* Phones: the day's line wraps under its name, and the row's columns close up. */
+/* Phones: the day's line wraps under its name. */
 @media (max-width: 640px) {
   .home-day-head {
     height: auto;
@@ -10725,12 +11838,12 @@ button.home-game:hover .home-game-go.review {
   }
 
   .home-game {
-    grid-template-columns: 26px minmax(0, 1fr) auto auto;
-    column-gap: 10px;
+    padding: 0 8px;
   }
 
-  .home-game-go {
-    font-size: 13px;
+  .home-games > li + li::before {
+    left: 44px;
+    right: 8px;
   }
 }
 
@@ -10944,6 +12057,44 @@ button.home-game:hover .home-game-go.review {
 
 .hero-card .username-row .accent-btn:disabled {
   opacity: 0.5;
+}
+
+/* Home's welcome card: the Play online card's three steps of blue (--pc-*): the card, its boxes a step lighter, and the
+   button and picked site bright. */
+.home-hero {
+  background: var(--pc-card);
+  color: var(--pc-ink);
+}
+
+.home-hero > p,
+.home-hero .hero-alt {
+  color: var(--pc-soft);
+  opacity: 1;
+}
+
+.home-hero .site-switch,
+.home-hero .username-row .input {
+  background: var(--pc-control);
+  color: var(--pc-ink);
+}
+
+.home-hero .username-row .input::placeholder {
+  color: var(--pc-soft);
+}
+
+.home-hero .username-row .input:focus {
+  border-color: var(--pc-go);
+}
+
+.home-hero .site-switch button.on,
+.home-hero .username-row .accent-btn {
+  background: var(--pc-go);
+  color: var(--pc-go-ink);
+}
+
+.home-hero .username-row .accent-btn:hover:not(:disabled) {
+  filter: none;
+  background: color-mix(in srgb, var(--pc-go) 88%, #fff);
 }
 
 .username-error {
@@ -12161,7 +13312,7 @@ button.profile-rating:hover {
   }
 }
 
-/* ═══════════════ Brand type: Syne headings and wordmark, Cabin text, DM Mono numbers ═══════════════ */
+/* ═══════════════ Brand type: Elms Sans headings and wordmark, Cabin text, DM Mono numbers ═══════════════ */
 :root {
   /* DM Mono comes in 400 and 500 only: never fake a bolder weight. */
   font-synthesis-weight: none;
@@ -12178,7 +13329,7 @@ h2 {
   letter-spacing: -0.02em;
 }
 
-/* Big numbers in Cabin: Syne's zero is a round O and DM Mono's is slashed, both odd at size. */
+/* Big numbers in Cabin: DM Mono's zero is slashed, odd at size. */
 .puzzle-num,
 .player-clock {
   font-family: var(--font-ui);
@@ -12186,81 +13337,38 @@ h2 {
   letter-spacing: -0.01em;
 }
 
-.sidebar-brand .wordmark {
-  font-size: 20px;
-}
-
+/* The wordmark is drawn (Wordmark.tsx): its box is the capitals, so centring it centres them on the tile in every
+   browser. --cap is how tall the capitals are. */
 .wordmark {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  white-space: nowrap;
+  --cap: 13.5px;
+  display: block;
+  flex: none;
+  height: calc(var(--cap) * 720 / 700);
+  width: auto;
+  overflow: visible;
+  fill: currentColor;
 }
 
+/* AHEAD in grey beside the black-and-white logo: the word split quietly, no colour. */
 .wordmark-tail {
-  font-weight: 500;
-  color: var(--brand);
+  fill: #8c8c90;
 }
 
-.page-header-home .wordmark {
-  font-size: 19px;
+:root[data-theme='light'] .wordmark-tail {
+  fill: #6e6e74;
 }
 
-/* Sidebar items in the brand's voice: Syne labels, the current page's icon in sky. */
+/* Sidebar items: Cabin labels. */
 .sidebar-item {
-  font-family: var(--font-display);
-  font-size: 15px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  /* Syne's word space is narrow: "Game review" would read as one word. */
-  word-spacing: 0.14em;
-}
-
-.sidebar-item.active svg {
-  color: var(--brand);
 }
 
 /* Accuracy on the latest-game card: even-width digits without DM Mono's slashed zero. */
 .latest-accuracy {
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
-}
-
-/* Game review: set apart under a thin line, filled in your colour (the latest-game card's colours). */
-.sidebar-item.featured {
-  position: relative;
-  margin-top: 13px;
-  background: var(--brand-card);
-  color: var(--brand-card-text);
-}
-
-.sidebar-item.featured::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: var(--border);
-}
-
-.sidebar-item.featured svg {
-  color: var(--brand-card-text);
-}
-
-.sidebar-item.featured:hover,
-.sidebar-item.featured.active {
-  background: color-mix(in srgb, var(--brand-card-text) 10%, var(--brand-card));
-  color: var(--brand-card-text);
-}
-
-.sidebar-item.featured::before {
-  transition: left var(--side-t) var(--side-ease), right var(--side-t) var(--side-ease);
-}
-
-.sidebar.rail .sidebar-item.featured::before {
-  left: 8px;
-  right: 8px;
 }
 
 /* Settings → Profile: your photo is the button that changes it. */
@@ -13261,13 +14369,6 @@ strong.settings-value {
   background: var(--s-bg);
 }
 
-.theme-sketch.black {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --s-bg: #000000;
-  --s-card: color-mix(in srgb, var(--brand) 8%, #141416);
-  --s-ink: color-mix(in srgb, var(--brand) 12%, #303036);
-}
-
 .theme-sketch.light {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   --s-bg: color-mix(in srgb, var(--brand) 10%, #f6f6f7);
@@ -13835,13 +14936,6 @@ a.you-row:active {
 
 .you-theme button {
   padding: 0 12px;
-}
-
-/* AMOLED is the longest of the four: on the narrowest phones they share the row tighter. */
-@media (max-width: 359px) {
-  .you-theme button {
-    padding: 0 8px;
-  }
 }
 
 .you-install {
@@ -15577,72 +16671,6 @@ a.blog-card:not(.latest) .blog-card-desc {
   }
 }
 
-/* ── Colour themes: the swatches (Settings → Appearance, and the You page) ── */
-.palette-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 10px;
-}
-
-.palette-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 8px 12px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--btn);
-  color: var(--text-2);
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
-}
-
-.palette-option:hover {
-  background: var(--btn-hover);
-  color: var(--text);
-}
-
-.palette-option.active {
-  color: var(--text);
-  box-shadow: inset 0 0 0 2px var(--brand);
-}
-
-.palette-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
-
-.palette-head {
-  margin-top: 28px;
-}
-
-/* The You page's quick row: just the dots. */
-.palette-picker.compact {
-  display: flex;
-  gap: 6px;
-}
-
-.palette-picker.compact .palette-option {
-  padding: 3px;
-  border-radius: 50%;
-  background: none;
-}
-
-.palette-picker.compact .palette-swatch {
-  width: 24px;
-  height: 24px;
-}
-
-.palette-picker.compact .palette-option.active {
-  box-shadow: 0 0 0 2px var(--text);
-}
-
 /* ---- Legendary moves page ---- */
 /* Its own layer: Chessground gives pieces a z-index, which would otherwise lift them over anything laid on the
    board's corner (the W and L on Home's games). */
@@ -15822,5 +16850,484 @@ a.blog-card:not(.latest) .blog-card-desc {
 @media (hover: hover) {
   .explain-move:hover {
     background: var(--btn-hover);
+  }
+}
+
+/* ═══════════════ Board editor (Tools → Board editor) ═══════════════
+   The board, and beside it a panel: spare pieces, who's to move, castling, the FEN, and the way to analyse it. */
+.editor-layout {
+  --board-size: min(600px, calc(100vh - 64px), calc(100vw - var(--side-w) - 420px));
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.editor-board {
+  flex: none;
+}
+
+.editor-panel {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-title h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.editor-title p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-section h2 {
+  margin: 0;
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.editor-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.editor-tool {
+  flex: 1;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--btn);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-tool svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.editor-tool.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.editor-spares {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.editor-spare {
+  aspect-ratio: 1;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--card);
+  cursor: grab;
+  touch-action: none;
+}
+
+.editor-spare:hover {
+  background: var(--surface-3);
+}
+
+.editor-spare.active {
+  background: color-mix(in srgb, var(--brand) 22%, var(--card));
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.editor-castles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 14px;
+}
+
+.editor-castles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.editor-castles label.off {
+  color: var(--muted);
+  cursor: default;
+}
+
+.editor-castles input {
+  accent-color: var(--brand);
+}
+
+.editor-fen {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 12px;
+}
+
+.editor-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-wrong {
+  margin: 0;
+  color: var(--warn);
+  font-size: 14px;
+}
+
+@media (max-width: 1000px) {
+  .editor-layout {
+    --board-size: calc(100vw - 32px);
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .editor-panel {
+    width: 100%;
+  }
+}
+
+/* A player without a photo: their piece on grey (DefaultFace.tsx), filling the avatar's box. The grey is the
+   box's own background, so no other colour shows at its rounded corners. */
+.default-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: color-mix(in srgb, var(--text) 70%, var(--bg));
+}
+
+:has(> .default-face.default-face) {
+  background: color-mix(in srgb, var(--text) 16%, var(--bg));
+}
+
+/* Settings → Profile: your piece, one of six, the one in use ringed in your colour. */
+.settings-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-piece {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.settings-piece.active {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
+}
+
+.settings-piece:not(.active):hover {
+  filter: brightness(1.15);
+}
+
+/* A mini board playing its last move again (MiniBoard's play): the piece slides in from its own square over what
+   it took, which goes as it lands; then the arrow, and the badge pops. */
+.mini-board span.moving {
+  position: relative;
+}
+
+.mini-mover,
+.mini-taken {
+  position: absolute;
+  inset: 0;
+  font-style: normal;
+}
+
+.mini-mover {
+  z-index: 1;
+  animation: mini-move 0.5s 0.15s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+
+.mini-taken {
+  animation: mini-taken 0.45s step-end both;
+}
+
+.mini-arrow.replay line {
+  animation: mini-fade 0.25s 0.55s both;
+}
+
+.mini-board .mini-badge.replay {
+  animation: mini-pop 0.35s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes mini-move {
+  from {
+    translate: calc(var(--dx) * 100%) calc(var(--dy) * 100%);
+  }
+}
+
+@keyframes mini-taken {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes mini-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes mini-pop {
+  from {
+    scale: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-mover,
+  .mini-arrow.replay line,
+  .mini-board .mini-badge.replay {
+    animation: none;
+  }
+
+  .mini-taken {
+    display: none;
+  }
+}
+
+/* Home's Legendary moves (LegendaryStrip.tsx): a heading, then cards in a row you swipe or step through with the
+   arrows. An edge with more beyond it fades out. */
+.lstrip-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.lstrip-head h2 {
+  margin: 0;
+  font: 700 19px/24px var(--font-display);
+}
+
+.lstrip-head .see-all {
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lstrip-view {
+  --fade-left: 0px;
+  --fade-right: 0px;
+  position: relative;
+}
+
+.lstrip-view.more-left {
+  --fade-left: 64px;
+}
+
+.lstrip-view.more-right {
+  --fade-right: 64px;
+}
+
+.lstrip-row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+}
+
+.lstrip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.lstrip-row > li {
+  flex: 0 0 296px;
+  scroll-snap-align: start;
+}
+
+.lstrip-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lstrip-card:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.lstrip-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lstrip-top .medal-stack {
+  margin-left: auto;
+}
+
+.lstrip-face {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.lstrip-who {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lstrip-who strong,
+.lstrip-who small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lstrip-who strong {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.lstrip-who strong span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.lstrip-who small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.lstrip-move {
+  font: 700 16px/20px var(--font-display);
+}
+
+.lstrip-card .mini-board,
+.lstrip-card .skel-board {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lstrip-card .skel-board {
+  display: block;
+}
+
+/* The arrows: round, on the row's edge, over the fade. */
+.lstrip-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  translate: 0 -50%;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.lstrip-arrow:hover {
+  opacity: 0.85;
+}
+
+.lstrip-arrow.left {
+  left: 8px;
+}
+
+.lstrip-arrow.right {
+  right: 8px;
+}
+
+.lstrip-arrow svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Phones: a card a little narrower than the screen, so the next one shows; no arrows, you swipe. */
+@media (max-width: 640px) {
+  .lstrip-row > li {
+    flex-basis: min(296px, 78vw);
+  }
+
+  .lstrip-view.more-left {
+    --fade-left: 24px;
+  }
+
+  .lstrip-view.more-right {
+    --fade-right: 40px;
+  }
+
+  .lstrip-arrow {
+    display: none;
   }
 }

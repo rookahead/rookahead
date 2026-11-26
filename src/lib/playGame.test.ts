@@ -59,11 +59,11 @@ describe('acceptsDraw', () => {
 describe('playPgn', () => {
   it('records the players, clock and result', () => {
     const pgn = playPgn(['e2e4', 'e7e5', 'g1f3'], { color: 'black', level: 4, clock: '600+5', outcome: { result: '1-0', reason: 'resignation' }, date: new Date('2026-10-18T10:00:00Z') })
-    expect(pgn).toContain('[White "Coach Level 4"]')
+    expect(pgn).toContain('[White "Cassie Level 4"]')
     expect(pgn).toContain('[Black "You"]')
     expect(pgn).toContain('[Date "2026.10.18"]')
     expect(pgn).toContain('[TimeControl "600+5"]')
-    expect(pgn).toContain('[Termination "Coach Level 4 won by resignation"]')
+    expect(pgn).toContain('[Termination "Cassie Level 4 won by resignation"]')
     expect(pgn).toMatch(/1\. e4 e5 2\. Nf3 1-0\s*$/)
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { byOpening, byTimeControl, openingFamily, ratingLine, results } from './gameRecord'
+import { byOpening, byTimeControl, openingFamily, ratedSpeeds, ratingLine, results } from './gameRecord'
 import type { MyGame } from './myGames'
 
 const NOW = new Date(2026, 9, 24, 21, 0).getTime()
@@ -48,19 +48,31 @@ describe('ratingLine', () => {
   it("follows your latest game's time control, oldest first", () => {
     const games = [rated(1, 1530), rated(2, 1700, { time: '3 min' }), rated(3, 1510), rated(40, 1490)]
     const line = ratingLine(games, NOW)!
-    expect(line.label).toBe('10 min')
+    expect(line.label).toBe('Rapid')
     expect(line.points).toEqual([1490, 1510, 1530])
-    expect([line.change, line.over]).toEqual([40, 'month'])
+    expect([line.change, line.over]).toEqual([40, 'week'])
   })
 
-  it('takes where a month ago stood from the rating before the first game since, for want of an older one', () => {
+  it('pools a speed across its clocks, as the sites rate it: 3 min and 3 | 2 are both blitz', () => {
+    const games = [rated(1, 1720, { time: '3 | 2' }), rated(2, 1530), rated(3, 1700, { time: '3 min' })]
+    const line = ratingLine(games, NOW, 'blitz')!
+    expect([line.label, line.now, line.points]).toEqual(['Blitz', 1720, [1700, 1720]])
+    expect(ratingLine(games, NOW, 'rapid')!.now).toBe(1530)
+    expect(ratingLine(games, NOW, 'bullet')).toBeNull()
+  })
+
+  it('lists the speeds you have a rating in, fastest first', () => {
+    expect(ratedSpeeds([rated(1, 1530), rated(2, 1700, { time: '3 min' }), game({ endedAt: 0, source: 'rookahead', time: '1 min' })])).toEqual(['blitz', 'rapid'])
+  })
+
+  it('takes where a week ago stood from the rating before the first game since, for want of an older one', () => {
     // Lichess's ratings are from before each game.
     const lichess = { source: 'lichess' as const, pgn: '[WhiteRatingDiff "+8"]\n\n1. e4 1-0' }
     const line = ratingLine([rated(1, 1530, lichess), rated(3, 1510, lichess)], NOW)!
-    expect([line.change, line.over]).toEqual([28, 'month'])
+    expect([line.change, line.over]).toEqual([28, 'week'])
   })
 
-  it("falls back to the change across its points when a month ago isn't known", () => {
+  it("falls back to the change across its points when a week ago isn't known", () => {
     // Chess.com's are after each game, so the first game's own start isn't known.
     const line = ratingLine([rated(1, 1530), rated(3, 1510)], NOW)!
     expect([line.change, line.over]).toEqual([20, 'points'])

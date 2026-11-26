@@ -15,6 +15,22 @@ const star = (cx: number, cy: number, r: number) => {
   return `M${cx} ${cy - r}Q${cx + k} ${cy - k} ${cx + r} ${cy}Q${cx + k} ${cy + k} ${cx} ${cy + r}Q${cx - k} ${cy + k} ${cx - r} ${cy}Q${cx - k} ${cy - k} ${cx} ${cy - r}Z`
 }
 
+/**
+ * The coach on Home (its tiles, its face at the greeting): the rook's battlements over a straight body, as wide at the
+ * foot as at the top, so it doesn't sit heavy at the bottom. On a 120 grid, centred on 60; the body runs on below the
+ * picture's foot. COACH_HEAD is the same, cut off under the eyes, for the face.
+ */
+export const COACH_BODY = 'M18 18Q18 12 24 12H36Q40 12 40 16V24H50V16Q50 12 54 12H66Q70 12 70 16V24H80V16Q80 12 84 12H96Q102 12 102 18V140H18Z'
+export const COACH_HEAD = 'M18 18Q18 12 24 12H36Q40 12 40 16V24H50V16Q50 12 54 12H66Q70 12 70 16V24H80V16Q80 12 84 12H96Q102 12 102 18V88Q102 94 96 94H24Q18 94 18 88Z'
+/** How long a blink takes (index.css, .coach-eyes.blink), and how long between blinks: the same on every coach. */
+export const COACH_BLINK_MS = 360
+export const blinkGap = () => 1400 + Math.random() * 2200
+
+/** Where the coach's eyes sit on it. */
+export const COACH_EYES = [45, 75]
+/** How high they sit: a little above the middle of the face. */
+export const COACH_EYE_Y = 52
+
 export const ROOK_PATH = 'M20 16Q20 12 24 12H36Q40 12 40 16V22H50V16Q50 12 54 12H66Q70 12 70 16V22H80V16Q80 12 84 12H96Q100 12 100 16V34Q100 38 96 38H90L92 102H100Q106 102 106 108V122Q106 128 100 128H20Q14 128 14 122V108Q14 102 20 102H28L30 38H24Q20 38 20 34Z'
 const ARROW = 'M34 89H72V84.5L86 92L72 99.5V95H34Z'
 

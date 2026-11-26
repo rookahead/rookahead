@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 import { DEFAULT_SETTINGS, type Settings } from './settings'
 
 /** The settings every board and move list follows, wherever it is, without each page passing them on. */
-export type BoardPrefs = Pick<Settings, 'highlightLastMove' | 'lastMoveColor' | 'lastMoveCustom' | 'lastMoveStrength' | 'showLegalMoves' | 'animation' | 'notation' | 'moveEffects' | 'soundVolume' | 'palette'>
+export type BoardPrefs = Pick<Settings, 'highlightLastMove' | 'lastMoveColor' | 'lastMoveCustom' | 'lastMoveStrength' | 'showLegalMoves' | 'animation' | 'notation' | 'moveEffects' | 'soundVolume' | 'palette' | 'boardTheme'>
 
 export const BoardPrefsContext = createContext<BoardPrefs>(DEFAULT_SETTINGS)
 

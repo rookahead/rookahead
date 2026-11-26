@@ -7,6 +7,7 @@ import { profilePath } from '../../lib/publicProfile'
 import { writeSession } from '../../lib/session'
 import { decodeShare, fromSharedGame } from '../../lib/share'
 import { mainline } from '../../lib/tree'
+import { Face } from '../../components/DefaultFace'
 
 const RESULT: Record<RequestResult, string> = {
   sent: 'Request sent. You’re friends once they accept.',
@@ -20,11 +21,10 @@ const RESULT: Record<RequestResult, string> = {
 
 const SHORT_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
 
-function Face({ url, name }: { url: string | null; name: string }) {
-  const [broken, setBroken] = useState(false)
+function FriendFace({ url, name }: { url: string | null; name: string }) {
   return (
     <span className="user-avatar friend-avatar" aria-hidden>
-      {url && !broken ? <img src={url} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer" onError={() => setBroken(true)} /> : name.slice(0, 1).toUpperCase()}
+      <Face url={url} name={name} />
     </span>
   )
 }
@@ -122,7 +122,7 @@ export function FriendsPanel({ onOpenAnalysis }: { onOpenAnalysis: () => void })
           <ul className="friends-list">
             {requests.map((f) => (
               <li key={f.id} className="friend-row">
-                <Face url={f.avatarUrl} name={f.username} />
+                <FriendFace url={f.avatarUrl} name={f.username} />
                 <span className="friend-text">
                   <strong>{f.username}</strong>
                   <small>Asked {SHORT_DATE.format(f.since)}</small>
@@ -148,7 +148,7 @@ export function FriendsPanel({ onOpenAnalysis }: { onOpenAnalysis: () => void })
           <ul className="friends-list">
             {inbox.map((g) => (
               <li key={g.id} className={`friend-row ${g.seen ? '' : 'new'}`}>
-                <Face url={g.fromAvatar} name={g.from} />
+                <FriendFace url={g.fromAvatar} name={g.from} />
                 <span className="friend-text">
                   <strong>
                     {g.from}
@@ -194,7 +194,7 @@ export function FriendsPanel({ onOpenAnalysis }: { onOpenAnalysis: () => void })
             <ul className="friends-list">
               {waiting.map((f) => (
                 <li key={f.id} className="friend-row">
-                  <Face url={f.avatarUrl} name={f.username} />
+                  <FriendFace url={f.avatarUrl} name={f.username} />
                   <span className="friend-text">
                     <strong>{f.username}</strong>
                     <small>Asked {SHORT_DATE.format(f.since)}</small>
@@ -219,7 +219,7 @@ function FriendRow({ friend: f }: { friend: Friend }) {
   const active = activeText(f.activeAt)
   return (
     <li className="friend-row">
-      <Face url={f.avatarUrl} name={f.username} />
+      <FriendFace url={f.avatarUrl} name={f.username} />
       <span className="friend-text">
         <Link to={profilePath(f.username)} className="friend-name">
           {f.username}

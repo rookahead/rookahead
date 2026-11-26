@@ -59,12 +59,12 @@ type PlayMeta = { color: Color; level: number; clock: ClockSetting; outcome: Out
 
 /** The game's PGN tags: players, date, result and how it ended. */
 export function playHeaders(meta: PlayMeta): Record<string, string> {
-  const computer = `Coach Level ${meta.level}`
+  const computer = `Cassie Level ${meta.level}`
   const white = meta.color === 'white' ? 'You' : computer
   const black = meta.color === 'black' ? 'You' : computer
   const d = meta.date
   const headers: Record<string, string> = {
-    Event: 'Rookahead · vs the coach',
+    Event: 'Rookahead · vs Cassie',
     Site: 'https://rookahead.com',
     Date: `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, '0')}.${String(d.getUTCDate()).padStart(2, '0')}`,
     White: white,

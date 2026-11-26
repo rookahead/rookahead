@@ -3,6 +3,7 @@
 import type { Color } from './evaluation'
 import { ratingAfter, ratingBefore, samePool } from './homeGames'
 import { SOURCE_LABEL, type MyGame } from './myGames'
+import { SPEED_LABEL, speedOf, type Speed } from './speed'
 
 export interface Results {
   won: number
@@ -22,35 +23,53 @@ export function results(games: MyGame[]): Results {
 
 /** Ratings the line holds at most. */
 const RATING_POINTS = 30
-const MONTH_MS = 30 * 86400000
+const WEEK_MS = 7 * 86400000
 
 export interface RatingLine {
   /** "10 min", with the site when you have games from more than one. */
   label: string
+  /** Its speed: blitz, rapid… */
+  speed: Speed
   now: number
   /** Your rating after each of your latest games in that time control, oldest first. */
   points: number[]
-  /** How far it moved: in the last 30 days when where it stood then is known, else across the points. */
+  /** How far it moved: in the last 7 days when where it stood then is known, else across the points. */
   change: number
-  over: 'month' | 'points'
+  over: 'week' | 'points'
 }
 
-/** Your rating in the time control of your latest rated game: where it stands and how it got there. */
-export function ratingLine(games: MyGame[], now = Date.now()): RatingLine | null {
-  const latest = games.find((g) => g.source !== 'rookahead' && ratingAfter(g) != null)
+const rated = (g: MyGame) => g.source !== 'rookahead' && ratingAfter(g) != null
+const speedOfGame = (g: MyGame) => speedOf(g.time, g.source)
+
+/** The speeds you have a rating in, fastest first: what the Rating widget can follow. */
+export function ratedSpeeds(games: MyGame[]): Speed[] {
+  const have = new Set(games.filter(rated).map(speedOfGame))
+  return (['bullet', 'blitz', 'rapid', 'classical', 'daily'] as const).filter((s) => have.has(s))
+}
+
+/**
+ * Your rating in one speed (or, without one, your latest rated game's), on the site you last played it on: where
+ * it stands and how it got there.
+ */
+export function ratingLine(games: MyGame[], now = Date.now(), speed?: Speed): RatingLine | null {
+  const latest = games.find((g) => rated(g) && (!speed || speedOfGame(g) === speed))
   if (!latest) return null
   const pool = games.filter((g) => samePool(g, latest))
   const points = pool.flatMap((g) => ratingAfter(g) ?? []).slice(0, RATING_POINTS).reverse()
   const current = points[points.length - 1]
-  // Where it stood 30 days ago: after the last game before then, else before the first game since.
-  const before = pool.find((g) => g.endedAt <= now - MONTH_MS)
-  const since = pool.filter((g) => g.endedAt > now - MONTH_MS)
+  // Where it stood a week ago: after the last game before then, else before the first game since.
+  const before = pool.find((g) => g.endedAt <= now - WEEK_MS)
+  const since = pool.filter((g) => g.endedAt > now - WEEK_MS)
   const then = before ? ratingAfter(before) : since.length ? ratingBefore(since[since.length - 1], games) : null
   const label = poolLabel(latest, games)
-  return then == null ? { label, now: current, points, change: current - points[0], over: 'points' } : { label, now: current, points, change: current - then, over: 'month' }
+  const base = { label, speed: speedOfGame(latest), now: current, points }
+  return then == null ? { ...base, change: current - points[0], over: 'points' } : { ...base, change: current - then, over: 'week' }
 }
 
-const poolLabel = (g: MyGame, all: MyGame[]) => (new Set(all.map((x) => x.source)).size > 1 ? `${g.time}, ${SOURCE_LABEL[g.source]}` : g.time)
+const poolLabel = (g: MyGame, all: MyGame[]) => {
+  const speed = SPEED_LABEL[speedOfGame(g)]
+  return new Set(all.map((x) => x.source)).size > 1 ? `${speed}, ${SOURCE_LABEL[g.source]}` : speed
+}
 
 export interface Group extends Results {
   /** What the list is filtered by when the group is picked. */

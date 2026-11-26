@@ -1,6 +1,7 @@
 import { depthOfReview, type PositionEval } from '../hooks/useAnalysis'
 import { SEARCH_VERSION } from './backup'
 import { classifyGame, RULES_VERSION, type GameReport } from './classify'
+import { backToBackBySide } from './medals'
 import { loadOpeningBook } from './openings'
 import { loadReviews, saveReviews, type CachedReview } from './reviewCache'
 import type { Color } from './evaluation'
@@ -46,6 +47,7 @@ export async function finishedReview(line: MoveNode[], headers: PgnHeaders, orie
     black: headers.Black ?? '',
     accuracy: report.accuracy,
     brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
+    backToBack: backToBackBySide(line, report),
     at: Date.now(),
     rules: RULES_VERSION,
     search: SEARCH_VERSION,
@@ -55,6 +57,9 @@ export async function finishedReview(line: MoveNode[], headers: PgnHeaders, orie
 
 /** Is this review graded under older rules? */
 export const isStale = (review: CachedReview) => review.rules !== RULES_VERSION
+
+/** Was this review saved before medals? Grading it again from its lines finds them. */
+const beforeMedals = (review: CachedReview) => !review.backToBack
 
 /** Was this review searched an older way? Only the engine can bring it up to date. */
 export const isOutdated = (review: CachedReview) => review.search !== SEARCH_VERSION
@@ -86,6 +91,7 @@ export async function regrade(review: CachedReview, isBook: (fen: string) => boo
       token,
       accuracy: report.accuracy,
       brilliant: { white: report.counts.white.brilliant, black: report.counts.black.brilliant },
+      backToBack: backToBackBySide(line, report),
       // Newer than the copy graded under older rules, so it's the one that syncs.
       at: Date.now(),
       rules: RULES_VERSION,
@@ -96,12 +102,12 @@ export async function regrade(review: CachedReview, isBook: (fen: string) => boo
 let regrading = false
 
 /**
- * Grades every saved review left from older rules again, in the background, so Home's counts and the
- * Legendary page follow new rules at once. Reviews too old to have their lines wait until they're opened.
+ * Grades every saved review left from older rules (or from before medals) again, in the background, so Home's
+ * counts, medals and the Legendary page follow at once. Reviews too old to have their lines wait until they're opened.
  */
 export async function regradeStale(): Promise<void> {
   if (regrading) return
-  const stale = Object.entries(loadReviews()).filter(([, r]) => isStale(r) && r.lines)
+  const stale = Object.entries(loadReviews()).filter(([, r]) => (isStale(r) || beforeMedals(r)) && r.lines)
   if (!stale.length) return
   regrading = true
   try {

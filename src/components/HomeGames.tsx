@@ -1,17 +1,57 @@
+import { useId } from 'react'
 import { howItEnded, type GameDay } from '../lib/homeGames'
 import { dayLabel, type MyGame } from '../lib/myGames'
 import type { CachedReview } from '../lib/reviewCache'
+import { gameMedals, MEDALS } from '../lib/medals'
 import { navigate } from '../lib/router'
-import { ClassIcon } from './ClassIcon'
+import { speedOf } from '../lib/speed'
+import { MedalIcon } from './MedalIcon'
+import { COACH_HEAD } from './RookCoach'
 import { Skel } from './Skeleton'
+import { SpeedIcon } from './SpeedIcon'
 
 /** Games on Home. */
-export const HOME_GAMES = 5
+export const HOME_GAMES = 3
 /** Lines in a phone's list; All is a tap away. */
-const PHONE_GAMES = 5
+const PHONE_GAMES = 3
 
 
 const RESULT: Record<MyGame['result'], string> = { win: 'W', loss: 'L', draw: 'D' }
+/** A win's cup: a trophy whose rim is the coach's battlements, as wide as his head (its 120 grid). */
+const ROOK_CUP = 'M18 18Q18 12 24 12H36Q40 12 40 16V24H50V16Q50 12 54 12H66Q70 12 70 16V24H80V16Q80 12 84 12H96Q102 12 102 18V42Q102 64 70 69V77H84Q90 77 90 83V88Q90 94 84 94H36Q30 94 30 88V83Q30 77 36 77H50V69Q18 64 18 42Z'
+/** A draw's king, drawn wide on the cup's grid so it weighs the same: a cross, a broad crown, a base. */
+const KING = 'M54 8H66V16H74V26H66V32H54V26H46V16H54ZM22 42Q60 26 98 42L86 78H34ZM24 82H96Q98 82 98 84V92Q98 94 96 94H24Q22 94 22 92V84Q22 82 24 82Z'
+
+/** How a game went: the rook cup for a win, the coach knocked out (X eyes) for a loss, a king half dark and half light for a draw. */
+function ResultMark({ result }: { result: MyGame['result'] }) {
+  const id = useId()
+  if (result === 'draw')
+    return (
+      <svg className="game-res draw" viewBox="12 6 96 96" aria-hidden>
+        <clipPath id={id}>
+          <rect x="0" y="0" width="60" height="120" />
+        </clipPath>
+        <path fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" d={KING} />
+        <path clipPath={`url(#${id})`} d={KING} />
+      </svg>
+    )
+  return (
+    <svg className={`game-res ${result}`} viewBox="12 6 96 96" aria-hidden>
+      {result === 'win' ? (
+        <path d={ROOK_CUP} />
+      ) : (
+        <>
+          <mask id={id}>
+            <rect width="120" height="120" fill="#fff" />
+            <path d="M37 44L53 60M53 44L37 60M67 44L83 60M83 44L67 60" stroke="#000" strokeWidth="7" strokeLinecap="round" />
+          </mask>
+          <path d={COACH_HEAD} mask={`url(#${id})`} />
+        </>
+      )}
+    </svg>
+  )
+}
+
 /** The hour a game ended, for rows already under their day's heading. */
 const TIME = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 const WORD: Record<MyGame['result'], string> = { win: 'Won', loss: 'Lost', draw: 'Drew' }
@@ -22,6 +62,8 @@ interface Props {
   onOpen: (game: MyGame, review?: CachedReview) => void
   /** Your games couldn't be fetched just now (the ones from before still show). */
   error?: string
+  /** Several games not reviewed yet: how many ("12", "20+"), and the way to review them in one go. */
+  unreviewed?: { count: string; review: () => void }
 }
 
 /** Phones: your latest games as plain lines, with the result, who, and your accuracy or the way to review. */
@@ -93,15 +135,21 @@ function daySummary(day: GameDay): string {
 }
 
 /**
- * Home's My games: your latest games as a plain list, each with when it was played, a badge for a Legendary move
- * and your accuracy once reviewed; a game still to review says so.
+ * Home's My games: your latest games as a plain list, each with when it was played, your accuracy once reviewed
+ * and a badge for a Legendary move.
  */
-export function HomeGames({ games, reviews, onOpen, error }: Props) {
+export function HomeGames({ games, reviews, onOpen, error, unreviewed }: Props) {
   const shown = games.slice(0, HOME_GAMES)
   return (
     <>
       <header className="home-card-head">
         <h2 id="my-games">My games</h2>
+        {/* Several not reviewed: review them in one go (ReviewGamesDialog), a quiet link beside All games. */}
+        {unreviewed && (
+          <button className="link-btn see-all review-many" onClick={unreviewed.review}>
+            Review {unreviewed.count} games
+          </button>
+        )}
         <button className="link-btn see-all" onClick={() => navigate('/profile/games')}>
           All games ›
         </button>
@@ -137,27 +185,11 @@ export function GameDays({ days, reviews, onOpen }: { days: GameDay[]; reviews: 
   ))
 }
 
-/** How the game went, as the row's mark: a trophy for a win, a cross for a loss, a half for a draw. */
-function ResultMark({ result }: { result: MyGame['result'] }) {
-  return (
-    <i className={`game-mark ${result}`} aria-hidden>
-      <svg viewBox="0 0 24 24">
-        {result === 'win' ? (
-          <path d="M7 4h10v3a5 5 0 0 1-10 0zM7 5H4v1a3 3 0 0 0 3 3M17 5h3v1a3 3 0 0 1-3 3M12 12v4M8.5 20h7l-.8-4H9.3z" />
-        ) : result === 'loss' ? (
-          <path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17zM9 9l6 6M15 9l-6 6" />
-        ) : (
-          <path d="M6 9.5l2-1.5v7M5.5 15h5M18 5 6 19M13.5 11.5a2 2 0 1 1 3.5 1.3L14 17h4" />
-        )}
-      </svg>
-    </i>
-  )
-}
-
 function GameRow({ game, review, onOpen, when = 'day' }: { game: MyGame; review?: CachedReview; onOpen: Props['onOpen']; when?: 'day' | 'time' }) {
   const opponent = game.color === 'white' ? game.black : game.white
   const mine = review?.accuracy[game.color]
   const legendary = review?.brilliant[game.color] ?? 0
+  const medals = gameMedals(game, review)
   const ended = howItEnded(game)
   const at = when === 'day' ? dayLabel(game.endedAt) : TIME.format(game.endedAt)
   return (
@@ -165,8 +197,9 @@ function GameRow({ game, review, onOpen, when = 'day' }: { game: MyGame; review?
       className="home-game"
       onClick={() => onOpen(game, review)}
       title={[ended, game.opening].filter(Boolean).join(' · ') || undefined}
-      aria-label={`${WORD[game.result]} against ${opponent.name}, ${game.time}, ${at}${ended ? `, ${ended}` : ''}. ${legendary ? `${legendary} Legendary ${legendary === 1 ? 'move' : 'moves'}. ` : ''}${review ? `Your accuracy ${mine != null ? mine.toFixed(1) : 'unknown'}: open the review` : 'Review it'}`}
+      aria-label={`${WORD[game.result]} against ${opponent.name}, ${game.time}, ${at}${ended ? `, ${ended}` : ''}. ${legendary ? `${legendary} Legendary ${legendary === 1 ? 'move' : 'moves'}. ` : ''}${medals.length ? `${medals.filter((m) => m !== 'legendary').map((m) => MEDALS[m].label).join(', ')}. ` : ''}${review ? `Your accuracy ${mine != null ? mine.toFixed(1) : 'unknown'}: open the review` : 'Review it'}`}
     >
+      {/* How it went, in the result's colour. */}
       <ResultMark result={game.result} />
       <span className="home-game-text">
         <span className="home-game-title">
@@ -174,29 +207,33 @@ function GameRow({ game, review, onOpen, when = 'day' }: { game: MyGame; review?
           {opponent.rating != null && <span className="home-game-rating">({opponent.rating})</span>}
         </span>
         <span className="home-game-detail">
-          <svg className="home-game-clock" viewBox="0 0 24 24" aria-hidden>
-            <circle cx="12" cy="13" r="8" />
-            <path d="M12 9v4l2.5 2M10 2.5h4" />
-          </svg>
-          {game.time} · {at}
-          {/* You played a Legendary move in it: its badge, and how many when more than one. */}
-          {legendary > 0 && (
-            <span className="home-game-legendary">
-              · <ClassIcon cls="brilliant" size={18} />
-              {legendary > 1 && <b>×{legendary}</b>}
+          {/* How fast, as an icon (its name and the clock in its tooltip), then when. */}
+          <SpeedIcon speed={speedOf(game.time, game.source)} time={game.time} />
+          {at}
+          {/* Not reviewed yet: said in words, in Game review's lilac; the whole row is the way to review it. */}
+          {!review && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="game-to-review">To review</span>
+            </>
+          )}
+          {/* Your accuracy once it's reviewed. */}
+          {review && mine != null && (
+            <>
+              <span aria-hidden>·</span>
+              {mine.toFixed(1)} accuracy
+            </>
+          )}
+          {/* Its medals: the rarest, and how many more. */}
+          {medals.length > 0 && (
+            <span className="game-medals">
+              <span aria-hidden>·</span>
+              <MedalIcon medal={medals[0]} size={18} />
+              {medals.length > 1 && <span className="game-medals-more">+{medals.length - 1}</span>}
             </span>
           )}
         </span>
       </span>
-      <span className="home-game-acc" aria-hidden>
-        {review && mine != null && (
-          <>
-            <b>{mine.toFixed(1)}</b>
-            <small>accuracy</small>
-          </>
-        )}
-      </span>
-      <span className="home-game-go review">{!review && 'Review ›'}</span>
     </button>
   )
 }
@@ -232,13 +269,11 @@ function GameRowsSkeleton({ rows }: { rows: number }) {
       {Array.from({ length: rows }, (_, i) => (
         <li key={i}>
           <span className="home-game">
-            <Skel w="24px" h="24px" className="skel-round game-mark" />
+            <Skel w="22px" h="22px" className="game-res" />
             <span className="home-game-text">
               <Skel w={`${42 - (i % 3) * 6}%`} h="14px" />
-              <Skel w={`${30 - (i % 2) * 6}%`} h="11px" />
+              <Skel w={`${30 - (i % 2) * 6}%`} h="12px" />
             </span>
-            <span className="home-game-acc" />
-            <span className="home-game-go-space" />
           </span>
         </li>
       ))}

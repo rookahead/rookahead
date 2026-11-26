@@ -84,6 +84,11 @@ describe('mergePuzzles', () => {
     expect(mergePuzzles(progress({}), progress({ days: { last: 1, count: 1, best: 1 } })).days).toEqual({ last: 1, count: 1, best: 1 })
   })
 
+  it('merges the visit streak like the puzzle streak', () => {
+    const m = mergePuzzles(progress({ visits: { last: 20, count: 3, best: 3, recent: [18, 19, 20] } }), progress({ visits: { last: 19, count: 6, best: 6, recent: [19] } }))
+    expect(m.visits).toEqual({ last: 20, count: 3, best: 6, recent: [18, 19, 20] })
+  })
+
   it('unions the recent days with a solve', () => {
     const m = mergePuzzles(progress({ days: { last: 12, count: 2, best: 2, recent: [11, 12] } }), progress({ days: { last: 9, count: 1, best: 3, recent: [5, 9] } }))
     expect(m.days).toEqual({ last: 12, count: 2, best: 3, recent: [5, 9, 11, 12] })

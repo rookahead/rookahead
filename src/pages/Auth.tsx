@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { Link } from '../components/Link'
 import { ROOK } from '../components/RookLogo'
+import { WordmarkLetters } from '../components/Wordmark'
 import {
   chooseUsername,
   clearAccountError,
@@ -374,7 +375,7 @@ export function AuthPage() {
 }
 
 /** What Rookahead is, a line at a time. */
-const TAGLINE = ['Reviews your chess games for free.', 'Puzzles from your own mistakes.', 'Play online or the coach.', 'No limits, no pop-ups.']
+const TAGLINE = ['Reviews your chess games for free.', 'Puzzles from your own mistakes.', 'Play online or the computer.', 'No limits, no pop-ups.']
 /**
  * The left half, in your colour. It builds itself as the page opens, one sequence (index.css, .auth-brand): the rank's
  * squares ripple in, "rook" flies in from the left and "ahead" from the right to meet, the mark is put together
@@ -385,20 +386,7 @@ function Brand() {
   return (
     <aside className="auth-brand">
       <Link to="/" className="auth-name" aria-label="Rookahead home">
-        <span aria-hidden>
-          {[...'rook'].map((c, i) => (
-            <i key={i} style={{ '--i': 3 - i } as CSSProperties}>
-              {c}
-            </i>
-          ))}
-        </span>
-        <span aria-hidden>
-          {[...'ahead'].map((c, i) => (
-            <i key={i} style={{ '--i': i } as CSSProperties}>
-              {c}
-            </i>
-          ))}
-        </span>
+        <WordmarkLetters />
       </Link>
       <p className="auth-tag">
         {TAGLINE.map((line, i) => (

@@ -13,10 +13,11 @@ import { PlayerBar } from '../components/PlayerBar'
 import { ROOK_PATH } from '../components/RookCoach'
 import { ToolIcon } from '../components/PlayToolIcon'
 import { ROOK } from '../components/RookLogo'
+import { ScrollHandle } from '../components/ScrollHandle'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { Sheet } from '../components/Sheet'
 import { ShareDialog } from '../components/ShareDialog'
-import { HomePlay } from '../components/HomePlay'
+import { HomeGrid } from '../components/HomePlay'
 import { TILE_ICONS } from '../components/IconTile'
 import { Link } from '../components/Link'
 import { AvatarFace, Gear } from '../components/UserCard'
@@ -415,6 +416,8 @@ function SetupView({
   // Challenges to you, from friends (on Rookahead or lichess.org), while Play is showing: accept one and its game starts here.
   const [incoming, setIncoming] = useState<IncomingChallenge[]>([])
   const accepted = useRef<string | null>(null)
+  // What's in the panel scrolls with Home's thin handle beside it, no scrollbar.
+  const bodyRef = useRef<HTMLDivElement>(null)
   const [answering, setAnswering] = useState(false)
   useEffect(() => {
     if (!active || !linked || searching != null) return
@@ -468,7 +471,7 @@ function SetupView({
   const lichessFriends = friends.filter((f) => f.status === 'accepted' && f.lichess)
 
   const opponentName = isComputer
-    ? `Coach · Level ${level.level}`
+    ? `Cassie · Level ${level.level}`
     : isFriend
       ? friendName || 'Your friend'
       : view === 'online'
@@ -580,9 +583,9 @@ function SetupView({
   )
 
   const needsLichess = onlineSetupShown && !linked
-  // Play's front, on a phone as on a computer: an online game at the time you last picked, one press away (Home's own
-  // card), then the coach and a friend.
-  const front = <HomePlay active={active} games={games} tiles={['coach', 'friend']} />
+  // Play's front, on a phone as on a computer: Home's own cards, no panel round them. Play online at the time you
+  // last picked, one press away, then the coach and Cassie, then a friend.
+  const front = <HomeGrid active={active} games={games} place="play" />
   // While it looks (or waits on a friend) the choices are gone: the panel is the search, what it's for and how long
   // it has run. They come back when it ends.
   const searchFor = [chosen?.group, online.rated ? 'Rated' : 'Casual', isFriend && online.color !== 'random' ? `You play ${online.color === 'white' ? 'White' : 'Black'}` : null].filter(Boolean).join(' · ')
@@ -749,25 +752,25 @@ function SetupView({
             // The card stays put while what's in it slides across between Play's front and a setup (index.css).
             <div className="setup-slide">
               {/* Desktop: the panel's title in the middle of its top, like the review's and Puzzles', Back on its left. */}
-              {!phone && (
+              {/* Play's front has no title: only Board settings, in its corner. */}
+              {!phone && view === 'hub' && <div className="play-hub-top">{gear}</div>}
+              {!phone && view !== 'hub' && (
                 <div className="panel-top">
                   <div className="panel-top-side">
-                    {view !== 'hub' && (
-                      <Link to="/play" className="icon-btn" aria-label="Back to the ways to play" title="Back to the ways to play">
-                        <NavIcon name="back" />
-                      </Link>
-                    )}
+                    <Link to="/play" className="icon-btn" aria-label="Back to the ways to play" title="Back to the ways to play">
+                      <NavIcon name="back" />
+                    </Link>
                   </div>
                   <h2 className="panel-title" id="setup-title">
                     <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
-                      <path d={TILE_ICONS[view === 'hub' ? 'play' : view]} />
+                      <path d={TILE_ICONS[view]} />
                     </svg>
-                    {view === 'hub' ? 'Play' : WAY_TITLES[view]}
+                    {WAY_TITLES[view]}
                   </h2>
                   <div className="panel-top-side end">{gear}</div>
                 </div>
               )}
-              <div className="setup-body">
+              <div ref={bodyRef} className="setup-body">
                 {challengeCard}
                 {body}
               </div>
@@ -776,6 +779,7 @@ function SetupView({
           )}
         </div>
       </aside>
+      {!phone && <ScrollHandle target={bodyRef} />}
 
       {picking && !phone && (
         <Sheet title="Time" sub={timeRule} onClose={() => setPicking(false)}>
@@ -1140,7 +1144,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
     // The search scores for White; the computer plays the other colour from you.
     const botWin = game.color === 'white' ? 100 - winPercent(score) : winPercent(score)
     if (acceptsDraw(botWin, game.moves.length, game.setup.level)) end({ result: '1/2-1/2', reason: 'agreement' })
-    else decline('The coach declines the draw.')
+    else decline('Cassie declines the draw.')
   }
 
   const onMove = (move: { from: string; to: string; promotion?: string }) => {
@@ -1162,7 +1166,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
   }, [game.outcome])
 
   const material = materialState(shown.fen)
-  const computerName = `Coach · Level ${level.level}`
+  const computerName = `Cassie · Level ${level.level}`
   // You: your username and photo once signed in (else "You" and its initial); the computer: the Rookahead rook.
   const { account, username } = useAccount()
   const yourName = username ?? 'You'
@@ -1296,7 +1300,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
           <header className="play-panel-head">
             <div className="play-panel-title">
               <strong className={`play-status ${game.outcome ? 'over' : ''}`} role="status">
-                {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'The coach is thinking…' : 'The coach to move')}
+                {game.outcome ? outcomeText(game.outcome, game.color) : notice ?? (yourTurn ? 'Your move' : thinking || !engine ? 'Cassie is thinking…' : 'Cassie to move')}
               </strong>
               <span className="play-opening muted" title={opening ? `${opening.eco} ${opening.name}` : undefined}>
                 {openingText}
@@ -1308,7 +1312,7 @@ function GameView({ game, setGame, engine, settings, onRematch, onNewGame, onRev
             {phone ? (
               <MoveStrip tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} />
             ) : (
-              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} times={spent} emptyText="Your moves and the coach’s appear here." />
+              <MoveList tree={tree} currentId={shown.id} onSelect={(id) => showPly(line.findIndex((n) => n.id === id))} report={null} times={spent} emptyText="Your moves and Cassie’s appear here." />
             )}
           </div>
           <nav className="play-nav" aria-label="Move navigation">
@@ -1416,7 +1420,7 @@ const REASONS: Record<Outcome['reason'], string> = {
 function outcomeText(outcome: Outcome, you: Color) {
   if (outcome.result === '1/2-1/2') return `Draw ${REASONS[outcome.reason]}`
   const youWon = (outcome.result === '1-0') === (you === 'white')
-  return `${youWon ? 'You won' : 'The coach won'} ${REASONS[outcome.reason]}`
+  return `${youWon ? 'You won' : 'Cassie won'} ${REASONS[outcome.reason]}`
 }
 
 function ResultCard({ game, onReview, onRematch, onNewGame }: { game: LiveGame; onReview: () => void; onRematch: () => void; onNewGame: () => void }) {

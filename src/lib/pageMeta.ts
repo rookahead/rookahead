@@ -30,13 +30,17 @@ export const PAGE_META: Record<string, PageMeta> = {
     description: 'A new chess puzzle every day, the same for everyone. Solve it to keep your puzzle streak going. Free, no sign-up.',
   },
   '/play': {
-    title: 'Play chess against the coach · Rookahead',
+    title: 'Play chess against the computer · Rookahead',
     description:
-      'Play the coach, a chess computer at 8 levels from 400 to 2600, at any time control. The lower levels make the mistakes people make at that rating. Review the game free afterwards.',
+      'Play Cassie, a chess computer at 8 levels from 400 to 2600, at any time control. The lower levels make the mistakes people make at that rating. Review the game free afterwards.',
   },
   '/legendary': {
     title: 'Legendary moves · Rookahead',
     description: 'Your Legendary moves: the sound sacrifices Stockfish 19 found in your reviewed games, the moves only you saw.',
+  },
+  '/editor': {
+    title: 'Chess board editor · Rookahead',
+    description: 'Set up any chess position: drag pieces on and off the board, choose who is to move and castling, copy the FEN, then analyse it free with Stockfish 19.',
   },
   '/board': {
     title: 'Chess analysis board · Rookahead',

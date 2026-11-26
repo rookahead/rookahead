@@ -625,7 +625,16 @@ export async function uploadAvatar(file: File): Promise<string | null> {
   return saveAvatarUrl(id, avatarUrl)
 }
 
-/** Back to the username's letter. Returns an error message, or null. */
+/** A chess piece as your face, in place of a photo (any uploaded one is deleted). Returns an error message, or null. */
+export async function chooseAvatarPiece(piece: string): Promise<string | null> {
+  const id = state.account?.id
+  if (!id) return 'Sign in to choose a piece.'
+  const c = await client()
+  if (state.avatarUrl && !state.avatarUrl.startsWith('piece:')) await c.storage.from(AVATARS).remove([avatarPath(id)])
+  return saveAvatarUrl(id, `piece:${piece}`)
+}
+
+/** Back to the piece your username picks. Returns an error message, or null. */
 export async function removeAvatar(): Promise<string | null> {
   const id = state.account?.id
   if (!id) return null

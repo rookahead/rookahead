@@ -3,7 +3,6 @@ import { boardColors } from '../components/Board'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Link } from '../components/Link'
 import { PageHeader } from '../components/PageHeader'
-import { PalettePicker } from '../components/PalettePicker'
 import { ACCOUNTS_ENABLED, hasUnsynced, logOut, openAccountPage, useAccount } from '../lib/account'
 import { useInstall } from '../lib/install'
 import { DISCORD_URL, YOUTUBE_URL } from '../lib/links'
@@ -77,7 +76,6 @@ export function YouPage({ settings, updateSettings }: Props) {
               {(
                 [
                   ['dark', 'Dark'],
-                  ['black', 'AMOLED'],
                   ['light', 'Light'],
                   ['system', 'Auto'],
                 ] as [Appearance, string][]
@@ -87,10 +85,6 @@ export function YouPage({ settings, updateSettings }: Props) {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="you-row">
-            <span className="you-row-label">Colour</span>
-            <PalettePicker compact value={settings.palette} onChange={(palette) => updateSettings({ palette })} />
           </div>
           <label className="you-row">
             <span className="you-row-label">Move sounds</span>
@@ -157,7 +151,7 @@ export function YouPage({ settings, updateSettings }: Props) {
           <a href="/blog">Blog</a>
           <a href="/about">About</a>
           <a href="/privacy">Privacy</a>
-          <a href="/donate">Donate</a>
+          <a href="/donate">Support</a>
           <a href={DISCORD_URL}>Discord</a>
           <a href={YOUTUBE_URL}>YouTube</a>
           <a href="https://github.com/rookahead/rookahead">GitHub</a>

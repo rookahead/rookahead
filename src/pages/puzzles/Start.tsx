@@ -1,8 +1,12 @@
+import { useRef } from 'react'
 import { Board } from '../../components/Board'
+import { CoachFace } from '../../components/CoachFace'
 import { useDailyPuzzle } from '../../components/DailyCard'
+import { LegendFlip } from '../../components/HomeArt'
 import { Link } from '../../components/Link'
 import { MiniBoard } from '../../components/MiniBoard'
-import { RookCoach } from '../../components/RookCoach'
+import { ScrollHandle } from '../../components/ScrollHandle'
+import { TypedLine } from '../../components/TypedLine'
 import { TAB_ICONS } from '../../components/Tabs'
 import { useMistakes } from '../../hooks/useMistakes'
 import { formatDay } from '../../lib/home'
@@ -12,16 +16,14 @@ import type { Settings } from '../../lib/settings'
 import { EmptyBoard, PuzzleLayout } from './shared'
 
 const num = (n: number) => n.toLocaleString('en-US')
-/** A count short enough for a tile: 420, or 1.2k from a thousand on. */
-const countWords = (n: number) => (n < 1000 ? String(n) : `${Math.floor(n / 100) / 10}k`)
 const noMove = () => {}
 
 /**
- * Desktop Puzzles: where the modes start. The coach says what's worth doing today, then rated puzzles, the main
- * thing, as one big card; under it the other modes as picture tiles, each with its own number. The board beside
- * shows today's puzzle.
+ * Desktop Puzzles: where the modes start. The coach, over the board as on Home, says what's worth doing today; the board shows
+ * today's puzzle. Beside it, with no panel round them (like Play's front), the four modes as Home's square tiles.
  */
-export function PuzzleStart({ progress, settings, head }: { progress: PuzzleProgress; settings: Settings; head: React.ReactNode }) {
+export function PuzzleStart({ progress, settings }: { progress: PuzzleProgress; settings: Settings }) {
+  const column = useRef<HTMLDivElement>(null)
   const mistakes = useMistakes()
   const waiting = mistakes?.filter((m) => !progress.mistakesSolved.includes(m.id)).length ?? 0
   const { puzzle, done } = useDailyPuzzle()
@@ -43,7 +45,23 @@ export function PuzzleStart({ progress, settings, head }: { progress: PuzzleProg
 
   return (
     <PuzzleLayout
-      head={head}
+      hub
+      head={null}
+      above={
+        // The coach's word for today, as Home greets you: its face, then the line typed out beside it.
+        <header className="home-top start-coach">
+          <div className="home-coach">
+            <span className="home-coach-face">
+              <CoachFace happy={false} moodKey={say} />
+            </span>
+            <div className="home-welcome">
+              <h1 aria-label={say}>
+                <TypedLine text={say} />
+              </h1>
+            </div>
+          </div>
+        </header>
+      }
       board={
         daily ? (
           <Board fen={daily.fen} orientation={daily.color} lastMove={daily.last as never} shapes={[]} theme={settings.boardTheme} coordinates={settings.coordinates} onMove={noMove} viewOnly />
@@ -52,67 +70,49 @@ export function PuzzleStart({ progress, settings, head }: { progress: PuzzleProg
         )
       }
     >
-      <div className="puzzle-start">
-        <div className="start-coach">
-          <span className="start-coach-rook">
-            <RookCoach mood={done ? 'neutral' : 'pleased'} moodKey={`start:${done ?? ''}`} />
-          </span>
-          <p className="start-bubble">{say}</p>
-        </div>
-
-        <section className="home-card home-play start-solve" aria-labelledby="start-solve">
-          <header className="home-play-head">
-            <div className="quick-lines">
-              <h2 id="start-solve">Rated puzzles</h2>
-              <small>Picked near your rating</small>
-            </div>
-          </header>
-          <div className="start-score">
-            <strong className="start-rating">{num(progress.rating)}</strong>
-            <small className="start-to">
-              {from + 100 - progress.rating} to {num(from + 100)}
-            </small>
-          </div>
-          <div className="start-track" aria-hidden>
-            <span style={{ width: `${progress.rating - from}%` }} />
-          </div>
-          <Link to="/puzzles/rated" className="btn accent-btn home-play-go">
-            Solve puzzles
+      {/* As tall as the board: on a short window it scrolls, with Home's thin handle. */}
+      <div ref={column} className="puzzle-start">
+        {/* The four modes as Home's tiles, square, two by two: rated puzzles first, in Play online's blues. */}
+        <nav className="home-grid start-grid" aria-label="Puzzle modes">
+          <Link to="/puzzles/rated" className="home-card home-tile rated-tile">
+            <strong>Rated puzzles</strong>
+            <small>Picked near your rating</small>
+            {/* Your rating, the bar to the next hundred, and how far that is. */}
+            <span className="rated-score">
+              <strong className="rated-num">{num(progress.rating)}</strong>
+              <span className="rated-track" aria-hidden>
+                <span style={{ width: `${progress.rating - from}%` }} />
+              </span>
+              <small>
+                {from + 100 - progress.rating} to {num(from + 100)}
+              </small>
+            </span>
           </Link>
-        </section>
-
-        <nav className="home-tiles start-tiles" aria-label="Other puzzle modes">
           <Link to="/puzzles/daily" className="home-card home-tile">
-            <strong className="tile-name">
-              <span>Daily</span>Puzzle
-            </strong>
+            <strong>Daily puzzle</strong>
             <small>{done === 'solved' ? 'Solved' : done === 'failed' ? 'Missed' : formatDay(Date.now() / 1000)}</small>
             <span className="home-tile-art tile-board" aria-hidden>
               {daily ? <MiniBoard fen={daily.fen} orientation={daily.color} theme={settings.boardTheme} lastMove={daily.last} /> : <span className="skel tile-board-blank" />}
             </span>
           </Link>
           <Link to="/puzzles/sprint" className="home-card home-tile">
-            <strong className="tile-name">
-              <span>Puzzle</span>Sprint
-            </strong>
+            <strong>Puzzle Sprint</strong>
             <small>{best ? `Best ${best}` : 'Against the clock'}</small>
             <span className="home-tile-art tile-bolt" aria-hidden>
               <svg viewBox="0 0 24 24">{TAB_ICONS.sprint}</svg>
             </span>
           </Link>
-          <Link to="/puzzles/mistakes" className="home-card home-tile">
-            <strong className="tile-name">
-              <span>Fix your</span>Mistakes
-            </strong>
-            <small>{mistakes && !waiting ? 'None waiting' : 'From your games'}</small>
-            {waiting > 0 && (
-              <b className={`tile-count digits-${Math.min(4, countWords(waiting).length)}`} aria-label={`${waiting} waiting`}>
-                {countWords(waiting)}
-              </b>
-            )}
+          {/* As on Home: the blunder mark that turns Legendary while you point at it. */}
+          <Link to="/puzzles/mistakes" className="home-card home-tile mistakes-tile">
+            <strong>Fix your mistakes</strong>
+            <small>{!mistakes ? 'From your games' : waiting ? `${num(waiting)} waiting` : 'None waiting'}</small>
+            <span className="home-tile-art" aria-hidden>
+              <LegendFlip />
+            </span>
           </Link>
         </nav>
       </div>
+      <ScrollHandle target={column} />
     </PuzzleLayout>
   )
 }

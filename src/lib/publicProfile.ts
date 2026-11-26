@@ -140,6 +140,18 @@ export async function fetchPublicProfile(username: string): Promise<PublicProfil
   }
 }
 
+/** Public profiles whose username starts with `q`, shortest first (eight at most); null when it couldn't ask. */
+export async function searchProfiles(q: string): Promise<{ username: string; avatarUrl: string | null }[] | null> {
+  try {
+    const c = await client()
+    const { data, error } = await c.rpc('search_public_profiles', { q })
+    if (error || !Array.isArray(data)) return null
+    return data.map((r: { username: string; avatar_url: string | null }) => ({ username: r.username, avatarUrl: r.avatar_url ?? null }))
+  } catch {
+    return null
+  }
+}
+
 /** "Report this profile". Returns an error message, or null. */
 export async function reportProfile(username: string, reason: ReportReason, note: string): Promise<string | null> {
   try {

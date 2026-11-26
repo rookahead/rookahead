@@ -84,13 +84,16 @@ export function ClassMark({ cls, small = false }: { cls: MoveClass; small?: bool
   }
 }
 
-/** A move's verdict badge: a rounded square in the verdict's colour. */
+/** A move's verdict badge: a near-square in the verdict's colour with a white edge (bolder when small, so it shows). */
 export function ClassIcon({ cls, size = 18, title }: { cls: MoveClass; size?: number; title?: string }) {
   const info = CLASS_INFO[cls]
+  const small = size < 24
   return (
     <svg className="class-icon" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? info.label}>
-      <rect x="4" y="4" width="92" height="92" rx="28" fill={info.color} />
-      <ClassMark cls={cls} small={size < 24} />
+      <rect x="6" y="6" width="88" height="88" rx="11" fill={info.color} stroke="#fff" strokeWidth={small ? 10 : 8} />
+      <g transform="translate(50 50) scale(0.86) translate(-50 -50)">
+        <ClassMark cls={cls} small={small} />
+      </g>
     </svg>
   )
 }

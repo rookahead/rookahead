@@ -56,6 +56,7 @@ export function mergePuzzles(local: PuzzleProgress, remote: PuzzleProgress): Puz
     prefs: lead.prefs,
     bestStreak: Math.max(local.bestStreak, remote.bestStreak),
     days: mergeDays(local.days, remote.days),
+    visits: mergeDays(local.visits, remote.visits),
     sprintBest,
     seen: union(remote.seen, local.seen).slice(-SEEN_LIMIT),
     current: local.current,
