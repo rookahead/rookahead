@@ -5,7 +5,7 @@ import { startViewTransition } from '../hooks/useSettled'
 import { slidesByHand, tabSlide } from './nav'
 
 export type Route = 'home' | 'analysis' | 'board' | 'editor' | 'games' | 'legendary' | 'play' | 'puzzles' | 'settings' | 'you' | 'blog' | 'auth' | 'player'
-export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes'
+export type PuzzleTab = 'rated' | 'sprint' | 'daily' | 'mistakes' | 'themes'
 export type SettingsSection = 'profile' | 'linked' | 'board' | 'appearance' | 'account'
 
 const SECTIONS = 'profile|linked|board|appearance|account'
@@ -20,7 +20,7 @@ export function routeFor(pathname: string): Route {
   if (playerName(pathname)) return 'player'
   if (/^\/board\/?$/.test(pathname)) return 'board'
   if (/^\/editor\/?$/.test(pathname)) return 'editor'
-  if (/^\/puzzles(\/(rated|sprint|daily|mistakes))?\/?$/.test(pathname)) return 'puzzles'
+  if (/^\/puzzles(\/(rated|sprint|daily|mistakes|themes(\/[A-Za-z0-9]+)?))?\/?$/.test(pathname)) return 'puzzles'
   if (/^\/you\/?$/.test(pathname)) return 'you'
   // Phones' Blog tab; on desktop these addresses are the blog itself (App.tsx).
   if (/^\/blog(\/[a-z0-9-]+)?\/?$/.test(pathname)) return 'blog'
@@ -44,10 +44,16 @@ export function playView(pathname: string): PlayView {
   return m ? (m[1] as PlayView) : 'hub'
 }
 
-/** The Puzzles page's tab: /puzzles (or /puzzles/rated), /puzzles/sprint, /puzzles/daily, /puzzles/mistakes. */
+/** The Puzzles page's tab: /puzzles (or /puzzles/rated), /puzzles/sprint, /puzzles/daily, /puzzles/mistakes, and
+ * /puzzles/themes (the list, and /puzzles/themes/fork for one). */
 export function puzzleTab(pathname: string): PuzzleTab {
-  const m = /^\/puzzles\/(rated|sprint|daily|mistakes)\/?$/.exec(pathname)
-  return m ? (m[1] as PuzzleTab) : 'rated'
+  const m = /^\/puzzles\/(rated|sprint|daily|mistakes|themes)(\/[A-Za-z0-9]+)?\/?$/.exec(pathname)
+  return m && (m[1] === 'themes' || !m[2]) ? (m[1] as PuzzleTab) : 'rated'
+}
+
+/** The theme in /puzzles/themes/fork ("fork"), or null. */
+export function puzzleTheme(pathname: string): string | null {
+  return /^\/puzzles\/themes\/([A-Za-z0-9]+)\/?$/.exec(pathname)?.[1] ?? null
 }
 
 /** Plain /puzzles: on phones the list of modes, on desktop rated puzzles. */

@@ -1,6 +1,7 @@
 import type { Square } from 'chess.js'
 import type { CSSProperties } from 'react'
-import { LAST_MOVE_COLORS, tintOf, tintParts, type BoardTheme, type LastMoveColor, type Settings } from '../lib/settings'
+import { SET_KNIGHTS } from '../pieceSets'
+import { LAST_MOVE_COLORS, tintOf, tintParts, type BoardTheme, type LastMoveColor, type PieceSet, type Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
 import { Board, boardColors, BOARD_THEMES, lastMoveTint } from './Board'
 import { OptionRow, Segmented, SwitchRow } from './controls'
@@ -19,6 +20,11 @@ const STRIP_FEN = 'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 
 const STRIP_MOVE: [Square, Square] = ['b8', 'c6']
 
 /** The board's look, feel and sound: one set of controls for Settings → Board and the analysis dialog's Board tab. */
+const PIECE_SETS: [PieceSet, string][] = [
+  ['rookahead', 'Rookahead'],
+  ['classic', 'Cburnett'],
+]
+
 export function BoardOptions({ settings, onChange, preview, play }: Props) {
   // Your board's squares, under the last-move swatches.
   const squares = boardColors(settings.boardTheme, settings.palette)
@@ -46,6 +52,18 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
           )
         })}
       </div>
+
+      {/* The pieces on every board: Rookahead's own, or the classic Lichess set (cburnett); each shown by its white knight. */}
+      <OptionRow label="Pieces" hint="The set on every board.">
+        <div className="piece-picks" role="radiogroup" aria-label="Pieces">
+          {PIECE_SETS.map(([set, label]) => (
+            <button key={set} role="radio" aria-checked={settings.pieceSet === set} className={`piece-pick ${settings.pieceSet === set ? 'active' : ''}`} onClick={() => onChange({ pieceSet: set })}>
+              <img src={SET_KNIGHTS[set]} alt="" style={{ background: squares.light }} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </OptionRow>
 
       <SwitchRow label="Coordinates" hint="Files and ranks along the board’s edges." checked={settings.coordinates} onChange={(coordinates) => onChange({ coordinates })} />
       <SwitchRow
@@ -107,7 +125,7 @@ export function BoardOptions({ settings, onChange, preview, play }: Props) {
       {play && (
         <SwitchRow
           label="Premoves"
-          hint="Queue your next move while the coach thinks."
+          hint="Queue your next move while the other side moves: in games and in puzzles."
           checked={settings.premoves}
           onChange={(premoves) => onChange({ premoves })}
         />

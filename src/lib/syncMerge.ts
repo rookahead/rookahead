@@ -63,6 +63,8 @@ export function mergePuzzles(local: PuzzleProgress, remote: PuzzleProgress): Puz
     daily,
     mistakesSolved: union(remote.mistakesSolved, local.mistakesSolved),
     today: mergeToday(local.today, remote.today),
+    // XP only grows: the larger side has the most of it.
+    xp: Math.max(local.xp, remote.xp),
   }
 }
 

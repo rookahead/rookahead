@@ -14,9 +14,10 @@ const progress = (p: Partial<PuzzleProgress>): PuzzleProgress => ({
   streak: 0,
   bestStreak: 0,
   sprintBest: {},
-  prefs: { autoNext: false, difficulty: 'normal' },
+  prefs: { autoNext: false, difficulty: 'normal', rated: true },
   seen: [],
   mistakesSolved: [],
+  xp: 0,
   ...p,
 })
 
@@ -57,7 +58,7 @@ describe('mergeReviews', () => {
 
 describe('mergePuzzles', () => {
   it('takes the rating from the side with more puzzles played', () => {
-    const local = progress({ rating: 1400, played: 10, solved: 5, streak: 1, prefs: { autoNext: true, difficulty: 'easier' } })
+    const local = progress({ rating: 1400, played: 10, solved: 5, streak: 1, prefs: { autoNext: true, difficulty: 'easier', rated: true } })
     const remote = progress({ rating: 1700, played: 30, solved: 20, streak: 4 })
     const m = mergePuzzles(local, remote)
     expect([m.rating, m.played, m.solved, m.streak]).toEqual([1700, 30, 20, 4])
@@ -122,5 +123,11 @@ describe('mergeStore', () => {
   it('passes the other side through when one is missing', () => {
     expect(mergeStore('settings', null, { appearance: 'light' }, 0, 0)).toEqual({ appearance: 'light' })
     expect(mergeStore('puzzles', { rating: 1 }, null, 0, 0)).toEqual({ rating: 1 })
+  })
+})
+
+describe('mergePuzzles XP', () => {
+  it('keeps the larger XP', () => {
+    expect(mergePuzzles(progress({ xp: 40, played: 9 }), progress({ xp: 70, played: 3 })).xp).toBe(70)
   })
 })

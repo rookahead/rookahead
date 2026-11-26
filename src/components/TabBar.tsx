@@ -94,6 +94,7 @@ function PuzzleActions({ open, onToggle }: { open: boolean; onToggle: () => void
     { to: '/puzzles/daily', icon: TAB_ICONS.daily, title: 'Daily puzzle' },
     { to: '/puzzles/sprint', icon: TAB_ICONS.sprint, title: 'Puzzle Sprint' },
     { to: '/puzzles/mistakes', icon: TAB_ICONS.mistakes, title: 'Fix your mistakes', badge: waiting },
+    { to: '/puzzles/themes', icon: TAB_ICONS.themes, title: 'Puzzle themes' },
   ]
   return (
     <>

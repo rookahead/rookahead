@@ -232,17 +232,37 @@ const THEME_NAMES: Record<string, string> = {
   xRayAttack: 'X-ray attack',
   enPassant: 'En passant',
   underPromotion: 'Underpromotion',
+  intermezzo: 'In-between move',
+  pillsburysMate: 'Pillsbury’s mate',
+  morphysMate: 'Morphy’s mate',
+  bodenMate: 'Boden’s mate',
+  anastasiaMate: 'Anastasia’s mate',
+  swallowstailMate: 'Swallow’s tail mate',
+  vukovicMate: 'Vuković mate',
+  mateIn5: 'Mate in 5 or more',
+  oneMove: 'One move',
+  short: 'Short',
+  long: 'Long',
+  veryLong: 'Very long',
+  crushing: 'Crushing',
+  advantage: 'Advantage',
+  equality: 'Equality',
+  mate: 'Mate',
+  master: 'Master games',
+}
+
+/** One theme's name, shown or not in a puzzle's chips: "mateIn2" → "Mate in 2". */
+export function themeName(theme: string): string {
+  if (THEME_NAMES[theme]) return THEME_NAMES[theme]
+  const words = theme.replace(/([A-Z])/g, ' $1').replace(/(\d+)/g, ' $1').toLowerCase().trim()
+  return words[0].toUpperCase() + words.slice(1)
 }
 
 /** "mateIn2" → "Mate in 2", "discoveredAttack" → "Discovered attack". */
 export function themeLabels(themes: string[]): string[] {
   return themes
     .filter((t) => !HIDDEN_THEMES.has(t))
-    .map((t) => {
-      if (THEME_NAMES[t]) return THEME_NAMES[t]
-      const words = t.replace(/([A-Z])/g, ' $1').replace(/(\d+)/g, ' $1').toLowerCase().trim()
-      return words[0].toUpperCase() + words.slice(1)
-    })
+    .map(themeName)
 }
 
 export type Difficulty = 'easiest' | 'easier' | 'normal' | 'harder' | 'hardest'

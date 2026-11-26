@@ -5821,10 +5821,353 @@ button.explain-row {
   height: 100%;
 }
 
+/* Where the board would be: a board in your colours with your chapters climbing it (puzzles/BoardPath.tsx). Done
+   ones ticked in the accent, the one you're on lit with the coach's face standing on it, the ones ahead faint. Sizes
+   follow the board's (--sq, a square). */
+.board-path {
+  --sq: calc(var(--board-size) / 8);
+  position: relative;
+  width: var(--board-size);
+  height: var(--board-size);
+  border-radius: 12px;
+  background-size: 100% 100%;
+}
+
+.board-path ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board-path-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #fff;
+  stroke-opacity: 0.55;
+  stroke-width: 0.045;
+  stroke-dasharray: 0.03 0.14;
+  stroke-linecap: round;
+}
+
+.path-step {
+  position: absolute;
+  left: calc((var(--f) + 0.5) * var(--sq));
+  top: calc((var(--r) + 0.5) * var(--sq));
+  width: calc(var(--sq) * 0.72);
+  height: calc(var(--sq) * 0.72);
+  translate: -50% -50%;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font: 800 18px/1 var(--font-display);
+}
+
+.path-step.done,
+.path-step.current {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.path-step.ahead {
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.path-step > svg {
+  width: 45%;
+  height: 45%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.path-step.current {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+.path-step-go {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* You, your avatar in a white frame, floating over the chapter's top edge: a slow rise and fall with a little sway,
+   its shadow on the tile shrinking as it rises (like Cassie on Home). It's placed at the square's middle (--f, --r)
+   and slides to the next chapter's when you move on, jumping in an arc on the way (BoardPath.tsx). */
+.path-me {
+  --face: calc(var(--sq) * 0.62);
+  position: absolute;
+  z-index: 1;
+  left: calc((var(--f) + 0.5) * var(--sq));
+  top: calc((var(--r) + 0.5) * var(--sq));
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition: left 0.7s cubic-bezier(0.45, 0, 0.3, 1), top 0.7s cubic-bezier(0.45, 0, 0.3, 1);
+}
+
+.path-me-jump {
+  position: absolute;
+  inset: 0;
+}
+
+.path-me.hopping .path-me-jump {
+  animation: face-hop 0.7s cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+@keyframes face-hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 calc(var(--sq) * -0.6);
+  }
+}
+
+.path-step-face {
+  position: absolute;
+  left: calc(var(--face) / -2);
+  bottom: calc(var(--sq) * 0.36 + 4px);
+  width: var(--face);
+  height: var(--face);
+  box-shadow: 0 0 0 3px #fff;
+  animation: face-float 3.6s ease-in-out infinite;
+}
+
+.path-step-shadow {
+  position: absolute;
+  left: calc(var(--sq) * -0.25);
+  top: calc(var(--sq) * -0.36 - 4px);
+  width: calc(var(--sq) * 0.5);
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  animation: face-shadow 3.6s ease-in-out infinite;
+}
+
+@keyframes face-float {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -4deg;
+  }
+  50% {
+    translate: 0 -7px;
+    rotate: 3deg;
+  }
+}
+
+@keyframes face-shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 0.7;
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-step-face,
+  .path-step-shadow,
+  .path-me.hopping .path-me-jump {
+    animation: none;
+  }
+
+  .path-me {
+    transition: none;
+  }
+}
+
+.path-step-label {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  translate: 0 -50%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font: 500 13px/1.35 var(--font-ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.path-step-label.left {
+  left: auto;
+  right: calc(100% + 14px);
+}
+
+.path-step-label strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
 /* Puzzles' four modes: Home's tiles, square, two by two. */
 .start-grid.home-grid .home-tile {
   height: auto;
   aspect-ratio: 1;
+}
+
+/* Under the four: the way to the themes page, a slim card the column's width. */
+.themes-entry {
+  flex-shrink: 0;
+  height: 64px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.18s;
+}
+
+.themes-entry:hover {
+  background: var(--card-hover);
+}
+
+.themes-entry > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.themes-entry strong {
+  font: 700 16px/21px var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.themes-entry small {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 17px;
+}
+
+.themes-entry-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  fill: var(--tone-blue);
+}
+
+.themes-entry-go {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Puzzle themes (puzzles/Themes.tsx): every kind of puzzle in groups, a card each, as wide a page as Home's. */
+.themes-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1168px;
+  margin-inline: auto;
+  padding: 26px 20px 48px;
+}
+
+.themes-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: -8px;
+}
+
+.themes-head h1 {
+  font: 700 24px/30px var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.themes-intro {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.themes-group h2 {
+  margin: 30px 0 12px;
+  font: 700 17px/22px var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.themes-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 13px;
+}
+
+.theme-card {
+  height: 100%;
+  box-sizing: border-box;
+  min-height: 124px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.18s;
+}
+
+.theme-card:hover {
+  background: var(--card-hover);
+}
+
+.theme-card strong {
+  font: 700 15.5px/20px var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.theme-card span {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.theme-card small {
+  margin-top: auto;
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+@media (max-width: 1000px) {
+  .themes-page {
+    padding: 8px 16px calc(var(--tabbar-h, 0px) + 24px);
+  }
+
+  .themes-head {
+    display: none;
+  }
+
+  .themes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
 }
 
 /* Rated puzzles in Play online's blues: your rating big at the foot, the bar to the next hundred in the button's blue. */
@@ -11153,6 +11496,11 @@ button.user-avatar.guest:hover {
   gap: 8px;
 }
 
+/* Under the three: one kind of puzzle for the run, or every kind. */
+.sprint-type {
+  margin-top: 8px;
+}
+
 .sprint-mode {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -14303,6 +14651,43 @@ strong.settings-value {
   flex-shrink: 0;
   width: 30px;
   height: 30px;
+  border-radius: 7px;
+}
+
+/* The Pieces option: the sets side by side, each its white knight on one of your light squares and its name. */
+.piece-picks {
+  display: flex;
+  gap: 8px;
+}
+
+.piece-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.piece-pick:hover {
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.piece-pick.active {
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+
+.piece-pick img {
+  width: 28px;
+  height: 28px;
   border-radius: 7px;
 }
 

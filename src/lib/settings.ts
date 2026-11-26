@@ -15,6 +15,9 @@ export const PALETTES: { id: Palette; label: string; swatch: string }[] = [{ id:
 /** 'theme' takes its squares from your colour theme. */
 export type BoardTheme = 'theme' | 'graphite' | 'iris' | 'green' | 'brown' | 'blue' | 'slate'
 
+/** The pieces on every board. */
+export type PieceSet = 'rookahead' | 'classic'
+
 export type Animation = 'none' | 'fast' | 'normal' | 'slow'
 
 /** How long a piece takes to slide to its square, per animation setting. */
@@ -64,6 +67,8 @@ export interface Settings {
   reviewDepth: number
   showArrows: boolean
   boardTheme: BoardTheme
+  /** The pieces: Rookahead's own, or the classic Lichess set (cburnett). */
+  pieceSet: PieceSet
   coordinates: boolean
   /** Start a review automatically after loading a game. */
   autoReview: boolean
@@ -111,6 +116,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reviewDepth: 16,
   showArrows: true,
   boardTheme: 'theme',
+  pieceSet: 'rookahead',
   coordinates: true,
   autoReview: true,
   cloudEvals: true,
@@ -154,6 +160,7 @@ function load(): Settings {
       if (!REVIEW_DEPTHS.includes(s.reviewDepth)) s.reviewDepth = DEFAULT_SETTINGS.reviewDepth
       if (!FULL_ENGINE_AVAILABLE) s.engine = 'lite'
       if (!(s.lastMoveColor in LAST_MOVE_COLORS)) s.lastMoveColor = DEFAULT_SETTINGS.lastMoveColor
+      if (s.pieceSet !== 'classic') s.pieceSet = 'rookahead'
       if (s.lastMoveStrength != null && !(s.lastMoveStrength >= 0.1 && s.lastMoveStrength <= 1)) s.lastMoveStrength = null
       const was = s.themes ?? 0
       // 1, the tonal themes: Dim folded into Dark.
@@ -176,7 +183,7 @@ function load(): Settings {
 }
 
 /** How the app looks on this device: its theme, colour and board. */
-const LOOK = ['appearance', 'palette', 'boardTheme', 'themes'] as const
+const LOOK = ['appearance', 'palette', 'boardTheme', 'pieceSet', 'themes'] as const
 
 /** This device's look, to keep through a log out (account.ts): your games go, your colours stay. */
 export function deviceLook(storage: Storage = localStorage): Partial<Settings> {

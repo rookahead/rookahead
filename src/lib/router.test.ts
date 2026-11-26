@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { afterSignIn, navigate, onReselect, playView, puzzleTab, routeFor, settingsSection } from './router'
+import { afterSignIn, navigate, onReselect, playView, puzzleTab, puzzleTheme, routeFor, settingsSection } from './router'
 
 describe('routeFor', () => {
   it('maps paths to pages', () => {
@@ -42,6 +42,11 @@ describe('routeFor', () => {
     expect(puzzleTab('/puzzles/sprint')).toBe('sprint')
     expect(routeFor('/puzzles/sprint')).toBe('puzzles')
     expect(puzzleTab('/puzzles/mistakes/')).toBe('mistakes')
+    expect(puzzleTab('/puzzles/themes')).toBe('themes')
+    expect(puzzleTab('/puzzles/themes/fork')).toBe('themes')
+    expect(puzzleTheme('/puzzles/themes/mateIn2')).toBe('mateIn2')
+    expect(puzzleTheme('/puzzles/themes')).toBe(null)
+    expect(routeFor('/puzzles/themes/fork')).toBe('puzzles')
   })
 
   it('reads the settings section', () => {

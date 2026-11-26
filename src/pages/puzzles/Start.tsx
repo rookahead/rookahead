@@ -1,5 +1,4 @@
-import { useRef } from 'react'
-import { Board } from '../../components/Board'
+import { useEffect, useRef, useState } from 'react'
 import { CoachFace } from '../../components/CoachFace'
 import { useDailyPuzzle } from '../../components/DailyCard'
 import { LegendFlip } from '../../components/HomeArt'
@@ -10,20 +9,27 @@ import { TypedLine } from '../../components/TypedLine'
 import { TAB_ICONS } from '../../components/Tabs'
 import { useMistakes } from '../../hooks/useMistakes'
 import { formatDay } from '../../lib/home'
+import { chapterAt, markSeen, seenChapter } from '../../lib/puzzlePath'
 import { localDayNumber, playerColor, positionAfter } from '../../lib/puzzles'
 import { dayStreak, type PuzzleProgress } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
-import { EmptyBoard, PuzzleLayout } from './shared'
+import { BoardPath } from './BoardPath'
+import { PuzzleLayout } from './shared'
 
 const num = (n: number) => n.toLocaleString('en-US')
-const noMove = () => {}
 
 /**
- * Desktop Puzzles: where the modes start. The coach, over the board as on Home, says what's worth doing today; the board shows
- * today's puzzle. Beside it, with no panel round them (like Play's front), the four modes as Home's square tiles.
+ * Desktop Puzzles: where the modes start. The coach, over the left side as on Home, says what's worth doing today;
+ * under it your chapters climbing a board, where a board would be. Beside it, with no panel round them (like Play's front), the four modes as Home's square tiles.
  */
 export function PuzzleStart({ progress, settings }: { progress: PuzzleProgress; settings: Settings }) {
   const column = useRef<HTMLDivElement>(null)
+  // Moved on a chapter since the path last showed you (solving, then leaving without a Next): it hops you there now.
+  const chapter = chapterAt(progress.xp).index
+  const [seen] = useState(seenChapter)
+  useEffect(() => {
+    if (seen == null || seen >= chapter) markSeen(chapter)
+  }, [seen, chapter])
   const mistakes = useMistakes()
   const waiting = mistakes?.filter((m) => !progress.mistakesSolved.includes(m.id)).length ?? 0
   const { puzzle, done } = useDailyPuzzle()
@@ -63,11 +69,8 @@ export function PuzzleStart({ progress, settings }: { progress: PuzzleProgress; 
         </header>
       }
       board={
-        daily ? (
-          <Board fen={daily.fen} orientation={daily.color} lastMove={daily.last as never} shapes={[]} theme={settings.boardTheme} coordinates={settings.coordinates} onMove={noMove} viewOnly />
-        ) : (
-          <EmptyBoard settings={settings} />
-        )
+        // In the board's place, your progress: your chapters climbing a board in your colours.
+        <BoardPath progress={progress} settings={settings} from={seen ?? undefined} onHopped={() => markSeen(chapter)} />
       }
     >
       {/* As tall as the board: on a short window it scrolls, with Home's thin handle. */}
@@ -111,6 +114,19 @@ export function PuzzleStart({ progress, settings }: { progress: PuzzleProgress; 
             </span>
           </Link>
         </nav>
+        {/* Every kind of puzzle, to practise one: the themes page. */}
+        <Link to="/puzzles/themes" className="home-card themes-entry">
+          <svg className="themes-entry-icon" viewBox="0 0 24 24" aria-hidden>
+            {TAB_ICONS.themes}
+          </svg>
+          <span>
+            <strong>Puzzle themes</strong>
+            <small>Forks, pins, mates and more: practise one</small>
+          </span>
+          <svg className="themes-entry-go" viewBox="0 0 24 24" aria-hidden>
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </Link>
       </div>
       <ScrollHandle target={column} />
     </PuzzleLayout>

@@ -14,18 +14,22 @@ import type { RookMood } from '../lib/coach'
 import type { Color } from '../lib/evaluation'
 import { useImmersive } from '../lib/immersive'
 import { canPlayOut, playItOut } from '../lib/practice'
-import { dailyLine, nextRatedLine } from '../lib/puzzleData'
-import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, puzzleGoal, solvedLine, themeLabels, type Difficulty, type Puzzle } from '../lib/puzzles'
+import { dailyLine, nextRatedLine, nextThemeLine } from '../lib/puzzleData'
+import { chapterAt, markSeen, seenChapter } from '../lib/puzzlePath'
+import { THEME_KEYS } from '../lib/puzzleThemes'
+import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, puzzleGoal, solvedLine, themeLabels, themeName, type Difficulty, type Puzzle } from '../lib/puzzles'
 import { dayStreak, loadProgress, recordDay, recordRated, saveProgress, startRated, type PuzzleProgress } from '../lib/puzzleStore'
-import { isPuzzleHub, puzzleTab, usePathname, type PuzzleTab } from '../lib/router'
+import { isPuzzleHub, puzzleTab, puzzleTheme, usePathname, type PuzzleTab } from '../lib/router'
 import { writeSession } from '../lib/session'
 import type { Settings } from '../lib/settings'
 import { playSound } from '../lib/sound'
 import { useStoreVersion } from '../lib/syncBus'
 import { logUse } from '../lib/usage'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
+import { BoardPath } from './puzzles/BoardPath'
 import { PuzzleHub } from './puzzles/Hub'
 import { PuzzleStart } from './puzzles/Start'
+import { ThemesView } from './puzzles/Themes'
 import { MistakesView } from './puzzles/Mistakes'
 import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
@@ -45,6 +49,9 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
   const live = usePathname()
   const pathname = leaving ? '/puzzles' : live
   const tab = puzzleTab(pathname)
+  // One theme's puzzles (/puzzles/themes/fork); a theme we don't know shows the list.
+  const theme = tab === 'themes' ? puzzleTheme(pathname) : null
+  const known = theme && THEME_KEYS.has(theme) ? theme : null
   // Plain /puzzles is where the modes start: a phone's path of chapters, the start page on desktop. A mode opens
   // on its own, with Back to it.
   const phone = useMediaQuery('(max-width: 1000px)')
@@ -68,12 +75,12 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
 
   // Desktop: the panel's top says which mode this is, with Back to the start page (a phone has its page bar). The
   // start page has no panel, so no top.
-  const head = phone || hub ? null : <PanelHead tab={tab} />
+  const head = phone || hub ? null : <PanelHead tab={tab} theme={known} />
   const props: ViewProps = { progress, update, settings, updateSettings, head, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
       {/* Desktop has the page's name at the top of the panel, so the board gets the height. */}
-      <PageHeader phoneOnly title="Puzzles" back={hub ? undefined : '/puzzles'} phoneTitle={MODE_NAMES[tab]} />
+      <PageHeader phoneOnly title="Puzzles" back={hub ? undefined : known ? '/puzzles/themes' : '/puzzles'} phoneTitle={known ? themeName(known) : MODE_NAMES[tab]} />
       {hub && phone ? (
         <PuzzleHub progress={progress} settings={settings} />
       ) : hub ? (
@@ -84,20 +91,21 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
           {tab === 'sprint' && <SprintView {...props} />}
           {tab === 'daily' && <DailyView {...props} />}
           {tab === 'mistakes' && <MistakesView {...props} />}
+          {tab === 'themes' && (known ? <RatedView key={known} {...props} theme={known} /> : <ThemesView />)}
         </>
       )}
     </div>
   )
 }
 
-const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Fix your mistakes' }
+const MODE_NAMES: Record<PuzzleTab, string> = { rated: 'Rated puzzles', sprint: 'Puzzle Sprint', daily: 'Daily puzzle', mistakes: 'Fix your mistakes', themes: 'Puzzle themes' }
 
-/** The top of the panel: the mode's name with Back to the start page. */
-function PanelHead({ tab }: { tab: PuzzleTab }) {
+/** The top of the panel: the mode's name with Back to the start page; a theme's name with Back to the themes. */
+function PanelHead({ tab, theme }: { tab: PuzzleTab; theme: string | null }) {
   return (
     <div className="panel-top">
       <div className="panel-top-side">
-        <Link to="/puzzles" className="icon-btn" aria-label="Back to Puzzles" title="Back to Puzzles">
+        <Link to={theme ? '/puzzles/themes' : '/puzzles'} className="icon-btn" aria-label={theme ? 'Back to Puzzle themes' : 'Back to Puzzles'} title={theme ? 'Back to Puzzle themes' : 'Back to Puzzles'}>
           <NavIcon name="back" />
         </Link>
       </div>
@@ -105,7 +113,7 @@ function PanelHead({ tab }: { tab: PuzzleTab }) {
         <svg className="line-icon panel-title-icon" viewBox="0 0 24 24" aria-hidden>
           {TAB_ICONS[tab]}
         </svg>
-        {MODE_NAMES[tab]}
+        {theme ? themeName(theme) : MODE_NAMES[tab]}
       </h1>
       <div className="panel-top-side end" />
     </div>
@@ -129,7 +137,8 @@ function analysePuzzle(puzzle: Puzzle, played: string[], onOpenAnalysis: () => v
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : `−${-n}`)
 
-function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewProps) {
+/** Rated puzzles: the steps of your chapter; with a `theme`, puzzles of that kind near your rating instead. */
+function RatedView({ progress, update, settings, head, onOpenAnalysis, theme }: ViewProps & { theme?: string }) {
   // Resume the puzzle on the board if it hasn't counted yet; otherwise fetch the next one.
   const [line, setLine] = useState<string | null>(() => (progress.current && !progress.current.result ? progress.current.line : null))
   const [error, setError] = useState(false)
@@ -138,14 +147,19 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
     progressRef.current = progress
   }, [progress])
 
-  // The next puzzle is fetched while you solve this one, so Next puzzle is instant.
+  // The next puzzle is fetched while you solve this one, so Next puzzle is instant: near your rating (moved by the
+  // difficulty you picked), and of the theme if there is one.
   const upcoming = useRef<{ line: Promise<string>; difficulty: Difficulty } | null>(null)
-  const fetchNext = useCallback((exclude: string[]) => {
-    const { rating, seen, prefs } = progressRef.current
-    const line = nextRatedLine(rating + DIFFICULTY[prefs.difficulty].offset, [...seen, ...exclude])
-    line.catch(() => {})
-    upcoming.current = { line, difficulty: prefs.difficulty }
-  }, [])
+  const fetchNext = useCallback(
+    (exclude: string[]) => {
+      const { rating, seen, prefs } = progressRef.current
+      const base = rating + DIFFICULTY[prefs.difficulty].offset
+      const line = theme ? nextThemeLine(theme, base, [...seen, ...exclude]) : nextRatedLine(base, [...seen, ...exclude])
+      line.catch(() => {})
+      upcoming.current = { line, difficulty: prefs.difficulty }
+    },
+    [theme],
+  )
 
   const next = useCallback(() => {
     setError(false)
@@ -166,6 +180,34 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
     )
   }, [update, fetchNext])
 
+  // Moving on from a chapter's last puzzle: the board turns to your path, you hop to the next chapter, then the next
+  // puzzle comes. `hop` is the chapter you're hopping from.
+  const [hop, setHop] = useState<number | null>(null)
+  const hopping = useRef(false)
+  useEffect(() => {
+    if (seenChapter() == null) markSeen(chapterAt(progressRef.current.xp).index)
+  }, [])
+  const goNext = useCallback(() => {
+    if (hopping.current) return
+    // A theme's puzzles aren't your path: the hop waits for the path (Rated, or the start page).
+    if (theme) return next()
+    const chapter = chapterAt(progressRef.current.xp).index
+    const seen = seenChapter()
+    if (seen != null && seen < chapter) {
+      hopping.current = true
+      setHop(seen)
+      return
+    }
+    markSeen(chapter)
+    next()
+  }, [next, theme])
+  const landed = useCallback(() => {
+    markSeen(chapterAt(progressRef.current.xp).index)
+    hopping.current = false
+    setHop(null)
+    next()
+  }, [next])
+
   // First visit: fetch a puzzle, or (resuming one) fetch the one after it.
   const fetched = useRef(false)
   useEffect(() => {
@@ -180,6 +222,10 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
   const current = progress.current?.line === line ? progress.current : undefined
   const delta = current?.delta
   const days = dayStreak(progress, localDayNumber(new Date()))
+  // Where you are: the theme you picked, or your chapter and the XP you have in it.
+  const { index, into, need } = chapterAt(progress.xp)
+  const unrated = progress.prefs.rated ? null : 'Unrated'
+  const where = (theme ? [themeName(theme), unrated] : [`Chapter ${index + 1}`, `${into} of ${need} XP`, unrated]).filter(Boolean).join(' · ')
 
   return (
     <Solver
@@ -189,12 +235,13 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
       head={head}
       counted={Boolean(current?.result)}
       onResult={(won) => update(() => recordRated(progressRef.current, won))}
-      onNext={next}
+      onNext={goNext}
       autoNext={progress.prefs.autoNext}
+      boardOverride={hop != null ? <BoardPath progress={progress} settings={settings} from={hop} onHopped={landed} /> : undefined}
       onAnalyse={(played) => analysePuzzle(puzzle, played, onOpenAnalysis)}
       points={delta != null && delta > 0 ? signed(delta) : undefined}
       missNote="This puzzle now counts as a miss."
-      score={(clock) => <RatedScore progress={progress} delta={delta} clock={clock} />}
+      score={(clock) => <RatedScore progress={progress} delta={delta} clock={clock} where={where} />}
       prefs={
         <RatedPrefs prefs={progress.prefs} onChange={(prefs) => update((p) => ({ ...p, prefs }))}>
           Best run {progress.bestStreak} · {days}-day streak · {num(progress.solved)} solved of {num(progress.played)}
@@ -206,8 +253,8 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
 
 const num = (n: number) => n.toLocaleString('en-US')
 
-/** Your puzzle rating with the last change, the run you're on, and how far the next hundred is. */
-function RatedScore({ progress, delta, clock }: { progress: PuzzleProgress; delta?: number; clock: ReactNode }) {
+/** Your puzzle rating with the last change, the run you're on, where you are in your chapter, and how far the next hundred is. */
+function RatedScore({ progress, delta, clock, where }: { progress: PuzzleProgress; delta?: number; clock: ReactNode; where: string }) {
   const from = Math.floor(progress.rating / 100) * 100
   return (
     <div className="puzzle-score">
@@ -228,7 +275,7 @@ function RatedScore({ progress, delta, clock }: { progress: PuzzleProgress; delt
         <span style={{ width: `${progress.rating - from}%` }} />
       </div>
       <div className="puzzle-to">
-        <span>Puzzle rating</span>
+        <span>{where}</span>
         <span>
           {from + 100 - progress.rating} to {num(from + 100)}
         </span>
@@ -241,6 +288,13 @@ function RatedScore({ progress, delta, clock }: { progress: PuzzleProgress; delt
 function RatedPrefs({ prefs, onChange, children }: { prefs: PuzzleProgress['prefs']; onChange: (p: PuzzleProgress['prefs']) => void; children: ReactNode }) {
   return (
     <div className="puzzle-prefs">
+      <label className="pref-row">
+        <span>Rated</span>
+        <span className="switch">
+          <input type="checkbox" checked={prefs.rated} onChange={(e) => onChange({ ...prefs, rated: e.target.checked })} />
+          <span className="switch-track" />
+        </span>
+      </label>
       <label className="pref-row">
         <span>Jump to next puzzle</span>
         <span className="switch">
@@ -332,6 +386,8 @@ interface SolverProps {
   missNote?: string
   /** Options, opened from the foot of the panel. */
   prefs?: ReactNode
+  /** Shown in the board's place for a moment (your path, as you move on a chapter). */
+  boardOverride?: ReactNode
 }
 
 /** How long this puzzle has been on the board, in seconds, counting while `running`; and a way to start it again. */
@@ -354,7 +410,7 @@ const PIECES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 
  * move went; the numbers, the clock and one clear next step follow. On a phone the rook's line sits over the
  * board and the rest under it, in the same order.
  */
-function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolved, onNext, autoNext, onAnalyse, points, missNote, prefs }: SolverProps) {
+function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolved, onNext, autoNext, onAnalyse, points, missNote, prefs, boardOverride }: SolverProps) {
   const phone = useMediaQuery('(max-width: 1000px)')
   const color = playerColor(puzzle)
   const s = usePuzzleSolve(puzzle, settings.soundVolume)
@@ -531,19 +587,23 @@ function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolv
       head={head}
       above={phone && coach}
       board={
-        <Board
-          key={puzzle.id}
-          fen={s.node.fen}
-          orientation={orientation}
-          lastMove={lastMoveOf(s.node)}
-          shapes={shapes}
-          theme={settings.boardTheme}
-          coordinates={settings.coordinates}
-          onMove={onMove}
-          locked={!s.yourTurn}
-          mark={s.mark}
-          markNote={s.solve.solved && !s.solve.failed ? points : undefined}
-        />
+        boardOverride ?? (
+          <Board
+            key={puzzle.id}
+            fen={s.node.fen}
+            orientation={orientation}
+            lastMove={lastMoveOf(s.node)}
+            shapes={shapes}
+            theme={settings.boardTheme}
+            coordinates={settings.coordinates}
+            onMove={onMove}
+            // Premoves on: your next move can be queued while the reply comes, and plays as it lands.
+            locked={s.over || s.viewing || Boolean(s.wrong) || (!settings.premoves && !s.yourTurn)}
+            premove={settings.premoves ? color : undefined}
+            mark={s.mark}
+            markNote={s.solve.solved && !s.solve.failed ? points : undefined}
+          />
+        )
       }
     >
       {phone ? (

@@ -98,6 +98,8 @@ export const TAB_ICONS = {
     </>
   ),
   sprint: <path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z" />,
+  // Puzzle themes: four kinds, as tiles.
+  themes: <path d="M4.5 4.5h6v6h-6zM13.5 4.5h6v6h-6zM4.5 13.5h6v6h-6zM13.5 13.5h6v6h-6z" />,
   daily: (
     <>
       <rect x="4" y="5" width="16" height="15" rx="3" />

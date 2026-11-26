@@ -1,5 +1,6 @@
 // Puzzle progress on this device: the rating, counts, puzzles seen, today's daily and solved mistakes.
 import { DIFFICULTY, localDayNumber, newRating, parsePuzzleLine, SPRINT_MODES, type Difficulty, type SprintMode } from './puzzles'
+import { XP, xpFromHistory } from './puzzlePath'
 import { markChanged, STORE_KEYS } from './syncBus'
 
 /** A run of days in a row: the last day, how long, the longest, and the last fortnight's days. */
@@ -28,7 +29,8 @@ export interface PuzzleProgress {
   today?: { day: number; mistakes: number }
   /** Best Puzzle Sprint score per mode. */
   sprintBest: Partial<Record<SprintMode, number>>
-  prefs: { autoNext: boolean; difficulty: Difficulty }
+  /** `rated` off: puzzles still count, but your rating stays where it is. */
+  prefs: { autoNext: boolean; difficulty: Difficulty; rated: boolean }
   /** Ids of recent rated puzzles, oldest first, so they don't come round again soon. */
   seen: string[]
   /** The rated puzzle on the board, so a refresh shows it again; `result` once it has counted. */
@@ -37,6 +39,8 @@ export interface PuzzleProgress {
   daily?: { day: number; result: 'solved' | 'failed' }
   /** Mistake puzzle ids solved: they leave the queue. */
   mistakesSolved: string[]
+  /** XP earned from rated puzzles (puzzlePath.ts): it moves you along the path of chapters. */
+  xp: number
 }
 
 const KEY = STORE_KEYS.puzzles
@@ -79,12 +83,14 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
     days: parseRun(raw.days),
     visits: parseRun(raw.visits),
     sprintBest: Object.fromEntries(Object.keys(SPRINT_MODES).flatMap((m) => (typeof sprintBest[m] === 'number' ? [[m, sprintBest[m]]] : []))),
-    prefs: { autoNext: prefs.autoNext === true, difficulty: prefs.difficulty && prefs.difficulty in DIFFICULTY ? prefs.difficulty : 'normal' },
+    prefs: { autoNext: prefs.autoNext === true, difficulty: prefs.difficulty && prefs.difficulty in DIFFICULTY ? prefs.difficulty : 'normal', rated: prefs.rated !== false },
     seen: strings(raw.seen),
     current: current && typeof current.line === 'string' ? current : undefined,
     daily: daily && typeof daily.day === 'number' ? daily : undefined,
     mistakesSolved: strings(raw.mistakesSolved),
     today: today && typeof today.day === 'number' ? { day: today.day, mistakes: count(today.mistakes) } : undefined,
+    // Progress from before XP starts from what you'd done.
+    xp: count(raw.xp, xpFromHistory(count(raw.solved), count(raw.played))),
   }
 }
 
@@ -155,8 +161,8 @@ export function dayStreak(progress: PuzzleProgress, today: number): number {
 }
 
 /** A finished sprint: keeps the best score per mode; any solve counts for the puzzle streak. */
-export function recordSprint(progress: PuzzleProgress, mode: SprintMode, score: number, day = localDayNumber(new Date())): { progress: PuzzleProgress; newBest: boolean } {
-  const newBest = score > (progress.sprintBest[mode] ?? 0)
+export function recordSprint(progress: PuzzleProgress, mode: SprintMode, score: number, day = localDayNumber(new Date()), forBest = true): { progress: PuzzleProgress; newBest: boolean } {
+  const newBest = forBest && score > (progress.sprintBest[mode] ?? 0)
   let next = newBest ? { ...progress, sprintBest: { ...progress.sprintBest, [mode]: score } } : progress
   if (score > 0) next = recordDay(next, day)
   return { progress: next, newBest }
@@ -167,16 +173,18 @@ export function recordRated(progress: PuzzleProgress, won: boolean, day = localD
   const current = progress.current
   const puzzle = current && parsePuzzleLine(current.line)
   if (!current || !puzzle || current.result) return progress
-  const rating = newRating(progress.rating, puzzle.rating, won, progress.played)
+  // Unrated: the puzzle counts, the rating doesn't move.
+  const rating = progress.prefs.rated ? newRating(progress.rating, puzzle.rating, won, progress.played) : progress.rating
   const streak = won ? progress.streak + 1 : 0
   const next = {
     ...progress,
     rating,
     played: progress.played + 1,
+    xp: progress.xp + (won ? XP.solve + (puzzle.rating > progress.rating ? XP.harder : 0) : XP.miss),
     solved: progress.solved + (won ? 1 : 0),
     streak,
     bestStreak: Math.max(progress.bestStreak, streak),
-    current: { ...current, result: won ? ('solved' as const) : ('failed' as const), delta: rating - progress.rating },
+    current: { ...current, result: won ? ('solved' as const) : ('failed' as const), delta: progress.prefs.rated ? rating - progress.rating : undefined },
   }
   return won ? recordDay(next, day) : next
 }

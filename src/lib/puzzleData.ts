@@ -54,6 +54,47 @@ export async function nextRatedLine(rating: number, seen: string[], rand: () => 
   return fallback
 }
 
+/** Each Lichess theme: how many puzzles have it, and the shards of each rating band that hold any (themes.json). */
+export interface ThemeIndex {
+  version: number
+  themes: Record<string, { count: number; bands: Record<string, number[]> }>
+}
+
+let themeIndex: Promise<ThemeIndex> | null = null
+
+export function fetchThemes(): Promise<ThemeIndex> {
+  themeIndex ??= fetchText('/puzzle-data/themes.json')
+    .then((t) => JSON.parse(t) as ThemeIndex)
+    .catch((e: unknown) => {
+      themeIndex = null
+      throw e
+    })
+  return themeIndex
+}
+
+/**
+ * A puzzle of one theme ("fork", a Lichess theme) near the rating, not among those seen: from a shard that holds the
+ * theme, in the nearest band that has it (rare ones live in only a few).
+ */
+export async function nextThemeLine(theme: string, rating: number, seen: string[], rand: () => number = Math.random, spread?: number): Promise<string> {
+  const entry = (await fetchThemes()).themes[theme]
+  if (!entry) return nextRatedLine(rating, seen, rand, spread)
+  const recent = new Set(seen)
+  const ofTheme = (l: string) => `,${l.split(' ')[4]},`.includes(`,${theme},`)
+  let fallback: string | undefined
+  for (let attempt = 0; attempt < 6; attempt++) {
+    // Wider each time, in case the puzzles near the rating have all been seen.
+    const band = pickBand(rating, Object.keys(entry.bands).map(Number), rand, (spread ?? 150) + attempt * 100)
+    const shards = entry.bands[band]
+    const lines = (await fetchLines(`${band}-${shards[Math.floor(rand() * shards.length)]}.txt`)).filter(ofTheme)
+    const fresh = lines.filter((l) => !recent.has(l.split(' ')[0]))
+    if (fresh.length) return fresh[Math.floor(rand() * fresh.length)]
+    fallback ??= lines[Math.floor(rand() * lines.length)]
+  }
+  if (!fallback) throw new Error('No puzzles')
+  return fallback
+}
+
 /** Today's puzzle (UTC day). */
 export async function dailyLine(date = new Date()): Promise<string> {
   const lines = await fetchLines('daily.txt')

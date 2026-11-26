@@ -3,8 +3,9 @@ import { Board } from '../../components/Board'
 import { FlipIcon } from '../../components/NavIcons'
 import { PuzzleIcon } from '../../components/PuzzleIcons'
 import type { RookMood } from '../../lib/coach'
-import { nextRatedLine } from '../../lib/puzzleData'
-import { parsePuzzleLine, playerColor, puzzleGoal, sprintRating, SPRINT_MODES, SPRINT_STRIKES, type Puzzle, type SprintMode } from '../../lib/puzzles'
+import { nextRatedLine, nextThemeLine } from '../../lib/puzzleData'
+import { parsePuzzleLine, playerColor, puzzleGoal, sprintRating, SPRINT_MODES, SPRINT_STRIKES, themeName, type Puzzle, type SprintMode } from '../../lib/puzzles'
+import { THEME_GROUPS, THEME_KEYS } from '../../lib/puzzleThemes'
 import { recordSprint } from '../../lib/puzzleStore'
 import type { Settings } from '../../lib/settings'
 import { playSound } from '../../lib/sound'
@@ -19,6 +20,7 @@ interface RunEntry {
 
 interface Finished {
   mode: SprintMode
+  theme: string | null
   history: RunEntry[]
   newBest: boolean
   best: number
@@ -59,6 +61,8 @@ interface SavedRun {
   line: string | null
   /** When a timed run's clock runs out: it keeps running while you're away. */
   endsAt: number | null
+  /** One kind of puzzle only (a theme, "fork"), or every kind. */
+  theme?: string | null
 }
 
 function loadRun(): SavedRun | null {
@@ -80,6 +84,27 @@ function saveRun(run: SavedRun | null) {
   }
 }
 
+/** The kind of puzzle picked last, kept for the next visit. */
+const TYPE_KEY = 'rookahead.sprintType.v1'
+
+function loadType(): string | null {
+  try {
+    const t = localStorage.getItem(TYPE_KEY)
+    return t && THEME_KEYS.has(t) ? t : null
+  } catch {
+    return null
+  }
+}
+
+function saveType(theme: string | null) {
+  try {
+    if (theme) localStorage.setItem(TYPE_KEY, theme)
+    else localStorage.removeItem(TYPE_KEY)
+  } catch {
+    // Storage blocked: every kind next time.
+  }
+}
+
 function formatClock(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -92,33 +117,50 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
   // A run left going carries on where it was.
   const [saved] = useState(loadRun)
   const [mode, setMode] = useState<SprintMode>(saved?.mode ?? '3min')
-  const [running, setRunning] = useState<{ mode: SprintMode; key: number; resume?: SavedRun } | null>(saved && { mode: saved.mode, key: 0, resume: saved })
+  // Every kind of puzzle (null), or one: forks only, mates in 2 only.
+  const [theme, setTheme] = useState<string | null>(() => (saved ? (saved.theme ?? null) : loadType()))
+  const [running, setRunning] = useState<{ mode: SprintMode; theme: string | null; key: number; resume?: SavedRun } | null>(
+    saved && { mode: saved.mode, theme: saved.theme ?? null, key: 0, resume: saved },
+  )
   const [finished, setFinished] = useState<Finished | null>(null)
   const progressRef = useRef(progress)
   useEffect(() => {
     progressRef.current = progress
   }, [progress])
 
-  const start = (m: SprintMode) => {
+  const start = (m: SprintMode, t: string | null) => {
     saveRun(null)
     setMode(m)
     setFinished(null)
-    setRunning({ mode: m, key: Date.now() })
+    setRunning({ mode: m, theme: t, key: Date.now() })
   }
 
   const end = useCallback(
-    (m: SprintMode, history: RunEntry[]) => {
+    (m: SprintMode, t: string | null, history: RunEntry[]) => {
       const score = history.filter((e) => e.solved).length
-      const { progress: next, newBest } = recordSprint(progressRef.current, m, score)
+      // Bests are for runs of every kind.
+      const { progress: next, newBest } = recordSprint(progressRef.current, m, score, undefined, !t)
       update(() => next)
       if (newBest) playSound('end', settings.soundVolume)
       setRunning(null)
-      setFinished({ mode: m, history, newBest, best: next.sprintBest[m] ?? 0 })
+      setFinished({ mode: m, theme: t, history, newBest, best: next.sprintBest[m] ?? 0 })
     },
     [update, settings.soundVolume],
   )
 
-  if (running) return <SprintRun key={running.key} mode={running.mode} resume={running.resume} best={progress.sprintBest[running.mode] ?? 0} settings={settings} head={head} onEnd={(h) => end(running.mode, h)} />
+  if (running)
+    return (
+      <SprintRun
+        key={running.key}
+        mode={running.mode}
+        theme={running.theme}
+        resume={running.resume}
+        best={running.theme ? 0 : (progress.sprintBest[running.mode] ?? 0)}
+        settings={settings}
+        head={head}
+        onEnd={(h) => end(running.mode, running.theme, h)}
+      />
+    )
 
   if (finished) {
     const score = finished.history.filter((e) => e.solved).length
@@ -126,7 +168,7 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
     const say: { tone: Tone; label: string; line: string; mood: RookMood } = finished.newBest
       ? { tone: 'good', label: 'New best', line: `${score} solved, your best yet.`, mood: 'proud' }
       : score
-        ? { tone: 'plain', label: 'Run over', line: `${score} solved. Your best is ${finished.best}.`, mood: 'pleased' }
+        ? { tone: 'plain', label: 'Run over', line: finished.theme ? `${score} solved.` : `${score} solved. Your best is ${finished.best}.`, mood: 'pleased' }
         : { tone: 'plain', label: 'Run over', line: 'None solved this time. Go again?', mood: 'ouch' }
     return (
       <PuzzlePanel
@@ -138,8 +180,8 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
           <PuzzleScore
             num={score}
             unit={score === 1 ? 'puzzle solved' : 'puzzles solved'}
-            track={{ at: finished.best ? score / finished.best : 0 }}
-            left={`Puzzle Sprint · ${SPRINT_MODES[finished.mode].label}`}
+            track={{ at: finished.best && !finished.theme ? score / finished.best : 0 }}
+            left={`Puzzle Sprint · ${SPRINT_MODES[finished.mode].label}${finished.theme ? ` · ${themeName(finished.theme)}` : ''}`}
             right={top > 0 ? `Hardest solved ${top}` : undefined}
           />
         }
@@ -148,7 +190,7 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
             <button className="btn ghost" onClick={() => setFinished(null)}>
               Change mode
             </button>
-            <button className="btn accent-btn" onClick={() => start(finished.mode)}>
+            <button className="btn accent-btn" onClick={() => start(finished.mode, finished.theme)}>
               Play again
             </button>
           </div>
@@ -171,11 +213,35 @@ export function SprintView({ progress, update, settings, head }: ViewProps) {
               <span className="sprint-best">{progress.sprintBest[m] ? `Best ${progress.sprintBest[m]}` : 'No score yet'}</span>
             </button>
           ))}
+          {/* One kind of puzzle for the whole run, or every kind. */}
+          <label className="pref-row sprint-type">
+            <span>Puzzle type</span>
+            <select
+              className="pref-select"
+              value={theme ?? ''}
+              onChange={(e) => {
+                const t = e.target.value || null
+                setTheme(t)
+                saveType(t)
+              }}
+            >
+              <option value="">All types</option>
+              {THEME_GROUPS.map((g) => (
+                <optgroup key={g.name} label={g.name}>
+                  {g.themes.map(([key]) => (
+                    <option key={key} value={key}>
+                      {themeName(key)}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
         </div>
       }
       acts={
         <div className="puzzle-acts">
-          <button className="btn accent-btn" onClick={() => start(mode)}>
+          <button className="btn accent-btn" onClick={() => start(mode, theme)}>
             Start sprint
           </button>
         </div>
@@ -200,7 +266,7 @@ function RunChips({ history }: { history: RunEntry[] }) {
 }
 
 /** The run's numbers: puzzles solved, the lives left, the clock, and a bar for the time (or the lives, in Survival). */
-function RunScore({ score, strikes, left, limit, number, rating, best }: { score: number; strikes: number; left: number | null; limit: number | null; number: number; rating?: number; best: number }) {
+function RunScore({ score, strikes, left, limit, number, rating, best, theme }: { score: number; strikes: number; left: number | null; limit: number | null; number: number; rating?: number; best: number; theme: string | null }) {
   const low = left !== null && left < 20_000
   return (
     <PuzzleScore
@@ -224,7 +290,7 @@ function RunScore({ score, strikes, left, limit, number, rating, best }: { score
         </>
       }
       track={{ at: left !== null && limit ? left / limit : (SPRINT_STRIKES - strikes) / SPRINT_STRIKES, low }}
-      left={rating ? `Puzzle ${number} · rated ${rating}` : 'Puzzle Sprint'}
+      left={rating ? `Puzzle ${number} · rated ${rating}${theme ? ` · ${themeName(theme)}` : ''}` : 'Puzzle Sprint'}
       right={best ? `Best ${best}` : undefined}
     />
   )
@@ -234,7 +300,8 @@ function RunScore({ score, strikes, left, limit, number, rating, best }: { score
  * One run: fetches puzzles up the rating ladder (the next one ahead of time) and keeps the clock. It's saved as it
  * goes, and `resume` carries on from a saved one.
  */
-function SprintRun({ mode, resume, best, settings, head, onEnd }: { mode: SprintMode; resume?: SavedRun; best: number; settings: Settings; head: ReactNode; onEnd: (history: RunEntry[]) => void }) {
+function SprintRun(props: { mode: SprintMode; theme: string | null; resume?: SavedRun; best: number; settings: Settings; head: ReactNode; onEnd: (history: RunEntry[]) => void }) {
+  const { mode, theme, resume, best, settings, head, onEnd } = props
   const limit = SPRINT_MODES[mode].ms
   const [history, setHistory] = useState<RunEntry[]>(resume?.history ?? [])
   const [line, setLine] = useState<string | null>(resume?.line ?? null)
@@ -258,7 +325,7 @@ function SprintRun({ mode, resume, best, settings, head, onEnd }: { mode: Sprint
     [onEnd],
   )
 
-  const fetchFor = (n: number) => nextRatedLine(sprintRating(n), ids.current, Math.random, 50)
+  const fetchFor = (n: number) => (theme ? nextThemeLine(theme, sprintRating(n), ids.current, Math.random, 50) : nextRatedLine(sprintRating(n), ids.current, Math.random, 50))
 
   /** Shows puzzle number `n`, from the line fetched ahead if there is one. */
   const show = (n: number) => {
@@ -293,8 +360,8 @@ function SprintRun({ mode, resume, best, settings, head, onEnd }: { mode: Sprint
 
   // Saved at every step, so leaving the page loses nothing.
   useEffect(() => {
-    if (!ended.current) saveRun({ mode, history, line, endsAt })
-  }, [mode, history, line, endsAt])
+    if (!ended.current) saveRun({ mode, history, line, endsAt, theme })
+  }, [mode, history, line, endsAt, theme])
 
   // The clock: the run ends when it reaches zero.
   useEffect(() => {
@@ -319,7 +386,7 @@ function SprintRun({ mode, resume, best, settings, head, onEnd }: { mode: Sprint
   const strikes = history.filter((e) => !e.solved).length
   const score = history.length - strikes
   const left = endsAt ? endsAt - now : limit
-  const scoreBlock = <RunScore score={score} strikes={strikes} left={left} limit={limit} number={history.length + 1} rating={puzzle?.rating} best={best} />
+  const scoreBlock = <RunScore score={score} strikes={strikes} left={left} limit={limit} number={history.length + 1} rating={puzzle?.rating} best={best} theme={theme} />
   const quit = (
     <div className="puzzle-acts">
       <button className="btn ghost" onClick={() => finish(historyRef.current)}>
@@ -413,7 +480,9 @@ function SprintPuzzle({ puzzle, settings, head, score, acts, below, onDone }: Sp
           theme={settings.boardTheme}
           coordinates={settings.coordinates}
           onMove={onMove}
-          locked={!s.yourTurn || result !== null}
+          // Premoves on: your next move can be queued while the reply comes, and plays as it lands.
+          locked={result !== null || s.over || s.viewing || Boolean(s.wrong) || (!settings.premoves && !s.yourTurn)}
+          premove={settings.premoves ? color : undefined}
           mark={s.mark}
         />
       }

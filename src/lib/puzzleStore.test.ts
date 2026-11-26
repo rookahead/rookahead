@@ -34,6 +34,29 @@ describe('puzzle progress', () => {
     expect(loadProgress(s)).toMatchObject({ rating: 1530, played: 1, solved: 1, streak: 1, seen: ['XPBtt'] })
   })
 
+  it('earns XP from rated puzzles only: a solve, more above your rating, a little for a miss', () => {
+    const p = { ...loadProgress(memoryStorage()), xp: 0 }
+    // LINE is rated 1500: above a 1400, level with the 1500 start.
+    expect(recordRated(startRated({ ...p, rating: 1400 }, LINE), true).xp).toBe(15)
+    expect(recordRated(startRated(p, LINE), true).xp).toBe(10)
+    expect(recordRated(startRated(p, LINE), false).xp).toBe(2)
+    expect(recordSprint(p, '3min', 4).progress.xp).toBe(0)
+    expect(recordMistakeSolved(p, 'm1', 100).xp).toBe(0)
+  })
+
+  it('starts XP from earlier progress', () => {
+    const s = memoryStorage()
+    s.setItem('rookahead.puzzles.v1', JSON.stringify({ played: 15, solved: 10 }))
+    expect(loadProgress(s).xp).toBe(90)
+  })
+
+  it('unrated: the puzzle counts, the rating stays', () => {
+    const p = loadProgress(memoryStorage())
+    const off = recordRated(startRated({ ...p, prefs: { ...p.prefs, rated: false } }, LINE), true)
+    expect(off).toMatchObject({ rating: 1500, played: 1, solved: 1, streak: 1 })
+    expect(off.current?.delta).toBeUndefined()
+  })
+
   it('failed puzzle is only counted once', () => {
     const failed = recordRated(startRated(loadProgress(memoryStorage()), LINE), false)
     expect(failed).toMatchObject({ rating: 1470, played: 1, solved: 0, current: { line: LINE, result: 'failed', delta: -30 } })
@@ -147,8 +170,8 @@ describe('streaks', () => {
 
   it('reads prefs with defaults', () => {
     const s = memoryStorage()
-    expect(loadProgress(s).prefs).toEqual({ autoNext: false, difficulty: 'normal' })
+    expect(loadProgress(s).prefs).toEqual({ autoNext: false, difficulty: 'normal', rated: true })
     s.setItem('rookahead.puzzles.v1', JSON.stringify({ prefs: { autoNext: true, difficulty: 'bogus' } }))
-    expect(loadProgress(s).prefs).toEqual({ autoNext: true, difficulty: 'normal' })
+    expect(loadProgress(s).prefs).toEqual({ autoNext: true, difficulty: 'normal', rated: true })
   })
 })

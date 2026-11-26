@@ -215,13 +215,15 @@ export default function App() {
     const root = document.documentElement
     root.dataset.theme = theme
     root.dataset.palette = settings.palette
+    // The pieces on every board: Rookahead's own, or the classic set (pieces-classic.css).
+    root.dataset.pieces = settings.pieceSet
     // Opened from the home screen rather than in a browser tab (index.css, the tabs' top bar).
     root.toggleAttribute('data-installed', runningInstalled())
     root.dataset.side = phone || !appRoute ? 'none' : rail ? 'rail' : 'sidebar'
     // The browser's (and an installed app's) bars take the page's own background.
     paintStatusBar()
     setBarIcons(theme === 'dark')
-  }, [theme, settings.appearance, settings.palette, phone, rail, appRoute])
+  }, [theme, settings.appearance, settings.palette, settings.pieceSet, phone, rail, appRoute])
 
   useEffect(() => {
     void startAccounts()
