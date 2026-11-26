@@ -94,6 +94,8 @@ export default function App() {
   )
   const route = useRoute()
   const pathname = usePathname()
+  // Up after all: the "didn't load" note (index.html) goes once the app is on screen, whenever a slow start brought it.
+  useEffect(() => document.querySelector('.boot-fail')?.remove(), [])
   // The tab says which page this is (pageMeta.ts; the same titles search engines get).
   useEffect(() => {
     document.title = titleFor(pathname)

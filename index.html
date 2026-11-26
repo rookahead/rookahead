@@ -229,7 +229,10 @@
           'error',
           function (e) {
             var t = e.target
-            if (t && (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel)))) fail()
+            // Only Rookahead's own files: a script someone else's (Cloudflare's analytics, which ad blockers stop) failing
+            // says nothing about the app.
+            var own = t && (t.src || t.href) && new URL(t.src || t.href, location.href).origin === location.origin
+            if (own && (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel)))) fail()
           },
           true,
         )
