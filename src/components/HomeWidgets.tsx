@@ -389,7 +389,7 @@ export function HomeWidgetsSkeleton() {
  * The daily puzzle's own mark: a calendar page shaped like a puzzle piece (a knob on its side, a gap at its foot)
  * with today's date cut out of it, ticked once it's done.
  */
-function DailyIcon({ done }: { done: boolean }) {
+export function DailyIcon({ done }: { done: boolean }) {
   const mask = useId()
   return (
     <span className={`goal-icon daily ${done ? 'done' : ''}`} aria-hidden>

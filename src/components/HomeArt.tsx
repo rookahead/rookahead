@@ -1,4 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
+import { useBoardPrefs } from '../lib/boardPrefs'
+import { boardColors } from './Board'
 import { ClassIcon } from './ClassIcon'
 import { COACH_BLINK_MS, blinkGap, COACH_BODY, COACH_EYE_Y, COACH_EYES } from './RookCoach'
 
@@ -89,36 +91,68 @@ const DEMO_PIECES: TilePiece[] = [
   { piece: 'R', at: [3, 0] },
 ]
 
-/** Where the sparkles fly when a blunder turns Legendary: x, y (px) and size. */
-const SPARKS = [
-  [-58, -34, 15],
-  [56, -44, 12],
-  [62, 20, 14],
-  [-60, 28, 11],
-  [0, -62, 10],
-  [-24, 56, 9],
-]
+/** Fix your mistakes on the Puzzles page, where every tile's picture keeps still: the review's Blunder mark, flat and fixed. */
+export function FixMark() {
+  return (
+    <span className="fix-mark" aria-hidden>
+      <ClassIcon cls="blunder" size={84} />
+      <i className="fix-mark-tick">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </i>
+    </span>
+  )
+}
+
+/** A square of a 5×5 corner as left/top percentages: column and row from the top left. */
+const at5 = (col: number, row: number): CSSProperties => ({ left: `${col * 20}%`, top: `${row * 20}%` })
 
 /**
- * Fixing a mistake: the review's blunder mark, big. While you point at the card it spins over like a coin into the
- * Legendary mark, and sparkles burst out.
+ * Fix your mistakes: a mate in one you missed, on a corner of the board in your colours (d8 to h4). Black's king on
+ * g8 behind its pawns; White's queen on e5, and the move you played as a faded ghost queen on g5 with an arrow and
+ * the review's Mistake badge. Pointing at the card plays the right move: the ghost goes, the queen slides up to e8,
+ * mate, with the Best badge and the king's square red. All fixed: it stays on the mate.
  */
-export function LegendFlip() {
+export function QueenFix({ fixed = false }: { fixed?: boolean }) {
+  const { boardTheme, palette } = useBoardPrefs()
+  const squares = boardColors(boardTheme, palette)
   return (
-    <span className="legend-flip" aria-hidden>
-      <span className="legend-coin">
-        <span className="legend-face bad">
-          <ClassIcon cls="blunder" size={92} />
+    <span className={`queen-fix ${fixed ? 'fixed' : ''}`} style={{ '--sq-light': squares.light, '--sq-dark': squares.dark } as CSSProperties} aria-hidden>
+      <span className="queen-fix-board">
+        {Array.from({ length: 25 }, (_, i) => (
+          // h8, the corner's top right, is dark as on a real board.
+          <i key={i} className={((i % 5) + Math.floor(i / 5)) % 2 ? 'light' : 'dark'} />
+        ))}
+        <i className="queen-fix-tint best" style={at5(1, 3)} />
+        <i className="queen-fix-tint best" style={at5(1, 0)} />
+        <i className="queen-fix-tint mated" style={at5(3, 0)} />
+        <svg className="queen-fix-arrow" viewBox="0 0 5 5">
+          <path d="M1.78 3.5H3.2" />
+          <path className="head" d="M3.44 3.5 3.2 3.34V3.66Z" />
+        </svg>
+        <span className="queen-fix-piece" style={at5(3, 0)}>
+          <CardPiece piece="k" />
         </span>
-        <span className="legend-face good">
-          <ClassIcon cls="brilliant" size={92} />
+        {[2, 3, 4].map((col) => (
+          <span key={col} className="queen-fix-piece" style={at5(col, 1)}>
+            <CardPiece piece="p" />
+          </span>
+        ))}
+        <span className="queen-fix-piece ghost" style={at5(3, 3)}>
+          <CardPiece piece="Q" />
+        </span>
+        <span className="queen-fix-piece queen" style={at5(1, 3)}>
+          <CardPiece piece="Q" />
         </span>
       </span>
-      {SPARKS.map(([x, y, size], i) => (
-        <svg key={i} className="legend-spark" viewBox="0 0 20 20" style={{ '--x': `${x}px`, '--y': `${y}px`, '--s': `${size}px`, '--d': `${0.32 + i * 0.03}s` } as CSSProperties}>
-          <path d="M10 0Q11 9 20 10Q11 11 10 20Q9 11 0 10Q9 9 10 0Z" />
-        </svg>
-      ))}
+      {/* The badges on their squares' top right corners, as on the review board, outside the board's clip. */}
+      <span className="queen-fix-badge mistake" style={at5(3, 3)}>
+        <ClassIcon cls="mistake" size={24} />
+      </span>
+      <span className="queen-fix-badge best" style={at5(1, 0)}>
+        <ClassIcon cls="best" size={24} />
+      </span>
     </span>
   )
 }

@@ -506,7 +506,7 @@ export function HomePage({ active, settings, updateSettings, onOpenAnalysis }: P
 
         <aside ref={side} className="home-side" aria-label="Today">
           {/* Your mistakes and puzzles, the coach and Cassie, then playing online. */}
-          <HomeTopTiles mistakesWaiting={mistakes ? mistakes.filter((m) => !progress.mistakesSolved.includes(m.id)).length : null} />
+          <HomeTopTiles mistakesWaiting={mistakes ? mistakes.filter((m) => !progress.mistakesSolved.includes(m.id)).length : null} mistakesFixed={progress.mistakesSolved.length} />
           <HomeGrid active={active} games={games} />
         </aside>
         <ScrollHandle target={side} />

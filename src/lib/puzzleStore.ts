@@ -33,6 +33,8 @@ export interface PuzzleProgress {
   prefs: { autoNext: boolean; difficulty: Difficulty; rated: boolean }
   /** Ids of recent rated puzzles, oldest first, so they don't come round again soon. */
   seen: string[]
+  /** How much the last rated puzzle moved your rating (the Puzzles front's rated tile); missing until one has. */
+  lastChange?: number
   /** The rated puzzle on the board, so a refresh shows it again; `result` once it has counted. */
   current?: { line: string; result?: 'solved' | 'failed'; delta?: number }
   /** Today's daily puzzle, once done. */
@@ -86,6 +88,7 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
     prefs: { autoNext: prefs.autoNext === true, difficulty: prefs.difficulty && prefs.difficulty in DIFFICULTY ? prefs.difficulty : 'normal', rated: prefs.rated !== false },
     seen: strings(raw.seen),
     current: current && typeof current.line === 'string' ? current : undefined,
+    lastChange: typeof raw.lastChange === 'number' ? raw.lastChange : undefined,
     daily: daily && typeof daily.day === 'number' ? daily : undefined,
     mistakesSolved: strings(raw.mistakesSolved),
     today: today && typeof today.day === 'number' ? { day: today.day, mistakes: count(today.mistakes) } : undefined,
@@ -184,6 +187,7 @@ export function recordRated(progress: PuzzleProgress, won: boolean, day = localD
     solved: progress.solved + (won ? 1 : 0),
     streak,
     bestStreak: Math.max(progress.bestStreak, streak),
+    lastChange: progress.prefs.rated ? rating - progress.rating : progress.lastChange,
     current: { ...current, result: won ? ('solved' as const) : ('failed' as const), delta: progress.prefs.rated ? rating - progress.rating : undefined },
   }
   return won ? recordDay(next, day) : next

@@ -11,7 +11,7 @@ import { loadLiveGame, loadSetup } from '../lib/playStore'
 import { perfsFor } from '../lib/profile'
 import { navigate } from '../lib/router'
 import { useDailyPuzzle } from './DailyCard'
-import { DemoBoard, LegendFlip, RookWatch, TileBoard } from './HomeArt'
+import { DemoBoard, QueenFix, RookWatch, TileBoard } from './HomeArt'
 import { LichessLogo } from './LichessLogo'
 import { SPEED_ICON } from './SpeedIcon'
 import { Link } from './Link'
@@ -63,8 +63,11 @@ function usePlay(active: boolean, games: MyGame[]) {
 const TROPHY = 'M7 4h10v3a5 5 0 0 1-10 0zM7 5H4v1.5A3.5 3.5 0 0 0 7.5 10M17 5h3v1.5A3.5 3.5 0 0 1 16.5 10M12 12v4M8.5 20h7M10 16h4l.5 4h-5z'
 const CUP = 'M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1.5 1.5 1.5 3M12 3.5c0 1.5 1.5 1.5 1.5 3'
 
-/** The top of Home's right column: your own mistakes to fix, and puzzles. `mistakesWaiting` is null while they're found. */
-export function HomeTopTiles({ mistakesWaiting }: { mistakesWaiting: number | null }) {
+/**
+ * The top of Home's right column: your own mistakes to fix, and puzzles. `mistakesWaiting` is null while they're
+ * found; `mistakesFixed`, how many you've fixed (none waiting after some fixed is "All fixed").
+ */
+export function HomeTopTiles({ mistakesWaiting, mistakesFixed }: { mistakesWaiting: number | null; mistakesFixed: number }) {
   const { rating } = useDailyPuzzle()
   // The puzzle's board in your board's colours, as on every board you play on.
   const { boardTheme, palette } = useBoardPrefs()
@@ -73,9 +76,9 @@ export function HomeTopTiles({ mistakesWaiting }: { mistakesWaiting: number | nu
     <nav className="home-grid top" aria-label="Puzzles">
       <Link to="/puzzles/mistakes" className="home-card home-tile mistakes-tile">
         <strong>Fix your mistakes</strong>
-        <small>{mistakesWaiting == null ? 'From your reviews' : mistakesWaiting ? `${mistakesWaiting} waiting` : 'None waiting'}</small>
+        <small>{mistakesWaiting ? `${mistakesWaiting} waiting` : mistakesWaiting === 0 && mistakesFixed ? 'All fixed' : 'From your reviews'}</small>
         <span className="home-tile-art">
-          <LegendFlip />
+          <QueenFix fixed={mistakesWaiting === 0 && mistakesFixed > 0} />
         </span>
       </Link>
       <Link to="/puzzles/rated" className="home-card home-tile puzzle-tile">

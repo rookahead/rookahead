@@ -6052,9 +6052,9 @@ button.explain-row {
 
 .themes-entry-icon {
   flex: none;
-  width: 26px;
-  height: 26px;
-  fill: var(--tone-blue);
+  width: 22px;
+  height: 22px;
+  fill: var(--text);
 }
 
 .themes-entry-go {
@@ -6190,25 +6190,47 @@ button.explain-row {
   font-variant-numeric: tabular-nums;
 }
 
-.rated-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--pc-control);
-  overflow: hidden;
-}
-
-.rated-track span {
+/* Under it, taking turns: the last puzzle's change (green up, red down) and the run solved in a row. */
+.rated-lines {
   display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--pc-go);
+  height: 18px;
+  animation: fade-in 0.35s ease-out;
 }
 
-/* Sprint: a bolt, in the puzzles' own colour. */
+.rated-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rated-line i {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--pc-soft);
+}
+
+.rated-line.up {
+  color: var(--goal-done);
+}
+
+.rated-line.down {
+  color: var(--danger);
+}
+
+.rated-line svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--streak);
+}
+
+/* Sprint: a bolt, in the streak's orange: warm and quick, apart from Rated's blue. */
 .tile-bolt svg {
   width: 96px;
   height: 96px;
-  fill: var(--tone-blue);
+  fill: var(--streak);
   rotate: 10deg;
   translate: 0 -6px;
 }
@@ -6237,24 +6259,31 @@ button.explain-row {
   fill: var(--mascot-ink);
 }
 
-/* Today's puzzle: its board, tipped, the far half below the tile's foot. */
-.tile-board .mini-board,
-.tile-board-blank {
-  width: 112px;
-  height: 112px;
-  border-radius: 10px;
-  overflow: hidden;
-  rotate: -7deg;
-  translate: 0 14px;
+/* Today's puzzle: Home's daily-puzzle widget mark, large, in the widgets' green. */
+.tile-daily {
+  align-items: center;
 }
 
-/* Rated puzzles: the piece, in the puzzles' own colour. */
-.tile-piece svg {
-  width: 96px;
-  height: 96px;
-  fill: var(--tone-amber);
-  rotate: 12deg;
-  translate: 0 18px;
+.tile-daily .goal-icon {
+  width: 104px;
+  height: 104px;
+}
+
+.tile-daily .goal-icon svg {
+  width: 88px;
+  height: 88px;
+}
+
+.tile-daily .goal-icon .goal-check {
+  right: 6px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+}
+
+.tile-daily .goal-check svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Your form in one strip of three (HomeCards.tsx, FormStrip): accuracy and its bars, the streak and this week,
@@ -7550,92 +7579,203 @@ button.explain-row {
   background: color-mix(in srgb, var(--text) 42%, transparent);
 }
 
-/* Fix your mistakes: the review's blunder mark, big; while you point at the card it spins over like a coin into the
-   Legendary mark, sparkles bursting out in its purple. */
-.home-grid .legend-flip {
+/* Fix your mistakes on the Puzzles page (HomeArt.tsx, FixMark): the review's Blunder mark, a green tick on its corner
+   ringed in the card's colour. It keeps still. */
+.fix-mark {
   position: relative;
-  width: 92px;
-  height: 92px;
-  margin-bottom: 8px;
+  width: 84px;
+  height: 84px;
+  /* Level with Daily's calendar beside it. */
+  margin-bottom: 22px;
 }
 
-.legend-coin {
-  position: absolute;
-  inset: 0;
-  rotate: -6deg;
-  transition: rotate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.legend-face {
-  position: absolute;
-  inset: 0;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
-  backface-visibility: hidden;
-  transform: perspective(500px) rotateY(0deg);
-  transition: transform 0.7s cubic-bezier(0.34, 1.3, 0.64, 1);
-}
-
-.legend-face svg {
+.fix-mark .class-icon {
   display: block;
 }
 
-.legend-face.good {
-  transform: perspective(500px) rotateY(180deg);
+/* Flat, as the calendar and the bolt beside it: the review mark without its white frame. */
+.fix-mark .class-icon rect {
+  stroke: none;
 }
 
-.mistakes-tile:hover .legend-coin {
-  rotate: 0deg;
-}
-
-.mistakes-tile:hover .legend-face.bad {
-  transform: perspective(500px) rotateY(-180deg);
-}
-
-.mistakes-tile:hover .legend-face.good {
-  transform: perspective(500px) rotateY(0deg);
-}
-
-.legend-spark {
+.fix-mark-tick {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--s);
-  height: var(--s);
-  margin: calc(var(--s) / -2);
-  fill: #c4b5fd;
+  right: -9px;
+  bottom: -9px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--goal-done);
+  box-shadow: 0 0 0 4px var(--card);
+}
+
+.fix-mark-tick svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #0b2a16;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Fix your mistakes (HomeArt.tsx, QueenFix): a corner of the board, tipped like the other tiles' boards. The ghost
+   queen and orange arrow are the mistake; pointing at the card (or all fixed) slides the queen up to mate, and the
+   green squares, the king's red square and the Best badge land with her. */
+.queen-fix {
+  --land: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  width: 100px;
+  aspect-ratio: 1;
+  rotate: -8deg;
+  translate: 0 14px;
+  transition: rotate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mistakes-tile:hover .queen-fix,
+.queen-fix.fixed {
+  rotate: -3deg;
+  translate: 0 6px;
+}
+
+.queen-fix-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+
+.queen-fix-board > i.light {
+  background: var(--sq-light);
+}
+
+.queen-fix-board > i.dark {
+  background: var(--sq-dark);
+}
+
+/* The squares after the right move, in the review's colours: the move's two in Best's green, the mated king's red. */
+.queen-fix-tint {
+  position: absolute;
+  width: 20%;
+  height: 20%;
   opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.queen-fix-tint.best {
+  background: rgba(79, 154, 60, 0.6);
+}
+
+.queen-fix-tint.mated {
+  background: rgba(199, 55, 47, 0.6);
+}
+
+/* The move played: a thin white arrow, as the Coach tile's. */
+.queen-fix-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35));
+  transition: opacity 0.2s;
+}
+
+.queen-fix-arrow path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 0.09;
+  stroke-linecap: round;
+}
+
+.queen-fix-arrow .head {
+  fill: #fff;
+  stroke: #fff;
+  stroke-width: 0.04;
+  stroke-linejoin: round;
+}
+
+.queen-fix-piece {
+  position: absolute;
+  width: 20%;
+  height: 20%;
+}
+
+.queen-fix-piece.ghost {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+.queen-fix-piece.queen {
+  transition: top 0.45s var(--land);
+}
+
+.queen-fix-badge {
+  position: absolute;
+  width: 20%;
+  height: 20%;
   pointer-events: none;
 }
 
-.mistakes-tile:hover .legend-spark {
-  animation: legend-spark 0.6s ease-out var(--d) both;
+.queen-fix-badge .class-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 52%;
+  height: 52%;
+  translate: 35% -35%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+  transition: scale 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s;
 }
 
-@keyframes legend-spark {
-  0% {
-    opacity: 0;
-    scale: 0;
-    translate: 0 0;
-  }
-  40% {
-    opacity: 1;
-    scale: 1.2;
-  }
-  100% {
-    opacity: 0;
-    scale: 0.6;
-    translate: var(--x) var(--y);
-  }
+.queen-fix-badge.best .class-icon {
+  scale: 0;
+  opacity: 0;
+}
+
+/* The right move: the mistake goes at once, the queen slides up, and what marks the mate lands with her (she has
+   all but arrived by a third of a second). */
+.mistakes-tile:hover .queen-fix-piece.ghost,
+.mistakes-tile:hover .queen-fix-arrow,
+.queen-fix.fixed .queen-fix-piece.ghost,
+.queen-fix.fixed .queen-fix-arrow {
+  opacity: 0;
+}
+
+.mistakes-tile:hover .queen-fix-piece.queen,
+.queen-fix.fixed .queen-fix-piece.queen {
+  top: 0 !important;
+}
+
+.mistakes-tile:hover .queen-fix-badge.mistake .class-icon,
+.queen-fix.fixed .queen-fix-badge.mistake .class-icon {
+  scale: 0;
+  opacity: 0;
+}
+
+.mistakes-tile:hover .queen-fix-tint,
+.mistakes-tile:hover .queen-fix-badge.best .class-icon {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 0.28s;
+}
+
+.queen-fix.fixed .queen-fix-tint,
+.queen-fix.fixed .queen-fix-badge.best .class-icon {
+  opacity: 1;
+  scale: 1;
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .legend-coin,
-  .legend-face {
-    transition: none;
-  }
-
-  .mistakes-tile:hover .legend-spark {
-    animation: none;
+  .queen-fix,
+  .queen-fix * {
+    transition: none !important;
   }
 }
 
