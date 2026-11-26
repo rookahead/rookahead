@@ -18,6 +18,7 @@ const progress = (p: Partial<PuzzleProgress>): PuzzleProgress => ({
   seen: [],
   mistakesSolved: [],
   xp: 0,
+  recent: [],
   ...p,
 })
 

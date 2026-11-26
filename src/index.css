@@ -11732,6 +11732,436 @@ button.user-avatar.guest:hover {
   }
 }
 
+/* ═══════════════ Rated puzzles (Puzzles.tsx, puzzles/Rated.tsx) ═══════════════
+   Home's coach over the board, Difficulty under it, each in a player bar's room; one calm panel: the puzzle and
+   the game it's from, your rating and chapter, your last ten, then Hint and a row of round buttons. */
+.puzzle-rated .panel-card {
+  background: var(--card);
+}
+
+/* The coach's face takes the page's colour. Phone Home's rule that puts its line first doesn't apply here. */
+.puzzle-rated .puzzle-above {
+  --surface: var(--bg);
+}
+
+.rp-coach .home-welcome {
+  order: 0;
+}
+
+.rp-difficulty {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.rp-difficulty .pref-select {
+  height: 34px;
+}
+
+@media (min-width: 1001px) {
+  .puzzle-layout.puzzle-rated .play-board {
+    justify-content: flex-start;
+  }
+
+  .puzzle-rated .puzzle-above {
+    height: var(--player-h);
+  }
+
+  .puzzle-layout.puzzle-rated .puzzle-below {
+    display: flex;
+    align-items: center;
+    height: var(--player-h);
+  }
+}
+
+@media (max-width: 1000px) {
+  .puzzle-rated .puzzle-above .rp-coach {
+    padding: 10px 16px;
+  }
+
+  .puzzle-rated .puzzle-below {
+    padding: 10px 16px 4px;
+  }
+}
+
+/* The panel's parts, a hairline between each. */
+.rp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.rp-body > * + * {
+  border-top: 1px solid var(--border);
+}
+
+.rp-info {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px 14px;
+}
+
+.rp-info-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.rp-info-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  margin: 1px;
+  fill: var(--muted);
+}
+
+.rp-lines {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rp-head {
+  margin: 0 0 2px;
+  font: 700 17px/22px var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.rp-head a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.rp-head a:hover {
+  text-decoration: underline;
+}
+
+/* Every line's mark in an 18px column, so the words all start at the same place. */
+.rp-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-2);
+}
+
+.rp-line-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.rp-line-icon .speed-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.rp-muted {
+  color: var(--muted);
+}
+
+.rp-turn {
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.rp-turn .rp-muted {
+  font-weight: 400;
+}
+
+.rp-turn.good,
+.rp-turn.good .rp-line-icon {
+  color: var(--win);
+}
+
+.rp-turn.bad,
+.rp-turn.bad .rp-line-icon {
+  color: var(--danger);
+}
+
+.rp-mark {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Whose move: that side's king on a light square of the board. */
+.rp-king {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #a5b9e8;
+}
+
+/* The game's lines keep three lines' room, so nothing moves when they arrive. */
+.rp-game {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 64px;
+  margin-top: 4px;
+}
+
+.rp-game .skel {
+  margin: 4px 0 4px 26px;
+}
+
+.rp-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.rp-dot.white {
+  background: var(--white-piece);
+  box-shadow: 0 0 0 1.5px var(--border-strong);
+}
+
+:root[data-theme='light'] .rp-dot.white {
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+}
+
+.rp-dot.black {
+  background: var(--black-piece);
+  box-shadow: 0 0 0 1.5px var(--guide-strong);
+}
+
+.rp-title {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.rp-chips li {
+  border-radius: 9px;
+}
+
+/* Your rating, Rated, and your chapter's XP in the dashboard's green. */
+.rp-score {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.rp-score-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rp-score .puzzle-num {
+  font-size: 32px;
+}
+
+.rp-delta {
+  padding: 5px 7px;
+  border-radius: 6px;
+  font: 700 14px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rp-delta.up {
+  color: var(--win);
+  background: color-mix(in srgb, var(--win) 18%, transparent);
+}
+
+.rp-delta.down {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+.rp-switch {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.rp-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: var(--surface-4);
+  overflow: hidden;
+}
+
+:root[data-theme='light'] .rp-bar {
+  background: var(--t-high);
+}
+
+.rp-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--goal-done);
+}
+
+.rp-under {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rp-run strong {
+  margin-right: 2px;
+  font: 700 14px/1 var(--font-display);
+}
+
+.rp-run.lit strong {
+  color: var(--goal-done);
+}
+
+.rp-run .flame.lit,
+.rp-run .flame.lit .flame-core {
+  fill: var(--goal-done);
+}
+
+/* The last ten: the result marks' colours, the board's blue for a solve and red for a miss. */
+.rp-recent {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.rp-recent-head {
+  display: flex;
+  justify-content: space-between;
+  font: 400 11px/18px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rp-recent ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+
+.rp-recent li {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: #fff;
+}
+
+:root[data-theme='light'] .rp-recent li.empty {
+  background: var(--t-low);
+}
+
+.rp-recent li.won {
+  background: #3c6bd7;
+}
+
+.rp-recent li.lost {
+  background: var(--danger);
+}
+
+.rp-recent li.now {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+}
+
+:root[data-theme='light'] .rp-recent li.now {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.16);
+}
+
+.rp-recent .rp-mark {
+  stroke-width: 3.4;
+}
+
+/* The foot: Hint (or Next), then round buttons on the content's edges; the settings menu opens over them. */
+.rp-foot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.rp-foot .puzzle-acts {
+  padding: 14px 16px 0;
+}
+
+.rp-strip {
+  gap: 8px;
+  padding: 8px 16px 14px;
+}
+
+.rp-strip .icon-btn:not(.strip-label) {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+}
+
+:root[data-theme='light'] .rp-strip .icon-btn:not(.strip-label) {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.14);
+}
+
+.rp-menu {
+  position: absolute;
+  left: 12px;
+  bottom: 60px;
+  z-index: 5;
+  width: 260px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  box-shadow: var(--shadow-pop);
+}
+
+:root[data-theme='light'] .rp-menu {
+  background: var(--card);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.rp-menu .pref-row {
+  min-height: 42px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-delta {
+    animation: none;
+  }
+}
+
 /* ═══════════════ Placeholders while content is on its way (Skeleton.tsx) ═══════════════
    Shaped like what's coming, in a faint tint of the text colour (so they suit every theme), with a soft
    highlight sweeping across each. The highlight is its own layer moved by transform, so it runs on the

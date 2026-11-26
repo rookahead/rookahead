@@ -397,6 +397,13 @@ words and icons are white, on every row; the current page is filled a deeper lil
 word and icon, and a grey background marks the row under the pointer. Game review and Support keep their own colours (lilac,
 pink). It switches at once, with no fades.
 
+**Rated puzzles page**: Home's coach over the board (its face and the comment only), Difficulty under it, each in a
+player bar's room. One flat card beside it, a hairline between its parts: the puzzle (the puzzle piece, "Puzzle #id"
+linking to Lichess, whose move with that side's king on a light square, then the game it's from: speed icon, clock,
+times played, both players), your rating with Rated, a 14px bar of your chapter's XP in the goal green with the run
+and "Chapter n · x / y XP" under it, your last ten (the board's blue with a tick, red with a cross), then Hint and the
+round icon row (settings, whose menu holds Jump to next puzzle; flip; the move arrows).
+
 ## Motion
 
 Nothing moves when a page arrives: the first frame is the final frame. Everything answers the pointer:
@@ -419,7 +426,7 @@ Nothing moves when a page arrives: the first frame is the final frame. Everythin
 
 ### Don't
 
-- Don't make pill buttons or round buttons (avatars and dots excepted).
+- Don't make pill buttons or round buttons (avatars and dots excepted, and the icon row at the foot of Rated puzzles' panel: round, outlined in line-strong).
 - Don't tint the page or cards with the accent.
 - Don't put two blue cards or two white cards on one screen.
 - Don't use primary blue as text on charcoal; use the link blue.

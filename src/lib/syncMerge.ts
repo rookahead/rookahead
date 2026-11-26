@@ -40,7 +40,7 @@ function mergeToday(a: PuzzleProgress['today'], b: PuzzleProgress['today']): Puz
 }
 
 /**
- * The rating line (rating, counts, current streak, prefs) comes whole from the side with more
+ * The rating line (rating, counts, current streak, prefs, the last ten) comes whole from the side with more
  * puzzles played; bests take the max, id lists are unioned, and the puzzle on the board stays local.
  */
 export function mergePuzzles(local: PuzzleProgress, remote: PuzzleProgress): PuzzleProgress {
@@ -66,6 +66,8 @@ export function mergePuzzles(local: PuzzleProgress, remote: PuzzleProgress): Puz
     today: mergeToday(local.today, remote.today),
     // XP only grows: the larger side has the most of it.
     xp: Math.max(local.xp, remote.xp),
+    // The last ten go with the rating line.
+    recent: lead.recent,
   }
 }
 

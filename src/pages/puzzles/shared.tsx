@@ -47,10 +47,11 @@ export const PUZZLES_ICON = 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h
  * Board on the left, panel on the right; `below` sits under the board, `above` over it. On desktop the panel
  * opens with `head`, the page's name (the page has no bar of its own there, so the board gets the height).
  */
-export function PuzzleLayout({ board, head, above, below, hub, children }: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; hub?: boolean; children: ReactNode }) {
+export function PuzzleLayout(props: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; hub?: boolean; className?: string; children: ReactNode }) {
+  const { board, head, above, below, hub, className = '', children } = props
   return (
     // The start page (`hub`) has no panel: its cards sit straight on the page, like Play's front.
-    <main className={`play-layout puzzle-layout ${hub ? 'puzzle-front' : ''}`}>
+    <main className={`play-layout puzzle-layout ${hub ? 'puzzle-front' : ''} ${className}`}>
       <section className="play-board">
         {above && <div className="puzzle-above">{above}</div>}
         {board}
