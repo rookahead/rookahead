@@ -7546,6 +7546,11 @@ button.explain-row {
   filter: brightness(0.72);
 }
 
+:root[data-theme='light'] .home-grid .puzzle-tile .art-board.back {
+  filter: none;
+  opacity: 0.7;
+}
+
 .home-grid .puzzle-tile:hover .art-board {
   translate: -8px 0;
 }
