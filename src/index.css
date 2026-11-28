@@ -1300,19 +1300,20 @@ button.side-menu-item {
   margin-top: 10px;
 }
 
-/* Game review, Rookahead's main thing: a soft lilac wash, its word and icon in lilac (like Support's pink), and a
-   lilac count of this week's games not reviewed yet. On its own page it's filled like any page you're on. */
+/* Game review, Rookahead's main thing: a soft wash of the board's light square, its word and icon in that blue (like
+   Support's pink), and a count of this week's games not reviewed yet. On its own page it's filled like any page
+   you're on. */
 .sidebar-item.review-item:not(.active) {
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
-  color: var(--brand);
+  background: color-mix(in srgb, #a5b9e8 14%, transparent);
+  color: #a5b9e8;
 }
 
 .sidebar-item.review-item:not(.active):hover {
-  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  background: color-mix(in srgb, #a5b9e8 22%, transparent);
 }
 
 .sidebar-item.review-item:not(.active) svg {
-  color: var(--brand);
+  color: #a5b9e8;
 }
 
 /* Light: the Play online card's pale blue under its navy words, and the count in the same navy. */
@@ -1334,7 +1335,7 @@ button.side-menu-item {
   color: #ffffff;
 }
 
-/* The count: a lilac pill at the row's end, room for "99+". */
+/* The count: a pill in the board's light square at the row's end, room for "99+". */
 .side-badge {
   flex: none;
   margin-left: auto;
@@ -1343,17 +1344,17 @@ button.side-menu-item {
   box-sizing: border-box;
   padding: 0 6px;
   border-radius: 10px;
-  background: var(--brand);
-  color: var(--brand-ink);
+  background: #a5b9e8;
+  color: #0d1b5e;
   font: 700 12px/20px var(--font-ui);
   text-align: center;
 }
 
-/* The page you're on: a deeper lilac (#7f509b, the buttons' hue darkened) under the same white word and icon, so only
-   the background changes. */
+/* The page you're on: the board's light square, muted and darkened (#56689c) so the same white word and icon read on
+   it; only the background changes. */
 .sidebar-item.active,
 .sidebar-item.active:hover {
-  background: #7f509b;
+  background: #56689c;
   color: #ffffff;
 }
 
@@ -8272,6 +8273,18 @@ button.user-avatar.guest:hover {
   margin: 0;
   border-radius: 10px;
   font-size: 15px;
+}
+
+/* Sign up: a muted shade of the board's light square under navy words in dark; in light, the blue of the page's other
+   buttons (Connect Lichess, Chess.com). */
+.guest-card .guest-signup {
+  background: #8396c6;
+  color: #0d1b5e;
+}
+
+:root[data-theme='light'] .guest-card .guest-signup {
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
 .guest-card .guest-login {

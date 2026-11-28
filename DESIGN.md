@@ -387,15 +387,18 @@ name (rating), when · the result, the !! badge; the move; its board. The board 
 
 **Sidebar**: at the top the logo (a 34px black-and-white tile, 2px in from the bars' left edge) and beside it the name in two lines: ROOK (R and K
 dimmed, the O's solid eyes with pupils looking ahead) over AHEAD in white, set 9px to the right; 12px capitals, the two lines (28px) a little shorter than the tile. Then Home, Play, Puzzles, Tools (a menu: Analysis board, Board editor,
-Import a game), Game review (the game you were just on, or Load a game; a soft lilac wash, lilac word and icon, and a
-lilac pill at the row's end counting this week's games not reviewed yet, up to 99+). At the foot, the pink
+Import a game), Game review (the game you were just on, or Load a game; a soft wash of the board's light square, its word and icon
+in that blue, and a pill of it at the row's end counting this week's games not reviewed yet, up to 99+; in light, the
+Play online card's pale blue under navy words, with a navy count). At the foot, the pink
 Support button, Search, a row of icons (theme, sound, settings, Community, Blog, Collapse) and your card. Home has no
 Game review card: several unreviewed games show as a "Review N games" link in My games' header.
 
 **Sidebar item**: Cabin 600, 16px, 34px tall with 8px between, radius 8px, a solid 20px icon (the same on its page and off it). The
-words and icons are white, on every row; the current page is filled a deeper lilac (#7f509b) under the same white
-word and icon, and a grey background marks the row under the pointer. Game review and Support keep their own colours (lilac,
-pink). It switches at once, with no fades.
+words and icons are white, on every row; the current page is filled with the board's light square, muted and darkened
+(#56689c), under the same white word and icon (in light, a white pill under the same dark word), and a grey background
+marks the row under the pointer. The words never change colour; only the highlight does. Game review and Support keep
+their own colours (the board's blue, pink). Sign up is the board's light square muted (#8396c6, navy words) in dark and the light page's button blue in light. It switches at once, with
+no fades.
 
 **Rated puzzles page**: Home's coach over the board, with whose move it is (or Solved / Missed) over its comment and
 the clock at the row's end. Under the board, your last twenty in up to two rows of small pills: the rating change,
