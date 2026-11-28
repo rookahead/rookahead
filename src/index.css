@@ -7536,6 +7536,11 @@ button.explain-row {
   translate: -6px 10px;
 }
 
+/* The close shadow separates the front board's edges from the board behind it. */
+.home-grid .puzzle-tile .art-board:not(.back) {
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.34), 0 8px 22px rgba(0, 0, 0, 0.3);
+}
+
 .home-grid .puzzle-tile .art-board.back {
   position: absolute;
   bottom: 0;
@@ -7547,8 +7552,7 @@ button.explain-row {
 }
 
 :root[data-theme='light'] .home-grid .puzzle-tile .art-board.back {
-  filter: none;
-  opacity: 0.7;
+  filter: saturate(0.55) brightness(0.88);
 }
 
 .home-grid .puzzle-tile:hover .art-board {
