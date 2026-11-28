@@ -29,6 +29,8 @@ interface Finished {
 /** Quick replies: in a sprint the clock is running. */
 const QUICK: SolveTiming = { first: 250, reply: 150, wrong: 450 }
 const MODES = Object.keys(SPRINT_MODES) as SprintMode[]
+/** How far a Sprint puzzle may be from its step's rating (the steps are 60 apart). */
+const NEAR = 40
 
 const RECENT_KEY = 'rookahead.sprintRecent.v1'
 /** How many of the last Sprint puzzles are kept out of the next runs. */
@@ -325,7 +327,8 @@ function SprintRun(props: { mode: SprintMode; theme: string | null; resume?: Sav
     [onEnd],
   )
 
-  const fetchFor = (n: number) => (theme ? nextThemeLine(theme, sprintRating(n), ids.current, Math.random, 50) : nextRatedLine(sprintRating(n), ids.current, Math.random, 50))
+  // Within NEAR of the step's rating, so the run climbs evenly.
+  const fetchFor = (n: number) => (theme ? nextThemeLine(theme, sprintRating(n), ids.current, Math.random, NEAR, NEAR) : nextRatedLine(sprintRating(n), ids.current, Math.random, NEAR, NEAR))
 
   /** Shows puzzle number `n`, from the line fetched ahead if there is one. */
   const show = (n: number) => {
