@@ -333,8 +333,9 @@ from the card's foot. Art never sits behind text.
 The board's pieces are Rookahead's own (src/pieces.css), drawn for it: solid shapes with almost no detail, each on a
 flat plate. White is white with a dark edge (#34343e); black is #34343f with a near-black edge (#17171c) and a soft
 light ring outside it (white at 30%) that lifts it off the dark squares. Edges are about 2.5px on a 90px square, and no
-corner is sharp: outer corners round off, inner ones fill in. Heights as a share of the square, edge included: pawn
-and rook 77%, bishop 79.5%, knight 80%, queen 82%, king 85%. The only details: the knight's eye (a short dash along its forehead,
+corner is sharp: outer corners round off, inner ones fill in. Heights as a share of the square, edge included, as drawn: pawn
+and rook 77%, bishop 79.5%, knight 80%, queen 82%, king 85%; on the board (index.css) the rook, knight, queen and king are
+shown smaller about their plate's foot, to rook 75%, knight 78%, queen 77%, king 81.5% (bishop and pawn as drawn). The only details: the knight's eye (a short dash along its forehead,
 light on the black knight), the bishop's curved cut (open, so the board shows through) and the king's cross. The
 queen has four ball-tipped points on a band that flares to the plate; the rook's battlements are a separate block
 over a straight body. The king's cross is a thick plus, as wide as it is tall, its corners kept almost square so it

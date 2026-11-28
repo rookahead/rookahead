@@ -11847,6 +11847,29 @@ button.user-avatar.guest:hover {
   }
 }
 
+/* Rookahead's own board pieces, sized on the board: each drawn a little smaller about its plate's foot (90% down the
+   square), so they keep standing on one line. Heights as a share of the square: rook 75%, knight 78%, bishop 80.5%,
+   queen 77%, king 81.5%; pawns as drawn. Cburnett's pieces are left as they are. */
+:root[data-pieces='rookahead'] .cg-wrap piece {
+  background-position: 50% 90%;
+}
+
+:root[data-pieces='rookahead'] .cg-wrap piece.rook {
+  background-size: 96.5%;
+}
+
+:root[data-pieces='rookahead'] .cg-wrap piece.knight {
+  background-size: 97%;
+}
+
+:root[data-pieces='rookahead'] .cg-wrap piece.queen {
+  background-size: 91.2%;
+}
+
+:root[data-pieces='rookahead'] .cg-wrap piece.king {
+  background-size: 96.5%;
+}
+
 /* ═══════════════ Rated puzzles (Puzzles.tsx, puzzles/Rated.tsx) ═══════════════
    Home's coach over the board with whose move it is and the clock; your last ten under it. No panel: beside the
    board, the settings button level with the coach (as on Play), Hint level with the board's top (it slides right and
