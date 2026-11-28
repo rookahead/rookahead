@@ -397,12 +397,20 @@ words and icons are white, on every row; the current page is filled a deeper lil
 word and icon, and a grey background marks the row under the pointer. Game review and Support keep their own colours (lilac,
 pink). It switches at once, with no fades.
 
-**Rated puzzles page**: Home's coach over the board (its face and the comment only), Difficulty under it, each in a
-player bar's room. One flat card beside it, a hairline between its parts: the puzzle (the puzzle piece, "Puzzle #id"
-linking to Lichess, whose move with that side's king on a light square, then the game it's from: speed icon, clock,
-times played, both players), your rating with Rated, a 14px bar of your chapter's XP in the goal green with the run
-and "Chapter n · x / y XP" under it, your last ten (the board's blue with a tick, red with a cross), then Hint and the
-round icon row (settings, whose menu holds Jump to next puzzle; flip; the move arrows).
+**Rated puzzles page**: Home's coach over the board, with whose move it is (or Solved / Missed) over its comment and
+the clock at the row's end. Under the board, your last twenty in up to two rows of small pills: the rating change,
+white on the board's blue for a solve and red for a miss (a tick or a cross when Rated is off); the puzzle on the board
+waits as an empty lilac pill. Once no rated puzzle is waiting, a pill opens its puzzle again, played without counting,
+and is ringed while it's on the board. No panel beside the board: the settings button level with the coach, ringed
+like the round buttons, as on Play (its menu drops in from under the button and lifts back, fading, as the nut turns: Difficulty, Rated, Jump to next puzzle); Hint as a round pill level with
+the board's top, which slides to the row's right end and widens into Next puzzle once the puzzle is over, in the main blue (#1b4ef5, in both themes) with a soft glow of it; one card with
+your rating, its change and the run in the goal green, then XP (what this puzzle earned), a thick bar with its goal-green
+fill set in a dark-green track, where you are and the chapter's total under it, and the chapter's number on a flag; once
+it's over, Analyse (the Analysis board's knight) and Play it out (Cassie's face) as round outlined buttons at the left of
+Next puzzle's row, where Hint was, springing in one after the other as the pill slides off; the move arrows at the right, their foot at the board's foot: two filled round buttons in a pill of the card's colour, the one that can't go further dimmed. No
+flip button anywhere (F flips) and no Try again.
+Phones: settings in the page bar, the card flat under the board with the pills in a grid of ten, and the pill with the
+arrows pinned to the foot.
 
 ## Motion
 
@@ -426,7 +434,7 @@ Nothing moves when a page arrives: the first frame is the final frame. Everythin
 
 ### Don't
 
-- Don't make pill buttons or round buttons (avatars and dots excepted, and the icon row at the foot of Rated puzzles' panel: round, outlined in line-strong).
+- Don't make pill buttons or round buttons (avatars and dots excepted, and Rated puzzles' Hint / Next puzzle pill and its round icon buttons, outlined in line-strong).
 - Don't tint the page or cards with the accent.
 - Don't put two blue cards or two white cards on one screen.
 - Don't use primary blue as text on charcoal; use the link blue.

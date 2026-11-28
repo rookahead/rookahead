@@ -22,6 +22,8 @@ export interface ViewProps {
   settings: Settings
   updateSettings: (patch: Partial<Settings>) => void
   head: ReactNode
+  /** Phones: a place in the page bar for the mode's own button. */
+  headerSlot?: HTMLElement | null
   onOpenAnalysis: () => void
 }
 
@@ -45,10 +47,11 @@ export const PUZZLES_ICON = 'M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h
 
 /**
  * Board on the left, panel on the right; `below` sits under the board, `above` over it. On desktop the panel
- * opens with `head`, the page's name (the page has no bar of its own there, so the board gets the height).
+ * opens with `head`, the page's name (the page has no bar of its own there, so the board gets the height); a `bare`
+ * panel has no card, and its children place `head` themselves.
  */
-export function PuzzleLayout(props: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; hub?: boolean; className?: string; children: ReactNode }) {
-  const { board, head, above, below, hub, className = '', children } = props
+export function PuzzleLayout(props: { board: ReactNode; head: ReactNode; above?: ReactNode; below?: ReactNode; hub?: boolean; bare?: boolean; className?: string; children: ReactNode }) {
+  const { board, head, above, below, hub, bare, className = '', children } = props
   return (
     // The start page (`hub`) has no panel: its cards sit straight on the page, like Play's front.
     <main className={`play-layout puzzle-layout ${hub ? 'puzzle-front' : ''} ${className}`}>
@@ -57,11 +60,16 @@ export function PuzzleLayout(props: { board: ReactNode; head: ReactNode; above?:
         {board}
         <div className="puzzle-below">{below}</div>
       </section>
+      {/* `bare`: no card; the column's parts sit straight on the page (Rated). */}
       <aside className="panel play-panel">
-        <div className="panel-card">
-          {head}
-          {children}
-        </div>
+        {bare ? (
+          children
+        ) : (
+          <div className="panel-card">
+            {head}
+            {children}
+          </div>
+        )}
       </aside>
     </main>
   )

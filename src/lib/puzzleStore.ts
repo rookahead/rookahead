@@ -36,7 +36,7 @@ export interface PuzzleProgress {
   /** How much the last rated puzzle moved your rating (the Puzzles front's rated tile); missing until one has. */
   lastChange?: number
   /** The rated puzzle on the board, so a refresh shows it again; `result` once it has counted. */
-  current?: { line: string; result?: 'solved' | 'failed'; delta?: number }
+  current?: { line: string; result?: 'solved' | 'failed'; delta?: number; xp?: number }
   /** Today's daily puzzle, once done. */
   daily?: { day: number; result: 'solved' | 'failed' }
   /** Mistake puzzle ids solved: they leave the queue. */
@@ -51,10 +51,12 @@ export interface RatedResult {
   id: string
   won: boolean
   delta?: number
+  /** The puzzle itself, so it can be played again (missing on results from before it was kept). */
+  line?: string
 }
 
 /** How many results `recent` keeps. */
-export const RECENT_RESULTS = 10
+export const RECENT_RESULTS = 20
 
 const KEY = STORE_KEYS.puzzles
 export const SEEN_LIMIT = 3000
@@ -108,7 +110,7 @@ export function parseProgress(parsed: unknown): PuzzleProgress {
     recent: Array.isArray(raw.recent)
       ? (raw.recent as Partial<RatedResult>[])
           .filter((r) => r && typeof r.id === 'string' && typeof r.won === 'boolean')
-          .map((r) => ({ id: r.id!, won: r.won!, delta: typeof r.delta === 'number' ? r.delta : undefined }))
+          .map((r) => ({ id: r.id!, won: r.won!, delta: typeof r.delta === 'number' ? r.delta : undefined, line: typeof r.line === 'string' ? r.line : undefined }))
           .slice(-RECENT_RESULTS)
       : [],
   }
@@ -197,17 +199,18 @@ export function recordRated(progress: PuzzleProgress, won: boolean, day = localD
   const rating = progress.prefs.rated ? newRating(progress.rating, puzzle.rating, won, progress.played) : progress.rating
   const streak = won ? progress.streak + 1 : 0
   const delta = progress.prefs.rated ? rating - progress.rating : undefined
+  const xp = won ? XP.solve + (puzzle.rating > progress.rating ? XP.harder : 0) : XP.miss
   const next = {
     ...progress,
     rating,
     played: progress.played + 1,
-    xp: progress.xp + (won ? XP.solve + (puzzle.rating > progress.rating ? XP.harder : 0) : XP.miss),
+    xp: progress.xp + xp,
     solved: progress.solved + (won ? 1 : 0),
     streak,
     bestStreak: Math.max(progress.bestStreak, streak),
     lastChange: progress.prefs.rated ? rating - progress.rating : progress.lastChange,
-    current: { ...current, result: won ? ('solved' as const) : ('failed' as const), delta },
-    recent: [...progress.recent, { id: puzzle.id, won, delta }].slice(-RECENT_RESULTS),
+    current: { ...current, result: won ? ('solved' as const) : ('failed' as const), delta, xp },
+    recent: [...progress.recent, { id: puzzle.id, won, delta, line: current.line }].slice(-RECENT_RESULTS),
   }
   return won ? recordDay(next, day) : next
 }

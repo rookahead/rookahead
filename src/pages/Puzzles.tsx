@@ -1,11 +1,14 @@
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import { Chess, type Square } from 'chess.js'
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Board } from '../components/Board'
 import { CoachFace } from '../components/CoachFace'
+import { COACH_EYE_Y, COACH_EYES, COACH_HEAD } from '../components/RookCoach'
 import { FlipIcon, NavIcon } from '../components/NavIcons'
 import { PageHeader } from '../components/PageHeader'
+import { NavItemIcon } from '../components/Sidebar'
 import { PuzzleIcon } from '../components/PuzzleIcons'
 import { Link } from '../components/Link'
 import { TAB_ICONS } from '../components/Tabs'
@@ -16,9 +19,9 @@ import { formatDay } from '../lib/home'
 import type { RookMood } from '../lib/coach'
 import type { Color } from '../lib/evaluation'
 import { useImmersive } from '../lib/immersive'
+import { KNIGHT } from '../lib/nav'
 import { canPlayOut, playItOut } from '../lib/practice'
 import { dailyLine, nextRatedLine, nextThemeLine } from '../lib/puzzleData'
-import { puzzleGame } from '../lib/puzzleGame'
 import { chapterAt, markSeen, seenChapter } from '../lib/puzzlePath'
 import { THEME_KEYS } from '../lib/puzzleThemes'
 import { dayNumber, DIFFICULTY, localDayNumber, parsePuzzleLine, playerColor, puzzleGoal, solvedLine, themeLabels, themeName, type Difficulty, type Puzzle } from '../lib/puzzles'
@@ -32,11 +35,11 @@ import { logUse } from '../lib/usage'
 import { addLine, createTree, mainlineToPgn, ROOT_ID } from '../lib/tree'
 import { BoardPath } from './puzzles/BoardPath'
 import { PuzzleHub } from './puzzles/Hub'
-import { RatedInfo, RatedScore, RecentResults } from './puzzles/Rated'
+import { RatedScore, RecentResults } from './puzzles/Rated'
 import { PuzzleStart } from './puzzles/Start'
 import { ThemesView } from './puzzles/Themes'
 import { MistakesView } from './puzzles/Mistakes'
-import { clockFace, DayStreak, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
+import { clockFace, DayStreak, EmptyBoard, lastMoveOf, Placeholder, PuzzleCoach, PuzzleLayout, sideName, usePuzzleSolve, useStepKeys, type Tone, type Update, type ViewProps } from './puzzles/shared'
 import { SprintView } from './puzzles/Sprint'
 
 interface Props {
@@ -81,11 +84,15 @@ export function PuzzlesPage({ leaving = false, settings, updateSettings, onOpenA
   // Desktop: the panel's top says which mode this is, with Back to the start page (a phone has its page bar). The
   // start page has no panel, so no top.
   const head = phone || hub ? null : <PanelHead tab={tab} theme={known} />
-  const props: ViewProps = { progress, update, settings, updateSettings, head, onOpenAnalysis }
+  // Phones: room in the page bar for a mode's own button (Rated's settings).
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
+  const props: ViewProps = { progress, update, settings, updateSettings, head, headerSlot, onOpenAnalysis }
   return (
     <div className="play-page puzzles-page">
       {/* Desktop has the page's name at the top of the panel, so the board gets the height. */}
-      <PageHeader phoneOnly title="Puzzles" back={hub ? undefined : known ? '/puzzles/themes' : '/puzzles'} phoneTitle={known ? themeName(known) : MODE_NAMES[tab]} />
+      <PageHeader phoneOnly title="Puzzles" back={hub ? undefined : known ? '/puzzles/themes' : '/puzzles'} phoneTitle={known ? themeName(known) : MODE_NAMES[tab]}>
+        <span ref={setHeaderSlot} className="page-header-slot" />
+      </PageHeader>
       {hub && phone ? (
         <PuzzleHub progress={progress} settings={settings} />
       ) : hub ? (
@@ -143,9 +150,13 @@ function analysePuzzle(puzzle: Puzzle, played: string[], onOpenAnalysis: () => v
 const signed = (n: number) => (n >= 0 ? `+${n}` : `−${-n}`)
 
 /** Rated puzzles: the steps of your chapter; with a `theme`, puzzles of that kind near your rating instead. */
-function RatedView({ progress, update, settings, head, onOpenAnalysis, theme }: ViewProps & { theme?: string }) {
+function RatedView({ progress, update, settings, head, headerSlot, onOpenAnalysis, theme }: ViewProps & { theme?: string }) {
   // Resume the puzzle on the board if it hasn't counted yet; otherwise fetch the next one.
   const [line, setLine] = useState<string | null>(() => (progress.current && !progress.current.result ? progress.current.line : null))
+  // A past puzzle opened from its pill: played again, not counted.
+  const [replay, setReplay] = useState(false)
+  // Each opening starts the puzzle afresh, even the one already on the board.
+  const [opened, setOpened] = useState(0)
   const [error, setError] = useState(false)
   const progressRef = useRef(progress)
   useEffect(() => {
@@ -160,8 +171,6 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis, theme }: 
       const { rating, seen, prefs } = progressRef.current
       const base = rating + DIFFICULTY[prefs.difficulty].offset
       const line = theme ? nextThemeLine(theme, base, [...seen, ...exclude]) : nextRatedLine(base, [...seen, ...exclude])
-      // Its game from Lichess comes ahead too, so the panel has it when the puzzle does.
-      line.then((l) => puzzleGame(l.split(' ')[0]), () => {})
       upcoming.current = { line, difficulty: prefs.difficulty }
     },
     [theme],
@@ -176,6 +185,7 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis, theme }: 
     line.then(
       (l) => {
         update((p) => startRated(p, l))
+        setReplay(false)
         setLine(l)
         fetchNext([l.split(' ')[0]])
       },
@@ -224,52 +234,156 @@ function RatedView({ progress, update, settings, head, onOpenAnalysis, theme }: 
   }, [line, next, fetchNext])
 
   const puzzle = line ? parsePuzzleLine(line) : null
-  if (!puzzle) return <Placeholder head={head} settings={settings} error={error} onRetry={next} />
+  if (!puzzle) return <RatedLoading progress={progress} settings={settings} head={theme ? head : null} error={error} onRetry={next} />
   const current = progress.current?.line === line ? progress.current : undefined
   const delta = current?.delta
+  // A rated puzzle not yet over: the pills wait (opening another would leave it uncounted).
+  const waiting = Boolean(progress.current && !progress.current.result)
+  const reopen = (l: string) => {
+    setReplay(true)
+    setLine(l)
+    setOpened((n) => n + 1)
+  }
   const setPrefs = (patch: Partial<PuzzleProgress['prefs']>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...patch } }))
 
   return (
     <Solver
+      key={opened}
       kind="rated"
       puzzle={puzzle}
       settings={settings}
       // Rated's panel opens with the puzzle itself; a theme keeps its name, with Back to the themes.
       head={theme ? head : null}
-      counted={Boolean(current?.result)}
-      onResult={(won) => update(() => recordRated(progressRef.current, won))}
+      counted={replay || Boolean(current?.result)}
+      onResult={(won) => !replay && update(() => recordRated(progressRef.current, won))}
       onNext={goNext}
       autoNext={progress.prefs.autoNext}
       boardOverride={hop != null ? <BoardPath progress={progress} settings={settings} from={hop} onHopped={landed} /> : undefined}
       onAnalyse={(played) => analysePuzzle(puzzle, played, onOpenAnalysis)}
-      points={delta != null && delta > 0 ? signed(delta) : undefined}
+      points={!replay && delta != null && delta > 0 ? signed(delta) : undefined}
       missNote="This puzzle now counts as a miss."
-      score={() => <RatedScore progress={progress} delta={delta} theme={theme} onRated={(rated) => setPrefs({ rated })} />}
+      score={() => <RatedScore progress={progress} delta={delta} gain={current?.result ? current.xp : undefined} />}
       rated={{
-        recent: <RecentResults recent={progress.recent} playing={!current?.result} />,
+        recent: <RecentResults recent={progress.recent} playing={waiting} open={replay ? line : null} onOpen={reopen} />,
         menu: (
-          <label className="pref-row">
-            <span>Jump to next puzzle</span>
-            <span className="switch">
-              <input type="checkbox" checked={progress.prefs.autoNext} onChange={(e) => setPrefs({ autoNext: e.target.checked })} />
-              <span className="switch-track" />
-            </span>
-          </label>
+          <>
+            <label className="pref-row">
+              <span>Difficulty</span>
+              <select className="pref-select" value={progress.prefs.difficulty} onChange={(e) => setPrefs({ difficulty: e.target.value as Difficulty })}>
+                {(Object.keys(DIFFICULTY) as Difficulty[]).map((d) => (
+                  <option key={d} value={d}>
+                    {DIFFICULTY[d].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="pref-row">
+              <span>Rated</span>
+              <span className="switch">
+                <input type="checkbox" checked={progress.prefs.rated} onChange={(e) => setPrefs({ rated: e.target.checked })} />
+                <span className="switch-track" />
+              </span>
+            </label>
+            <label className="pref-row">
+              <span>Jump to next puzzle</span>
+              <span className="switch">
+                <input type="checkbox" checked={progress.prefs.autoNext} onChange={(e) => setPrefs({ autoNext: e.target.checked })} />
+                <span className="switch-track" />
+              </span>
+            </label>
+          </>
         ),
-        under: (
-          <label className="rp-difficulty">
-            <span>Difficulty</span>
-            <select className="pref-select" value={progress.prefs.difficulty} onChange={(e) => setPrefs({ difficulty: e.target.value as Difficulty })}>
-              {(Object.keys(DIFFICULTY) as Difficulty[]).map((d) => (
-                <option key={d} value={d}>
-                  {DIFFICULTY[d].label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ),
+        headerSlot,
       }}
     />
+  )
+}
+
+/**
+ * Rated while its puzzle loads (or can't): the page as it will be, so nothing moves when the puzzle comes. Your
+ * rating, XP and last twenty are there from the first frame; the board is bare, Hint and the arrows wait, and the
+ * coach says what's happening (with Retry in Hint's place if the puzzle can't load).
+ */
+function RatedLoading({ progress, settings, head, error, onRetry }: { progress: PuzzleProgress; settings: Settings; head: ReactNode; error: boolean; onRetry: () => void }) {
+  const phone = useMediaQuery('(max-width: 1000px)')
+  const say = error ? 'Couldn’t load puzzles. Check your connection.' : 'Loading a puzzle…'
+  const go = (
+    <div className="rp-go">
+      {error ? (
+        <button className="rp-morph" onClick={onRetry}>
+          <span className="rp-morph-from">Retry</span>
+        </button>
+      ) : (
+        <button className="rp-morph" disabled aria-label="Hint">
+          <span className="rp-morph-from" aria-hidden>
+            <PuzzleIcon name="hint" />
+            Hint
+          </span>
+        </button>
+      )}
+    </div>
+  )
+  const arrows = (
+    <span className="rp-steps">
+      <button className="icon-btn rp-step" disabled aria-label="Previous move">
+        <NavIcon name="prev" />
+      </button>
+      <button className="icon-btn rp-step" disabled aria-label="Next move">
+        <NavIcon name="next" />
+      </button>
+    </span>
+  )
+  const score = <RatedScore progress={progress} />
+  const recent = <RecentResults recent={progress.recent} playing={Boolean(progress.current && !progress.current.result)} />
+  return (
+    <PuzzleLayout
+      className="puzzle-rated"
+      head={null}
+      bare
+      above={
+        <header className="home-top start-coach rp-coach" role="status">
+          <div className="home-coach">
+            <span className="home-coach-face">
+              <CoachFace happy={false} moodKey="loading" />
+            </span>
+            <div className="home-welcome">
+              <p className="rp-turn">Rated puzzle</p>
+              <h1>{say}</h1>
+            </div>
+          </div>
+        </header>
+      }
+      below={!phone && recent}
+      board={<EmptyBoard settings={settings} bare />}
+    >
+      {phone ? (
+        <>
+          <div className="rp-under-board">
+            {score}
+            {recent}
+          </div>
+          <div className="rp-bar-foot">
+            {go}
+            {arrows}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="rp-top">
+            {head}
+            <button className="icon-btn panel-gear rp-gear" disabled aria-label="Puzzle settings">
+              <Gear />
+            </button>
+          </div>
+          {go}
+          {score}
+          <div className="rp-nav">
+            <span className="rp-nav-gap" />
+            {arrows}
+          </div>
+        </>
+      )}
+    </PuzzleLayout>
   )
 }
 
@@ -320,10 +434,23 @@ function DailyView({ progress, update, settings, head, onOpenAnalysis }: ViewPro
   )
 }
 
-/** The settings button's menu over the panel's foot: it closes on a click outside it or Escape. */
-function SettingsMenu({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+/** Whether something that animates out is still on screen: true while `open`, and for `ms` after it closes. */
+function usePresence(open: boolean, ms: number): boolean {
+  const [shown, setShown] = useState(open)
+  if (open && !shown) setShown(true)
+  useEffect(() => {
+    if (open || !shown) return
+    const t = setTimeout(() => setShown(false), ms)
+    return () => clearTimeout(t)
+  }, [open, shown, ms])
+  return open || shown
+}
+
+/** The settings button's menu, opening out of the button: it closes on a click outside it or Escape. */
+function SettingsMenu({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
+    if (!open) return
     const away = (e: PointerEvent) => {
       const t = e.target as Element
       if (!box.current?.contains(t) && !t.closest('[aria-label="Puzzle settings"]')) onClose()
@@ -335,9 +462,10 @@ function SettingsMenu({ onClose, children }: { onClose: () => void; children: Re
       document.removeEventListener('pointerdown', away)
       document.removeEventListener('keydown', esc)
     }
-  }, [onClose])
+  }, [open, onClose])
   return (
-    <div ref={box} className="rp-menu" role="dialog" aria-label="Puzzle settings">
+    // Closing, it stays a moment to shrink back into its button.
+    <div ref={box} className={`rp-menu ${open ? '' : 'leaving'}`} role="dialog" aria-label="Puzzle settings" inert={!open}>
       {children}
     </div>
   )
@@ -370,10 +498,11 @@ interface SolverProps {
   /** Shown in the board's place for a moment (your path, as you move on a chapter). */
   boardOverride?: ReactNode
   /**
-   * Rated's own page: the coach over the board as on Home, the puzzle and its game at the top of the panel, `score`,
-   * then `recent`; the settings button opens `menu`, and `under` sits below the board.
+   * Rated's own page: the coach over the board with whose move it is and the clock; beside the board, no panel: Hint
+   * (Next puzzle once it's over), `score`, and the move arrows at the board's foot; `recent` under the board. The
+   * settings button (at the top right, or in the phone's page bar, `headerSlot`) opens `menu`.
    */
-  rated?: { recent: ReactNode; menu: ReactNode; under: ReactNode }
+  rated?: { recent: ReactNode; menu: ReactNode; headerSlot?: HTMLElement | null }
 }
 
 /** How long this puzzle has been on the board, in seconds, counting while `running`; and a way to start it again. */
@@ -391,6 +520,22 @@ function useSolveSeconds(id: string, running: boolean): [number, () => void] {
 
 const PIECES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' }
 
+/** Cassie, the computer you play on against: the coach's head, solid, its eyes cut out. */
+function CassieFace() {
+  const mask = `cassie-${useId().replace(/[^\w-]/g, '')}`
+  return (
+    <svg viewBox="12 6 96 96" aria-hidden>
+      <mask id={mask} maskUnits="userSpaceOnUse" x={12} y={6} width={96} height={96}>
+        <rect x={12} y={6} width={96} height={96} fill="#fff" />
+        {COACH_EYES.map((x) => (
+          <ellipse key={x} cx={x} cy={COACH_EYE_Y} rx={8} ry={11} fill="#000" />
+        ))}
+      </mask>
+      <path d={COACH_HEAD} mask={`url(#${mask})`} />
+    </svg>
+  )
+}
+
 /**
  * Solving a Lichess puzzle at your own pace (Rated and Daily). The rook says what to look for and how each
  * move went; the numbers, the clock and one clear next step follow. On a phone the rook's line sits over the
@@ -403,6 +548,8 @@ function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolv
   const [flipped, setFlipped] = useState(false)
   const [hint, setHint] = useState<number | null>(null)
   const [options, setOptions] = useState(false)
+  const closeOptions = useCallback(() => setOptions(false), [setOptions])
+  const menuShown = usePresence(options, 140)
   const [seconds, resetClock] = useSolveSeconds(puzzle.id, !s.over)
   // The puzzle whose result has been reported (it counts once).
   const [reported, setReported] = useState<string | null>(counted ? puzzle.id : null)
@@ -588,11 +735,77 @@ function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolv
 
   if (rated) {
     const clean = s.solve.solved && !s.solve.failed
+    const next = s.over && onNext
+    const gear = (
+      <button className={`icon-btn panel-gear rp-gear ${options ? 'active' : ''}`} onClick={() => setOptions((o) => !o)} aria-expanded={options} aria-label="Puzzle settings" title="Puzzle settings">
+        <Gear />
+      </button>
+    )
+    const menu = menuShown && (
+      <SettingsMenu open={options} onClose={closeOptions}>
+        {rated.menu}
+      </SettingsMenu>
+    )
+    // Once it's over: Analyse (the Analysis board's knight) and Play it out (Cassie, the computer you play on against).
+    const afterActs = (
+      <>
+        <button className="icon-btn rp-round rp-knight" onClick={() => onAnalyse(s.solve.played)} aria-label="Analyse" title="Analyse">
+          <NavItemIcon item={KNIGHT} />
+        </button>
+        {canPlayOut(s.node.fen) && (
+          <button className="icon-btn rp-round" onClick={() => playItOut(s.node.fen, orientation)} aria-label="Play it out" title="Play this position on against the computer">
+            <CassieFace />
+          </button>
+        )}
+      </>
+    )
+    // One pill: Hint on the left while you solve; once it's over it slides to the row's right end, widening into
+    // Next puzzle, and Analyse and Play it out take the left. A miss brings Skip to that end meanwhile.
+    const go = (
+      <div className="rp-go">
+        {s.over && (
+          <span className="rp-go-acts">{afterActs}</span>
+        )}
+        <button
+          className={`rp-morph ${next ? 'next' : ''} ${hintSquare ? 'wide' : ''}`}
+          onClick={next ? onNext : onHint}
+          disabled={!next && (s.over || !s.yourTurn)}
+          aria-label={next ? 'Next puzzle' : hintSquare ? 'Show the move' : 'Hint'}
+          title={next ? undefined : hintSquare ? 'Plays this one move for you.' : 'Shows the piece to move. The puzzle counts as a miss.'}
+        >
+          <span className="rp-morph-from" aria-hidden>
+            <PuzzleIcon name="hint" />
+            {hintSquare ? 'Show the move' : 'Hint'}
+          </span>
+          <span className="rp-morph-to" aria-hidden>
+            Next puzzle
+            <NavIcon name="next" />
+          </span>
+        </button>
+        {!s.over && onNext && s.solve.failed && (
+          <button className="btn ghost rp-skip" onClick={onNext}>
+            Skip
+          </button>
+        )}
+      </div>
+    )
+    const arrows = (
+      <span className="rp-steps">
+        <button className="icon-btn rp-step" onClick={() => s.step('prev')} disabled={s.ply === 0} aria-label="Previous move" title="Previous move (←)">
+          <NavIcon name="prev" />
+        </button>
+        <button className="icon-btn rp-step" onClick={() => s.step('next')} disabled={s.ply >= s.lastPly} aria-label="Next move" title="Next move (→)">
+          <NavIcon name="next" />
+        </button>
+      </span>
+    )
     return (
       <PuzzleLayout
         className="puzzle-rated"
-        head={head}
-        // The coach over the board, as Home greets you: its face (glad at a clean solve) and what it has to say.
+        head={null}
+        bare
+        // The coach over the board, as Home greets you: its face (glad at a clean solve), whose move it is (or how it
+        // went) over what it has to say, and the clock at the row's end.
         above={
           <header className="home-top start-coach rp-coach" role="status">
             <div className="home-coach">
@@ -600,40 +813,53 @@ function Solver({ kind, puzzle, settings, head, score, counted, onResult, onSolv
                 <CoachFace happy={clean} moodKey={`${puzzle.id}:${say.line}`} />
               </span>
               <div className="home-welcome">
+                <p className={`rp-turn ${s.over ? (clean ? 'good' : 'bad') : ''}`}>{s.over ? (clean ? 'Solved' : 'Missed') : toMove}</p>
                 <h1 aria-label={say.line}>
                   <TypedLine text={say.line} />
                 </h1>
               </div>
+              {clock}
             </div>
           </header>
         }
-        below={rated.under}
+        below={!phone && rated.recent}
         board={board}
       >
-        <div className="rp-body">
-          <RatedInfo puzzle={puzzle} color={color} over={s.over} clean={clean} />
-          {score(null)}
-          {rated.recent}
-        </div>
-        <div className="rp-foot">
-          {actions}
-          <div className="panel-strip puzzle-strip rp-strip">
-            <button className={`icon-btn ${options ? 'active' : ''}`} onClick={() => setOptions((o) => !o)} aria-expanded={options} aria-label="Puzzle settings" title="Puzzle settings">
-              <Gear />
-            </button>
-            <button className="icon-btn" onClick={flip} aria-label="Flip board" title="Flip board (F)">
-              <FlipIcon />
-            </button>
-            {s.over && canPlayOut(s.node.fen) && (
-              <button className="icon-btn strip-label" onClick={() => playItOut(s.node.fen, orientation)} title="Play this position on against the coach">
-                <PuzzleIcon name="playout" />
-                Play it out
-              </button>
-            )}
-            {!phone && steps}
-          </div>
-          {options && <SettingsMenu onClose={() => setOptions(false)}>{rated.menu}</SettingsMenu>}
-        </div>
+        {phone ? (
+          <>
+            {rated.headerSlot &&
+              createPortal(
+                <>
+                  {gear}
+                  {menu}
+                </>,
+                rated.headerSlot,
+              )}
+            <div className="rp-under-board">
+              {score(null)}
+              {rated.recent}
+            </div>
+            <div className="rp-bar-foot">
+              {go}
+              {arrows}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Level with the coach: a theme's name with Back, and the settings button at the right, as on Play. */}
+            <div className="rp-top">
+              {head}
+              {gear}
+              {menu}
+            </div>
+            {go}
+            {score(null)}
+            <div className="rp-nav">
+              <span className="rp-nav-gap" />
+              {arrows}
+            </div>
+          </>
+        )}
       </PuzzleLayout>
     )
   }

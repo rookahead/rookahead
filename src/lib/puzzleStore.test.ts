@@ -50,15 +50,21 @@ describe('puzzle progress', () => {
     expect(loadProgress(s).xp).toBe(90)
   })
 
-  it('keeps the last ten rated results, oldest first', () => {
+  it('keeps the last twenty rated results, oldest first, each with its puzzle', () => {
     let p = loadProgress(memoryStorage())
-    for (let i = 0; i < 12; i++) p = recordRated(startRated(p, LINE.replace('XPBtt', `p${i}`)), i % 3 !== 0)
-    expect(p.recent).toHaveLength(10)
+    for (let i = 0; i < 22; i++) p = recordRated(startRated(p, LINE.replace('XPBtt', `p${i}`)), i % 3 !== 0)
+    expect(p.recent).toHaveLength(20)
     expect(p.recent[0]).toMatchObject({ id: 'p2', won: true })
-    expect(p.recent[9]).toMatchObject({ id: 'p11', won: true })
-    expect(p.recent[7].won).toBe(false)
-    expect(typeof p.recent[9].delta).toBe('number')
-    expect(parseProgress({ recent: [{ id: 'a', won: true, delta: 8 }, { id: 3 }, 'x'] }).recent).toEqual([{ id: 'a', won: true, delta: 8 }])
+    expect(p.recent[19]).toMatchObject({ id: 'p21', won: false })
+    expect(p.recent[19].line).toBe(LINE.replace('XPBtt', 'p21'))
+    expect(typeof p.recent[19].delta).toBe('number')
+    expect(parseProgress({ recent: [{ id: 'a', won: true, delta: 8 }, { id: 3 }, 'x'] }).recent).toEqual([{ id: 'a', won: true, delta: 8, line: undefined }])
+  })
+
+  it('says how much XP the puzzle earned', () => {
+    const p = loadProgress(memoryStorage())
+    expect(recordRated(startRated({ ...p, rating: 1400 }, LINE), true).current?.xp).toBe(15)
+    expect(recordRated(startRated(p, LINE), false).current?.xp).toBe(2)
   })
 
   it('unrated: the puzzle counts, the rating stays', () => {

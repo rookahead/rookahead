@@ -11835,31 +11835,49 @@ button.user-avatar.guest:hover {
 }
 
 /* ═══════════════ Rated puzzles (Puzzles.tsx, puzzles/Rated.tsx) ═══════════════
-   Home's coach over the board, Difficulty under it, each in a player bar's room; one calm panel: the puzzle and
-   the game it's from, your rating and chapter, your last ten, then Hint and a row of round buttons. */
-.puzzle-rated .panel-card {
-  background: var(--card);
-}
+   Home's coach over the board with whose move it is and the clock; your last ten under it. No panel: beside the
+   board, the settings button level with the coach (as on Play), Hint level with the board's top (it slides right and
+   becomes Next puzzle once the puzzle is over), your rating in one card, and the move arrows at the board's foot. */
 
 /* The coach's face takes the page's colour. Phone Home's rule that puts its line first doesn't apply here. */
 .puzzle-rated .puzzle-above {
   --surface: var(--bg);
 }
 
-.rp-coach .home-welcome {
-  order: 0;
+.rp-coach .home-coach {
+  width: 100%;
 }
 
-.rp-difficulty {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
+.rp-coach .home-welcome {
+  order: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.rp-coach .home-welcome h1 {
   color: var(--text-2);
 }
 
-.rp-difficulty .pref-select {
-  height: 34px;
+.rp-coach .home-welcome .rp-turn {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.rp-coach .home-welcome .rp-turn.good {
+  color: var(--win);
+}
+
+.rp-coach .home-welcome .rp-turn.bad {
+  color: var(--danger);
+}
+
+.rp-coach .puzzle-time {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 15px;
 }
 
 @media (min-width: 1001px) {
@@ -11871,10 +11889,22 @@ button.user-avatar.guest:hover {
     height: var(--player-h);
   }
 
+  .rp-coach .home-welcome h1 {
+    line-height: 1.3;
+  }
+
   .puzzle-layout.puzzle-rated .puzzle-below {
     display: flex;
     align-items: center;
     height: var(--player-h);
+  }
+
+  /* The column beside the board, as tall as it with the rows above and below. */
+  .puzzle-rated .play-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 }
 
@@ -11883,185 +11913,211 @@ button.user-avatar.guest:hover {
     padding: 10px 16px;
   }
 
-  .puzzle-rated .puzzle-below {
-    padding: 10px 16px 4px;
+  .rp-coach .home-welcome .rp-turn {
+    margin-bottom: 2px;
+    font-size: 17px;
   }
 }
 
-/* The panel's parts, a hairline between each. */
-.rp-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.rp-body > * + * {
-  border-top: 1px solid var(--border);
-}
-
-.rp-info {
+/* Level with the coach: a theme's name with Back on the left, settings on the right; its menu opens under it. */
+.rp-top {
+  position: relative;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 16px 14px;
-}
-
-.rp-info-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.rp-info-icon {
-  flex: none;
-  width: 38px;
-  height: 38px;
-  margin: 1px;
-  fill: var(--muted);
-}
-
-.rp-lines {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.rp-head {
-  margin: 0 0 2px;
-  font: 700 17px/22px var(--font-display);
-  letter-spacing: -0.01em;
-}
-
-.rp-head a {
-  color: var(--link);
-  text-decoration: none;
-}
-
-.rp-head a:hover {
-  text-decoration: underline;
-}
-
-/* Every line's mark in an 18px column, so the words all start at the same place. */
-.rp-line {
+  height: var(--player-h);
+  margin-bottom: -4px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--text-2);
 }
 
-.rp-line-icon {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
+.rp-top .panel-top {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
 }
 
-.rp-line-icon .speed-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.rp-muted {
-  color: var(--muted);
-}
-
-.rp-turn {
-  margin-bottom: 2px;
-  font-size: 14px;
-  font-weight: 650;
-  color: var(--text);
-}
-
-.rp-turn .rp-muted {
-  font-weight: 400;
-}
-
-.rp-turn.good,
-.rp-turn.good .rp-line-icon {
-  color: var(--win);
-}
-
-.rp-turn.bad,
-.rp-turn.bad .rp-line-icon {
-  color: var(--danger);
-}
-
-.rp-mark {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Whose move: that side's king on a light square of the board. */
-.rp-king {
-  display: block;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: #a5b9e8;
-}
-
-/* The game's lines keep three lines' room, so nothing moves when they arrive. */
-.rp-game {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 64px;
-  margin-top: 4px;
-}
-
-.rp-game .skel {
-  margin: 4px 0 4px 26px;
-}
-
-.rp-dot {
-  width: 9px;
-  height: 9px;
+.rp-top .panel-gear,
+.page-header-slot .panel-gear {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
 }
 
-.rp-dot.white {
-  background: var(--white-piece);
-  box-shadow: 0 0 0 1.5px var(--border-strong);
+.rp-top .panel-gear svg {
+  width: 26px;
+  height: 26px;
 }
 
-:root[data-theme='light'] .rp-dot.white {
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+/* Ringed like the round buttons beside the board. */
+.rp-top .panel-gear {
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
 }
 
-.rp-dot.black {
-  background: var(--black-piece);
-  box-shadow: 0 0 0 1.5px var(--guide-strong);
+:root[data-theme='light'] .rp-top .panel-gear {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.14);
 }
 
-.rp-title {
-  color: var(--warn);
-  font-weight: 700;
+.page-header-slot {
+  position: relative;
+  display: flex;
 }
 
-.rp-chips li {
-  border-radius: 9px;
+.page-header-slot:empty {
+  display: none;
 }
 
-/* Your rating, Rated, and your chapter's XP in the dashboard's green. */
+/* The main blue (light's Play online button), the same in both themes, for Next puzzle. */
+.puzzle-rated {
+  --go-blue: #1b4ef5;
+}
+
+/* Hint, then Next puzzle: one pill. It sits at the row's left while you solve; once the puzzle is over it slides to
+   the right end, wider, in the main blue with a soft glow of it; its words cross-fade. */
+.rp-go {
+  position: relative;
+  flex-shrink: 0;
+  height: 52px;
+  --go-w: 180px;
+}
+
+.rp-morph {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 112px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+  color: var(--text);
+  font: 700 16px/1 var(--font-ui);
+  cursor: pointer;
+  transition:
+    left 0.5s cubic-bezier(0.3, 0.9, 0.3, 1),
+    width 0.5s cubic-bezier(0.3, 0.9, 0.3, 1),
+    background-color 0.3s ease 0.1s,
+    box-shadow 0.45s ease 0.15s,
+    color 0.3s ease 0.1s;
+}
+
+:root[data-theme='light'] .rp-morph {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.12);
+}
+
+.rp-morph:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.rp-morph:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.rp-morph.wide {
+  width: 176px;
+}
+
+.rp-morph > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.rp-morph svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rp-morph-to {
+  opacity: 0;
+}
+
+.rp-morph.next,
+:root[data-theme='light'] .rp-morph.next {
+  left: calc(100% - var(--go-w));
+  width: var(--go-w);
+  background: var(--go-blue);
+  /* A soft glow of its own blue, so the one next step lights up. */
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--go-blue) 55%, transparent),
+    0 4px 12px color-mix(in srgb, var(--go-blue) 30%, transparent);
+  color: #ffffff;
+}
+
+.rp-morph.next:hover {
+  background: var(--go-blue);
+  filter: brightness(1.08);
+}
+
+.rp-morph.next .rp-morph-from {
+  opacity: 0;
+}
+
+.rp-morph.next .rp-morph-to {
+  opacity: 1;
+  transition-delay: 0.2s;
+}
+
+/* Once it's over: Analyse and Play it out at the row's left, where Hint was. As the pill slides off they grow out of
+   its wake one after the other, with the same spring as the cards' art. */
+.rp-go-acts {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-go-acts > * {
+  animation: rp-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.16s both;
+}
+
+.rp-go-acts > :nth-child(2) {
+  animation-delay: 0.24s;
+}
+
+@keyframes rp-pop {
+  from {
+    opacity: 0;
+    transform: translateX(14px) scale(0.5);
+  }
+}
+
+.rp-go-acts .rp-round {
+  width: 52px;
+  height: 52px;
+}
+
+/* After a miss: Skip waits at the row's right end, where Next puzzle will land. */
+.rp-skip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  padding: 0 22px;
+  border-radius: 999px;
+}
+
+/* Your rating, and your chapter's XP in the dashboard's green. */
 .rp-score {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: var(--card);
 }
 
 .rp-score-top {
@@ -12083,8 +12139,8 @@ button.user-avatar.guest:hover {
 }
 
 .rp-delta.up {
-  color: var(--win);
-  background: color-mix(in srgb, var(--win) 18%, transparent);
+  color: var(--goal-done);
+  background: color-mix(in srgb, var(--goal-done) 16%, transparent);
 }
 
 .rp-delta.down {
@@ -12092,48 +12148,91 @@ button.user-avatar.guest:hover {
   background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
-.rp-switch {
+.rp-score-top .rp-run {
   margin-left: auto;
-  display: inline-flex;
+}
+
+/* XP: what this puzzle earned, a thick bar with its fill set in a dark-green track, the numbers under it, and the
+   chapter's number on a flag beside it. */
+.rp-xp {
+  display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.rp-xp-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-xp-head {
+  display: flex;
+  align-items: baseline;
   gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-2);
-  cursor: pointer;
+  font: 750 15px/1 var(--font-ui);
+  color: var(--text);
+}
+
+.rp-gain {
+  color: var(--goal-done);
+  animation: rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .rp-bar {
-  height: 14px;
+  height: 20px;
+  padding: 3px;
+  box-sizing: border-box;
   border-radius: 999px;
-  background: var(--surface-4);
-  overflow: hidden;
-}
-
-:root[data-theme='light'] .rp-bar {
-  background: var(--t-high);
+  background: color-mix(in srgb, var(--goal-done) 20%, var(--card));
 }
 
 .rp-bar span {
   display: block;
   height: 100%;
+  min-width: 14px;
   border-radius: inherit;
   background: var(--goal-done);
 }
 
-.rp-under {
+.rp-xp-nums {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
+  font: 650 13px/1 var(--font-ui);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.rp-xp-now {
+  color: var(--goal-done);
+}
+
+.rp-flag {
+  flex-shrink: 0;
+  width: 46px;
+  height: 56px;
+  padding-top: 13px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
+  background: var(--surface-4);
+  color: var(--text);
+  font: 800 20px/1 var(--font-display);
+}
+
+:root[data-theme='light'] .rp-flag {
+  background: var(--t-high);
 }
 
 .rp-run {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .rp-run strong {
@@ -12150,44 +12249,54 @@ button.user-avatar.guest:hover {
   fill: var(--goal-done);
 }
 
-/* The last ten: the result marks' colours, the board's blue for a solve and red for a miss. */
+/* The last twenty under the board, in up to two rows: the rating change in the board's blue for a solve and red for a
+   miss, white words; the puzzle on the board waits in the brand colour. A pill opens its puzzle again; the one on the
+   board is ringed. */
 .rp-recent {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-}
-
-.rp-recent-head {
-  display: flex;
-  justify-content: space-between;
-  font: 400 11px/18px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.rp-recent ol {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 4px;
 }
 
 .rp-recent li {
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: var(--surface-3);
+  min-width: 34px;
+  height: 22px;
+  box-sizing: border-box;
+  border-radius: 6px;
   color: #fff;
 }
 
-:root[data-theme='light'] .rp-recent li.empty {
-  background: var(--t-low);
+.rp-recent li > * {
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: 750 12px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-recent button {
+  cursor: pointer;
+}
+
+.rp-recent button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.rp-recent li.open {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--text);
 }
 
 .rp-recent li.won {
@@ -12199,54 +12308,136 @@ button.user-avatar.guest:hover {
 }
 
 .rp-recent li.now {
-  background: none;
-  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+  background: var(--brand);
+  animation: rp-wait 1.6s ease-in-out infinite;
 }
 
+/* Light's brand is the board's blue: the waiting pill takes the coach's lilac instead, so it can't pass for a solve. */
 :root[data-theme='light'] .rp-recent li.now {
-  box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.16);
+  background: var(--mascot);
 }
 
-.rp-recent .rp-mark {
+@keyframes rp-wait {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.rp-mark {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
   stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* The foot: Hint (or Next), then round buttons on the content's edges; the settings menu opens over them. */
-.rp-foot {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.rp-foot .puzzle-acts {
-  padding: 14px 16px 0;
-}
-
-.rp-strip {
+/* The move arrows, at the right, their foot level with the board's: two filled round buttons in a pill of their own;
+   one that can't go further dims. */
+.rp-nav {
+  margin-top: auto;
+  margin-bottom: calc(var(--player-h) + 10px);
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px 16px 14px;
 }
 
-.rp-strip .icon-btn:not(.strip-label) {
-  width: 38px;
-  height: 38px;
+.rp-nav-gap {
+  flex: 1;
+}
+
+.rp-steps {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--card);
+}
+
+.rp-step {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--surface-4);
+  color: var(--text);
+}
+
+.rp-step:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 22%, var(--surface-4));
+}
+
+:root[data-theme='light'] .rp-step {
+  background: var(--surface-3);
+}
+
+.rp-step:disabled {
+  background: var(--surface-3);
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+:root[data-theme='light'] .rp-step:disabled {
+  background: var(--surface-2);
+}
+
+.rp-round {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1.5px var(--border-strong);
 }
 
-:root[data-theme='light'] .rp-strip .icon-btn:not(.strip-label) {
+/* The knight fills less of its square than Cassie's face: drawn a size up so the two look alike. */
+.rp-knight svg {
+  width: 24px;
+  height: 24px;
+}
+
+:root[data-theme='light'] .rp-round {
   box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0.14);
 }
 
+/* The settings menu: it drops in from under its button and lifts back into it, fading, as the nut turns. It only
+   slides (no scaling, no overshoot), so its switches and words don't settle a fraction of a pixel when it lands. */
 .rp-menu {
   position: absolute;
-  left: 12px;
-  bottom: 60px;
+  top: calc(100% + 6px);
+  right: 0;
   z-index: 5;
-  width: 260px;
+  width: 280px;
   padding: 6px 14px;
   border-radius: 14px;
   background: var(--surface-3);
   box-shadow: var(--shadow-pop);
+  animation: rp-menu-in 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.rp-menu.leaving {
+  pointer-events: none;
+  animation: rp-menu-out 0.14s ease-in forwards;
+}
+
+@keyframes rp-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes rp-menu-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.rp-gear svg {
+  transition: rotate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rp-gear[aria-expanded='true'] svg {
+  rotate: 60deg;
 }
 
 :root[data-theme='light'] .rp-menu {
@@ -12258,9 +12449,111 @@ button.user-avatar.guest:hover {
   min-height: 42px;
 }
 
+.rp-menu .pref-select {
+  height: 34px;
+}
+
+/* Phones: rating and the last ten under the board, flat on the page; the pill and the arrows pinned at the foot. */
+@media (max-width: 1000px) {
+  .puzzles-page .puzzle-rated.play-layout {
+    padding-bottom: calc(84px + var(--safe-bottom));
+  }
+
+  .rp-under-board {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 4px 0;
+  }
+
+  .rp-under-board .rp-score {
+    padding: 0;
+    background: none;
+  }
+
+  .rp-under-board .rp-recent {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+  }
+
+  .rp-under-board .rp-recent li {
+    min-width: 0;
+  }
+
+  .rp-under-board .rp-recent li > * {
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .rp-under-board .rp-bar {
+    background: color-mix(in srgb, var(--goal-done) 20%, var(--bg));
+  }
+
+  .rp-bar-foot {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px calc(14px + var(--safe-bottom));
+    background: var(--bg);
+  }
+
+  .rp-bar-foot .rp-go {
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    --go-w: min(170px, 100% - 104px);
+  }
+
+  .rp-bar-foot .rp-morph {
+    width: 104px;
+    font-size: 15px;
+  }
+
+  .rp-bar-foot .rp-morph.wide {
+    width: 156px;
+  }
+
+  .rp-bar-foot .rp-morph.next {
+    width: var(--go-w);
+  }
+
+
+
+  .rp-bar-foot .rp-round {
+    width: 46px;
+    height: 46px;
+  }
+
+  .rp-bar-foot .rp-step {
+    width: 38px;
+    height: 38px;
+  }
+
+  .page-header-slot .rp-menu {
+    top: calc(100% + 8px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rp-delta {
+  .rp-delta,
+  .rp-gain,
+  .rp-recent li.now,
+  .rp-go-acts > *,
+  .rp-menu,
+  .rp-menu.leaving {
     animation: none;
+  }
+
+  .rp-morph,
+  .rp-morph > span,
+  .rp-gear svg {
+    transition: none;
   }
 }
 
