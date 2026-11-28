@@ -7139,17 +7139,40 @@ button.explain-row {
 /* A corner of a board, for the cards' pictures (HomeArt.tsx). */
 .art-board {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(var(--n), 1fr);
+  display: block;
   aspect-ratio: 1;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
 }
 
-.art-board i {
-  display: block;
-  transition: background 0.25s 0.3s;
+.art-board {
+  --art-light: var(--sq-light);
+  --art-dark: var(--sq-dark);
+}
+
+/* Its squares (HomeArt.tsx, Squares): one picture under the pieces. Hard edges: the board is drawn flat and turned
+   as one picture (will-change below), so the turn smooths its outline; soft edges inside only let the light squares
+   show through as a thin line round the coloured ones. */
+.art-squares {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  shape-rendering: crispEdges;
+}
+
+.art-squares .light {
+  fill: var(--art-light);
+}
+
+.art-squares .dark {
+  fill: var(--art-dark);
+}
+
+.art-squares .flash {
+  fill: transparent;
+  transition: fill 0.25s 0.3s;
 }
 
 /* The cards' pieces (HomeArt.tsx CardPiece): the board's own (pieces.css), shrunk about the square's centre so they
@@ -7163,30 +7186,6 @@ button.explain-row {
   transform-origin: 50% 50%;
 }
 
-.art-board.brand i.light {
-  background: color-mix(in srgb, var(--brand) 22%, #fff);
-}
-
-.art-board.brand i.dark {
-  background: var(--brand);
-}
-
-/* In your board's colours (--sq-light, --sq-dark): Home's Puzzles tile. */
-.art-board.squares i.light {
-  background: var(--sq-light);
-}
-
-.art-board.squares i.dark {
-  background: var(--sq-dark);
-}
-
-.art-board.quiet i.light {
-  background: color-mix(in srgb, var(--text) 15%, var(--card));
-}
-
-.art-board.quiet i.dark {
-  background: color-mix(in srgb, var(--text) 7%, var(--card));
-}
 
 .art-piece {
   position: absolute;
@@ -7199,8 +7198,8 @@ button.explain-row {
   translate: var(--to-x) var(--to-y);
 }
 
-.puzzle-tile:hover .art-board i.flash {
-  background: color-mix(in srgb, var(--danger) 75%, transparent);
+.puzzle-tile:hover .art-squares .flash {
+  fill: color-mix(in srgb, var(--danger) 75%, transparent);
 }
 
 /* One blue in three steps, all of it saturated: a deep card (21% light), the controls a step lighter (31%), and the
@@ -7520,8 +7519,11 @@ button.explain-row {
 }
 
 .home-grid .art-board {
-  width: 100px;
+  width: 112px;
   rotate: -8deg;
+  /* Drawn once, flat, and turned as one picture: redrawn tipped on every frame of a turn, its squares jittered
+     apart. */
+  will-change: transform;
   translate: 0 26px;
   transition: rotate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -7540,15 +7542,17 @@ button.explain-row {
 .home-grid .puzzle-tile .art-board.back {
   position: absolute;
   bottom: 0;
-  left: calc(50% - 50px);
+  left: calc(50% - 56px);
   rotate: 4deg;
   translate: 15px 0;
-  /* A little dimmer, so the one to solve stands out. */
-  filter: brightness(0.72);
+  /* Your board's colours faded into the card's, so the one to solve stands out: lighter on a light card, darker on
+     a dark one, the same hue either way. */
+  --art-light: color-mix(in srgb, var(--sq-light) 70%, var(--card));
+  --art-dark: color-mix(in srgb, var(--sq-dark) 70%, var(--card));
 }
 
-:root[data-theme='light'] .home-grid .puzzle-tile .art-board.back {
-  filter: saturate(0.55) brightness(0.88);
+.home-grid .puzzle-tile .art-board.back .art-piece {
+  opacity: 0.7;
 }
 
 .home-grid .puzzle-tile:hover .art-board {
@@ -7641,9 +7645,11 @@ button.explain-row {
 .queen-fix {
   --land: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
-  width: 100px;
+  width: 116px;
   aspect-ratio: 1;
   rotate: -8deg;
+  /* As the other tiles' boards: turned as one picture. */
+  will-change: transform;
   translate: 0 14px;
   transition: rotate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), translate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -7655,37 +7661,26 @@ button.explain-row {
 }
 
 .queen-fix-board {
+  --art-light: var(--sq-light);
+  --art-dark: var(--sq-dark);
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
   border-radius: 10px;
   overflow: hidden;
 }
 
-.queen-fix-board > i.light {
-  background: var(--sq-light);
-}
-
-.queen-fix-board > i.dark {
-  background: var(--sq-dark);
-}
-
 /* The squares after the right move, in the review's colours: the move's two in Best's green, the mated king's red. */
-.queen-fix-tint {
-  position: absolute;
-  width: 20%;
-  height: 20%;
+.art-squares .queen-fix-tint {
   opacity: 0;
   transition: opacity 0.15s;
 }
 
-.queen-fix-tint.best {
-  background: rgba(79, 154, 60, 0.6);
+.art-squares .queen-fix-tint.best {
+  fill: rgba(79, 154, 60, 0.6);
 }
 
-.queen-fix-tint.mated {
-  background: rgba(199, 55, 47, 0.6);
+.art-squares .queen-fix-tint.mated {
+  fill: rgba(199, 55, 47, 0.6);
 }
 
 /* The move played: a thin white arrow, as the Coach tile's. */
@@ -7840,13 +7835,13 @@ button.explain-row {
 
 /* The move just played, as on a game's board: its two squares a soft yellow, a thin white arrow up them under the
    pieces, and the mated king's square a soft red. Flat colours: a see-through yellow over the blue went olive. */
-.demo-board .art-board i.moved {
-  background: #ecd06a;
+.demo-board .art-squares .moved {
+  fill: #ecd06a;
 }
 
 /* The same red as the Puzzles tile's square. */
-.demo-board .art-board i.mated {
-  background: color-mix(in srgb, var(--danger) 75%, transparent);
+.demo-board .art-squares .mated {
+  fill: color-mix(in srgb, var(--danger) 75%, transparent);
 }
 
 .demo-arrow {

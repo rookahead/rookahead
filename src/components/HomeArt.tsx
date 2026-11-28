@@ -14,6 +14,29 @@ function CardPiece({ piece }: { piece: string }) {
   return <i className={`card-piece ${ROLE[piece.toLowerCase()]} ${piece === piece.toUpperCase() ? 'white' : 'black'}`} />
 }
 
+/** A mark on one square of a card's board: its column and row from the top left, and its class (index.css). */
+type SquareMark = { at: [number, number]; className: string }
+
+/**
+ * A card board's squares, drawn as one picture: the light colour under the whole board and the dark squares on it.
+ * Laid out as separate squares, a tipped board blurred along every seam between them; this way the only edges are
+ * the dark squares' own, and they stay sharp. `marks` colour single squares over them (a move, a mated king).
+ */
+function Squares({ size, darkFirst, marks = [] }: { size: number; darkFirst: boolean; marks?: SquareMark[] }) {
+  let dark = ''
+  for (let row = 0; row < size; row++)
+    for (let col = 0; col < size; col++) if ((col + row) % 2 === (darkFirst ? 0 : 1)) dark += `M${col} ${row}h1v1h-1z`
+  return (
+    <svg className="art-squares" viewBox={`0 0 ${size} ${size}`}>
+      <rect className="light" width={size} height={size} />
+      <path className="dark" d={dark} />
+      {marks.map(({ at, className }) => (
+        <rect key={`${className}${at}`} className={className} x={at[0]} y={at[1]} width="1" height="1" />
+      ))}
+    </svg>
+  )
+}
+
 export interface TilePiece {
   /** "N" for a white knight, "q" for a black queen. */
   piece: string
@@ -27,13 +50,8 @@ export interface TilePiece {
 export function TileBoard({ size = 5, pieces, flash, className = '', style }: { size?: number; pieces: TilePiece[]; flash?: [number, number]; className?: string; style?: CSSProperties }) {
   return (
     <span className={`art-board ${className}`} style={{ '--n': size, ...style } as CSSProperties} aria-hidden>
-      {Array.from({ length: size * size }, (_, i) => {
-        const col = i % size
-        const row = Math.floor(i / size)
-        const lit = flash && flash[0] === col && flash[1] === row
-        // A real board's top-right corner (h8) is dark, so this corner of one is too.
-        return <i key={i} className={`${(col + row) % 2 ? 'light' : 'dark'} ${lit ? 'flash' : ''}`} />
-      })}
+      {/* A real board's top-right corner (h8) is dark, so this corner of one is too. */}
+      <Squares size={size} darkFirst marks={flash && [{ at: flash, className: 'flash' }]} />
       {pieces.map(({ piece, at, to }) => (
         <span
           key={`${piece}${at}`}
@@ -60,12 +78,7 @@ export function DemoBoard({ style }: { style?: CSSProperties }) {
         <circle cx="30" cy="3" r="2.6" />
       </svg>
       <span className="art-board squares" style={{ '--n': 5 } as CSSProperties}>
-        {Array.from({ length: 25 }, (_, i) => {
-          const col = i % 5
-          const row = Math.floor(i / 5)
-          const mark = col === 3 && (row === 2 || row === 0) ? 'moved' : col === 0 && row === 0 ? 'mated' : ''
-          return <i key={i} className={`${(col + row) % 2 ? 'dark' : 'light'} ${mark}`} />
-        })}
+        <Squares size={5} darkFirst={false} marks={DEMO_MARKS} />
         {/* The rook's move: a thin white arrow from the square it left to the one it mates on, under the pieces. */}
         <svg className="demo-arrow" viewBox="0 0 5 5">
           <path d="M3.5 2.5V1.2" />
@@ -81,6 +94,13 @@ export function DemoBoard({ style }: { style?: CSSProperties }) {
     </span>
   )
 }
+
+/** The rook's move up the d-file, and the mated king's square. */
+const DEMO_MARKS: SquareMark[] = [
+  { at: [3, 2], className: 'moved' },
+  { at: [3, 0], className: 'moved' },
+  { at: [0, 0], className: 'mated' },
+]
 
 /** Back-rank mate: the king in the corner, boxed in by its own pawns, and the rook that has just reached the back rank. */
 const DEMO_PIECES: TilePiece[] = [
@@ -105,6 +125,13 @@ export function FixMark() {
   )
 }
 
+/** The right move's two squares, and the mated king's. */
+const FIX_MARKS: SquareMark[] = [
+  { at: [1, 3], className: 'queen-fix-tint best' },
+  { at: [1, 0], className: 'queen-fix-tint best' },
+  { at: [3, 0], className: 'queen-fix-tint mated' },
+]
+
 /** A square of a 5×5 corner as left/top percentages: column and row from the top left. */
 const at5 = (col: number, row: number): CSSProperties => ({ left: `${col * 20}%`, top: `${row * 20}%` })
 
@@ -120,13 +147,8 @@ export function QueenFix({ fixed = false }: { fixed?: boolean }) {
   return (
     <span className={`queen-fix ${fixed ? 'fixed' : ''}`} style={{ '--sq-light': squares.light, '--sq-dark': squares.dark } as CSSProperties} aria-hidden>
       <span className="queen-fix-board">
-        {Array.from({ length: 25 }, (_, i) => (
-          // h8, the corner's top right, is dark as on a real board.
-          <i key={i} className={((i % 5) + Math.floor(i / 5)) % 2 ? 'light' : 'dark'} />
-        ))}
-        <i className="queen-fix-tint best" style={at5(1, 3)} />
-        <i className="queen-fix-tint best" style={at5(1, 0)} />
-        <i className="queen-fix-tint mated" style={at5(3, 0)} />
+        {/* h8, the corner's top right, is dark as on a real board. */}
+        <Squares size={5} darkFirst marks={FIX_MARKS} />
         <svg className="queen-fix-arrow" viewBox="0 0 5 5">
           <path d="M1.78 3.5H3.2" />
           <path className="head" d="M3.44 3.5 3.2 3.34V3.66Z" />
