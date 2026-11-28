@@ -106,3 +106,21 @@ export const THEME_GROUPS: ThemeGroup[] = [
 
 /** Every theme the page lists, for checking an address. */
 export const THEME_KEYS = new Set(THEME_GROUPS.flatMap((g) => g.themes.map(([key]) => key)))
+
+/** Every theme in the page's order: a Sprint's "next type" goes down it. */
+export const THEME_ORDER = THEME_GROUPS.flatMap((g) => g.themes.map(([key]) => key))
+
+/** What a Sprint does with the types you pick: one run mixes them, or each run takes one, the next or any. */
+export type SprintEach = 'mix' | 'next' | 'random'
+
+/**
+ * The types one Sprint run plays: the chosen ones mixed (none means every kind), or one of them (of every kind, when
+ * none is chosen): the one after `last`, or any but `last`.
+ */
+export function sprintRunTypes(chosen: string[], each: SprintEach, last: string | null, rand: () => number = Math.random): string[] {
+  if (each === 'mix') return chosen
+  const pool = chosen.length ? chosen : THEME_ORDER
+  if (each === 'next') return [pool[(pool.indexOf(last ?? '') + 1) % pool.length]]
+  const others = pool.length > 1 ? pool.filter((t) => t !== last) : pool
+  return [others[Math.floor(rand() * others.length)]]
+}

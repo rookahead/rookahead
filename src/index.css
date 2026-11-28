@@ -11639,6 +11639,101 @@ button.user-avatar.guest:hover {
   margin-top: 8px;
 }
 
+/* Puzzle types: a select-like button with the picked ones, and the menu of ticks it opens. */
+.sprint-pick {
+  max-width: 62%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.sprint-pick span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sprint-pick svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sprint-menu {
+  position: fixed;
+  z-index: 70;
+  width: 280px;
+  overflow: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  box-shadow: var(--shadow-pop);
+  scrollbar-width: thin;
+  animation: menu-in 0.14s ease-out;
+}
+
+:root[data-theme='light'] .sprint-menu {
+  background: var(--card);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.sprint-menu-row {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sprint-menu-row:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.sprint-tick {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
+}
+
+.sprint-menu-row.on .sprint-tick {
+  background: var(--brand);
+  box-shadow: none;
+}
+
+.sprint-menu-row.on .sprint-tick::after {
+  content: '';
+  width: 9px;
+  height: 5px;
+  border: solid var(--brand-ink);
+  border-width: 0 0 2px 2px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.sprint-menu-group {
+  padding: 12px 10px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .sprint-mode {
   display: grid;
   grid-template-columns: 1fr auto;
