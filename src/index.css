@@ -7534,11 +7534,7 @@ button.explain-row {
 /* Puzzles: two boards fanned, the one to solve in front, raised a little higher than the other tiles' boards. */
 .home-grid .puzzle-tile .art-board {
   translate: -6px 10px;
-}
-
-/* The close shadow separates the front board's edges from the board behind it. */
-.home-grid .puzzle-tile .art-board:not(.back) {
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.34), 0 8px 22px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 
 .home-grid .puzzle-tile .art-board.back {
@@ -7665,7 +7661,6 @@ button.explain-row {
   grid-template-columns: repeat(5, 1fr);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
 }
 
 .queen-fix-board > i.light {
